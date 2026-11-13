@@ -1052,7 +1052,34 @@ It is opened by a client of its own, outside of any request, so a `transportCont
 The server must accept the stream with the credentials of the application, or with none.
 A client customizer that reads the caller, for example from the security context, must cope with there being none.
 
-NOTE: The `@McpToolListChanged`, `@McpPromptListChanged` and `@McpResourceListChanged` methods are not called for a modern connection yet.
+The `@McpToolListChanged`, `@McpPromptListChanged` and `@McpResourceListChanged` methods described in <<MCP Client Annotations>> are called for a modern connection that sets `listen=true`.
+The stream then also listens for the changes of the prompts and of the list of resources, if a method wants to hear about them.
+A method that names a modern connection without `listen=true` is not called, and a warning is logged at startup.
+The same holds for a method that returns a `Mono`, as the modern client calls synchronous methods only.
+
+[source,java]
+----
+@McpToolListChanged(clients = { "billing", "tickets" })
+public void toolsChanged(List<McpSchema.Tool> tools) {
+    logger.info("The server now has {} tools", tools.size());
+}
+----
+
+One method serves the connections of both protocols, and it may take the list in the schema type of either one.
+The change that a modern server reports carries no list, so the tools, prompts or resources are listed first.
+They are listed for the application, as the listen stream is opened for it: a server that answers each caller differently is asked without a caller.
+A tool, prompt or resource that the schema type of the method does not accept, such as a resource without a name for the legacy type, is left out of the list and logged.
+
+The methods are called in two cases:
+
+* *Reported change:* the server reports that its tools, prompts or list of resources changed.
+* *Stream established again:* a stream had ended and a new one is established.
+What the server did in between was not reported, as when it is restarted with other tools, so the methods are called with the current lists.
+
+They are not called for the first stream of a connection, and not while the server cannot be reached.
+A method is called after the tool callback provider has dropped its kept listing, so it gets the new tools when it asks the provider for them.
+
+NOTE: With a `SyncModernMcpChangeSubscriber` bean of the application the methods are called for the connections of that subscriber, and the subscriber decides whether a stream listens for prompts and resources: see its `connection(connection, promptsChanged, resourcesChanged)` builder method.
 
 === Tool Names and Filtering
 
@@ -1167,8 +1194,9 @@ SyncModernMcpToolCallCustomizer reportTimeout() {
 
 A handler method that names a modern connection but cannot serve it is reported with a warning at startup: an `@McpElicitation` method that takes only the legacy `ElicitUrlRequest`, or an `@McpProgress` method that is not synchronous.
 
-NOTE: `@McpSampling`, `@McpLogging`, `@McpToolListChanged`, `@McpPromptListChanged` and `@McpResourceListChanged` methods are not called for a modern connection, and a warning is logged at startup for them.
-The modern client supports neither sampling nor logging, and the change notifications are not supported yet.
+NOTE: `@McpSampling` and `@McpLogging` methods are not called for a modern connection, and a warning is logged at startup for them.
+The modern client supports neither sampling nor logging.
+For the `@McpToolListChanged`, `@McpPromptListChanged` and `@McpResourceListChanged` methods see <<Change Notifications>>.
 
 === Connect Timeout
 

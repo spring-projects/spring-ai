@@ -66,7 +66,9 @@ import org.springframework.util.backoff.ExponentialBackOff;
  * and when an established stream ends, but not for a stream that could not be opened.
  * <p>
  * Register a {@link SyncModernMcpToolCallbackProvider} as a listener to have it drop a
- * kept tool listing as soon as the server reports that its tools changed.
+ * kept tool listing as soon as the server reports that its tools changed. A stream always
+ * listens for the changes of the tools, and for those of the prompts and of the list of
+ * resources if the connection was added with them.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -97,9 +99,8 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 
 	private volatile boolean running;
 
-	private SyncModernMcpChangeSubscriber(List<SyncModernMcpConnection> connections,
-			List<SyncModernMcpChangeListener> listeners, Duration initialReopenDelay, Duration maxReopenDelay,
-			Supplier<ScheduledExecutorService> schedulerFactory) {
+	private SyncModernMcpChangeSubscriber(List<Subscription> subscriptions, List<SyncModernMcpChangeListener> listeners,
+			Duration initialReopenDelay, Duration maxReopenDelay, Supplier<ScheduledExecutorService> schedulerFactory) {
 		// The first pause is never longer than the longest one.
 		Duration initial = initialReopenDelay.compareTo(maxReopenDelay) < 0 ? initialReopenDelay : maxReopenDelay;
 		this.reopenBackOff = new ExponentialBackOff(initial.toMillis(), 2.0);
@@ -107,7 +108,7 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 		this.maxReopenDelay = maxReopenDelay;
 		this.schedulerFactory = schedulerFactory;
 		// Created last: a stream starts with the backoff set above.
-		this.streams = connections.stream().map(ListenStream::new).toList();
+		this.streams = subscriptions.stream().map(ListenStream::new).toList();
 		this.listeners.addAll(listeners);
 	}
 
@@ -246,9 +247,15 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 
 		private boolean missingReported;
 
-		private ListenStream(SyncModernMcpConnection connection) {
-			this.connection = connection;
-			this.connectionInfo = connection.info();
+		private final boolean promptsChanged;
+
+		private final boolean resourcesChanged;
+
+		private ListenStream(Subscription subscription) {
+			this.connection = subscription.connection();
+			this.connectionInfo = subscription.connection().info();
+			this.promptsChanged = subscription.promptsChanged();
+			this.resourcesChanged = subscription.resourcesChanged();
 		}
 
 		private void open() {
@@ -264,7 +271,14 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 					if (this.client == null) {
 						this.client = this.connection.client();
 					}
-					this.listening = this.client.listen().toolsChanged().open(new StreamListener(stream));
+					McpSyncClient.ListenSpec listenSpec = this.client.listen().toolsChanged();
+					if (this.promptsChanged) {
+						listenSpec = listenSpec.promptsChanged();
+					}
+					if (this.resourcesChanged) {
+						listenSpec = listenSpec.resourcesChanged();
+					}
+					this.listening = listenSpec.open(new StreamListener(stream));
 					return;
 				}
 				catch (RuntimeException ex) {
@@ -429,7 +443,7 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 	 */
 	public static final class Builder {
 
-		private final List<SyncModernMcpConnection> connections = new ArrayList<>();
+		private final List<Subscription> subscriptions = new ArrayList<>();
 
 		private final List<SyncModernMcpChangeListener> listeners = new ArrayList<>();
 
@@ -448,13 +462,29 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 		}
 
 		/**
-		 * Adds a connection to keep a listen stream open to.
+		 * Adds a connection to keep a listen stream open to, for the changes of the tools
+		 * of its server.
 		 * @param connection the connection
 		 * @return this builder
 		 */
 		public Builder connection(SyncModernMcpConnection connection) {
+			return this.connection(connection, false, false);
+		}
+
+		/**
+		 * Adds a connection to keep a listen stream open to, for the changes of the tools
+		 * of its server and, if asked for, those of its prompts and of its list of
+		 * resources.
+		 * @param connection the connection
+		 * @param promptsChanged whether to listen for the changes of the prompts as well
+		 * @param resourcesChanged whether to listen for the changes of the list of
+		 * resources as well
+		 * @return this builder
+		 */
+		public Builder connection(SyncModernMcpConnection connection, boolean promptsChanged,
+				boolean resourcesChanged) {
 			Assert.notNull(connection, "connection must not be null");
-			this.connections.add(connection);
+			this.subscriptions.add(new Subscription(connection, promptsChanged, resourcesChanged));
 			return this;
 		}
 
@@ -508,10 +538,16 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 		 * @return the subscriber
 		 */
 		public SyncModernMcpChangeSubscriber build() {
-			return new SyncModernMcpChangeSubscriber(this.connections, this.listeners, this.initialReopenDelay,
+			return new SyncModernMcpChangeSubscriber(this.subscriptions, this.listeners, this.initialReopenDelay,
 					this.maxReopenDelay, this.schedulerFactory);
 		}
 
+	}
+
+	/**
+	 * A connection and what its listen stream listens for, next to the tools.
+	 */
+	private record Subscription(SyncModernMcpConnection connection, boolean promptsChanged, boolean resourcesChanged) {
 	}
 
 }

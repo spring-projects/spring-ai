@@ -25,6 +25,9 @@ import io.modelcontextprotocol.modern.McpSchema.ElicitRequest;
 import io.modelcontextprotocol.modern.McpSchema.ElicitResult;
 import io.modelcontextprotocol.modern.McpSchema.ElicitUrlRequest;
 import io.modelcontextprotocol.modern.McpSchema.ProgressParams;
+import io.modelcontextprotocol.modern.McpSchema.Prompt;
+import io.modelcontextprotocol.modern.McpSchema.Resource;
+import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
@@ -33,7 +36,11 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.mcp.annotation.McpElicitation;
 import org.springframework.ai.mcp.annotation.McpLogging;
 import org.springframework.ai.mcp.annotation.McpProgress;
+import org.springframework.ai.mcp.annotation.McpPromptListChanged;
+import org.springframework.ai.mcp.annotation.McpResourceListChanged;
 import org.springframework.ai.mcp.annotation.McpSampling;
+import org.springframework.ai.mcp.annotation.McpToolListChanged;
+import org.springframework.ai.mcp.annotation.common.ModernClientHandlerSupport;
 import org.springframework.ai.mcp.annotation.context.StructuredElicitResult;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -52,6 +59,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ClientMcpSyncHandlersRegistryModernTests {
 
 	private static final Map<String, Object> SCHEMA = Map.of("type", "object");
+
+	private static final List<Tool> TOOLS = List.of(Tool.builder("search", SCHEMA).build());
+
+	private static final List<Prompt> PROMPTS = List
+		.of(new Prompt("daily-summary", null, "Summarises the tickets", List.of(), null, null));
+
+	private static final List<Resource> RESOURCES = List.of(Resource.builder("tickets://all", "tickets").build());
 
 	@Test
 	void elicitationModesAreKnownBeforeTheHandlersAreResolved() {
@@ -265,6 +279,82 @@ class ClientMcpSyncHandlersRegistryModernTests {
 	}
 
 	@Test
+	void listChangedMethodsOfBothSchemasHearAboutTheChangesOfAModernClient() {
+		var beanFactory = new DefaultListableBeanFactory();
+		ClientMcpSyncHandlersRegistry registry = resolved(beanFactory, ListChangedHandlers.class);
+		ListChangedHandlers handlers = beanFactory.getBean(ListChangedHandlers.class);
+
+		registry.handleModernToolListChanged("lists", TOOLS);
+		registry.handleModernPromptListChanged("lists", PROMPTS);
+		registry.handleModernResourceListChanged("lists", RESOURCES);
+
+		assertThat(handlers.seen).containsExactlyInAnyOrder("legacy tools [search]", "modern tools [search]",
+				"legacy prompts [daily-summary]", "modern prompts [daily-summary]", "legacy resources [tickets://all]",
+				"modern resources [tickets://all]");
+	}
+
+	@Test
+	void listChangedMethodsOfBothSchemasHearAboutTheChangesOfALegacyClient() {
+		var beanFactory = new DefaultListableBeanFactory();
+		ClientMcpSyncHandlersRegistry registry = resolved(beanFactory, ListChangedHandlers.class);
+		ListChangedHandlers handlers = beanFactory.getBean(ListChangedHandlers.class);
+
+		registry.handleToolListChanged("lists", ModernClientHandlerSupport.toLegacyTools(TOOLS));
+		registry.handlePromptListChanged("lists", ModernClientHandlerSupport.toLegacyPrompts(PROMPTS));
+		registry.handleResourceListChanged("lists", ModernClientHandlerSupport.toLegacyResources(RESOURCES));
+
+		assertThat(handlers.seen).containsExactlyInAnyOrder("legacy tools [search]", "modern tools [search]",
+				"legacy prompts [daily-summary]", "modern prompts [daily-summary]", "legacy resources [tickets://all]",
+				"modern resources [tickets://all]");
+	}
+
+	@Test
+	void failingListChangedMethodDoesNotKeepTheOthersFromHearingTheChange() {
+		var beanFactory = new DefaultListableBeanFactory();
+		ClientMcpSyncHandlersRegistry registry = resolved(beanFactory, FailingListChangedHandlers.class);
+		FailingListChangedHandlers handlers = beanFactory.getBean(FailingListChangedHandlers.class);
+
+		registry.handleModernToolListChanged("lists", TOOLS);
+		registry.handleModernPromptListChanged("lists", PROMPTS);
+		registry.handleModernResourceListChanged("lists", RESOURCES);
+
+		assertThat(handlers.seen).containsExactlyInAnyOrder("tools [search]", "prompts [daily-summary]",
+				"resources [tickets://all]");
+	}
+
+	@Test
+	void synchronousListChangedMethodsAreKnownBeforeTheHandlersAreResolved() {
+		ClientMcpSyncHandlersRegistry registry = postProcessed(new DefaultListableBeanFactory(),
+				ListChangedHandlers.class);
+
+		assertThat(registry.handlesModernListChanged("lists", McpToolListChanged.class)).isTrue();
+		assertThat(registry.handlesModernListChanged("lists", McpPromptListChanged.class)).isTrue();
+		assertThat(registry.handlesModernListChanged("lists", McpResourceListChanged.class)).isTrue();
+		assertThat(registry.handlesModernListChanged("other", McpToolListChanged.class)).isFalse();
+		// Not a list-changed annotation.
+		assertThat(registry.handlesModernListChanged("lists", McpProgress.class)).isFalse();
+	}
+
+	@Test
+	void reactiveListChangedMethodDoesNotServeAModernClient() {
+		ClientMcpSyncHandlersRegistry registry = postProcessed(new DefaultListableBeanFactory(),
+				ReactiveListChangedHandlers.class);
+
+		// The method names the client, but the modern client cannot call it.
+		assertThat(registry.hasHandlers("lists", McpToolListChanged.class)).isTrue();
+		assertThat(registry.handlesModernListChanged("lists", McpToolListChanged.class)).isFalse();
+	}
+
+	@Test
+	void listChangeOfAModernClientWithoutAHandlerIsIgnored() {
+		ClientMcpSyncHandlersRegistry registry = resolved(new DefaultListableBeanFactory(), ListChangedHandlers.class);
+
+		registry.handleModernToolListChanged("unknown", TOOLS);
+		registry.handleModernPromptListChanged("unknown", PROMPTS);
+		registry.handleModernResourceListChanged("unknown", RESOURCES);
+	}
+
+	@Test
 	void elicitationHandlerReceivesTheToolContextOfTheToolCall() {
 		var beanFactory = new DefaultListableBeanFactory();
 		ClientMcpSyncHandlersRegistry registry = resolved(beanFactory, ToolContextHandlers.class);
@@ -368,6 +458,91 @@ class ClientMcpSyncHandlersRegistryModernTests {
 		@McpProgress(clients = "reactive")
 		Mono<Void> progress(McpSchema.ProgressNotification notification) {
 			return Mono.empty();
+		}
+
+	}
+
+	/** For each kind of list one method that fails and one that does not. */
+	static class FailingListChangedHandlers {
+
+		final List<String> seen = new CopyOnWriteArrayList<>();
+
+		@McpToolListChanged(clients = "lists")
+		void failingTools(List<Tool> tools) {
+			throw new IllegalStateException("tools");
+		}
+
+		@McpToolListChanged(clients = "lists")
+		void tools(List<Tool> tools) {
+			this.seen.add("tools " + tools.stream().map(Tool::name).toList());
+		}
+
+		@McpPromptListChanged(clients = "lists")
+		void failingPrompts(List<Prompt> prompts) {
+			throw new IllegalStateException("prompts");
+		}
+
+		@McpPromptListChanged(clients = "lists")
+		void prompts(List<Prompt> prompts) {
+			this.seen.add("prompts " + prompts.stream().map(Prompt::name).toList());
+		}
+
+		@McpResourceListChanged(clients = "lists")
+		void failingResources(List<Resource> resources) {
+			throw new IllegalStateException("resources");
+		}
+
+		@McpResourceListChanged(clients = "lists")
+		void resources(List<Resource> resources) {
+			this.seen.add("resources " + resources.stream().map(Resource::uri).toList());
+		}
+
+	}
+
+	static class ReactiveListChangedHandlers {
+
+		@McpToolListChanged(clients = "lists")
+		Mono<Void> tools(List<McpSchema.Tool> tools) {
+			return Mono.empty();
+		}
+
+	}
+
+	/**
+	 * List-changed methods that take the lists of the legacy and of the modern schema.
+	 */
+	static class ListChangedHandlers {
+
+		final List<String> seen = new CopyOnWriteArrayList<>();
+
+		@McpToolListChanged(clients = "lists")
+		void legacyTools(List<McpSchema.Tool> tools) {
+			this.seen.add("legacy tools " + tools.stream().map(McpSchema.Tool::name).toList());
+		}
+
+		@McpToolListChanged(clients = "lists")
+		void modernTools(List<Tool> tools) {
+			this.seen.add("modern tools " + tools.stream().map(Tool::name).toList());
+		}
+
+		@McpPromptListChanged(clients = "lists")
+		void legacyPrompts(List<McpSchema.Prompt> prompts) {
+			this.seen.add("legacy prompts " + prompts.stream().map(McpSchema.Prompt::name).toList());
+		}
+
+		@McpPromptListChanged(clients = "lists")
+		void modernPrompts(List<Prompt> prompts) {
+			this.seen.add("modern prompts " + prompts.stream().map(Prompt::name).toList());
+		}
+
+		@McpResourceListChanged(clients = "lists")
+		void legacyResources(List<McpSchema.Resource> resources) {
+			this.seen.add("legacy resources " + resources.stream().map(McpSchema.Resource::uri).toList());
+		}
+
+		@McpResourceListChanged(clients = "lists")
+		void modernResources(List<Resource> resources) {
+			this.seen.add("modern resources " + resources.stream().map(Resource::uri).toList());
 		}
 
 	}

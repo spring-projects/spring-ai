@@ -17,13 +17,22 @@
 package org.springframework.ai.mcp.annotation.common;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
+import io.modelcontextprotocol.json.McpJsonDefaults;
+import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.modern.McpSchema.ElicitFormRequest;
 import io.modelcontextprotocol.modern.McpSchema.ElicitRequest;
 import io.modelcontextprotocol.modern.McpSchema.ElicitResult;
 import io.modelcontextprotocol.modern.McpSchema.ElicitUrlRequest;
 import io.modelcontextprotocol.modern.McpSchema.ProgressParams;
+import io.modelcontextprotocol.modern.McpSchema.Prompt;
+import io.modelcontextprotocol.modern.McpSchema.Resource;
+import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.spec.McpSchema;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.model.ToolContext;
@@ -55,6 +64,8 @@ import org.springframework.util.Assert;
  * @since 2.1.0
  */
 public final class ModernClientHandlerSupport {
+
+	private static final Log logger = LogFactory.getLog(ModernClientHandlerSupport.class);
 
 	private ModernClientHandlerSupport() {
 	}
@@ -271,6 +282,84 @@ public final class ModernClientHandlerSupport {
 		Assert.notNull(progress, "progress must not be null");
 		return new McpSchema.ProgressNotification(progress.progressToken(), progress.progress(), progress.total(),
 				progress.message(), progress.meta());
+	}
+
+	/**
+	 * Converts the tools of the legacy schema to those of the modern schema.
+	 * @param tools the legacy tools
+	 * @return the modern tools
+	 */
+	public static List<Tool> toModernTools(List<McpSchema.Tool> tools) {
+		return convert(tools, Tool.class);
+	}
+
+	/**
+	 * Converts the tools of the modern schema to those of the legacy schema.
+	 * @param tools the modern tools
+	 * @return the legacy tools
+	 */
+	public static List<McpSchema.Tool> toLegacyTools(List<Tool> tools) {
+		return convert(tools, McpSchema.Tool.class);
+	}
+
+	/**
+	 * Converts the prompts of the legacy schema to those of the modern schema.
+	 * @param prompts the legacy prompts
+	 * @return the modern prompts
+	 */
+	public static List<Prompt> toModernPrompts(List<McpSchema.Prompt> prompts) {
+		return convert(prompts, Prompt.class);
+	}
+
+	/**
+	 * Converts the prompts of the modern schema to those of the legacy schema.
+	 * @param prompts the modern prompts
+	 * @return the legacy prompts
+	 */
+	public static List<McpSchema.Prompt> toLegacyPrompts(List<Prompt> prompts) {
+		return convert(prompts, McpSchema.Prompt.class);
+	}
+
+	/**
+	 * Converts the resources of the legacy schema to those of the modern schema.
+	 * @param resources the legacy resources
+	 * @return the modern resources
+	 */
+	public static List<Resource> toModernResources(List<McpSchema.Resource> resources) {
+		return convert(resources, Resource.class);
+	}
+
+	/**
+	 * Converts the resources of the modern schema to those of the legacy schema.
+	 * @param resources the modern resources
+	 * @return the legacy resources
+	 */
+	public static List<McpSchema.Resource> toLegacyResources(List<Resource> resources) {
+		return convert(resources, McpSchema.Resource.class);
+	}
+
+	/**
+	 * Converts the definitions of one schema to those of the other one. Both describe the
+	 * same JSON, so a definition is converted through it; what only one of the two
+	 * schemas knows is left out, and so is a definition that the other schema does not
+	 * accept.
+	 */
+	private static <T> List<T> convert(List<?> definitions, Class<T> targetType) {
+		Assert.notNull(definitions, "definitions must not be null");
+		McpJsonMapper jsonMapper = McpJsonDefaults.getMapper();
+		List<T> converted = new ArrayList<>(definitions.size());
+		for (Object definition : definitions) {
+			try {
+				converted.add(jsonMapper.convertValue(definition, targetType));
+			}
+			catch (RuntimeException ex) {
+				// The two schemas do not accept the same values everywhere, for example
+				// an empty name. One such definition must not lose the others.
+				logger.warn("Leaving out a definition that cannot be converted to " + targetType.getName() + ": "
+						+ definition, ex);
+			}
+		}
+		return converted;
 	}
 
 }

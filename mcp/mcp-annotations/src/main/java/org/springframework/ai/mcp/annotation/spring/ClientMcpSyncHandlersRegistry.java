@@ -16,10 +16,12 @@
 
 package org.springframework.ai.mcp.annotation.spring;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -28,6 +30,9 @@ import io.modelcontextprotocol.modern.McpSchema.ElicitRequest;
 import io.modelcontextprotocol.modern.McpSchema.ElicitResult;
 import io.modelcontextprotocol.modern.McpSchema.ElicitUrlRequest;
 import io.modelcontextprotocol.modern.McpSchema.ProgressParams;
+import io.modelcontextprotocol.modern.McpSchema.Prompt;
+import io.modelcontextprotocol.modern.McpSchema.Resource;
+import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.apache.commons.logging.Log;
@@ -94,6 +99,12 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 	private final Map<String, List<Consumer<List<McpSchema.Prompt>>>> promptListChangedHandlers = new HashMap<>();
 
 	private final Map<String, List<Consumer<List<McpSchema.Resource>>>> resourceListChangedHandlers = new HashMap<>();
+
+	private final Map<String, List<Consumer<List<Tool>>>> modernToolListChangedHandlers = new HashMap<>();
+
+	private final Map<String, List<Consumer<List<Prompt>>>> modernPromptListChangedHandlers = new HashMap<>();
+
+	private final Map<String, List<Consumer<List<Resource>>>> modernResourceListChangedHandlers = new HashMap<>();
 
 	/**
 	 * A client may have one {@code @McpElicitation} method for form requests and another
@@ -184,6 +195,22 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 	 */
 	public boolean handlesModernProgress(String name) {
 		return this.modernProgressClients.contains(name);
+	}
+
+	/**
+	 * Whether a handler hears about the list changes of the given kind for the given
+	 * client when it speaks the modern revision: a synchronous method with that
+	 * annotation names the client. The answer is available before the handlers are
+	 * resolved.
+	 * @param name the name of the client, which is the name of its connection
+	 * @param annotationType {@code McpToolListChanged}, {@code McpPromptListChanged} or
+	 * {@code McpResourceListChanged}
+	 * @return {@code true} if a modern client of that name has a method to call for such
+	 * a change
+	 * @since 2.1.0
+	 */
+	public boolean handlesModernListChanged(String name, Class<? extends Annotation> annotationType) {
+		return this.modernListChangedClients.getOrDefault(annotationType, Set.of()).contains(name);
 	}
 
 	/**
@@ -301,6 +328,93 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 		}
 		for (var consumer : consumers) {
 			consumer.accept(progressNotification);
+		}
+	}
+
+	/**
+	 * Invoke all tool list changed handlers for a given client that speaks the 2026-07-28
+	 * ("modern") MCP revision, sequentially. They are the same
+	 * {@code @McpToolListChanged} methods that serve a legacy client of that name,
+	 * whichever schema type their list has.
+	 * @param name the name of the client, which is the name of its connection
+	 * @param updatedTools the tools of the server, in the modern schema type
+	 * @since 2.1.0
+	 */
+	public void handleModernToolListChanged(String name, List<Tool> updatedTools) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Handling modern tool list changed notification for client " + name);
+		}
+
+		var consumers = this.modernToolListChangedHandlers.get(name);
+		if (consumers == null) {
+			return;
+		}
+		for (var consumer : consumers) {
+			try {
+				consumer.accept(updatedTools);
+			}
+			catch (RuntimeException ex) {
+				// One failing method must not keep the others from hearing the change.
+				logger.warn("A tool list changed handler failed for client " + name, ex);
+			}
+		}
+	}
+
+	/**
+	 * Invoke all prompt list changed handlers for a given client that speaks the
+	 * 2026-07-28 ("modern") MCP revision, sequentially. They are the same
+	 * {@code @McpPromptListChanged} methods that serve a legacy client of that name,
+	 * whichever schema type their list has.
+	 * @param name the name of the client, which is the name of its connection
+	 * @param updatedPrompts the prompts of the server, in the modern schema type
+	 * @since 2.1.0
+	 */
+	public void handleModernPromptListChanged(String name, List<Prompt> updatedPrompts) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Handling modern prompt list changed notification for client " + name);
+		}
+
+		var consumers = this.modernPromptListChangedHandlers.get(name);
+		if (consumers == null) {
+			return;
+		}
+		for (var consumer : consumers) {
+			try {
+				consumer.accept(updatedPrompts);
+			}
+			catch (RuntimeException ex) {
+				// One failing method must not keep the others from hearing the change.
+				logger.warn("A prompt list changed handler failed for client " + name, ex);
+			}
+		}
+	}
+
+	/**
+	 * Invoke all resource list changed handlers for a given client that speaks the
+	 * 2026-07-28 ("modern") MCP revision, sequentially. They are the same
+	 * {@code @McpResourceListChanged} methods that serve a legacy client of that name,
+	 * whichever schema type their list has.
+	 * @param name the name of the client, which is the name of its connection
+	 * @param updatedResources the resources of the server, in the modern schema type
+	 * @since 2.1.0
+	 */
+	public void handleModernResourceListChanged(String name, List<Resource> updatedResources) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Handling modern resource list changed notification for client " + name);
+		}
+
+		var consumers = this.modernResourceListChangedHandlers.get(name);
+		if (consumers == null) {
+			return;
+		}
+		for (var consumer : consumers) {
+			try {
+				consumer.accept(updatedResources);
+			}
+			catch (RuntimeException ex) {
+				// One failing method must not keep the others from hearing the change.
+				logger.warn("A resource list changed handler failed for client " + name, ex);
+			}
 		}
 	}
 
@@ -433,8 +547,15 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 			}
 		}
 
-		var toolsListChangedSpecs = SyncMcpAnnotationProviders
-			.toolListChangedSpecifications(new ArrayList<>(beansByAnnotation.get(McpToolListChanged.class)));
+		var toolListChangedProvider = SyncMcpAnnotationProviders
+			.toolListChangedProvider(new ArrayList<>(beansByAnnotation.get(McpToolListChanged.class)));
+		for (var modernToolListChangedSpec : toolListChangedProvider.getModernToolListChangedSpecifications()) {
+			for (var client : modernToolListChangedSpec.clients()) {
+				this.modernToolListChangedHandlers.computeIfAbsent(client, k -> new ArrayList<>())
+					.add(modernToolListChangedSpec.toolListChangeHandler());
+			}
+		}
+		var toolsListChangedSpecs = toolListChangedProvider.getToolListChangedSpecifications();
 		for (var toolsListChangedSpec : toolsListChangedSpecs) {
 			for (var client : toolsListChangedSpec.clients()) {
 				if (logger.isDebugEnabled()) {
@@ -445,8 +566,15 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 			}
 		}
 
-		var promptListChangedSpecs = SyncMcpAnnotationProviders
-			.promptListChangedSpecifications(new ArrayList<>(beansByAnnotation.get(McpPromptListChanged.class)));
+		var promptListChangedProvider = SyncMcpAnnotationProviders
+			.promptListChangedProvider(new ArrayList<>(beansByAnnotation.get(McpPromptListChanged.class)));
+		for (var modernPromptListChangedSpec : promptListChangedProvider.getModernPromptListChangedSpecifications()) {
+			for (var client : modernPromptListChangedSpec.clients()) {
+				this.modernPromptListChangedHandlers.computeIfAbsent(client, k -> new ArrayList<>())
+					.add(modernPromptListChangedSpec.promptListChangeHandler());
+			}
+		}
+		var promptListChangedSpecs = promptListChangedProvider.getPromptListChangedSpecifications();
 		for (var promptListChangedSpec : promptListChangedSpecs) {
 			for (var client : promptListChangedSpec.clients()) {
 				if (logger.isDebugEnabled()) {
@@ -457,8 +585,16 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 			}
 		}
 
-		var resourceListChangedSpecs = SyncMcpAnnotationProviders
-			.resourceListChangedSpecifications(new ArrayList<>(beansByAnnotation.get(McpResourceListChanged.class)));
+		var resourceListChangedProvider = SyncMcpAnnotationProviders
+			.resourceListChangedProvider(new ArrayList<>(beansByAnnotation.get(McpResourceListChanged.class)));
+		for (var modernResourceListChangedSpec : resourceListChangedProvider
+			.getModernResourceListChangedSpecifications()) {
+			for (var client : modernResourceListChangedSpec.clients()) {
+				this.modernResourceListChangedHandlers.computeIfAbsent(client, k -> new ArrayList<>())
+					.add(modernResourceListChangedSpec.resourceListChangeHandler());
+			}
+		}
+		var resourceListChangedSpecs = resourceListChangedProvider.getResourceListChangedSpecifications();
 		for (var resourceListChangedSpec : resourceListChangedSpecs) {
 			for (var client : resourceListChangedSpec.clients()) {
 				if (logger.isDebugEnabled()) {

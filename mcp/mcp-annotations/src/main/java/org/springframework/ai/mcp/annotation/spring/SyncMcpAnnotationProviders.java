@@ -286,6 +286,19 @@ public final class SyncMcpAnnotationProviders {
 		return new SpringAiSyncMcpToolListChangedProvider(toolListChangedObjects).getToolListChangedSpecifications();
 	}
 
+	/**
+	 * The provider of the tool list changed handlers of the given objects. One provider
+	 * creates the handlers for the legacy clients and those for the clients of the
+	 * 2026-07-28 ("modern") MCP revision from the same callbacks.
+	 * @param toolListChangedObjects the objects with the {@code @McpToolListChanged}
+	 * methods
+	 * @return the tool list changed provider
+	 * @since 2.1.0
+	 */
+	public static SyncMcpToolListChangedProvider toolListChangedProvider(List<Object> toolListChangedObjects) {
+		return new SpringAiSyncMcpToolListChangedProvider(toolListChangedObjects);
+	}
+
 	// RESOURCE LIST CHANGED
 	public static List<SyncResourceListChangedSpecification> resourceListChangedSpecifications(
 			List<Object> resourceListChangedObjects) {
@@ -293,11 +306,36 @@ public final class SyncMcpAnnotationProviders {
 			.getResourceListChangedSpecifications();
 	}
 
+	/**
+	 * The provider of the resource list changed handlers of the given objects, for the
+	 * clients of both protocols.
+	 * @param resourceListChangedObjects the objects with the
+	 * {@code @McpResourceListChanged} methods
+	 * @return the resource list changed provider
+	 * @since 2.1.0
+	 */
+	public static SyncMcpResourceListChangedProvider resourceListChangedProvider(
+			List<Object> resourceListChangedObjects) {
+		return new SpringAiSyncMcpResourceListChangedProvider(resourceListChangedObjects);
+	}
+
 	// PROMPT LIST CHANGED
 	public static List<SyncPromptListChangedSpecification> promptListChangedSpecifications(
 			List<Object> promptListChangedObjects) {
 		return new SpringAiSyncMcpPromptListChangedProvider(promptListChangedObjects)
 			.getPromptListChangedSpecifications();
+	}
+
+	/**
+	 * The provider of the prompt list changed handlers of the given objects, for the
+	 * clients of both protocols.
+	 * @param promptListChangedObjects the objects with the {@code @McpPromptListChanged}
+	 * methods
+	 * @return the prompt list changed provider
+	 * @since 2.1.0
+	 */
+	public static SyncMcpPromptListChangedProvider promptListChangedProvider(List<Object> promptListChangedObjects) {
+		return new SpringAiSyncMcpPromptListChangedProvider(promptListChangedObjects);
 	}
 
 	// COMPLETE

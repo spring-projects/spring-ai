@@ -83,6 +83,12 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 	 */
 	protected final Set<String> modernProgressClients = new HashSet<>();
 
+	/**
+	 * The clients with a synchronous list-changed handler, by its annotation, which a
+	 * client of the modern revision can call.
+	 */
+	protected final Map<Class<? extends Annotation>, Set<String>> modernListChangedClients = new HashMap<>();
+
 	static final Class<? extends Annotation>[] CLIENT_MCP_ANNOTATIONS = new Class[] { McpSampling.class,
 			McpElicitation.class, McpLogging.class, McpProgress.class, McpToolListChanged.class,
 			McpPromptListChanged.class, McpResourceListChanged.class };
@@ -236,6 +242,12 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 					}
 					else if (annotation instanceof McpProgress && method.getReturnType() == void.class) {
 						this.modernProgressClients.add(client);
+					}
+					else if (method.getReturnType() == void.class
+							&& (annotation instanceof McpToolListChanged || annotation instanceof McpPromptListChanged
+									|| annotation instanceof McpResourceListChanged)) {
+						this.modernListChangedClients.computeIfAbsent(annotationType, type -> new HashSet<>())
+							.add(client);
 					}
 				}
 			}

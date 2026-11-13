@@ -40,6 +40,7 @@ import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.annotation.McpElicitation;
 import org.springframework.ai.mcp.annotation.McpLogging;
 import org.springframework.ai.mcp.annotation.McpProgress;
+import org.springframework.ai.mcp.annotation.McpPromptListChanged;
 import org.springframework.ai.mcp.annotation.McpSampling;
 import org.springframework.ai.mcp.annotation.McpToolListChanged;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
@@ -257,6 +258,88 @@ class McpClientModernAutoConfigurationTests {
 					.doesNotContain("The @McpProgress methods")
 					// The handlers of another connection are no concern of this one.
 					.doesNotContain("for the MCP connection 'billing'");
+			});
+	}
+
+	@Test
+	void listChangedMethodsAreCalledForAConnectionThatListens(CapturedOutput output) {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(McpClientAnnotationScannerAutoConfiguration.class))
+			.withUserConfiguration(HandlersConfiguration.class)
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL, CONNECTIONS + "tickets.listen=true")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				// A connection that does not listen is told so, see the test above.
+				assertThat(output).doesNotContain("The @McpToolListChanged methods");
+				// The methods hear about a change after the provider, which has dropped
+				// its kept listing by then.
+				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("listeners")
+					.asInstanceOf(InstanceOfAssertFactories.LIST)
+					.hasSize(2)
+					.satisfiesExactly(
+							listener -> assertThat(listener).isInstanceOf(SyncModernMcpToolCallbackProvider.class),
+							listener -> assertThat(listener).isInstanceOf(ModernListChangedHandlers.class));
+			});
+	}
+
+	@Test
+	void listChangedMethodsAloneKeepAListenStreamOpen(CapturedOutput output) {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(McpClientAnnotationScannerAutoConfiguration.class))
+			.withUserConfiguration(HandlersConfiguration.class)
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL, CONNECTIONS + "tickets.listen=true",
+					"spring.ai.mcp.client.toolcallback.enabled=false")
+			.run(context -> {
+				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("listeners")
+					.asInstanceOf(InstanceOfAssertFactories.LIST)
+					.singleElement()
+					.isInstanceOf(ModernListChangedHandlers.class);
+				assertThat(output).doesNotContain("No listen stream is opened");
+			});
+	}
+
+	@Test
+	void noListenStreamIsOpenedIfNeitherAProviderNorAListChangedMethodListens(CapturedOutput output) {
+		// The registry of the annotated methods is there, but none of its methods wants
+		// to hear about the changes of the connection that listens.
+		this.contextRunner.withConfiguration(AutoConfigurations.of(McpClientAnnotationScannerAutoConfiguration.class))
+			.withUserConfiguration(UnusableHandlersConfiguration.class)
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL, CONNECTIONS + "tickets.listen=true",
+					"spring.ai.mcp.client.toolcallback.enabled=false")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("listeners")
+					.asInstanceOf(InstanceOfAssertFactories.LIST)
+					.isEmpty();
+				assertThat(output).contains("No listen stream is opened to the MCP connections [tickets]");
+			});
+	}
+
+	@Test
+	void listChangedMethodsAreCalledThroughASubscriberOfTheApplication() {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(McpClientAnnotationScannerAutoConfiguration.class))
+			.withUserConfiguration(HandlersConfiguration.class, ApplicationSubscriberConfiguration.class)
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("listeners")
+					.asInstanceOf(InstanceOfAssertFactories.LIST)
+					.hasAtLeastOneElementOfType(ModernListChangedHandlers.class);
+			});
+	}
+
+	@Test
+	void reactiveListChangedMethodsOfAListeningConnectionAreReportedAtStartup(CapturedOutput output) {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(McpClientAnnotationScannerAutoConfiguration.class))
+			.withUserConfiguration(ReactiveListChangedHandlersConfiguration.class)
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL, CONNECTIONS + "tickets.listen=true")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(output)
+					.contains("The @McpPromptListChanged methods for the MCP connection 'tickets' are not called: "
+							+ "the connection uses the MODERN protocol, which needs a synchronous method");
+				// Nothing is listened for on behalf of a method that is not called.
+				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("listeners")
+					.asInstanceOf(InstanceOfAssertFactories.LIST)
+					.doesNotHaveAnyElementsOfTypes(ModernListChangedHandlers.class);
 			});
 	}
 
@@ -504,6 +587,39 @@ class McpClientModernAutoConfigurationTests {
 		@Bean
 		UnusableHandlers unusableHandlers() {
 			return new UnusableHandlers();
+		}
+
+	}
+
+	/** The application chooses the listening connections with a subscriber of its own. */
+	@Configuration(proxyBeanMethods = false)
+	static class ApplicationSubscriberConfiguration {
+
+		@Bean
+		SyncModernMcpChangeSubscriber applicationSubscriber(List<SyncModernMcpConnection> connections) {
+			SyncModernMcpChangeSubscriber.Builder subscriber = SyncModernMcpChangeSubscriber.builder();
+			connections.forEach(subscriber::connection);
+			return subscriber.build();
+		}
+
+	}
+
+	static class ReactiveListChangedHandlers {
+
+		// The modern client calls synchronous handlers only.
+		@McpPromptListChanged(clients = "tickets")
+		Mono<Void> reactivePrompts(List<McpSchema.Prompt> prompts) {
+			return Mono.empty();
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class ReactiveListChangedHandlersConfiguration {
+
+		@Bean
+		ReactiveListChangedHandlers reactiveListChangedHandlers() {
+			return new ReactiveListChangedHandlers();
 		}
 
 	}

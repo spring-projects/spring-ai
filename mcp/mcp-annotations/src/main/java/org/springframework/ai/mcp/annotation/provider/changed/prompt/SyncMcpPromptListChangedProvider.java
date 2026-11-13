@@ -23,10 +23,12 @@ import java.util.stream.Stream;
 
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.util.Assert;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mcp.annotation.McpPromptListChanged;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.method.changed.prompt.SyncMcpPromptListChangedMethodCallback;
+import org.springframework.ai.mcp.annotation.method.changed.prompt.SyncModernPromptListChangedSpecification;
 import org.springframework.ai.mcp.annotation.method.changed.prompt.SyncPromptListChangedSpecification;
 
 /**
@@ -61,6 +63,8 @@ public class SyncMcpPromptListChangedProvider {
 
 	private final List<Object> promptListChangedConsumerObjects;
 
+	private @Nullable List<HandlerMethod> handlerMethods;
+
 	/**
 	 * Create a new SyncMcpPromptListChangedProvider.
 	 * @param promptListChangedConsumerObjects the objects containing methods annotated
@@ -76,31 +80,60 @@ public class SyncMcpPromptListChangedProvider {
 	 * @return the list of prompt list changed consumer specifications
 	 */
 	public List<SyncPromptListChangedSpecification> getPromptListChangedSpecifications() {
+		return this.handlerMethods().stream().map(handlerMethod -> {
+			Consumer<List<McpSchema.Prompt>> methodCallback = handlerMethod.callback();
+			return new SyncPromptListChangedSpecification(handlerMethod.clients(), methodCallback);
+		}).toList();
+	}
 
-		List<SyncPromptListChangedSpecification> promptListChangedConsumers = this.promptListChangedConsumerObjects
+	/**
+	 * Get the prompt list changed specifications for the connections that speak the
+	 * 2026-07-28 ("modern") MCP revision. They are created from the same
+	 * {@link McpPromptListChanged} methods as
+	 * {@link #getPromptListChangedSpecifications()}, and with the same callbacks: a
+	 * method serves the connections of both protocols, whichever schema type its list
+	 * has.
+	 * @return the modern prompt list changed specifications
+	 * @since 2.1.0
+	 */
+	public List<SyncModernPromptListChangedSpecification> getModernPromptListChangedSpecifications() {
+		return this.handlerMethods()
 			.stream()
-			.map(consumerObject -> Stream.of(doGetClassMethods(consumerObject))
-				.filter(method -> method.isAnnotationPresent(McpPromptListChanged.class))
-				.filter(McpPredicates.filterReactiveReturnTypeMethod())
-				.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
-				.map(mcpPromptListChangedConsumerMethod -> {
-					var promptListChangedAnnotation = mcpPromptListChangedConsumerMethod
-						.getAnnotation(McpPromptListChanged.class);
-
-					Consumer<List<McpSchema.Prompt>> methodCallback = SyncMcpPromptListChangedMethodCallback.builder()
-						.method(mcpPromptListChangedConsumerMethod)
-						.bean(consumerObject)
-						.promptListChanged(promptListChangedAnnotation)
-						.build();
-
-					return new SyncPromptListChangedSpecification(promptListChangedAnnotation.clients(),
-							methodCallback);
-				})
-				.toList())
-			.flatMap(List::stream)
+			.map(handlerMethod -> new SyncModernPromptListChangedSpecification(handlerMethod.clients(),
+					handlerMethod.callback()::acceptModern))
 			.toList();
+	}
 
-		return promptListChangedConsumers;
+	/**
+	 * The synchronous {@link McpPromptListChanged} methods with their callbacks. The
+	 * objects are scanned once, on first use, so that each method gets one callback,
+	 * which the legacy and the modern specifications share.
+	 */
+	private List<HandlerMethod> handlerMethods() {
+		List<HandlerMethod> handlerMethods = this.handlerMethods;
+		if (handlerMethods == null) {
+			handlerMethods = this.promptListChangedConsumerObjects.stream()
+				.flatMap(consumerObject -> Stream.of(doGetClassMethods(consumerObject))
+					.filter(method -> method.isAnnotationPresent(McpPromptListChanged.class))
+					.filter(McpPredicates.filterReactiveReturnTypeMethod())
+					.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
+					.map(mcpPromptListChangedConsumerMethod -> {
+						var promptListChangedAnnotation = mcpPromptListChangedConsumerMethod
+							.getAnnotation(McpPromptListChanged.class);
+
+						SyncMcpPromptListChangedMethodCallback methodCallback = SyncMcpPromptListChangedMethodCallback
+							.builder()
+							.method(mcpPromptListChangedConsumerMethod)
+							.bean(consumerObject)
+							.promptListChanged(promptListChangedAnnotation)
+							.build();
+
+						return new HandlerMethod(promptListChangedAnnotation.clients(), methodCallback);
+					}))
+				.toList();
+			this.handlerMethods = handlerMethods;
+		}
+		return handlerMethods;
 	}
 
 	/**
@@ -110,6 +143,12 @@ public class SyncMcpPromptListChangedProvider {
 	 */
 	protected Method[] doGetClassMethods(Object bean) {
 		return bean.getClass().getDeclaredMethods();
+	}
+
+	/**
+	 * The clients an annotated method names and its callback.
+	 */
+	private record HandlerMethod(String[] clients, SyncMcpPromptListChangedMethodCallback callback) {
 	}
 
 }

@@ -23,6 +23,8 @@ import java.util.function.Consumer;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import org.springframework.ai.mcp.annotation.McpToolListChanged;
+import org.springframework.ai.mcp.annotation.common.ModernClientHandlerSupport;
+import org.springframework.core.ResolvableType;
 
 /**
  * Class for creating Consumer callbacks around tool list changed consumer methods.
@@ -36,8 +38,15 @@ import org.springframework.ai.mcp.annotation.McpToolListChanged;
 public final class SyncMcpToolListChangedMethodCallback extends AbstractMcpToolListChangedMethodCallback
 		implements Consumer<List<McpSchema.Tool>> {
 
+	/** Whether the method takes a list of the modern schema's type. */
+	private final boolean modernElements;
+
 	private SyncMcpToolListChangedMethodCallback(Builder builder) {
 		super(builder.method, builder.bean);
+		this.modernElements = ResolvableType.forMethodParameter(this.method, 0)
+			.asCollection()
+			.getGeneric(0)
+			.resolve() == io.modelcontextprotocol.modern.McpSchema.Tool.class;
 	}
 
 	/**
@@ -58,6 +67,38 @@ public final class SyncMcpToolListChangedMethodCallback extends AbstractMcpToolL
 		try {
 			// Build arguments for the method call
 			Object[] args = this.buildArgs(this.method, null, updatedTools);
+			if (this.modernElements) {
+				args[0] = ModernClientHandlerSupport.toModernTools(updatedTools);
+			}
+
+			// Invoke the method
+			this.method.setAccessible(true);
+			this.method.invoke(this.bean, args);
+		}
+		catch (Exception e) {
+			throw new McpToolListChangedConsumerMethodException(
+					"Error invoking tool list changed consumer method: " + this.method.getName(), e);
+		}
+	}
+
+	/**
+	 * Accept the tools of a client that speaks the 2026-07-28 ("modern") MCP revision.
+	 * The method receives them in the schema type that it declares, so one method serves
+	 * the clients of both protocols.
+	 * @param updatedTools the tools of the server, in the modern schema type
+	 * @throws McpToolListChangedConsumerMethodException if there is an error invoking the
+	 * method
+	 * @throws IllegalArgumentException if the list is null
+	 * @since 2.1.0
+	 */
+	public void acceptModern(List<io.modelcontextprotocol.modern.McpSchema.Tool> updatedTools) {
+		if (updatedTools == null) {
+			throw new IllegalArgumentException("Updated tools list must not be null");
+		}
+
+		try {
+			Object[] args = {
+					this.modernElements ? updatedTools : ModernClientHandlerSupport.toLegacyTools(updatedTools) };
 
 			// Invoke the method
 			this.method.setAccessible(true);

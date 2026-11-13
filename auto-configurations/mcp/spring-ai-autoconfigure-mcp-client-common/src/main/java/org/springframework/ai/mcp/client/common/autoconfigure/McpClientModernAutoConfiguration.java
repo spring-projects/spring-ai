@@ -54,6 +54,7 @@ import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeSubscriber;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallCustomizer;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -102,9 +103,11 @@ import org.springframework.util.StringUtils;
  * connection in their {@code clients} attribute answer the elicitation requests and
  * receive the progress of that connection, as they do for a legacy connection. A method
  * may take the schema types of either protocol, and a {@code ToolContext} to receive the
- * tool context of the tool call it serves. The other client annotations
- * ({@code @McpSampling}, {@code @McpLogging} and the list-changed annotations) are not
- * supported for modern connections, and a warning is logged for them.
+ * tool context of the tool call it serves. The {@code @McpToolListChanged},
+ * {@code @McpPromptListChanged} and {@code @McpResourceListChanged} methods are called
+ * for a connection that sets {@code listen=true}. {@code @McpSampling} and
+ * {@code @McpLogging} are not supported for modern connections, and a warning is logged
+ * for them.
  * <p>
  * Customization points:
  * <ul>
@@ -146,11 +149,17 @@ public class McpClientModernAutoConfiguration {
 
 	/**
 	 * The client annotations whose handler methods are not called for a modern
-	 * connection: sampling and logging do not exist in the modern client, and the change
-	 * notifications are not supported yet.
+	 * connection: sampling and logging do not exist in the modern client.
 	 */
 	private static final List<Class<? extends Annotation>> UNSUPPORTED_HANDLER_ANNOTATIONS = List.of(McpSampling.class,
-			McpLogging.class, McpToolListChanged.class, McpPromptListChanged.class, McpResourceListChanged.class);
+			McpLogging.class);
+
+	/**
+	 * The client annotations whose handler methods are called for a modern connection
+	 * only if it keeps a listen stream open, on which the server reports its changes.
+	 */
+	private static final List<Class<? extends Annotation>> LIST_CHANGED_HANDLER_ANNOTATIONS = List
+		.of(McpToolListChanged.class, McpPromptListChanged.class, McpResourceListChanged.class);
 
 	/**
 	 * Creates a transport on the JDK {@code HttpClient} for each modern Streamable HTTP
@@ -246,7 +255,8 @@ public class McpClientModernAutoConfiguration {
 			ConnectionParameters parameters = streamableProperties.getConnections().get(namedTransport.name());
 
 			if (handlers != null) {
-				warnAboutUnsupportedHandlers(namedTransport.name(), handlers);
+				warnAboutUnsupportedHandlers(namedTransport.name(), handlers,
+						parameters != null && parameters.isListening());
 			}
 
 			if (parameters != null && parameters.isSharedClient()) {
@@ -275,6 +285,9 @@ public class McpClientModernAutoConfiguration {
 	 * @param modernProperties the modern MCP client properties
 	 * @param changeListeners the listeners of the application, which hear about what the
 	 * servers report next to the tool callback provider
+	 * @param handlersRegistry the registry of the annotated client handler methods, if
+	 * the annotation scanner is enabled; a stream also listens for the changes of the
+	 * prompts and resources if a list-changed method wants to hear about them
 	 * @return the subscriber, which listens to no server if no connection asks for it
 	 */
 	@Bean
@@ -284,16 +297,24 @@ public class McpClientModernAutoConfiguration {
 	public SyncModernMcpChangeSubscriber modernMcpChangeSubscriber(
 			ObjectProvider<List<SyncModernMcpConnection>> connectionsProvider,
 			McpStreamableHttpClientProperties streamableProperties, McpClientModernProperties modernProperties,
-			ObjectProvider<SyncModernMcpChangeListener> changeListeners) {
+			ObjectProvider<SyncModernMcpChangeListener> changeListeners,
+			ObjectProvider<ClientMcpSyncHandlersRegistry> handlersRegistry) {
+
+		ClientMcpSyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
 
 		Duration coolDown = modernProperties.getUnreachableCoolDown();
 		SyncModernMcpChangeSubscriber.Builder subscriber = SyncModernMcpChangeSubscriber.builder()
 			.maxReopenDelay(coolDown.compareTo(MIN_LISTEN_REOPEN_DELAY) < 0 ? MIN_LISTEN_REOPEN_DELAY : coolDown);
 
 		connectionsProvider.stream().flatMap(List::stream).forEach(connection -> {
-			ConnectionParameters parameters = streamableProperties.getConnections().get(connection.info().name());
+			String name = connection.info().name();
+			ConnectionParameters parameters = streamableProperties.getConnections().get(name);
 			if (parameters != null && parameters.isListening()) {
-				subscriber.connection(connection);
+				// The tools are always listened for. The prompts and the resources only
+				// if an annotated method wants to hear about them.
+				subscriber.connection(connection,
+						handlers != null && handlers.handlesModernListChanged(name, McpPromptListChanged.class),
+						handlers != null && handlers.handlesModernListChanged(name, McpResourceListChanged.class));
 			}
 		});
 
@@ -308,6 +329,45 @@ public class McpClientModernAutoConfiguration {
 		changeListeners.orderedStream().forEach(subscriber::listener);
 
 		return subscriber.build();
+	}
+
+	/**
+	 * Has the {@code @McpToolListChanged}, {@code @McpPromptListChanged} and
+	 * {@code @McpResourceListChanged} methods called for the changes that the servers of
+	 * the listening connections report. The listener for them is added to the subscriber,
+	 * whether auto-configured or defined by the application, once all beans are created.
+	 * That is after the tool callback provider was added, so that a method that asks the
+	 * provider for its tools gets the new ones. Nothing is added if no such method names
+	 * a listening connection.
+	 * @param changeSubscriber the subscriber of the listen streams
+	 * @param connectionsProvider the modern connections
+	 * @param handlersRegistry the registry of the annotated client handler methods, if
+	 * the annotation scanner is enabled
+	 * @return the callback that adds the listener
+	 */
+	@Bean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	SmartInitializingSingleton modernListChangedHandlersRegistrar(
+			ObjectProvider<SyncModernMcpChangeSubscriber> changeSubscriber,
+			ObjectProvider<List<SyncModernMcpConnection>> connectionsProvider,
+			ObjectProvider<ClientMcpSyncHandlersRegistry> handlersRegistry) {
+		return () -> {
+			SyncModernMcpChangeSubscriber subscriber = changeSubscriber.getIfAvailable();
+			ClientMcpSyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
+			if (subscriber == null || handlers == null) {
+				return;
+			}
+			List<String> listening = subscriber.connectionNames();
+			ModernListChangedHandlers listChangedHandlers = ModernListChangedHandlers
+				.forConnections(connectionsProvider.stream()
+					.flatMap(List::stream)
+					.filter(connection -> listening.contains(connection.info().name()))
+					.toList(), handlers);
+			if (listChangedHandlers != null) {
+				subscriber.addListener(listChangedHandlers);
+			}
+		};
 	}
 
 	private static McpSyncClient buildClient(NamedModernClientMcpTransport namedTransport, Implementation clientInfo,
@@ -379,12 +439,28 @@ public class McpClientModernAutoConfiguration {
 		};
 	}
 
-	private static void warnAboutUnsupportedHandlers(String connectionName, ClientMcpSyncHandlersRegistry handlers) {
+	private static void warnAboutUnsupportedHandlers(String connectionName, ClientMcpSyncHandlersRegistry handlers,
+			boolean listening) {
 		for (Class<? extends Annotation> annotationType : UNSUPPORTED_HANDLER_ANNOTATIONS) {
 			if (handlers.hasHandlers(connectionName, annotationType)) {
 				logger.warn("The @" + annotationType.getSimpleName() + " methods for the MCP connection '"
-						+ connectionName + "' are not called: the connection uses the MODERN protocol, for which only "
-						+ "@McpElicitation and @McpProgress methods are supported.");
+						+ connectionName + "' are not called: the connection uses the MODERN protocol, which has "
+						+ "neither sampling nor logging.");
+			}
+		}
+		for (Class<? extends Annotation> annotationType : LIST_CHANGED_HANDLER_ANNOTATIONS) {
+			if (!handlers.hasHandlers(connectionName, annotationType)) {
+				continue;
+			}
+			if (!listening) {
+				logger.warn("The @" + annotationType.getSimpleName() + " methods for the MCP connection '"
+						+ connectionName + "' are not called: the connection uses the MODERN protocol and does not "
+						+ "set listen=true, so it does not hear about the changes of its server.");
+			}
+			else if (!handlers.handlesModernListChanged(connectionName, annotationType)) {
+				logger.warn("The @" + annotationType.getSimpleName() + " methods for the MCP connection '"
+						+ connectionName + "' are not called: the connection uses the MODERN protocol, which needs "
+						+ "a synchronous method that returns void.");
 			}
 		}
 		if (handlers.hasHandlers(connectionName, McpElicitation.class)

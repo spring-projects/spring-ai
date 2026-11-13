@@ -17,8 +17,10 @@
 package org.springframework.ai.mcp.annotation.common;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 
+import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.modern.McpSchema.ElicitFormRequest;
 import io.modelcontextprotocol.modern.McpSchema.ElicitRequest;
 import io.modelcontextprotocol.modern.McpSchema.ElicitResult;
@@ -104,6 +106,59 @@ class ModernClientHandlerSupportTests {
 
 		assertThat(modern).isEqualTo(new ProgressParams("token-1", 10.0, 100.0, "asking", META));
 		assertThat(ModernClientHandlerSupport.toLegacyProgress(modern)).isEqualTo(legacy);
+	}
+
+	@Test
+	void toolsPromptsAndResourcesAreConvertedBetweenTheSchemas() {
+		var modernTool = io.modelcontextprotocol.modern.McpSchema.Tool
+			.builder("search", Map.of("type", "object", "properties", Map.of("query", Map.of("type", "string")),
+					"required", List.of("query")))
+			.title("Search")
+			.description("Searches the tickets")
+			.build();
+		McpSchema.Tool legacyTool = ModernClientHandlerSupport.toLegacyTools(List.of(modernTool)).get(0);
+
+		assertThat(legacyTool.name()).isEqualTo("search");
+		assertThat(legacyTool.title()).isEqualTo("Search");
+		assertThat(legacyTool.description()).isEqualTo("Searches the tickets");
+		assertThat(legacyTool.inputSchema()).containsKeys("type", "properties", "required");
+		assertThat(ModernClientHandlerSupport.toModernTools(List.of(legacyTool))).containsExactly(modernTool);
+
+		var modernPrompt = new io.modelcontextprotocol.modern.McpSchema.Prompt("daily-summary", "Daily summary",
+				"Summarises the tickets", List.of(new io.modelcontextprotocol.modern.McpSchema.PromptArgument("owner",
+						"Owner", "The owner", true)),
+				null, null);
+		McpSchema.Prompt legacyPrompt = ModernClientHandlerSupport.toLegacyPrompts(List.of(modernPrompt)).get(0);
+
+		assertThat(legacyPrompt.name()).isEqualTo("daily-summary");
+		assertThat(legacyPrompt.arguments()).extracting(McpSchema.PromptArgument::name).containsExactly("owner");
+		assertThat(ModernClientHandlerSupport.toModernPrompts(List.of(legacyPrompt))).containsExactly(modernPrompt);
+
+		var modernResource = io.modelcontextprotocol.modern.McpSchema.Resource.builder("tickets://all", "tickets")
+			.description("All tickets")
+			.mimeType("application/json")
+			.build();
+		McpSchema.Resource legacyResource = ModernClientHandlerSupport.toLegacyResources(List.of(modernResource))
+			.get(0);
+
+		assertThat(legacyResource.uri()).isEqualTo("tickets://all");
+		assertThat(legacyResource.name()).isEqualTo("tickets");
+		assertThat(legacyResource.mimeType()).isEqualTo("application/json");
+		assertThat(ModernClientHandlerSupport.toModernResources(List.of(legacyResource)))
+			.containsExactly(modernResource);
+	}
+
+	@Test
+	void definitionThatTheOtherSchemaDoesNotAcceptIsLeftOut() throws Exception {
+		// The modern client reads a resource that a server sends without a name, which
+		// the legacy schema does not accept.
+		var nameless = McpJsonDefaults.getMapper()
+			.readValue("{\"uri\":\"tickets://nameless\"}", io.modelcontextprotocol.modern.McpSchema.Resource.class);
+		var named = io.modelcontextprotocol.modern.McpSchema.Resource.builder("tickets://all", "tickets").build();
+
+		assertThat(ModernClientHandlerSupport.toLegacyResources(List.of(nameless, named)))
+			.extracting(McpSchema.Resource::uri)
+			.containsExactly("tickets://all");
 	}
 
 	@Test

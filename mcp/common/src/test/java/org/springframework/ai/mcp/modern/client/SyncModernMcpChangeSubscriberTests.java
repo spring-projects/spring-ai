@@ -296,6 +296,32 @@ class SyncModernMcpChangeSubscriberTests {
 	}
 
 	@Test
+	void streamListensForToolsAndForPromptsAndResourcesIfAskedFor() {
+		this.subscriber.start();
+		await(() -> this.server.listenRequests.size() == 1);
+		assertThat(this.server.listenRequests.get(0)).contains("toolsListChanged")
+			.doesNotContain("promptsListChanged")
+			.doesNotContain("resourcesListChanged");
+		this.subscriber.stop();
+
+		SyncModernMcpChangeSubscriber everything = SyncModernMcpChangeSubscriber.builder()
+			.connection(this.connection, true, true)
+			.listener(this.listener)
+			.maxReopenDelay(REOPEN_DELAY)
+			.build();
+		try {
+			everything.start();
+			await(() -> this.server.listenRequests.size() == 2);
+			assertThat(this.server.listenRequests.get(1)).contains("toolsListChanged")
+				.contains("promptsListChanged")
+				.contains("resourcesListChanged");
+		}
+		finally {
+			everything.stop();
+		}
+	}
+
+	@Test
 	void subscriberWithoutConnectionsStartsNothing() {
 		SyncModernMcpChangeSubscriber empty = SyncModernMcpChangeSubscriber.builder().build();
 
@@ -377,6 +403,9 @@ class SyncModernMcpChangeSubscriberTests {
 
 		private final List<String> methods = new CopyOnWriteArrayList<>();
 
+		/** The listen requests received so far, as JSON. */
+		private final List<String> listenRequests = new CopyOnWriteArrayList<>();
+
 		private volatile Sinks.One<Boolean> cut = Sinks.one();
 
 		private volatile boolean down;
@@ -390,6 +419,9 @@ class SyncModernMcpChangeSubscriberTests {
 				}
 				McpTransportContext context = ctx.getOrDefault(McpTransportContext.KEY, McpTransportContext.EMPTY);
 				JsonRpc.JSONRPCRequest received = (JsonRpc.JSONRPCRequest) overTheWire(request.message());
+				if ("subscriptions/listen".equals(request.method())) {
+					this.listenRequests.add(json(request.message()));
+				}
 				Flux<JSONRPCMessage> messages = this.server.handle(context, received).flatMapMany(response -> {
 					if (response instanceof McpTransportResponse.Result result) {
 						return Flux.just(result.response());
@@ -417,7 +449,16 @@ class SyncModernMcpChangeSubscriberTests {
 
 		private JSONRPCMessage overTheWire(JSONRPCMessage message) {
 			try {
-				return JsonRpc.deserializeMessage(this.jsonMapper, this.jsonMapper.writeValueAsString(message));
+				return JsonRpc.deserializeMessage(this.jsonMapper, json(message));
+			}
+			catch (IOException ex) {
+				throw new UncheckedIOException(ex);
+			}
+		}
+
+		private String json(JSONRPCMessage message) {
+			try {
+				return this.jsonMapper.writeValueAsString(message);
 			}
 			catch (IOException ex) {
 				throw new UncheckedIOException(ex);

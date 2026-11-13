@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.server.webflux.autoconfigure;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -29,8 +30,14 @@ import io.modelcontextprotocol.modern.McpSchema.InputRequiredResult;
 import io.modelcontextprotocol.modern.McpSchema.ProgressParams;
 import io.modelcontextprotocol.modern.McpSchema.TextContent;
 import io.modelcontextprotocol.modern.client.McpMissingClientCapabilityException;
+import io.modelcontextprotocol.modern.client.SubscriptionEvent;
 import io.modelcontextprotocol.modern.server.McpSyncNotifier;
+import io.modelcontextprotocol.modern.server.McpSyncResponse;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.spec.McpSchema;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.jupiter.api.Test;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
@@ -40,6 +47,7 @@ import org.springframework.ai.mcp.annotation.McpClientCapability;
 import org.springframework.ai.mcp.annotation.McpElicitation;
 import org.springframework.ai.mcp.annotation.McpProgress;
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolListChanged;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.annotation.context.McpModernSyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
@@ -49,6 +57,9 @@ import org.springframework.ai.mcp.client.common.autoconfigure.McpClientModernAut
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
+import org.springframework.ai.mcp.modern.InMemorySyncToolRepository;
+import org.springframework.ai.mcp.modern.client.McpModernConnectionInfo;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeListener;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
@@ -72,6 +83,7 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
 /**
  * Lets {@code @McpElicitation} and {@code @McpProgress} methods of the auto-configured
@@ -105,6 +117,14 @@ class ModernMcpClientHandlersIT {
 
 	// The client application has the legacy and the modern auto-configurations and the
 	// annotation scanner, as an application on the MCP client starter does.
+	/** The connections to the HTTP servers of the tests. */
+	private static final ChannelGroup OPEN_CONNECTIONS = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+
+	private volatile ApplicationContext modernServerContext;
+
+	/** The HTTP server of the modern MCP server, which a test may stop and start. */
+	private volatile DisposableServer modernServer;
+
 	private final ApplicationContextRunner clientContextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(WebClientAutoConfiguration.class,
 				StreamableHttpWebFluxTransportAutoConfiguration.class,
@@ -221,6 +241,57 @@ class ModernMcpClientHandlersIT {
 	}
 
 	@Test
+	void listChangedMethodsHearAboutTheToolChangesOfAConnectionThatListens() {
+		withBothServers((legacyPort, modernPort) -> this.clientContextRunner
+			.withUserConfiguration(ListChangedHandlersConfiguration.class)
+			.withPropertyValues(CONNECTIONS + "modern.url=http://localhost:" + modernPort,
+					CONNECTIONS + "modern.protocol=MODERN", CONNECTIONS + "modern.listen=true")
+			.run(clientContext -> {
+				ListChangedHandlers handlers = clientContext.getBean(ListChangedHandlers.class);
+				// A change is only reported to a stream that is established.
+				await().atMost(Duration.ofSeconds(10)).until(() -> !handlers.established.isEmpty());
+
+				this.modernServerContext.getBean(InMemorySyncToolRepository.class).add(addedTool());
+
+				// One method takes the tools in the legacy schema type and one in the
+				// modern one; both get the tools as the server lists them now.
+				await().atMost(Duration.ofSeconds(10))
+					.untilAsserted(() -> assertThat(handlers.seen).containsExactlyInAnyOrder(
+							"legacy [added, connect_account, delete_ticket]",
+							"modern [added, connect_account, delete_ticket]"));
+			}));
+	}
+
+	@Test
+	void listChangedMethodsHearAboutAServerThatComesBackWithOtherTools() {
+		withBothServers((legacyPort, modernPort) -> this.clientContextRunner
+			.withUserConfiguration(ListChangedHandlersConfiguration.class)
+			.withPropertyValues(CONNECTIONS + "modern.url=http://localhost:" + modernPort,
+					CONNECTIONS + "modern.protocol=MODERN", CONNECTIONS + "modern.listen=true")
+			.run(clientContext -> {
+				ListChangedHandlers handlers = clientContext.getBean(ListChangedHandlers.class);
+				await().atMost(Duration.ofSeconds(10)).until(() -> handlers.established.size() == 1);
+				// The first stream calls no method: nothing was known before it.
+				assertThat(handlers.seen).isEmpty();
+
+				// The server goes down and gets a tool while no stream is there to
+				// report it on.
+				this.modernServer.disposeNow();
+				OPEN_CONNECTIONS.close().awaitUninterruptibly();
+				this.modernServerContext.getBean(InMemorySyncToolRepository.class).add(addedTool());
+				this.modernServer = startModernServer(this.modernServerContext, modernPort);
+
+				// The stream is established again, and the methods get the tools of
+				// the server as they are now.
+				await().atMost(Duration.ofSeconds(30))
+					.untilAsserted(() -> assertThat(handlers.seen).containsExactlyInAnyOrder(
+							"legacy [added, connect_account, delete_ticket]",
+							"modern [added, connect_account, delete_ticket]"));
+				assertThat(handlers.established).hasSize(2);
+			}));
+	}
+
+	@Test
 	void withoutAHandlerTheModernClientDeclaresNoElicitationAndTheServerRefusesTheTool() {
 		withBothServers((legacyPort, modernPort) -> this.clientContextRunner
 			.withPropertyValues(CONNECTIONS + "modern.url=http://localhost:" + modernPort,
@@ -238,14 +309,15 @@ class ModernMcpClientHandlersIT {
 		int legacyPort = TestSocketUtils.findAvailableTcpPort();
 
 		this.modernServerContextRunner.run(modernContext -> this.legacyServerContextRunner.run(legacyContext -> {
-			DisposableServer modernServer = startModernServer(modernContext, modernPort);
+			this.modernServerContext = modernContext;
+			this.modernServer = startModernServer(modernContext, modernPort);
 			DisposableServer legacyServer = startLegacyServer(legacyContext, legacyPort);
 			try {
 				clientRun.run(legacyPort, modernPort);
 			}
 			finally {
 				legacyServer.disposeNow();
-				modernServer.disposeNow();
+				this.modernServer.disposeNow();
 			}
 		}));
 	}
@@ -265,6 +337,16 @@ class ModernMcpClientHandlersIT {
 			.orElseThrow(() -> new AssertionError("no tool named " + name));
 	}
 
+	private static McpSyncTool addedTool() {
+		return McpSyncTool.of(
+				io.modelcontextprotocol.modern.McpSchema.Tool
+					.builder("added", Map.of("type", "object", "properties", Map.of()))
+					.description("Added at runtime")
+					.build(),
+				(ctx, request) -> McpSyncResponse
+					.result(CallToolResult.builder().addContent(TextContent.builder("added").build()).build()));
+	}
+
 	private static DisposableServer startModernServer(ApplicationContext serverContext, int port) {
 		RouterFunction<?> router = serverContext.getBean("webFluxModernServerRouterFunction", RouterFunction.class);
 		return startHttpServer(router, port);
@@ -279,6 +361,9 @@ class ModernMcpClientHandlersIT {
 	private static DisposableServer startHttpServer(RouterFunction<?> router, int port) {
 		return HttpServer.create()
 			.port(port)
+			// Stopping the server does not close the connections that are open, such
+			// as a listen stream. They are kept so that a test can close them.
+			.doOnConnection(connection -> OPEN_CONNECTIONS.add(connection.channel()))
 			.handle(new ReactorHttpHandlerAdapter(RouterFunctions.toHttpHandler(router)))
 			.bindNow();
 	}
@@ -411,6 +496,47 @@ class ModernMcpClientHandlersIT {
 			return (connectionInfo, toolSpec,
 					toolContext) -> toolContext != null && Boolean.TRUE.equals(toolContext.getContext().get("readOnly"))
 							? toolSpec.formElicitation(request -> ElicitResult.decline()) : toolSpec;
+		}
+
+	}
+
+	/**
+	 * List-changed methods for the modern connection, and a listener that tells when its
+	 * listen stream is established.
+	 */
+	static class ListChangedHandlers implements SyncModernMcpChangeListener {
+
+		final List<String> seen = new CopyOnWriteArrayList<>();
+
+		final List<String> established = new CopyOnWriteArrayList<>();
+
+		@McpToolListChanged(clients = "modern")
+		void legacyTools(List<McpSchema.Tool> tools) {
+			this.seen.add("legacy " + tools.stream().map(McpSchema.Tool::name).sorted().toList());
+		}
+
+		@McpToolListChanged(clients = "modern")
+		void modernTools(List<io.modelcontextprotocol.modern.McpSchema.Tool> tools) {
+			this.seen.add("modern "
+					+ tools.stream().map(io.modelcontextprotocol.modern.McpSchema.Tool::name).sorted().toList());
+		}
+
+		@Override
+		public void changed(McpModernConnectionInfo connectionInfo, SubscriptionEvent event) {
+		}
+
+		@Override
+		public void streamEstablished(McpModernConnectionInfo connectionInfo) {
+			this.established.add(connectionInfo.name());
+		}
+
+	}
+
+	static class ListChangedHandlersConfiguration {
+
+		@Bean
+		ListChangedHandlers listChangedHandlers() {
+			return new ListChangedHandlers();
 		}
 
 	}
