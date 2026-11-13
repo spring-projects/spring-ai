@@ -84,6 +84,13 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.openapitools</groupId>
+			<artifactId>jackson-databind-nullable</artifactId>
+			<version>${jackson-databind-nullable.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
 			<groupId>org.jetbrains.kotlin</groupId>
 			<artifactId>kotlin-stdlib</artifactId>
 			<optional>true</optional>
@@ -120,7 +127,7 @@
 			<version>${mockk-jvm.version}</version>
 			<scope>test</scope>
 		</dependency>
-		
+
 	</dependencies>
 
 	<build>
