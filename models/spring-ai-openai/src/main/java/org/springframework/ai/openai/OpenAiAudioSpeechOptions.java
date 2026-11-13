@@ -39,7 +39,7 @@ import org.springframework.ai.audio.tts.TextToSpeechOptions;
  */
 public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements TextToSpeechOptions {
 
-	public static final String DEFAULT_SPEECH_MODEL = "gpt-4o-mini-tts";
+	public static final String DEFAULT_SPEECH_MODEL = "gpt-realtime-2.1-mini";
 
 	public static final String DEFAULT_VOICE = Voice.ALLOY.getValue();
 

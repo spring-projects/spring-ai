@@ -142,7 +142,7 @@ class OpenAiAudioSpeechModelTests {
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
 		OpenAiAudioSpeechOptions options = model.getOptions();
 
-		assertThat(options.getModel()).isEqualTo("gpt-4o-mini-tts");
+		assertThat(options.getModel()).isEqualTo("gpt-realtime-2.1-mini");
 		assertThat(options.getVoice()).isEqualTo("alloy");
 		assertThat(options.getResponseFormat()).isEqualTo("mp3");
 		assertThat(options.getSpeed()).isEqualTo(1.0);
@@ -156,7 +156,7 @@ class OpenAiAudioSpeechModelTests {
 		assertThat(options).isInstanceOf(OpenAiAudioSpeechOptions.class);
 
 		OpenAiAudioSpeechOptions sdkOptions = (OpenAiAudioSpeechOptions) options;
-		assertThat(sdkOptions.getModel()).isEqualTo("gpt-4o-mini-tts");
+		assertThat(sdkOptions.getModel()).isEqualTo("gpt-realtime-2.1-mini");
 		assertThat(sdkOptions.getVoice()).isEqualTo("alloy");
 		assertThat(sdkOptions.getResponseFormat()).isEqualTo("mp3");
 		assertThat(sdkOptions.getSpeed()).isEqualTo(1.0);
@@ -558,7 +558,7 @@ class OpenAiAudioSpeechModelTests {
 		assertThat(model.getOptions()).isInstanceOf(OpenAiAudioSpeechOptions.class);
 
 		OpenAiAudioSpeechOptions defaults = model.getOptions();
-		assertThat(defaults.getModel()).isEqualTo("gpt-4o-mini-tts");
+		assertThat(defaults.getModel()).isEqualTo("gpt-realtime-2.1-mini");
 		assertThat(defaults.getVoice()).isEqualTo("alloy");
 		assertThat(defaults.getResponseFormat()).isEqualTo("mp3");
 		assertThat(defaults.getSpeed()).isEqualTo(1.0);
@@ -601,7 +601,7 @@ class OpenAiAudioSpeechModelTests {
 
 		assertThat(model).isNotNull();
 		OpenAiAudioSpeechOptions defaults = model.getOptions();
-		assertThat(defaults.getModel()).isEqualTo("gpt-4o-mini-tts");
+		assertThat(defaults.getModel()).isEqualTo("gpt-realtime-2.1-mini");
 	}
 
 	@Test

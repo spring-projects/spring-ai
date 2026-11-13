@@ -42,7 +42,7 @@ import org.springframework.util.CollectionUtils;
  */
 public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOptions {
 
-	public static final String DEFAULT_IMAGE_MODEL = ImageModel.GPT_IMAGE_1_MINI.toString();
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.GPT_IMAGE_2_6_SUNBURST.asString();
 
 	/**
 	 * The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1
