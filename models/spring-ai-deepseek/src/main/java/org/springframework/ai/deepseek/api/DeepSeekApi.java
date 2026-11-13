@@ -352,7 +352,18 @@ public class DeepSeekApi {
 		 * Only for compatibility with Mistral AI API.
 		 */
 		@JsonProperty("tool_call")
-		TOOL_CALL
+		TOOL_CALL,
+		/**
+		 * The request was interrupted due to insufficient resource of the inference
+		 * system.
+		 */
+		@JsonProperty("insufficient_system_resource")
+		INSUFFICIENT_SYSTEM_RESOURCE,
+		/**
+		 * The generation was interrupted.
+		 */
+		@JsonProperty("aborted")
+		ABORTED
 
 	}
 
