@@ -62,6 +62,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.util.StringUtils;
 
 /**
@@ -338,7 +339,7 @@ public class McpClientModernAutoConfiguration {
 	 * whether auto-configured or defined by the application, once all beans are created.
 	 * That is after the tool callback provider was added, so that a method that asks the
 	 * provider for its tools gets the new ones. Nothing is added if no such method names
-	 * a listening connection.
+	 * a listening connection. The bean is never lazy, as nothing would ask for it.
 	 * @param changeSubscriber the subscriber of the listen streams
 	 * @param connectionsProvider the modern connections
 	 * @param handlersRegistry the registry of the annotated client handler methods, if
@@ -348,6 +349,7 @@ public class McpClientModernAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
+	@Lazy(false)
 	SmartInitializingSingleton modernListChangedHandlersRegistrar(
 			ObjectProvider<SyncModernMcpChangeSubscriber> changeSubscriber,
 			ObjectProvider<List<SyncModernMcpConnection>> connectionsProvider,
@@ -484,7 +486,11 @@ public class McpClientModernAutoConfiguration {
 	 * {@code url} is kept, so {@code http://host/api} and {@code /mcp} give
 	 * {@code http://host/api/mcp}. The legacy WebClient transport composes the two in the
 	 * same way; the legacy JDK {@code HttpClient} transport resolves the endpoint against
-	 * the {@code url} instead, which drops such a path.
+	 * the {@code url} instead, which drops such a path. A query or a fragment of the
+	 * {@code url} stays at the end, after the endpoint. A warning is logged for a
+	 * {@code url} that already ends with the endpoint, as it does when a connection of
+	 * the legacy JDK transport that gave the whole address as its {@code url} is changed
+	 * to the modern protocol.
 	 */
 	static URI endpointUri(String connectionName, ConnectionParameters parameters) {
 		String url = parameters.url();
@@ -495,8 +501,28 @@ public class McpClientModernAutoConfiguration {
 		if (!StringUtils.hasText(endpoint)) {
 			endpoint = DEFAULT_ENDPOINT;
 		}
-		return URI
-			.create(StringUtils.trimTrailingCharacter(url, '/') + (endpoint.startsWith("/") ? "" : "/") + endpoint);
+		if (!endpoint.startsWith("/")) {
+			endpoint = "/" + endpoint;
+		}
+		// The endpoint belongs to the path, before a query or a fragment of the url.
+		int pathEnd = url.length();
+		for (char delimiter : new char[] { '?', '#' }) {
+			int index = url.indexOf(delimiter);
+			if (index >= 0 && index < pathEnd) {
+				pathEnd = index;
+			}
+		}
+		String base = StringUtils.trimTrailingCharacter(url.substring(0, pathEnd), '/');
+		String rest = url.substring(pathEnd);
+		if (rest.startsWith("?") && endpoint.contains("?")) {
+			rest = "&" + rest.substring(1);
+		}
+		if (base.endsWith(endpoint)) {
+			logger.warn("The url of the MCP connection '" + connectionName + "' already ends with the endpoint '"
+					+ endpoint + "', which is appended to it: its requests go to " + base + endpoint
+					+ ". Remove the endpoint from the url if the server listens at " + base + ".");
+		}
+		return URI.create(base + endpoint + rest);
 	}
 
 	/**

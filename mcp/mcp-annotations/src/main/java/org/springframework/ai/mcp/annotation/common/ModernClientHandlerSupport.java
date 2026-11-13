@@ -114,14 +114,15 @@ public final class ModernClientHandlerSupport {
 	}
 
 	/**
-	 * Whether a synchronous {@code @McpElicitation} method can answer the elicitation
-	 * requests of a legacy connection. A legacy client declares form elicitation only, so
-	 * the method must take a form request, of either schema.
+	 * Whether a synchronous {@code @McpElicitation} method can answer elicitation
+	 * requests of a legacy connection. Every synchronous elicitation method can: one that
+	 * takes a form request answers the form requests, and one that takes a URL request,
+	 * of either schema, answers the URL requests of a client that declares them.
 	 * @param method the annotated method
 	 * @return {@code true} if the method handles legacy requests
 	 */
 	public static boolean handlesLegacyElicitation(Method method) {
-		return elicitRequestParameterType(method) != null && claimsFormElicitation(method);
+		return elicitRequestParameterType(method) != null;
 	}
 
 	/**

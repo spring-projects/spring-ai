@@ -19,7 +19,6 @@ package org.springframework.ai.mcp.modern.client;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,6 +35,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.context.SmartLifecycle;
+import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.util.Assert;
 import org.springframework.util.backoff.BackOffExecution;
 import org.springframework.util.backoff.ExponentialBackOff;
@@ -84,7 +84,10 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 
 	private final List<ListenStream> streams;
 
-	private final List<SyncModernMcpChangeListener> listeners = new CopyOnWriteArrayList<>();
+	/**
+	 * The listeners in the order they are told, replaced as a whole when one is added.
+	 */
+	private volatile List<SyncModernMcpChangeListener> listeners = List.of();
 
 	/** The pauses before a stream is opened again: doubling, up to the maximum. */
 	private final ExponentialBackOff reopenBackOff;
@@ -109,7 +112,9 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 		this.schedulerFactory = schedulerFactory;
 		// Created last: a stream starts with the backoff set above.
 		this.streams = subscriptions.stream().map(ListenStream::new).toList();
-		this.listeners.addAll(listeners);
+		List<SyncModernMcpChangeListener> ordered = new ArrayList<>(listeners);
+		AnnotationAwareOrderComparator.sort(ordered);
+		this.listeners = List.copyOf(ordered);
 	}
 
 	/**
@@ -121,13 +126,22 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 	}
 
 	/**
-	 * Adds a listener. Add the listeners before the subscriber is started: a subscriber
-	 * that starts without listeners opens no stream.
+	 * Adds a listener. The listeners are told in their order: one that is
+	 * {@link org.springframework.core.Ordered} or annotated with
+	 * {@link org.springframework.core.annotation.Order} by that order, and the others
+	 * last, in the order they were added. A subscriber that was started without listeners
+	 * has opened no stream, and it opens the streams when the first listener is added.
 	 * @param listener the listener
 	 */
 	public void addListener(SyncModernMcpChangeListener listener) {
 		Assert.notNull(listener, "listener must not be null");
-		this.listeners.add(listener);
+		synchronized (this.lifecycleMonitor) {
+			List<SyncModernMcpChangeListener> listeners = new ArrayList<>(this.listeners);
+			listeners.add(listener);
+			AnnotationAwareOrderComparator.sort(listeners);
+			this.listeners = List.copyOf(listeners);
+			this.openStreams();
+		}
 	}
 
 	/**
@@ -148,17 +162,25 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 				return;
 			}
 			this.running = true;
-			if (this.streams.isEmpty()) {
-				return;
-			}
-			if (this.listeners.isEmpty()) {
+			if (!this.streams.isEmpty() && this.listeners.isEmpty()) {
 				logger.warn("No listen stream is opened to the MCP connections " + this.connectionNames()
-						+ ", because nothing listens for the changes of their servers");
-				return;
+						+ " yet, because nothing listens for the changes of their servers; the streams are opened "
+						+ "when a listener is added");
 			}
-			this.scheduler = this.schedulerFactory.get();
-			this.streams.forEach(ListenStream::open);
+			this.openStreams();
 		}
+	}
+
+	/**
+	 * Opens the streams of a running subscriber that has a listener, unless they are open
+	 * already. Called with the lifecycle monitor held.
+	 */
+	private void openStreams() {
+		if (!this.running || this.scheduler != null || this.streams.isEmpty() || this.listeners.isEmpty()) {
+			return;
+		}
+		this.scheduler = this.schedulerFactory.get();
+		this.streams.forEach(ListenStream::open);
 	}
 
 	/**
@@ -392,11 +414,13 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 		 * leaves the further ones to the debug level.
 		 */
 		private void log(int failures, String message, boolean recovery) {
-			if (failures > 1) {
-				logger.debug(message);
-			}
-			else if (recovery) {
+			// The end of an outage is always reported, like its first failure. Only the
+			// failures in between are not.
+			if (recovery) {
 				logger.info(message);
+			}
+			else if (failures > 1) {
+				logger.debug(message);
 			}
 			else {
 				logger.warn(message);

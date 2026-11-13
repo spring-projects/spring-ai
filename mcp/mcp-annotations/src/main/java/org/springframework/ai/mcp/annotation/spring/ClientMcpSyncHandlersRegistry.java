@@ -493,15 +493,13 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 		// One provider, so that the legacy and the modern handlers share their callbacks.
 		var elicitationProvider = SyncMcpAnnotationProviders
 			.elicitationProvider(new ArrayList<>(beansByAnnotation.get(McpElicitation.class)));
-		var elicitationSpecs = elicitationProvider.getElicitationSpecifications();
-		for (var elicitationSpec : elicitationSpecs) {
-			for (var client : elicitationSpec.clients()) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Registering elicitation handler for " + client);
-				}
-				this.elicitationHandlers.put(client, elicitationSpec.elicitationHandler());
+		// One handler for each client, which tells its form and its URL method apart.
+		elicitationProvider.getElicitationHandlersByClient().forEach((client, elicitationHandler) -> {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Registering elicitation handler for " + client);
 			}
-		}
+			this.elicitationHandlers.put(client, elicitationHandler);
+		});
 
 		var modernElicitationSpecs = elicitationProvider.getModernElicitationSpecifications();
 		for (var modernElicitationSpec : modernElicitationSpecs) {

@@ -184,15 +184,15 @@ class ModernClientHandlerSupportTests {
 	}
 
 	@Test
-	void legacyRequestsAreAnsweredByTheMethodsThatTakeAFormRequest() {
+	void legacyRequestsAreAnsweredByEverySynchronousElicitationMethod() {
 		assertThat(ModernClientHandlerSupport.handlesLegacyElicitation(method("legacyAny"))).isTrue();
 		assertThat(ModernClientHandlerSupport.handlesLegacyElicitation(method("legacyForm"))).isTrue();
 		assertThat(ModernClientHandlerSupport.handlesLegacyElicitation(method("modernAny"))).isTrue();
 		assertThat(ModernClientHandlerSupport.handlesLegacyElicitation(method("modernForm"))).isTrue();
 
-		// A legacy client declares form elicitation only.
-		assertThat(ModernClientHandlerSupport.handlesLegacyElicitation(method("legacyUrl"))).isFalse();
-		assertThat(ModernClientHandlerSupport.handlesLegacyElicitation(method("modernUrl"))).isFalse();
+		// A legacy client can declare URL elicitation, which these methods then answer.
+		assertThat(ModernClientHandlerSupport.handlesLegacyElicitation(method("legacyUrl"))).isTrue();
+		assertThat(ModernClientHandlerSupport.handlesLegacyElicitation(method("modernUrl"))).isTrue();
 	}
 
 	@Test

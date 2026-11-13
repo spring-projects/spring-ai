@@ -899,12 +899,19 @@ The legacy clients use the same property.
 |`spring.ai.mcp.client.modern.unreachable-cool-down`
 |How long a server that could not be reached is left alone before it is asked for its tools again.
 During that time its tools are left out, and the tools of the other connections stay usable.
+A server counts as not reachable when the connection fails, the request times out, the response is lost, or the server answers with a `5xx`, `408` or `429` status.
+Any other failure, such as a `401`, `403` or `404` status, is thrown to the caller, so that the application can ask the user to log in again or the configuration gets fixed.
 Zero asks the server on every request.
 It is also the longest pause before a listen stream that ended is opened again, see <<Change Notifications>>.
 |`30s`
 |===
 
 The `endpoint` of a modern connection is appended to its `url`, and a path in the `url` is kept: `http://host/api` and `/mcp` give `http://host/api/mcp`.
+A query of the `url` stays behind the endpoint: `http://host/api?tenant=a` gives `http://host/api/mcp?tenant=a`.
+
+NOTE: The legacy JDK `HttpClient` transport resolves the endpoint against the `url` instead, so there the whole address works as the `url`, for example `https://host/mcp` without an `endpoint`.
+With `protocol=MODERN` that connection would send its requests to `https://host/mcp/mcp`, and a warning is logged at startup for it.
+Set `url` to `https://host` when you change such a connection to the modern protocol.
 
 === Client Scope and Identity
 
@@ -1084,7 +1091,8 @@ NOTE: With a `SyncModernMcpChangeSubscriber` bean of the application the methods
 === Tool Names and Filtering
 
 The tools of a modern connection are named `<connection>_<tool>`, for example `tickets_search` for the `search` tool of the `tickets` connection.
-Characters that are not allowed in a tool name are removed, hyphens become underscores, and a name longer than 64 characters keeps its last 64.
+Characters that are not allowed in a tool name are removed, and hyphens become underscores.
+A name longer than 64 characters keeps its beginning, with the connection name, and ends in eight characters that are derived from the connection name and the tool name, so that two long names stay different.
 Define a `McpModernToolNamePrefixGenerator` bean to name the tools differently:
 
 [source,java]
@@ -1148,7 +1156,7 @@ To answer the URL requests of a modern connection, take the modern `ElicitUrlReq
 
 A connection can have one `@McpElicitation` method for form requests and one for URL requests, for example a method that takes `ElicitFormRequest` and a method that takes the modern `ElicitUrlRequest`.
 A method that takes the general `ElicitRequest` stands for both kinds of request, so it must be the only elicitation method of the connections that it names.
-A legacy connection is only asked form requests.
+A legacy connection declares the kinds of request that its methods take: form elicitation, and also URL elicitation when one of its methods takes URL requests only.
 
 A modern client declares the elicitation modes that it has a handler for, and it asks the server for progress only when it has a progress handler.
 A server tool that requires form elicitation is therefore refused for a connection that no `@McpElicitation` method names.

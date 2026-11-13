@@ -504,7 +504,10 @@ class SyncModernMcpToolCallbackProviderTests {
 				// a refused connection, as the synchronous client reports it
 				Exceptions.propagate(new ConnectException("Connection refused")),
 				new McpResponseLostException(McpSchema.METHOD_TOOLS_LIST, new IOException("Connection reset")),
-				httpStatus(503));
+				httpStatus(503),
+				// a failure of the server itself, and a server that asks to come back
+				// later
+				httpStatus(500), httpStatus(408), httpStatus(429));
 
 		for (RuntimeException failure : failures) {
 			McpSyncClient unreachable = McpClient.sync(failingWith(failure)).build();

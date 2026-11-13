@@ -44,6 +44,7 @@ import org.springframework.ai.mcp.ToolContextToMcpMetaConverter;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.support.ToolUtils;
+import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
 /**
@@ -91,11 +92,13 @@ import org.springframework.util.Assert;
  * @see SyncModernMcpConnection
  * @see SyncModernMcpToolCallback
  */
-public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProvider, SyncModernMcpChangeListener {
+public final class SyncModernMcpToolCallbackProvider
+		implements ToolCallbackProvider, SyncModernMcpChangeListener, Ordered {
 
 	private static final Log logger = LogFactory.getLog(SyncModernMcpToolCallbackProvider.class);
 
-	private static final Set<Integer> UNAVAILABLE_HTTP_STATUSES = Set.of(502, 503, 504);
+	/** The statuses below 500 that also say that a server cannot serve for the moment. */
+	private static final Set<Integer> UNAVAILABLE_HTTP_STATUSES = Set.of(408, 429);
 
 	private static final Duration DEFAULT_UNREACHABLE_COOL_DOWN = Duration.ofSeconds(30);
 
@@ -234,11 +237,13 @@ public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProv
 			fromServer = true;
 		}
 		// A dropped listing must not be answered from the client's copy either.
-		fromServer = this.listFromServer.remove(connection) || fromServer;
-
+		// The counter is read before the mark is taken: an invalidation in between
+		// then either sets the mark that is taken here or changes the counter, so the
+		// listing is asked from the server or is not kept.
 		AtomicLong invalidations = this.invalidations.computeIfAbsent(connection.info().name(),
 				name -> new AtomicLong());
 		long invalidationsBefore = invalidations.get();
+		fromServer = this.listFromServer.remove(connection) || fromServer;
 		ListToolsResult listing;
 		try {
 			listing = fromServer ? mcpClient.listTools().skipCache().list() : mcpClient.listTools().list();
@@ -272,6 +277,17 @@ public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProv
 	 * passed.
 	 * @param connectionName the name of the connection
 	 */
+	/**
+	 * The provider hears about a change before the other listeners of a
+	 * {@link SyncModernMcpChangeSubscriber}, so that a listener that asks it for the
+	 * tools finds the kept listing dropped.
+	 * @return the highest precedence
+	 */
+	@Override
+	public int getOrder() {
+		return Ordered.HIGHEST_PRECEDENCE;
+	}
+
 	public void invalidateToolListing(String connectionName) {
 		Assert.notNull(connectionName, "connectionName must not be null");
 		this.invalidations.computeIfAbsent(connectionName, name -> new AtomicLong()).incrementAndGet();
@@ -326,7 +342,10 @@ public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProv
 		// The synchronous client wraps checked exceptions, such as a refused connection.
 		Throwable failure = Exceptions.unwrap(ex);
 		if (failure instanceof McpHttpStatusException statusException) {
-			return UNAVAILABLE_HTTP_STATUSES.contains(statusException.statusCode());
+			// A failure of the server, or one that asks to come back later. A status
+			// that the caller must act on, such as 401, 403 or 404, is not among them.
+			int status = statusException.statusCode();
+			return status >= 500 || UNAVAILABLE_HTTP_STATUSES.contains(status);
 		}
 		return failure instanceof IOException || failure instanceof McpTimeoutException
 				|| failure instanceof McpResponseLostException;

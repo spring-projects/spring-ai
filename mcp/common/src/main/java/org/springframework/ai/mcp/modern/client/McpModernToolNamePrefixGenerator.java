@@ -44,16 +44,21 @@ public interface McpModernToolNamePrefixGenerator {
 
 	/**
 	 * Names a tool {@code <connection>_<tool>}. The name depends only on the connection
-	 * name and the tool name, so a tool keeps its name when its definition changes, and
-	 * tools of different connections cannot collide. Characters that model providers
-	 * reject are removed, and a name longer than {@link #MAX_TOOL_NAME_LENGTH} keeps its
-	 * last characters.
+	 * name and the tool name, so a tool keeps its name when its definition changes.
+	 * Characters that model providers reject are removed, and hyphens become underscores.
+	 * A name longer than {@link #MAX_TOOL_NAME_LENGTH} keeps its beginning, with the
+	 * connection name, and ends in eight characters that are derived from the connection
+	 * name and the tool name, so that two long names do not become the same one.
 	 * @return the generator
 	 */
 	static McpModernToolNamePrefixGenerator connectionPrefix() {
 		return (connectionInfo, tool) -> {
 			String name = McpToolUtils.format(connectionInfo.name()) + "_" + McpToolUtils.format(tool.name());
-			return name.length() > MAX_TOOL_NAME_LENGTH ? name.substring(name.length() - MAX_TOOL_NAME_LENGTH) : name;
+			if (name.length() <= MAX_TOOL_NAME_LENGTH) {
+				return name;
+			}
+			String suffix = "_" + String.format("%08x", (connectionInfo.name() + "\n" + tool.name()).hashCode());
+			return name.substring(0, MAX_TOOL_NAME_LENGTH - suffix.length()) + suffix;
 		};
 	}
 

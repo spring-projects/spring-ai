@@ -211,11 +211,16 @@ class ClientMcpSyncHandlersRegistryModernTests {
 			.handleModernElicitation("both", new ElicitUrlRequest("Log in", "https://example.com/login", null))
 			.content()).containsEntry("by", "url");
 
-		// A legacy client is only asked form requests, which the form method answers.
-		assertThat(registry.getCapabilities("both").elicitation()).isNotNull();
+		// A legacy client declares both kinds, and each request goes to its method.
+		assertThat(registry.getCapabilities("both").elicitation().form()).isNotNull();
+		assertThat(registry.getCapabilities("both").elicitation().url()).isNotNull();
 		assertThat(
 				registry.handleElicitation("both", new McpSchema.ElicitFormRequest("Delete?", SCHEMA, null)).content())
 			.containsEntry("by", "form");
+		assertThat(registry
+			.handleElicitation("both",
+					new McpSchema.ElicitUrlRequest("Log in", "https://example.com/login", "e-1", null))
+			.content()).containsEntry("by", "url");
 	}
 
 	@Test
@@ -231,12 +236,25 @@ class ClientMcpSyncHandlersRegistryModernTests {
 	}
 
 	@Test
-	void methodForUrlRequestsDeclaresNoElicitationForALegacyClient() {
-		ClientMcpSyncHandlersRegistry registry = postProcessed(new DefaultListableBeanFactory());
+	void methodForUrlRequestsDeclaresUrlElicitationForALegacyClientAndAnswersIt() {
+		ClientMcpSyncHandlersRegistry registry = resolved(new DefaultListableBeanFactory());
+		var urlRequest = new McpSchema.ElicitUrlRequest("Log in", "https://example.com/login", "e-1", null);
 
-		assertThat(registry.getCapabilities("modern-url").elicitation()).isNull();
-		assertThat(registry.getCapabilities("legacy-url").elicitation()).isNull();
+		for (String client : List.of("legacy-url", "modern-url")) {
+			var elicitation = registry.getCapabilities(client).elicitation();
+			assertThat(elicitation).as(client).isNotNull();
+			assertThat(elicitation.url()).as(client).isNotNull();
+			assertThat(elicitation.form()).as(client).isNull();
+			// A method that takes the legacy URL request was registered before there were
+			// modern connections, and still is. One that takes the modern URL request
+			// gets the legacy request without its elicitationId.
+			assertThat(registry.handleElicitation(client, urlRequest).action()).as(client)
+				.isEqualTo(McpSchema.ElicitResult.Action.ACCEPT);
+		}
+
+		// A method for form requests declares what it always did.
 		assertThat(registry.getCapabilities("legacy-typed").elicitation()).isNotNull();
+		assertThat(registry.getCapabilities("legacy-typed").elicitation().url()).isNull();
 	}
 
 	@Test

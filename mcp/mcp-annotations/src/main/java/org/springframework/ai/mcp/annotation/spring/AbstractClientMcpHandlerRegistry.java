@@ -158,13 +158,19 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 			capsPerClient.computeIfAbsent(samplingClient, ignored -> McpSchema.ClientCapabilities.builder()).sampling();
 		}
 		for (var elicitationClient : elicitationClientToAnnotatedBeans.keySet()) {
-			// A legacy client declares form elicitation, so a method that takes only URL
-			// requests, which serves modern connections, declares nothing.
+			// A method declares form elicitation, as it always did, unless it takes only
+			// URL requests. A client with such a method declares URL elicitation.
 			List<ElicitationHandlerMethod> handlerMethods = elicitationHandlerMethods.getOrDefault(elicitationClient,
 					List.of());
-			if (handlerMethods.isEmpty() || handlerMethods.stream().anyMatch(ElicitationHandlerMethod::form)) {
-				capsPerClient.computeIfAbsent(elicitationClient, ignored -> McpSchema.ClientCapabilities.builder())
-					.elicitation();
+			boolean form = handlerMethods.isEmpty() || handlerMethods.stream().anyMatch(ElicitationHandlerMethod::form);
+			boolean urlOnly = handlerMethods.stream().anyMatch(method -> method.url() && !method.form());
+			var capabilities = capsPerClient.computeIfAbsent(elicitationClient,
+					ignored -> McpSchema.ClientCapabilities.builder());
+			if (urlOnly) {
+				capabilities.elicitation(form, true);
+			}
+			else {
+				capabilities.elicitation();
 			}
 		}
 

@@ -17,12 +17,16 @@
 package org.springframework.ai.mcp.annotation.provider.elicitation;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import io.modelcontextprotocol.spec.McpSchema.ElicitRequest;
 import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
+import io.modelcontextprotocol.spec.McpSchema.ElicitUrlRequest;
 import io.modelcontextprotocol.util.Assert;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -138,6 +142,45 @@ public class SyncMcpElicitationProvider {
 	 * are scanned once, on first use, so that each method gets one callback, which the
 	 * legacy and the modern specifications share.
 	 */
+	/**
+	 * The handlers of the legacy clients, one for each client that a synchronous
+	 * elicitation method names. A client may have one method for form requests and one
+	 * for URL requests, and its handler then calls the one that stands for the kind of
+	 * the request. The handler of a client with a single method always calls that method,
+	 * as before there could be two.
+	 * @return the handler of each client, by the name of the client
+	 * @since 2.1.0
+	 */
+	public Map<String, Function<ElicitRequest, ElicitResult>> getElicitationHandlersByClient() {
+		Map<String, List<HandlerMethod>> methodsByClient = new LinkedHashMap<>();
+		for (HandlerMethod handlerMethod : this.handlerMethods()) {
+			if (ModernClientHandlerSupport.handlesLegacyElicitation(handlerMethod.method())) {
+				for (String client : handlerMethod.clients()) {
+					methodsByClient.computeIfAbsent(client, name -> new ArrayList<>()).add(handlerMethod);
+				}
+			}
+		}
+		Map<String, Function<ElicitRequest, ElicitResult>> handlers = new LinkedHashMap<>();
+		methodsByClient.forEach((client, methods) -> handlers.put(client, methods.size() == 1
+				? methods.get(0).callback() : request -> methodFor(methods, request).callback().apply(request)));
+		return handlers;
+	}
+
+	/**
+	 * The method that stands for the kind of the request, or the last one if none does.
+	 */
+	private static HandlerMethod methodFor(List<HandlerMethod> methods, ElicitRequest request) {
+		boolean urlRequest = request instanceof ElicitUrlRequest;
+		for (int i = methods.size() - 1; i >= 0; i--) {
+			Method method = methods.get(i).method();
+			if (urlRequest ? ModernClientHandlerSupport.claimsUrlElicitation(method)
+					: ModernClientHandlerSupport.claimsFormElicitation(method)) {
+				return methods.get(i);
+			}
+		}
+		return methods.get(methods.size() - 1);
+	}
+
 	private List<HandlerMethod> handlerMethods() {
 		List<HandlerMethod> handlerMethods = this.handlerMethods;
 		if (handlerMethods == null) {

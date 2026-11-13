@@ -55,6 +55,7 @@ import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallCustomizer;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
+import org.springframework.boot.LazyInitializationBeanFactoryPostProcessor;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -215,6 +216,28 @@ class McpClientModernAutoConfigurationTests {
 	}
 
 	@Test
+	void queryAndFragmentOfTheUrlStayBehindTheEndpoint() {
+		assertThat(endpointUri("http://host/api?tenant=a", null)).isEqualTo(URI.create("http://host/api/mcp?tenant=a"));
+		assertThat(endpointUri("http://host/?tenant=a", "custom")).isEqualTo(URI.create("http://host/custom?tenant=a"));
+		assertThat(endpointUri("http://host?tenant=a#top", null)).isEqualTo(URI.create("http://host/mcp?tenant=a#top"));
+		// An endpoint with a query of its own comes first.
+		assertThat(endpointUri("http://host/api?tenant=a", "/mcp?v=2"))
+			.isEqualTo(URI.create("http://host/api/mcp?v=2&tenant=a"));
+	}
+
+	@Test
+	void urlThatAlreadyEndsWithTheEndpointIsReported(CapturedOutput output) {
+		// The legacy JDK transport resolves the endpoint against the url, so there the
+		// whole address works as the url. Here the endpoint is appended to it.
+		assertThat(endpointUri("https://host/mcp", null)).isEqualTo(URI.create("https://host/mcp/mcp"));
+		assertThat(output).contains("The url of the MCP connection 'tickets' already ends with the endpoint '/mcp'")
+			.contains("its requests go to https://host/mcp/mcp");
+
+		assertThat(endpointUri("https://host/api", null)).isEqualTo(URI.create("https://host/api/mcp"));
+		assertThat(output).doesNotContain("its requests go to https://host/api/mcp");
+	}
+
+	@Test
 	void transportCustomizerSetsTheConnectTimeoutOfAConnection() {
 		this.contextRunner.withUserConfiguration(ConnectTimeoutConfiguration.class)
 			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
@@ -275,6 +298,34 @@ class McpClientModernAutoConfigurationTests {
 				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("listeners")
 					.asInstanceOf(InstanceOfAssertFactories.LIST)
 					.hasSize(2)
+					.satisfiesExactly(
+							listener -> assertThat(listener).isInstanceOf(SyncModernMcpToolCallbackProvider.class),
+							listener -> assertThat(listener).isInstanceOf(ModernListChangedHandlers.class));
+			});
+	}
+
+	@Test
+	void lazyInitializationKeepsTheListenersOfTheListenStreams() {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(McpClientAnnotationScannerAutoConfiguration.class))
+			.withUserConfiguration(HandlersConfiguration.class)
+			.withInitializer(
+					context -> context.addBeanFactoryPostProcessor(new LazyInitializationBeanFactoryPostProcessor()))
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL, CONNECTIONS + "tickets.listen=true")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				SyncModernMcpChangeSubscriber subscriber = context.getBean(SyncModernMcpChangeSubscriber.class);
+				// The list-changed methods are registered although nothing asks for the
+				// bean that registers them.
+				assertThat(subscriber).extracting("listeners")
+					.asInstanceOf(InstanceOfAssertFactories.LIST)
+					.singleElement()
+					.isInstanceOf(ModernListChangedHandlers.class);
+
+				// The provider is created when it is first asked for. It still hears
+				// about a change before the methods.
+				context.getBean(SyncMcpToolCallbackProvider.class);
+				assertThat(subscriber).extracting("listeners")
+					.asInstanceOf(InstanceOfAssertFactories.LIST)
 					.satisfiesExactly(
 							listener -> assertThat(listener).isInstanceOf(SyncModernMcpToolCallbackProvider.class),
 							listener -> assertThat(listener).isInstanceOf(ModernListChangedHandlers.class));

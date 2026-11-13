@@ -49,6 +49,7 @@ import io.modelcontextprotocol.modern.server.McpTransportResponse;
 import io.modelcontextprotocol.modern.server.feature.McpChangeFeed;
 import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.modern.server.feature.ToolsFeature;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -246,7 +247,7 @@ class SyncModernMcpChangeSubscriberTests {
 	}
 
 	@Test
-	void subscriberWithoutListenersOpensNoStream() throws InterruptedException {
+	void subscriberWithoutListenersOpensNoStreamUntilAListenerIsAdded() throws InterruptedException {
 		SyncModernMcpChangeSubscriber unheard = SyncModernMcpChangeSubscriber.builder()
 			.connection(this.connection)
 			.build();
@@ -256,10 +257,59 @@ class SyncModernMcpChangeSubscriberTests {
 
 			assertThat(unheard.isRunning()).isTrue();
 			assertThat(this.server.requests("subscriptions/listen")).isZero();
+
+			// A listener that is created late, such as a lazy bean, is not left unheard.
+			unheard.addListener(this.listener);
+			await(() -> this.listener.established.size() == 1);
+			assertThat(this.server.requests("subscriptions/listen")).isEqualTo(1);
+
+			// The streams are open: another listener opens no second one.
+			unheard.addListener(this.provider);
+			Thread.sleep(3 * REOPEN_DELAY.toMillis());
+			assertThat(this.server.requests("subscriptions/listen")).isEqualTo(1);
 		}
 		finally {
 			unheard.stop();
 		}
+	}
+
+	@Test
+	void listenerAddedToAStoppedSubscriberOpensNoStream() throws InterruptedException {
+		SyncModernMcpChangeSubscriber stopped = SyncModernMcpChangeSubscriber.builder()
+			.connection(this.connection)
+			.build();
+
+		stopped.addListener(this.listener);
+		Thread.sleep(3 * REOPEN_DELAY.toMillis());
+
+		assertThat(stopped.isRunning()).isFalse();
+		assertThat(this.server.requests("subscriptions/listen")).isZero();
+	}
+
+	@Test
+	void toolCallbackProviderIsToldBeforeTheOtherListenersWheneverItIsAdded() {
+		SyncModernMcpChangeListener other = (connectionInfo, event) -> {
+		};
+		SyncModernMcpChangeSubscriber providerLast = SyncModernMcpChangeSubscriber.builder()
+			.connection(this.connection)
+			.listener(this.listener)
+			.listener(other)
+			.listener(this.provider)
+			.build();
+		// The others keep the order they were added in.
+		assertThat(providerLast).extracting("listeners")
+			.asInstanceOf(InstanceOfAssertFactories.LIST)
+			.containsExactly(this.provider, this.listener, other);
+
+		SyncModernMcpChangeSubscriber providerLate = SyncModernMcpChangeSubscriber.builder()
+			.connection(this.connection)
+			.listener(this.listener)
+			.build();
+		providerLate.addListener(other);
+		providerLate.addListener(this.provider);
+		assertThat(providerLate).extracting("listeners")
+			.asInstanceOf(InstanceOfAssertFactories.LIST)
+			.containsExactly(this.provider, this.listener, other);
 	}
 
 	@Test
