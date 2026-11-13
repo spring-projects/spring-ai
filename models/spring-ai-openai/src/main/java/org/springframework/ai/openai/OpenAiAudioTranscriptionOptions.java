@@ -44,9 +44,9 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
 public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions implements AudioTranscriptionOptions {
 
 	/**
-	 * Default transcription model (Whisper 1).
+	 * Default transcription model.
 	 */
-	public static final String DEFAULT_TRANSCRIPTION_MODEL = AudioModel.WHISPER_1.asString();
+	public static final String DEFAULT_TRANSCRIPTION_MODEL = AudioModel.GPT_TRANSCRIBE.asString();
 
 	/**
 	 * Default response format.

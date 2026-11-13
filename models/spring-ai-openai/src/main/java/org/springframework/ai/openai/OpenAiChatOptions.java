@@ -58,7 +58,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 	private static final Log logger = LogFactory.getLog(OpenAiChatOptions.class);
 
-	public static final String DEFAULT_CHAT_MODEL = ChatModel.GPT_5_MINI.asString();
+	public static final String DEFAULT_CHAT_MODEL = ChatModel.GPT_6_1_TERRA.asString();
 
 	/**
 	 * The deployment URL to connect to OpenAI.

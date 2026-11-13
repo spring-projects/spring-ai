@@ -75,7 +75,7 @@ The `spring.ai.openai.responses` prefix configures the model.
 |====
 | Property | Description | Default
 
-| spring.ai.openai.responses.model | The model to use. | gpt-5-mini
+| spring.ai.openai.responses.model | The model to use. | gpt-6.1-terra
 | spring.ai.openai.responses.max-output-tokens | Upper bound on generated tokens, reasoning tokens included. | -
 | spring.ai.openai.responses.temperature | Sampling temperature. | -
 | spring.ai.openai.responses.top-p | Nucleus sampling. | -

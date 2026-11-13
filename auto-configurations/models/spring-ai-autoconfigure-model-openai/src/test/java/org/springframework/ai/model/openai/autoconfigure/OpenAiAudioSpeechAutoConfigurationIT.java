@@ -63,7 +63,7 @@ class OpenAiAudioSpeechAutoConfigurationIT {
 		this.contextRunner.run(context -> {
 			OpenAiAudioSpeechModel model = context.getBean(OpenAiAudioSpeechModel.class);
 			OpenAiAudioSpeechOptions options = (OpenAiAudioSpeechOptions) model.getOptions();
-			assertThat(options.getModel()).isEqualTo("gpt-4o-mini-tts");
+			assertThat(options.getModel()).isEqualTo("gpt-realtime-2.1-mini");
 			assertThat(options.getVoice()).isEqualTo("alloy");
 			assertThat(options.getResponseFormat()).isEqualTo("mp3");
 			assertThat(options.getSpeed()).isEqualTo(1.0);
