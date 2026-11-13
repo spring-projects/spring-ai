@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.modern.McpSchema.Implementation;
+import io.modelcontextprotocol.modern.client.McpAsyncClient;
 import io.modelcontextprotocol.modern.client.McpClient;
 import io.modelcontextprotocol.modern.client.McpSyncClient;
 import io.modelcontextprotocol.modern.client.transport.HttpClientMcpTransport;
@@ -43,12 +44,19 @@ import org.springframework.ai.mcp.annotation.McpPromptListChanged;
 import org.springframework.ai.mcp.annotation.McpResourceListChanged;
 import org.springframework.ai.mcp.annotation.McpSampling;
 import org.springframework.ai.mcp.annotation.McpToolListChanged;
+import org.springframework.ai.mcp.annotation.spring.ClientMcpAsyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientModernProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties.ConnectionParameters;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpChangeListener;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpChangeSubscriber;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpClientScope;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpConnection;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpToolCallCustomizer;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpTransportContextProvider;
 import org.springframework.ai.mcp.modern.client.McpModernConnectionInfo;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeListener;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeSubscriber;
@@ -63,7 +71,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.util.StringUtils;
 
@@ -81,12 +88,15 @@ import org.springframework.util.StringUtils;
  * <li>a {@link NamedModernClientMcpTransport} for each modern connection under
  * {@code spring.ai.mcp.client.streamable-http.connections}, on the JDK
  * {@code HttpClient};</li>
- * <li>a {@link SyncModernMcpConnection} for each transport, which creates a client for
- * each request, or holds one shared client if the connection sets
+ * <li>a {@link SyncModernMcpConnection} for each transport, or an
+ * {@link AsyncModernMcpConnection} with {@code spring.ai.mcp.client.type=ASYNC}, which
+ * creates a client for each request, or holds one shared client if the connection sets
  * {@code client-scope=SHARED}.</li>
- * <li>a {@link SyncModernMcpChangeSubscriber}, which keeps a listen stream open to the
- * server of each connection that sets {@code listen=true}, so that a kept tool listing is
- * dropped as soon as the server reports that its tools changed.</li>
+ * <li>a {@link SyncModernMcpChangeSubscriber}, or an
+ * {@link AsyncModernMcpChangeSubscriber} with {@code spring.ai.mcp.client.type=ASYNC},
+ * which keeps a listen stream open to the server of each connection that sets
+ * {@code listen=true}, so that a kept tool listing is dropped as soon as the server
+ * reports that its tools changed.</li>
  * </ul>
  * A tool listing is kept for as long as the server allows when the server marks it as
  * {@code public}. A listing the server marks as {@code private} is kept only by a client
@@ -95,13 +105,18 @@ import org.springframework.util.StringUtils;
  * client that the scope bean of a connection with {@code client-scope=CUSTOM} keeps.
  * <p>
  * {@link McpToolCallbackAutoConfiguration} adds the tools of these connections to the
- * {@code SyncMcpToolCallbackProvider} bean, next to the tools of the legacy clients, so
- * the application keeps injecting a single {@code ToolCallbackProvider}.
+ * {@code SyncMcpToolCallbackProvider} or {@code AsyncMcpToolCallbackProvider} bean, next
+ * to the tools of the legacy clients, so the application keeps injecting a single
+ * {@code ToolCallbackProvider}.
  * <p>
  * Modern clients are created without contacting the server, so nothing is sent at startup
- * and {@code spring.ai.mcp.client.initialized} does not apply to them. Only the
- * synchronous client type is supported: with {@code spring.ai.mcp.client.type=ASYNC} a
- * modern connection fails the startup.
+ * and {@code spring.ai.mcp.client.initialized} does not apply to them.
+ * <p>
+ * With the asynchronous client type the tools are listed and called through the
+ * asynchronous client of the SDK, which holds no caller: an
+ * {@link AsyncModernMcpTransportContextProvider} bean supplies the caller of each
+ * request. The reactive methods serve the asynchronous connections: those that return a
+ * {@code Mono}.
  * <p>
  * The {@code @McpElicitation} and {@code @McpProgress} methods that name a modern
  * connection in their {@code clients} attribute answer the elicitation requests and
@@ -134,6 +149,9 @@ import org.springframework.util.StringUtils;
  * <li>{@code SyncModernMcpToolCallCustomizer} beans customize each tool call, with the
  * {@code ToolContext} of that call. They run after the annotated handlers are set for the
  * call, so they can replace them.</li>
+ * <li>With the asynchronous client type the counterparts apply:
+ * {@code McpClientCustomizer<McpClient.AsyncBuilder>}, {@link AsyncModernMcpClientScope}
+ * and {@code AsyncModernMcpToolCallCustomizer} beans.</li>
  * </ul>
  *
  * @author Christian Tzolov
@@ -180,8 +198,6 @@ public class McpClientModernAutoConfiguration {
 	 * @return the named transports
 	 */
 	@Bean
-	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
-			matchIfMissing = true)
 	public List<NamedModernClientMcpTransport> modernStreamableHttpTransports(
 			McpStreamableHttpClientProperties streamableProperties, ObjectProvider<JsonMapper> jsonMapperProvider,
 			ObjectProvider<McpHttpRequestCustomizer> requestCustomizers,
@@ -294,6 +310,95 @@ public class McpClientModernAutoConfiguration {
 	}
 
 	/**
+	 * Creates an asynchronous connection for each named transport, with the {@code ASYNC}
+	 * client type. All clients of a connection share its transport. The client scope is
+	 * read from the configured connection of the same name, so a transport contributed by
+	 * the application without such a connection gets a client for each request.
+	 * <p>
+	 * An asynchronous client holds no caller. The caller of a request is supplied by the
+	 * {@link AsyncModernMcpTransportContextProvider} bean, if there is one, on the thread
+	 * that resolves the tools.
+	 * @param transportsProvider the named transports, auto-configured or contributed by
+	 * the application
+	 * @param streamableProperties the configured connections
+	 * @param commonProperties the common MCP client properties
+	 * @param modernProperties the modern MCP client properties
+	 * @param clientCustomizers the customizers of the client builders
+	 * @param clientScopeProvider the bean that selects the clients of the connections
+	 * with the {@code CUSTOM} client scope, which must be defined if there is such a
+	 * connection
+	 * @param transportContextProvider the bean that supplies the caller of a request
+	 * @param handlersRegistry the registry of the annotated client handler methods, if
+	 * the annotation scanner is enabled
+	 * @return the connections
+	 */
+	@Bean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public List<AsyncModernMcpConnection> modernMcpAsyncConnections(
+			ObjectProvider<List<NamedModernClientMcpTransport>> transportsProvider,
+			McpStreamableHttpClientProperties streamableProperties, McpClientCommonProperties commonProperties,
+			McpClientModernProperties modernProperties,
+			ObjectProvider<McpClientCustomizer<McpClient.AsyncBuilder>> clientCustomizers,
+			ObjectProvider<AsyncModernMcpClientScope> clientScopeProvider,
+			ObjectProvider<AsyncModernMcpTransportContextProvider> transportContextProvider,
+			ObjectProvider<ClientMcpAsyncHandlersRegistry> handlersRegistry) {
+
+		ClientMcpAsyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
+
+		Implementation clientInfo = Implementation.builder(commonProperties.getName(), commonProperties.getVersion())
+			.build();
+
+		// Resolved once: with a client for each request the customizers run for each
+		// request.
+		List<McpClientCustomizer<McpClient.AsyncBuilder>> customizers = clientCustomizers.orderedStream().toList();
+		AsyncModernMcpTransportContextProvider callerProvider = transportContextProvider.getIfAvailable();
+
+		List<AsyncModernMcpConnection> connections = new ArrayList<>();
+
+		for (NamedModernClientMcpTransport namedTransport : transportsProvider.stream()
+			.flatMap(List::stream)
+			.toList()) {
+
+			McpModernConnectionInfo connectionInfo = new McpModernConnectionInfo(namedTransport.name(), clientInfo);
+			ConnectionParameters parameters = streamableProperties.getConnections().get(namedTransport.name());
+
+			if (handlers != null) {
+				warnAboutUnsupportedAsyncHandlers(namedTransport.name(), handlers,
+						parameters != null && parameters.isListening());
+			}
+
+			Supplier<McpAsyncClient> clientFactory = () -> buildAsyncClient(namedTransport, clientInfo,
+					commonProperties, modernProperties, handlers, customizers);
+			AsyncModernMcpConnection connection;
+			if (parameters != null && parameters.isSharedClient()) {
+				if (callerProvider != null) {
+					logger.warn("The MCP connection '" + namedTransport.name() + "' sets client-scope=SHARED, and an "
+							+ "AsyncModernMcpTransportContextProvider bean supplies the caller of each request. A "
+							+ "shared client keeps a private tool listing for all its requests, whoever the caller "
+							+ "is. Use client-scope=PER_REQUEST or CUSTOM if the server answers callers differently.");
+				}
+				connection = AsyncModernMcpConnection.shared(connectionInfo, clientFactory.get());
+			}
+			else if (parameters != null && parameters.isCustomClientScope()) {
+				// Asked for only by a connection that needs it.
+				AsyncModernMcpClientScope clientScope = clientScopeProvider.getIfAvailable();
+				if (clientScope == null) {
+					throw new IllegalStateException("The MCP connection '" + namedTransport.name()
+							+ "' sets client-scope=CUSTOM, but no AsyncModernMcpClientScope bean is defined to "
+							+ "select its clients.");
+				}
+				connection = AsyncModernMcpConnection.scoped(connectionInfo, clientFactory, clientScope);
+			}
+			else {
+				connection = AsyncModernMcpConnection.perRequest(connectionInfo, clientFactory);
+			}
+			connections.add(callerProvider != null ? connection.withTransportContext(callerProvider) : connection);
+		}
+
+		return connections;
+	}
+
+	/**
 	 * Creates the subscriber that keeps a listen stream open to the server of each modern
 	 * connection that sets {@code listen=true}. It opens the streams when the application
 	 * has started, without waiting for the servers. A stream that ended is opened again
@@ -339,17 +444,71 @@ public class McpClientModernAutoConfiguration {
 			}
 		});
 
-		// Only a connection that uses the modern protocol has a listen stream.
+		warnAboutListeningLegacyConnections(streamableProperties);
+
+		changeListeners.orderedStream().forEach(subscriber::listener);
+
+		return subscriber.build();
+	}
+
+	/**
+	 * Creates the subscriber of the listen streams for the asynchronous client type, the
+	 * counterpart of {@link #modernMcpChangeSubscriber}. It tells
+	 * {@link AsyncModernMcpChangeListener} beans what the servers report.
+	 * @param connectionsProvider the modern connections
+	 * @param streamableProperties the configured connections
+	 * @param modernProperties the modern MCP client properties
+	 * @param changeListeners the listeners of the application, which hear about what the
+	 * servers report next to the tool callback provider
+	 * @param handlersRegistry the registry of the annotated client handler methods, if
+	 * the annotation scanner is enabled; a stream also listens for the changes of the
+	 * prompts and resources if a reactive list-changed method wants to hear about them
+	 * @return the subscriber, which listens to no server if no connection asks for it
+	 */
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public AsyncModernMcpChangeSubscriber modernMcpAsyncChangeSubscriber(
+			ObjectProvider<List<AsyncModernMcpConnection>> connectionsProvider,
+			McpStreamableHttpClientProperties streamableProperties, McpClientModernProperties modernProperties,
+			ObjectProvider<AsyncModernMcpChangeListener> changeListeners,
+			ObjectProvider<ClientMcpAsyncHandlersRegistry> handlersRegistry) {
+
+		ClientMcpAsyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
+
+		Duration coolDown = modernProperties.getUnreachableCoolDown();
+		AsyncModernMcpChangeSubscriber.Builder subscriber = AsyncModernMcpChangeSubscriber.builder()
+			.maxReopenDelay(coolDown.compareTo(MIN_LISTEN_REOPEN_DELAY) < 0 ? MIN_LISTEN_REOPEN_DELAY : coolDown);
+
+		connectionsProvider.stream().flatMap(List::stream).forEach(connection -> {
+			String name = connection.info().name();
+			ConnectionParameters parameters = streamableProperties.getConnections().get(name);
+			if (parameters != null && parameters.isListening()) {
+				// The tools are always listened for. The prompts and the resources only
+				// if an annotated method wants to hear about them.
+				subscriber.connection(connection,
+						handlers != null && handlers.handlesModernListChanged(name, McpPromptListChanged.class),
+						handlers != null && handlers.handlesModernListChanged(name, McpResourceListChanged.class));
+			}
+		});
+
+		warnAboutListeningLegacyConnections(streamableProperties);
+
+		changeListeners.orderedStream().forEach(subscriber::listener);
+
+		return subscriber.build();
+	}
+
+	/**
+	 * Only a connection that uses the modern protocol has a listen stream.
+	 */
+	private static void warnAboutListeningLegacyConnections(McpStreamableHttpClientProperties streamableProperties) {
 		streamableProperties.getConnections().forEach((name, parameters) -> {
 			if (parameters.isListening() && !parameters.isModern()) {
 				logger.warn("The MCP connection '" + name + "' sets listen=true but does not use the MODERN "
 						+ "protocol; no listen stream is opened for it.");
 			}
 		});
-
-		changeListeners.orderedStream().forEach(subscriber::listener);
-
-		return subscriber.build();
 	}
 
 	/**
@@ -392,6 +551,41 @@ public class McpClientModernAutoConfiguration {
 		};
 	}
 
+	/**
+	 * Has the reactive list-changed methods called for the changes that the servers of
+	 * the listening connections report, with the asynchronous client type. It is the
+	 * counterpart of {@link #modernListChangedHandlersRegistrar}.
+	 * @param changeSubscriber the subscriber of the listen streams
+	 * @param connectionsProvider the modern connections
+	 * @param handlersRegistry the registry of the annotated client handler methods, if
+	 * the annotation scanner is enabled
+	 * @return the callback that adds the listener
+	 */
+	@Bean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	@Lazy(false)
+	SmartInitializingSingleton modernAsyncListChangedHandlersRegistrar(
+			ObjectProvider<AsyncModernMcpChangeSubscriber> changeSubscriber,
+			ObjectProvider<List<AsyncModernMcpConnection>> connectionsProvider,
+			ObjectProvider<ClientMcpAsyncHandlersRegistry> handlersRegistry) {
+		return () -> {
+			AsyncModernMcpChangeSubscriber subscriber = changeSubscriber.getIfAvailable();
+			ClientMcpAsyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
+			if (subscriber == null || handlers == null) {
+				return;
+			}
+			List<String> listening = subscriber.connectionNames();
+			AsyncModernListChangedHandlers listChangedHandlers = AsyncModernListChangedHandlers
+				.forConnections(connectionsProvider.stream()
+					.flatMap(List::stream)
+					.filter(connection -> listening.contains(connection.info().name()))
+					.toList(), handlers);
+			if (listChangedHandlers != null) {
+				subscriber.addListener(listChangedHandlers);
+			}
+		};
+	}
+
 	private static McpSyncClient buildClient(NamedModernClientMcpTransport namedTransport, Implementation clientInfo,
 			McpClientCommonProperties commonProperties, McpClientModernProperties modernProperties,
 			@Nullable ClientMcpSyncHandlersRegistry handlers,
@@ -412,6 +606,111 @@ public class McpClientModernAutoConfiguration {
 		clientCustomizers.forEach(customizer -> customizer.customize(namedTransport.name(), clientBuilder));
 
 		return clientBuilder.build();
+	}
+
+	private static McpAsyncClient buildAsyncClient(NamedModernClientMcpTransport namedTransport,
+			Implementation clientInfo, McpClientCommonProperties commonProperties,
+			McpClientModernProperties modernProperties, @Nullable ClientMcpAsyncHandlersRegistry handlers,
+			List<McpClientCustomizer<McpClient.AsyncBuilder>> clientCustomizers) {
+
+		McpClient.AsyncBuilder clientBuilder = McpClient.async(namedTransport.transport())
+			.clientInfo(clientInfo)
+			.roundTimeout(commonProperties.getRequestTimeout());
+
+		if (modernProperties.getCallTimeout() != null) {
+			clientBuilder.callTimeout(modernProperties.getCallTimeout());
+		}
+
+		// A handler is only set when a method exists for it: a client declares the
+		// elicitation modes it has a handler for.
+		if (handlers != null) {
+			String connectionName = namedTransport.name();
+			if (handlers.handlesModernFormElicitation(connectionName)) {
+				clientBuilder.formElicitation(request -> handlers.handleModernElicitation(connectionName, request));
+			}
+			if (handlers.handlesModernUrlElicitation(connectionName)) {
+				clientBuilder.urlElicitation(request -> handlers.handleModernElicitation(connectionName, request));
+			}
+			if (handlers.handlesModernProgress(connectionName)) {
+				clientBuilder.progress(progress -> handlers.handleModernProgress(connectionName, progress));
+			}
+		}
+
+		clientCustomizers.forEach(customizer -> customizer.customize(namedTransport.name(), clientBuilder));
+
+		return clientBuilder.build();
+	}
+
+	/**
+	 * Sets the reactive {@code @McpElicitation} and {@code @McpProgress} methods that
+	 * name a connection as the handlers of each of its tool calls, in place of those set
+	 * on the client. A handler set for a call knows the {@code ToolContext} of that call,
+	 * which the methods receive if they declare a {@code ToolContext} parameter.
+	 * @param handlers the registry of the annotated client handler methods
+	 * @return the customizer of the tool calls of the asynchronous modern connections
+	 */
+	static AsyncModernMcpToolCallCustomizer annotatedHandlersToolCallCustomizer(
+			ClientMcpAsyncHandlersRegistry handlers) {
+		return (connectionInfo, toolSpec, toolContext) -> {
+			String connectionName = connectionInfo.name();
+			McpAsyncClient.ToolSpec callSpec = toolSpec;
+			if (handlers.handlesModernFormElicitation(connectionName)) {
+				callSpec = callSpec
+					.formElicitation(request -> handlers.handleModernElicitation(connectionName, request, toolContext));
+			}
+			if (handlers.handlesModernUrlElicitation(connectionName)) {
+				callSpec = callSpec
+					.urlElicitation(request -> handlers.handleModernElicitation(connectionName, request, toolContext));
+			}
+			if (handlers.handlesModernProgress(connectionName)) {
+				callSpec = callSpec
+					.progress(progress -> handlers.handleModernProgress(connectionName, progress, toolContext));
+			}
+			return callSpec;
+		};
+	}
+
+	/**
+	 * Logs a warning for the annotated handler methods that name an asynchronous modern
+	 * connection but are not called for it.
+	 */
+	private static void warnAboutUnsupportedAsyncHandlers(String connectionName,
+			ClientMcpAsyncHandlersRegistry handlers, boolean listening) {
+		for (Class<? extends Annotation> annotationType : UNSUPPORTED_HANDLER_ANNOTATIONS) {
+			if (handlers.hasHandlers(connectionName, annotationType)) {
+				logger.warn("The @" + annotationType.getSimpleName() + " methods for the MCP connection '"
+						+ connectionName + "' are not called: the connection uses the MODERN protocol, which has "
+						+ "neither sampling nor logging.");
+			}
+		}
+		for (Class<? extends Annotation> annotationType : LIST_CHANGED_HANDLER_ANNOTATIONS) {
+			if (!handlers.hasHandlers(connectionName, annotationType)) {
+				continue;
+			}
+			if (!listening) {
+				logger.warn("The @" + annotationType.getSimpleName() + " methods for the MCP connection '"
+						+ connectionName + "' are not called: the connection uses the MODERN protocol and does not "
+						+ "set listen=true, so it does not hear about the changes of its server.");
+			}
+			else if (!handlers.handlesModernListChanged(connectionName, annotationType)) {
+				logger.warn("The @" + annotationType.getSimpleName() + " methods for the MCP connection '"
+						+ connectionName + "' are not called: the connection uses the MODERN protocol with the "
+						+ "ASYNC client type, which needs a method that returns a Mono<Void>.");
+			}
+		}
+		if (handlers.hasHandlers(connectionName, McpElicitation.class)
+				&& !handlers.handlesModernFormElicitation(connectionName)
+				&& !handlers.handlesModernUrlElicitation(connectionName)) {
+			logger.warn("The @McpElicitation methods for the MCP connection '" + connectionName
+					+ "' are not called: the connection uses the MODERN protocol with the ASYNC client type, which "
+					+ "needs a method that returns a Mono and takes a form request or the modern ElicitUrlRequest.");
+		}
+		if (handlers.hasHandlers(connectionName, McpProgress.class)
+				&& !handlers.handlesModernProgress(connectionName)) {
+			logger.warn("The @McpProgress methods for the MCP connection '" + connectionName
+					+ "' are not called: the connection uses the MODERN protocol with the ASYNC client type, which "
+					+ "needs a method that returns a Mono<Void>.");
+		}
 	}
 
 	/**
@@ -543,32 +842,6 @@ public class McpClientModernAutoConfiguration {
 					+ ". Remove the endpoint from the url if the server listens at " + base + ".");
 		}
 		return URI.create(base + endpoint + rest);
-	}
-
-	/**
-	 * Fails the startup when a modern connection is configured together with the
-	 * asynchronous client type, which the modern protocol does not support yet. Without
-	 * this check such a connection would be silently ignored.
-	 */
-	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	static class AsyncClientTypeGuardConfiguration {
-
-		AsyncClientTypeGuardConfiguration(McpStreamableHttpClientProperties streamableProperties) {
-			List<String> modernConnections = streamableProperties.getConnections()
-				.entrySet()
-				.stream()
-				.filter(connection -> connection.getValue().isModern())
-				.map(Map.Entry::getKey)
-				.sorted()
-				.toList();
-			if (!modernConnections.isEmpty()) {
-				throw new IllegalStateException(
-						"The MCP connections " + modernConnections + " use the MODERN protocol, which supports only "
-								+ McpClientCommonProperties.CONFIG_PREFIX + ".type=SYNC");
-			}
-		}
-
 	}
 
 }

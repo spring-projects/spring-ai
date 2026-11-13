@@ -16,12 +16,10 @@
 
 package org.springframework.ai.mcp.annotation.spring;
 
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -158,59 +156,6 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 		}
 		throw new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.METHOD_NOT_FOUND,
 				"Elicitation not supported", Map.of("reason", "Client does not have elicitation capability")));
-	}
-
-	/**
-	 * Whether a handler answers the form elicitation requests of the given client when it
-	 * speaks the 2026-07-28 ("modern") MCP revision. The answer is available before the
-	 * handlers are resolved, so it can be used while the clients are created.
-	 * @param name the name of the client, which is the name of its connection
-	 * @return {@code true} if a modern client of that name should declare form
-	 * elicitation
-	 * @since 2.1.0
-	 */
-	public boolean handlesModernFormElicitation(String name) {
-		return this.modernFormElicitationClients.contains(name);
-	}
-
-	/**
-	 * Whether a handler answers the URL elicitation requests of the given client when it
-	 * speaks the modern revision. Only a handler method that takes the modern
-	 * {@code ElicitUrlRequest}, or the modern {@code ElicitRequest}, does.
-	 * @param name the name of the client, which is the name of its connection
-	 * @return {@code true} if a modern client of that name should declare URL elicitation
-	 * @since 2.1.0
-	 */
-	public boolean handlesModernUrlElicitation(String name) {
-		return this.modernUrlElicitationClients.contains(name);
-	}
-
-	/**
-	 * Whether a handler receives the progress of the given client when it speaks the
-	 * modern revision: a synchronous {@code @McpProgress} method names the client. The
-	 * answer is available before the handlers are resolved.
-	 * @param name the name of the client, which is the name of its connection
-	 * @return {@code true} if a modern client of that name should ask for progress
-	 * @since 2.1.0
-	 */
-	public boolean handlesModernProgress(String name) {
-		return this.modernProgressClients.contains(name);
-	}
-
-	/**
-	 * Whether a handler hears about the list changes of the given kind for the given
-	 * client when it speaks the modern revision: a synchronous method with that
-	 * annotation names the client. The answer is available before the handlers are
-	 * resolved.
-	 * @param name the name of the client, which is the name of its connection
-	 * @param annotationType {@code McpToolListChanged}, {@code McpPromptListChanged} or
-	 * {@code McpResourceListChanged}
-	 * @return {@code true} if a modern client of that name has a method to call for such
-	 * a change
-	 * @since 2.1.0
-	 */
-	public boolean handlesModernListChanged(String name, Class<? extends Annotation> annotationType) {
-		return this.modernListChangedClients.getOrDefault(annotationType, Set.of()).contains(name);
 	}
 
 	/**

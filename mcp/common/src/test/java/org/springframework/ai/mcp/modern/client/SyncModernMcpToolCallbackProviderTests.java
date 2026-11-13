@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonDefaults;
@@ -60,6 +61,8 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.mcp.modern.InMemorySyncToolRepository;
@@ -547,7 +550,7 @@ class SyncModernMcpToolCallbackProviderTests {
 
 		// The server allows the listing to be kept, but each request has a new client.
 		assertThat(privateWithTtl.methods()).hasSize(2);
-		assertThat(perRequest).extracting("privateListingHints")
+		assertThat(perRequest).extracting("listings.privateListingHints")
 			.asInstanceOf(InstanceOfAssertFactories.collection(String.class))
 			.containsExactly("tickets");
 	}
@@ -575,10 +578,76 @@ class SyncModernMcpToolCallbackProviderTests {
 
 			provider.getToolCallbacks();
 
-			assertThat(provider).extracting("privateListingHints")
+			assertThat(provider).extracting("listings.privateListingHints")
 				.asInstanceOf(InstanceOfAssertFactories.collection(String.class))
 				.isEmpty();
 		}
+	}
+
+	@Test
+	void toolsCannotBeListedOnAThreadThatMayNotBlock() {
+		InMemoryTransport transport = transport(echoTool());
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(SyncModernMcpConnection.perRequest(info("tickets"), () -> McpClient.sync(transport).build()))
+			.build();
+
+		Object outcome = Mono.fromCallable(() -> {
+			try {
+				return provider.getToolCallbacks();
+			}
+			catch (RuntimeException ex) {
+				return ex;
+			}
+		}).subscribeOn(Schedulers.parallel()).block();
+
+		// The message says what to do, which that of Reactor does not.
+		assertThat(outcome).isInstanceOf(IllegalStateException.class);
+		assertThat(((IllegalStateException) outcome).getMessage()).contains("MCP connection 'tickets'")
+			.contains("non-blocking thread")
+			.contains("boundedElastic");
+		assertThat(transport.methods()).isEmpty();
+	}
+
+	@Test
+	void listingThatASharedClientKeepsIsServedOnAThreadThatMayNotBlock() {
+		InMemoryTransport transport = transport(60_000, CacheScope.PRIVATE, echoTool());
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(SyncModernMcpConnection.shared(info("tickets"), McpClient.sync(transport).build()))
+			.build();
+		provider.getToolCallbacks();
+
+		Object outcome = onANonBlockingThread(provider::getToolCallbacks);
+
+		// The client answers from the listing it keeps, without a request.
+		assertThat(outcome).isInstanceOf(ToolCallback[].class);
+		assertThat(transport.methods()).containsExactly(McpSchema.METHOD_TOOLS_LIST);
+	}
+
+	@Test
+	void sharedClientWithoutAKeptListingCannotListOnAThreadThatMayNotBlock() {
+		InMemoryTransport transport = transport(echoTool());
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(SyncModernMcpConnection.shared(info("tickets"), McpClient.sync(transport).build()))
+			.build();
+
+		Object outcome = onANonBlockingThread(provider::getToolCallbacks);
+
+		// Reactor's refusal, said in a way that tells what to do.
+		assertThat(outcome).isInstanceOf(IllegalStateException.class);
+		assertThat(((IllegalStateException) outcome).getMessage()).contains("MCP connection 'tickets'")
+			.contains("non-blocking thread")
+			.contains("boundedElastic");
+	}
+
+	private static Object onANonBlockingThread(Supplier<Object> call) {
+		return Mono.fromCallable(() -> {
+			try {
+				return call.get();
+			}
+			catch (RuntimeException ex) {
+				return ex;
+			}
+		}).subscribeOn(Schedulers.parallel()).block();
 	}
 
 	@Test

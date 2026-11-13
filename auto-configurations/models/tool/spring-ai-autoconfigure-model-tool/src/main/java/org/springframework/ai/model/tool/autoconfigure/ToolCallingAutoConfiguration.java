@@ -18,6 +18,7 @@ package org.springframework.ai.model.tool.autoconfigure;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
@@ -70,6 +71,15 @@ public class ToolCallingAutoConfiguration {
 	private static final int UNLIMITED = -1;
 
 	/**
+	 * The MCP tool callback providers, whose tools are not resolved at startup.
+	 */
+	private static final Set<String> MCP_TOOL_CALLBACK_PROVIDERS = Set.of(
+			"org.springframework.ai.mcp.SyncMcpToolCallbackProvider",
+			"org.springframework.ai.mcp.AsyncMcpToolCallbackProvider",
+			"org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider",
+			"org.springframework.ai.mcp.modern.client.AsyncModernMcpToolCallbackProvider");
+
+	/**
 	 * The default {@link ToolCallbackResolver} resolves tools by name for methods,
 	 * functions, and {@link ToolCallbackProvider} beans.
 	 * <p>
@@ -105,11 +115,7 @@ public class ToolCallingAutoConfiguration {
 	}
 
 	private static boolean isMcpToolCallbackProvider(ResolvableType type) {
-		if (type.getType().getTypeName().equals("org.springframework.ai.mcp.SyncMcpToolCallbackProvider")
-				|| type.getType().getTypeName().equals("org.springframework.ai.mcp.AsyncMcpToolCallbackProvider")
-				|| type.getType()
-					.getTypeName()
-					.equals("org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider")) {
+		if (MCP_TOOL_CALLBACK_PROVIDERS.contains(type.getType().getTypeName())) {
 			return true;
 		}
 		var superType = type.getSuperType();

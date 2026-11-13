@@ -128,20 +128,6 @@ class McpClientModernAutoConfigurationTests {
 	}
 
 	@Test
-	void modernConnectionWithTheAsyncClientTypeFailsTheStartup() {
-		this.contextRunner
-			.withPropertyValues("spring.ai.mcp.client.type=ASYNC", MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
-			.run(context -> assertThat(context).getFailure()
-				.rootCause()
-				.isInstanceOf(IllegalStateException.class)
-				.hasMessageContaining("tickets")
-				.hasMessageContaining("spring.ai.mcp.client.type=SYNC"));
-
-		this.contextRunner.withPropertyValues("spring.ai.mcp.client.type=ASYNC", LEGACY_BILLING_URL)
-			.run(context -> assertThat(context).hasNotFailed());
-	}
-
-	@Test
 	void sharedScopeBuildsOneClientForTheConnection() {
 		this.contextRunner.withUserConfiguration(RecordingCustomizerConfiguration.class)
 			.withPropertyValues(CONNECTIONS + "tickets.client-scope=SHARED", MODERN_TICKETS_URL,
@@ -246,7 +232,7 @@ class McpClientModernAutoConfigurationTests {
 		this.contextRunner.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
 			.run(context -> assertThat(context.getBean(SyncMcpToolCallbackProvider.class))
 				.extracting("modernToolCallbackProvider")
-				.extracting("unreachableCoolDownNanos")
+				.extracting("listings.unreachableCoolDownNanos")
 				.isEqualTo(Duration.ofSeconds(30).toNanos()));
 
 		this.contextRunner
@@ -254,7 +240,7 @@ class McpClientModernAutoConfigurationTests {
 					"spring.ai.mcp.client.modern.unreachable-cool-down=5s")
 			.run(context -> assertThat(context.getBean(SyncMcpToolCallbackProvider.class))
 				.extracting("modernToolCallbackProvider")
-				.extracting("unreachableCoolDownNanos")
+				.extracting("listings.unreachableCoolDownNanos")
 				.isEqualTo(Duration.ofSeconds(5).toNanos()));
 	}
 
@@ -356,7 +342,7 @@ class McpClientModernAutoConfigurationTests {
 				assertThat(output).doesNotContain("The @McpToolListChanged methods");
 				// The methods hear about a change after the provider, which has dropped
 				// its kept listing by then.
-				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("listeners")
+				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("streams.listeners")
 					.asInstanceOf(InstanceOfAssertFactories.LIST)
 					.hasSize(2)
 					.satisfiesExactly(
@@ -377,7 +363,7 @@ class McpClientModernAutoConfigurationTests {
 				SyncModernMcpChangeSubscriber subscriber = context.getBean(SyncModernMcpChangeSubscriber.class);
 				// The list-changed methods are registered although nothing asks for the
 				// bean that registers them.
-				assertThat(subscriber).extracting("listeners")
+				assertThat(subscriber).extracting("streams.listeners")
 					.asInstanceOf(InstanceOfAssertFactories.LIST)
 					.singleElement()
 					.isInstanceOf(ModernListChangedHandlers.class);
@@ -385,7 +371,7 @@ class McpClientModernAutoConfigurationTests {
 				// The provider is created when it is first asked for. It still hears
 				// about a change before the methods.
 				context.getBean(SyncMcpToolCallbackProvider.class);
-				assertThat(subscriber).extracting("listeners")
+				assertThat(subscriber).extracting("streams.listeners")
 					.asInstanceOf(InstanceOfAssertFactories.LIST)
 					.satisfiesExactly(
 							listener -> assertThat(listener).isInstanceOf(SyncModernMcpToolCallbackProvider.class),
@@ -400,7 +386,7 @@ class McpClientModernAutoConfigurationTests {
 			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL, CONNECTIONS + "tickets.listen=true",
 					"spring.ai.mcp.client.toolcallback.enabled=false")
 			.run(context -> {
-				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("listeners")
+				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("streams.listeners")
 					.asInstanceOf(InstanceOfAssertFactories.LIST)
 					.singleElement()
 					.isInstanceOf(ModernListChangedHandlers.class);
@@ -418,7 +404,7 @@ class McpClientModernAutoConfigurationTests {
 					"spring.ai.mcp.client.toolcallback.enabled=false")
 			.run(context -> {
 				assertThat(context).hasNotFailed();
-				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("listeners")
+				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("streams.listeners")
 					.asInstanceOf(InstanceOfAssertFactories.LIST)
 					.isEmpty();
 				assertThat(output).contains("No listen stream is opened to the MCP connections [tickets]");
@@ -432,7 +418,7 @@ class McpClientModernAutoConfigurationTests {
 			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
 			.run(context -> {
 				assertThat(context).hasNotFailed();
-				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("listeners")
+				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("streams.listeners")
 					.asInstanceOf(InstanceOfAssertFactories.LIST)
 					.hasAtLeastOneElementOfType(ModernListChangedHandlers.class);
 			});
@@ -449,7 +435,7 @@ class McpClientModernAutoConfigurationTests {
 					.contains("The @McpPromptListChanged methods for the MCP connection 'tickets' are not called: "
 							+ "the connection uses the MODERN protocol, which needs a synchronous method");
 				// Nothing is listened for on behalf of a method that is not called.
-				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("listeners")
+				assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("streams.listeners")
 					.asInstanceOf(InstanceOfAssertFactories.LIST)
 					.doesNotHaveAnyElementsOfTypes(ModernListChangedHandlers.class);
 			});
@@ -516,7 +502,7 @@ class McpClientModernAutoConfigurationTests {
 				assertThat(subscriber.connectionNames()).containsExactly("tickets");
 				assertThat(subscriber.isRunning()).isTrue();
 				// The provider hears about the changes, to drop a kept tool listing.
-				assertThat(subscriber).extracting("listeners")
+				assertThat(subscriber).extracting("streams.listeners")
 					.asInstanceOf(InstanceOfAssertFactories.LIST)
 					.hasSize(1)
 					.first()
@@ -530,7 +516,8 @@ class McpClientModernAutoConfigurationTests {
 	void changeListenerBeansHearAboutTheChangesNextToTheProvider() {
 		this.contextRunner.withUserConfiguration(ChangeListenerConfiguration.class)
 			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL, CONNECTIONS + "tickets.listen=true")
-			.run(context -> assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("listeners")
+			.run(context -> assertThat(context.getBean(SyncModernMcpChangeSubscriber.class))
+				.extracting("streams.listeners")
 				.asInstanceOf(InstanceOfAssertFactories.LIST)
 				.hasSize(2)
 				.contains(context.getBean(SyncModernMcpChangeListener.class))
@@ -541,14 +528,14 @@ class McpClientModernAutoConfigurationTests {
 	void pausesBeforeAListenStreamIsOpenedAgainGrowUpToTheUnreachableCoolDown() {
 		this.contextRunner.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
 			.run(context -> assertThat(context.getBean(SyncModernMcpChangeSubscriber.class))
-				.extracting("maxReopenDelay")
+				.extracting("streams.maxReopenDelay")
 				.isEqualTo(Duration.ofSeconds(30)));
 
 		this.contextRunner
 			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL,
 					"spring.ai.mcp.client.modern.unreachable-cool-down=0s")
 			.run(context -> assertThat(context.getBean(SyncModernMcpChangeSubscriber.class))
-				.extracting("maxReopenDelay")
+				.extracting("streams.maxReopenDelay")
 				.isEqualTo(Duration.ofSeconds(1)));
 	}
 

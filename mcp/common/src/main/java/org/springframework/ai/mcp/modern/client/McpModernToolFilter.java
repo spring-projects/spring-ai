@@ -22,8 +22,8 @@ import io.modelcontextprotocol.modern.McpSchema.Tool;
 
 /**
  * Decides which tools of a modern MCP server {@link SyncModernMcpToolCallbackProvider}
- * exposes. A tool is exposed when the predicate returns {@code true} for the connection
- * and the tool.
+ * and {@link AsyncModernMcpToolCallbackProvider} expose. A tool is exposed when the
+ * predicate returns {@code true} for the connection and the tool.
  *
  * @author Christian Tzolov
  * @since 2.1.0

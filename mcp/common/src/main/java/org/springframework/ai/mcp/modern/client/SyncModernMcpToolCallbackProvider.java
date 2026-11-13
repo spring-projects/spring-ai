@@ -16,31 +16,18 @@
 
 package org.springframework.ai.mcp.modern.client;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.WeakHashMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 
-import io.modelcontextprotocol.modern.McpSchema.CacheScope;
 import io.modelcontextprotocol.modern.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.modern.McpSchema.Tool;
-import io.modelcontextprotocol.modern.client.McpResponseLostException;
 import io.modelcontextprotocol.modern.client.McpSyncClient;
-import io.modelcontextprotocol.modern.client.McpTimeoutException;
 import io.modelcontextprotocol.modern.client.SubscriptionEvent;
-import io.modelcontextprotocol.modern.client.transport.McpHttpStatusException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import reactor.core.Exceptions;
 
 import org.springframework.ai.mcp.ToolContextToMcpMetaConverter;
 import org.springframework.ai.tool.ToolCallback;
@@ -82,9 +69,9 @@ import org.springframework.util.Assert;
  * A server that cannot be reached does not fail the call: its tools are left out and a
  * warning is logged, so the tools of the other connections stay usable. A server counts
  * as unreachable when the connection cannot be established, the exchange times out or
- * breaks, or a gateway answers {@code 502}, {@code 503} or {@code 504}. Every other
- * failure is thrown, in particular an authorization failure, so that the application can
- * ask the user to log in again.
+ * breaks, or the server answers with a {@code 5xx}, {@code 408} or {@code 429} status.
+ * Every other failure is thrown, in particular an authorization failure, so that the
+ * application can ask the user to log in again.
  * <p>
  * A server that could not be reached is not asked again until a cool-down time has passed
  * (30 seconds unless set otherwise). Otherwise a server that accepts connections but does
@@ -100,51 +87,12 @@ public final class SyncModernMcpToolCallbackProvider
 
 	private static final Log logger = LogFactory.getLog(SyncModernMcpToolCallbackProvider.class);
 
-	/** The statuses below 500 that also say that a server cannot serve for the moment. */
-	private static final Set<Integer> UNAVAILABLE_HTTP_STATUSES = Set.of(408, 429);
-
 	private static final Duration DEFAULT_UNREACHABLE_COOL_DOWN = Duration.ofSeconds(30);
 
 	private final List<SyncModernMcpConnection> connections;
 
-	/**
-	 * The connections whose server was unreachable at the last listing, with the time of
-	 * that listing. A server is not asked again during the cool-down, and an outage is
-	 * logged as a warning once and not for every request.
-	 */
-	private final Map<SyncModernMcpConnection, Long> unreachableConnections = new ConcurrentHashMap<>();
-
-	private final long unreachableCoolDownNanos;
-
-	/**
-	 * The public tool listings that may still be used, by connection.
-	 */
-	private final Map<SyncModernMcpConnection, KeptListing> keptListings = new ConcurrentHashMap<>();
-
-	/**
-	 * Counts the dropped listings of each connection, by its name, so that a listing that
-	 * was under way when the server reported a change is not kept, and so that each
-	 * client knows whether the listing it keeps itself is still the latest.
-	 */
-	private final Map<String, AtomicLong> invalidations = new ConcurrentHashMap<>();
-
-	/**
-	 * The count of dropped listings of its connection at which each client last listed
-	 * the tools. A client that listed them before the latest drop may answer from a copy
-	 * that it keeps itself, as a shared client or the client that a scope keeps for a
-	 * user does, so its next listing must come from the server. A connection can have
-	 * many clients, and each of them has to find that out for itself. The clients are
-	 * held weakly: one for a single request is gone with that request.
-	 */
-	private final Map<McpSyncClient, Long> listedAtInvalidations = Collections.synchronizedMap(new WeakHashMap<>());
-
-	/**
-	 * The connections that were told that a private listing could be kept with another
-	 * kind of connection.
-	 */
-	private final Set<String> privateListingHints = ConcurrentHashMap.newKeySet();
-
-	private final LongSupplier nanoClock;
+	/** What is kept of the tool listings, and which servers are left alone for now. */
+	private final ModernToolListings<McpSyncClient> listings;
 
 	private final McpModernToolFilter toolFilter;
 
@@ -168,8 +116,7 @@ public final class SyncModernMcpToolCallbackProvider
 		this.toolNamePrefixGenerator = toolNamePrefixGenerator;
 		this.toolContextToMcpMetaConverter = toolContextToMcpMetaConverter;
 		this.toolCallCustomizer = toolCallCustomizer;
-		this.unreachableCoolDownNanos = unreachableCoolDown.toNanos();
-		this.nanoClock = nanoClock;
+		this.listings = new ModernToolListings<>(logger, "SyncModernMcpClientScope", unreachableCoolDown, nanoClock);
 	}
 
 	/**
@@ -194,22 +141,16 @@ public final class SyncModernMcpToolCallbackProvider
 		List<ToolCallback> toolCallbacks = new ArrayList<>();
 		for (SyncModernMcpConnection connection : this.connections) {
 			McpModernConnectionInfo connectionInfo = connection.info();
-			if (this.isCoolingDown(connection)) {
+			if (this.listings.isCoolingDown(connection)) {
 				continue;
 			}
 			McpSyncClient mcpClient = connection.client();
-			List<Tool> tools;
-			try {
-				tools = this.tools(connection, mcpClient);
-			}
-			catch (RuntimeException ex) {
-				if (!isServerUnreachable(ex)) {
-					throw ex;
-				}
-				this.serverUnreachable(connection, ex);
+			List<Tool> tools = this.listings.tools(connection, connectionInfo, connection.clientPerRequest(), mcpClient,
+					SyncModernMcpToolCallbackProvider::list);
+			if (tools == null) {
+				// The server cannot be reached.
 				continue;
 			}
-			this.serverReachable(connection);
 			for (Tool tool : tools) {
 				if (this.toolFilter.test(connectionInfo, tool)) {
 					SyncModernMcpToolCallback.Builder toolCallback = SyncModernMcpToolCallback.builder()
@@ -233,67 +174,8 @@ public final class SyncModernMcpToolCallbackProvider
 		return toolCallbacks.toArray(new ToolCallback[0]);
 	}
 
-	/**
-	 * The tools of a connection, from the kept listing if there is one and from the
-	 * server otherwise.
-	 */
-	private List<Tool> tools(SyncModernMcpConnection connection, McpSyncClient mcpClient) {
-		long now = this.nanoClock.getAsLong();
-		AtomicLong invalidations = this.invalidations.computeIfAbsent(connection.info().name(),
-				name -> new AtomicLong());
-		KeptListing kept = this.keptListings.get(connection);
-		boolean fromServer = false;
-		if (kept != null) {
-			if (kept.isFresh(now)) {
-				return kept.tools();
-			}
-			// A client that keeps this listing as well has a copy that is as old as the
-			// one that has just expired here. So the expiry counts as a dropped listing,
-			// which makes every such client ask the server.
-			if (this.keptListings.remove(connection, kept)) {
-				invalidations.incrementAndGet();
-			}
-			fromServer = true;
-		}
-		// The count is read before the listing: a drop during the listing changes it,
-		// and the listing is then not kept.
-		long invalidationsBefore = invalidations.get();
-		// A listing that was dropped must not be answered from the client's own copy.
-		// A client for one request has no copy and is not remembered. One that is not
-		// known here may have listed the tools elsewhere, so it asks the server once a
-		// listing was dropped.
-		boolean remembered = !connection.clientPerRequest();
-		Long listedAt = remembered ? this.listedAtInvalidations.get(mcpClient) : null;
-		fromServer = fromServer || (listedAt != null ? listedAt < invalidationsBefore : invalidationsBefore > 0);
-		ListToolsResult listing = fromServer ? mcpClient.listTools().skipCache().list() : mcpClient.listTools().list();
-		if (remembered) {
-			// Not reached if the listing fails: the client then asks the server again.
-			this.listedAtInvalidations.put(mcpClient, invalidationsBefore);
-		}
-		if (listing.ttlMs() > 0 && listing.cacheScope() != CacheScope.PUBLIC && connection.clientPerRequest()
-				&& this.privateListingHints.add(connection.info().name())) {
-			// Said once for a connection: the server allows a listing to be kept that
-			// this kind of connection cannot keep.
-			logger.info("The MCP server of the connection '" + connection.info().name()
-					+ "' allows its tool listing to be kept for " + listing.ttlMs() + " ms, but marks it as "
-					+ "private, so only the client that listed it may keep it. The connection creates a client for "
-					+ "each request, so its tools are listed for each request. If the application calls the server "
-					+ "under a single identity, use a shared connection (client-scope=SHARED). To keep the listing "
-					+ "for each user, use a scoped connection (client-scope=CUSTOM with a SyncModernMcpClientScope).");
-		}
-		// Only a public listing may be handed to other callers. A private one is left to
-		// the client, which keeps it for as long as that client lives.
-		if (listing.ttlMs() > 0 && listing.cacheScope() == CacheScope.PUBLIC
-				&& invalidations.get() == invalidationsBefore) {
-			KeptListing keptListing = new KeptListing(listing.tools(), now,
-					TimeUnit.MILLISECONDS.toNanos(listing.ttlMs()));
-			this.keptListings.put(connection, keptListing);
-			if (invalidations.get() != invalidationsBefore) {
-				// The tools changed while the listing was being kept.
-				this.keptListings.remove(connection, keptListing);
-			}
-		}
-		return listing.tools();
+	private static ListToolsResult list(McpSyncClient mcpClient, boolean fromServer) {
+		return fromServer ? mcpClient.listTools().skipCache().list() : mcpClient.listTools().list();
 	}
 
 	/**
@@ -318,13 +200,10 @@ public final class SyncModernMcpToolCallbackProvider
 	 */
 	public void invalidateToolListing(String connectionName) {
 		Assert.notNull(connectionName, "connectionName must not be null");
-		// The count also tells each client that the listing it keeps itself is dropped.
-		this.invalidations.computeIfAbsent(connectionName, name -> new AtomicLong()).incrementAndGet();
-		for (SyncModernMcpConnection connection : this.connections) {
-			if (connection.info().name().equals(connectionName)) {
-				this.keptListings.remove(connection);
-			}
-		}
+		this.listings.invalidate(connectionName,
+				this.connections.stream()
+					.filter(connection -> connection.info().name().equals(connectionName))
+					.toList());
 	}
 
 	/**
@@ -335,7 +214,7 @@ public final class SyncModernMcpToolCallbackProvider
 	public void streamEstablished(McpModernConnectionInfo connectionInfo) {
 		for (SyncModernMcpConnection connection : this.connections) {
 			if (connection.info().name().equals(connectionInfo.name())) {
-				this.serverReachable(connection);
+				this.listings.serverReachable(connection, connection.info());
 			}
 		}
 	}
@@ -358,63 +237,6 @@ public final class SyncModernMcpToolCallbackProvider
 	@Override
 	public void changesMayBeMissed(McpModernConnectionInfo connectionInfo) {
 		this.invalidateToolListing(connectionInfo.name());
-	}
-
-	/**
-	 * Whether the failure of a listing means that the server cannot be reached, as
-	 * opposed to a server that answered with an error or a caller that is not authorized.
-	 */
-	private static boolean isServerUnreachable(RuntimeException ex) {
-		// The synchronous client wraps checked exceptions, such as a refused connection.
-		Throwable failure = Exceptions.unwrap(ex);
-		if (failure instanceof McpHttpStatusException statusException) {
-			// A failure of the server, or one that asks to come back later. A status
-			// that the caller must act on, such as 401, 403 or 404, is not among them.
-			int status = statusException.statusCode();
-			return status >= 500 || UNAVAILABLE_HTTP_STATUSES.contains(status);
-		}
-		return failure instanceof IOException || failure instanceof McpTimeoutException
-				|| failure instanceof McpResponseLostException;
-	}
-
-	/**
-	 * Whether the server of the connection could not be reached a short time ago, in
-	 * which case it is not asked now.
-	 */
-	private boolean isCoolingDown(SyncModernMcpConnection connection) {
-		Long unreachableAtNanos = this.unreachableConnections.get(connection);
-		return unreachableAtNanos != null
-				&& this.nanoClock.getAsLong() - unreachableAtNanos < this.unreachableCoolDownNanos;
-	}
-
-	private void serverUnreachable(SyncModernMcpConnection connection, RuntimeException ex) {
-		String message = "The MCP server of the connection '" + connection.info().name()
-				+ "' cannot be reached; its tools are left out until it can be reached again";
-		// The time is taken after the failed listing, which may have waited for a
-		// timeout.
-		if (this.unreachableConnections.put(connection, this.nanoClock.getAsLong()) == null) {
-			logger.warn(message, ex);
-		}
-		else if (logger.isDebugEnabled()) {
-			logger.debug(message + ": " + Exceptions.unwrap(ex));
-		}
-	}
-
-	private void serverReachable(SyncModernMcpConnection connection) {
-		if (this.unreachableConnections.remove(connection) != null) {
-			logger.info("The MCP server of the connection '" + connection.info().name() + "' can be reached again");
-		}
-	}
-
-	/**
-	 * A public tool listing and the time it may be used for.
-	 */
-	private record KeptListing(List<Tool> tools, long keptAtNanos, long ttlNanos) {
-
-		boolean isFresh(long nowNanos) {
-			return nowNanos - this.keptAtNanos < this.ttlNanos;
-		}
-
 	}
 
 	/**

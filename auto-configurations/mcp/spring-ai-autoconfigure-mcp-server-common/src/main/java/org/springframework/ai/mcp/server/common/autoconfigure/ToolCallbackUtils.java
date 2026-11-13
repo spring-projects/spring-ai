@@ -26,6 +26,8 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.mcp.AsyncMcpToolCallback;
 import org.springframework.ai.mcp.SyncMcpToolCallback;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpToolCallback;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpToolCallbackProvider;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallback;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
@@ -75,13 +77,15 @@ final class ToolCallbackUtils {
 
 	static boolean isMcpToolCallback(ToolCallback toolCallback) {
 		return (toolCallback instanceof SyncMcpToolCallback) || (toolCallback instanceof AsyncMcpToolCallback)
-				|| (toolCallback instanceof SyncModernMcpToolCallback);
+				|| (toolCallback instanceof SyncModernMcpToolCallback)
+				|| (toolCallback instanceof AsyncModernMcpToolCallback);
 	}
 
 	static boolean isMcpToolProvider(ToolCallbackProvider tcbp) {
 		return (tcbp instanceof org.springframework.ai.mcp.SyncMcpToolCallbackProvider)
 				|| (tcbp instanceof org.springframework.ai.mcp.AsyncMcpToolCallbackProvider)
-				|| (tcbp instanceof SyncModernMcpToolCallbackProvider);
+				|| (tcbp instanceof SyncModernMcpToolCallbackProvider)
+				|| (tcbp instanceof AsyncModernMcpToolCallbackProvider);
 	}
 
 }

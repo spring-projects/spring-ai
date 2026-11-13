@@ -19,11 +19,14 @@ package org.springframework.ai.mcp.annotation.method.changed.resource;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import io.modelcontextprotocol.spec.McpSchema;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpResourceListChanged;
+import org.springframework.ai.mcp.annotation.common.ModernClientHandlerSupport;
+import org.springframework.core.ResolvableType;
 
 /**
  * Class for creating Function callbacks around resource list changed consumer methods
@@ -39,8 +42,15 @@ import org.springframework.ai.mcp.annotation.McpResourceListChanged;
 public final class AsyncMcpResourceListChangedMethodCallback extends AbstractMcpResourceListChangedMethodCallback
 		implements Function<List<McpSchema.Resource>, Mono<Void>> {
 
+	/** Whether the method takes a list of the modern schema's type. */
+	private final boolean modernElements;
+
 	private AsyncMcpResourceListChangedMethodCallback(Builder builder) {
 		super(builder.method, builder.bean);
+		this.modernElements = ResolvableType.forMethodParameter(this.method, 0)
+			.asCollection()
+			.getGeneric(0)
+			.resolve() == io.modelcontextprotocol.modern.McpSchema.Resource.class;
 	}
 
 	/**
@@ -59,10 +69,29 @@ public final class AsyncMcpResourceListChangedMethodCallback extends AbstractMcp
 		if (updatedResources == null) {
 			return Mono.error(new IllegalArgumentException("Updated resources list must not be null"));
 		}
+		return this.invoke(() -> this.modernElements ? ModernClientHandlerSupport.toModernResources(updatedResources)
+				: updatedResources);
+	}
 
+	/**
+	 * Apply the callback to the resources of a client that speaks the 2026-07-28
+	 * ("modern") MCP revision. The method receives them in the schema type that it
+	 * declares, so one method serves the clients of both protocols.
+	 * @param updatedResources the resources of the server, in the modern schema type
+	 * @return A Mono that completes when the method execution is done
+	 * @since 2.1.0
+	 */
+	public Mono<Void> applyModern(List<io.modelcontextprotocol.modern.McpSchema.Resource> updatedResources) {
+		if (updatedResources == null) {
+			return Mono.error(new IllegalArgumentException("Updated resources list must not be null"));
+		}
+		return this.invoke(() -> this.modernElements ? updatedResources
+				: ModernClientHandlerSupport.toLegacyResources(updatedResources));
+	}
+
+	private Mono<Void> invoke(Supplier<List<?>> updatedResources) {
 		try {
-			// Build arguments for the method call
-			Object[] args = this.buildArgs(this.method, null, updatedResources);
+			Object[] args = { updatedResources.get() };
 
 			// Invoke the method
 			this.method.setAccessible(true);
@@ -73,7 +102,6 @@ public final class AsyncMcpResourceListChangedMethodCallback extends AbstractMcp
 				// We need to handle the case where the Mono is not a Mono<Void>
 				// This is expected by the test testInvalidMonoReturnType
 				Mono<?> monoResult = (Mono<?>) result;
-
 				// Convert the Mono to a Mono<Void> by checking the value
 				// If the value is not null (i.e., not Void), throw a ClassCastException
 				return monoResult.flatMap(value -> {
@@ -94,12 +122,6 @@ public final class AsyncMcpResourceListChangedMethodCallback extends AbstractMcp
 		}
 	}
 
-	/**
-	 * Validates that the method return type is compatible with the resource list changed
-	 * consumer callback.
-	 * @param method The method to validate
-	 * @throws IllegalArgumentException if the return type is not compatible
-	 */
 	@Override
 	protected void validateReturnType(Method method) {
 		Class<?> returnType = method.getReturnType();

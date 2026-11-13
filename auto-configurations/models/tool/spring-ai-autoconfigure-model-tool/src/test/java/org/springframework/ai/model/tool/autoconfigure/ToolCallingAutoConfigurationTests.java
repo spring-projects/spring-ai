@@ -35,6 +35,8 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpConnection;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpToolCallbackProvider;
 import org.springframework.ai.mcp.modern.client.McpModernConnectionInfo;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider;
@@ -266,7 +268,8 @@ class ToolCallingAutoConfigurationTests {
 				var toolCallbackResolver = context.getBean(ToolCallbackResolver.class);
 				assertThat(toolCallbackResolver.resolve("getForecast")).isNotNull();
 
-				// The provider creates a client each time it lists its tools.
+				// The providers, synchronous and asynchronous, create a client each time
+				// they list their tools.
 				assertThat(context.getBean(ModernMcpConfig.class).clientsCreated).hasValue(0);
 			});
 	}
@@ -880,6 +883,18 @@ class ToolCallingAutoConfigurationTests {
 				.connection(SyncModernMcpConnection.perRequest(info, () -> {
 					this.clientsCreated.incrementAndGet();
 					return McpClient.sync(request -> Flux.empty()).build();
+				}))
+				.build();
+		}
+
+		@Bean
+		AsyncModernMcpToolCallbackProvider asyncModernMcpToolCallbackProvider() {
+			McpModernConnectionInfo info = new McpModernConnectionInfo("billing",
+					Implementation.builder("test-client", "1").build());
+			return AsyncModernMcpToolCallbackProvider.builder()
+				.connection(AsyncModernMcpConnection.perRequest(info, () -> {
+					this.clientsCreated.incrementAndGet();
+					return McpClient.async(request -> Flux.empty()).build();
 				}))
 				.build();
 		}

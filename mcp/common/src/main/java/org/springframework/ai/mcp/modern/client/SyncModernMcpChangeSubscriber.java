@@ -20,25 +20,19 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import io.modelcontextprotocol.modern.McpSchema.SubscriptionFilter;
 import io.modelcontextprotocol.modern.client.McpSyncClient;
 import io.modelcontextprotocol.modern.client.McpSyncSubscriptionListener;
 import io.modelcontextprotocol.modern.client.SubscriptionEvent;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jspecify.annotations.Nullable;
 
 import org.springframework.context.SmartLifecycle;
-import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.util.Assert;
-import org.springframework.util.backoff.BackOffExecution;
-import org.springframework.util.backoff.ExponentialBackOff;
 
 /**
  * Keeps a listen stream open to each of its modern MCP connections and tells its
@@ -82,39 +76,14 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 
 	private static final Duration DEFAULT_INITIAL_REOPEN_DELAY = Duration.ofSeconds(1);
 
-	private final List<ListenStream> streams;
+	/** The streams and the listeners, shared with the asynchronous subscriber. */
+	private final ModernChangeStreams<SyncModernMcpChangeListener> streams;
 
-	/**
-	 * The listeners in the order they are told, replaced as a whole when one is added.
-	 */
-	private volatile List<SyncModernMcpChangeListener> listeners = List.of();
-
-	/** The pauses before a stream is opened again: doubling, up to the maximum. */
-	private final ExponentialBackOff reopenBackOff;
-
-	private final Duration maxReopenDelay;
-
-	private final Supplier<ScheduledExecutorService> schedulerFactory;
-
-	private final Object lifecycleMonitor = new Object();
-
-	private volatile @Nullable ScheduledExecutorService scheduler;
-
-	private volatile boolean running;
-
-	private SyncModernMcpChangeSubscriber(List<Subscription> subscriptions, List<SyncModernMcpChangeListener> listeners,
-			Duration initialReopenDelay, Duration maxReopenDelay, Supplier<ScheduledExecutorService> schedulerFactory) {
-		// The first pause is never longer than the longest one.
-		Duration initial = initialReopenDelay.compareTo(maxReopenDelay) < 0 ? initialReopenDelay : maxReopenDelay;
-		this.reopenBackOff = new ExponentialBackOff(initial.toMillis(), 2.0);
-		this.reopenBackOff.setMaxInterval(maxReopenDelay.toMillis());
-		this.maxReopenDelay = maxReopenDelay;
-		this.schedulerFactory = schedulerFactory;
-		// Created last: a stream starts with the backoff set above.
-		this.streams = subscriptions.stream().map(ListenStream::new).toList();
-		List<SyncModernMcpChangeListener> ordered = new ArrayList<>(listeners);
-		AnnotationAwareOrderComparator.sort(ordered);
-		this.listeners = List.copyOf(ordered);
+	private SyncModernMcpChangeSubscriber(List<ModernChangeStreams.Subscription> subscriptions,
+			List<SyncModernMcpChangeListener> listeners, Duration initialReopenDelay, Duration maxReopenDelay,
+			Supplier<ScheduledExecutorService> schedulerFactory) {
+		this.streams = new ModernChangeStreams<>(logger, subscriptions, listeners, new Listeners(), initialReopenDelay,
+				maxReopenDelay, schedulerFactory);
 	}
 
 	/**
@@ -134,14 +103,7 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 	 * @param listener the listener
 	 */
 	public void addListener(SyncModernMcpChangeListener listener) {
-		Assert.notNull(listener, "listener must not be null");
-		synchronized (this.lifecycleMonitor) {
-			List<SyncModernMcpChangeListener> listeners = new ArrayList<>(this.listeners);
-			listeners.add(listener);
-			AnnotationAwareOrderComparator.sort(listeners);
-			this.listeners = List.copyOf(listeners);
-			this.openStreams();
-		}
+		this.streams.addListener(listener);
 	}
 
 	/**
@@ -149,7 +111,7 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 	 * @return the connection names
 	 */
 	public List<String> connectionNames() {
-		return this.streams.stream().map(stream -> stream.connectionInfo.name()).toList();
+		return this.streams.connectionNames();
 	}
 
 	/**
@@ -157,30 +119,7 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 	 */
 	@Override
 	public void start() {
-		synchronized (this.lifecycleMonitor) {
-			if (this.running) {
-				return;
-			}
-			this.running = true;
-			if (!this.streams.isEmpty() && this.listeners.isEmpty()) {
-				logger.warn("No listen stream is opened to the MCP connections " + this.connectionNames()
-						+ " yet, because nothing listens for the changes of their servers; the streams are opened "
-						+ "when a listener is added");
-			}
-			this.openStreams();
-		}
-	}
-
-	/**
-	 * Opens the streams of a running subscriber that has a listener, unless they are open
-	 * already. Called with the lifecycle monitor held.
-	 */
-	private void openStreams() {
-		if (!this.running || this.scheduler != null || this.streams.isEmpty() || this.listeners.isEmpty()) {
-			return;
-		}
-		this.scheduler = this.schedulerFactory.get();
-		this.streams.forEach(ListenStream::open);
+		this.streams.start();
 	}
 
 	/**
@@ -188,276 +127,90 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 	 */
 	@Override
 	public void stop() {
-		synchronized (this.lifecycleMonitor) {
-			if (!this.running) {
-				return;
-			}
-			this.running = false;
-			ScheduledExecutorService scheduler = this.scheduler;
-			if (scheduler != null) {
-				scheduler.shutdownNow();
-				this.scheduler = null;
-			}
-			this.streams.forEach(ListenStream::close);
-		}
+		this.streams.stop();
 	}
 
 	@Override
 	public boolean isRunning() {
-		return this.running;
-	}
-
-	private void tellListeners(McpModernConnectionInfo connectionInfo, Consumer<SyncModernMcpChangeListener> call) {
-		for (SyncModernMcpChangeListener listener : this.listeners) {
-			try {
-				call.accept(listener);
-			}
-			catch (RuntimeException ex) {
-				// An exception that reaches the client would end the stream.
-				logger.warn("A listener failed for the MCP connection '" + connectionInfo.name() + "'", ex);
-			}
-		}
-	}
-
-	private void openAgain(ListenStream stream, long pauseMillis) {
-		ScheduledExecutorService scheduler = this.scheduler;
-		if (scheduler == null || !this.running) {
-			return;
-		}
-		try {
-			scheduler.schedule(stream::open, pauseMillis, TimeUnit.MILLISECONDS);
-		}
-		catch (RejectedExecutionException ex) {
-			// The subscriber was stopped in the meantime.
-			logger.debug("The listen stream is not opened again", ex);
-		}
+		return this.streams.isRunning();
 	}
 
 	/**
-	 * The listen stream of one connection. Its state is guarded by its monitor; the
-	 * listeners are never called while the monitor is held.
+	 * Opens the listen stream of a connection with one client, which is taken from the
+	 * connection when the stream is first opened.
 	 */
-	private final class ListenStream {
+	private static ModernChangeStreams.StreamOpener opener(SyncModernMcpConnection connection, boolean promptsChanged,
+			boolean resourcesChanged) {
+		AtomicReference<McpSyncClient> streamClient = new AtomicReference<>();
+		return signals -> {
+			// Never called concurrently for one connection.
+			McpSyncClient client = streamClient.get();
+			if (client == null) {
+				client = connection.applicationClient();
+				streamClient.set(client);
+			}
+			McpSyncClient.ListenSpec listenSpec = client.listen().toolsChanged();
+			if (promptsChanged) {
+				listenSpec = listenSpec.promptsChanged();
+			}
+			if (resourcesChanged) {
+				listenSpec = listenSpec.resourcesChanged();
+			}
+			McpSyncClient.Listening listening = listenSpec.open(new McpSyncSubscriptionListener() {
 
-		private final SyncModernMcpConnection connection;
+				@Override
+				public void onEvent(SubscriptionEvent event) {
+					signals.onEvent(event);
+				}
 
-		private final McpModernConnectionInfo connectionInfo;
+				@Override
+				public void onError(Throwable error) {
+					signals.onError(error);
+				}
 
-		/**
-		 * The client of the stream, taken from the connection when it is first opened.
-		 */
-		private @Nullable McpSyncClient client;
+				@Override
+				public void onComplete() {
+					signals.onComplete();
+				}
 
-		private McpSyncClient.@Nullable Listening listening;
+			});
+			return listening::close;
+		};
+	}
 
-		/**
-		 * Counts the streams opened so far. The events of a stream that was closed or
-		 * replaced carry an older number and are ignored.
-		 */
-		private long opened;
+	/**
+	 * Tells the listeners one after the other, on the thread of the stream.
+	 */
+	private static final class Listeners implements ModernChangeStreams.Dispatcher<SyncModernMcpChangeListener> {
 
-		/** When the current stream was established, or zero if it is not. */
-		private long establishedAtNanos;
-
-		/**
-		 * How often a stream ended, or could not be opened, since one last stayed up for
-		 * the maximum reopen delay.
-		 */
-		private int failures;
-
-		private BackOffExecution reopenPauses = SyncModernMcpChangeSubscriber.this.reopenBackOff.start();
-
-		private boolean missingReported;
-
-		private final boolean promptsChanged;
-
-		private final boolean resourcesChanged;
-
-		private ListenStream(Subscription subscription) {
-			this.connection = subscription.connection();
-			this.connectionInfo = subscription.connection().info();
-			this.promptsChanged = subscription.promptsChanged();
-			this.resourcesChanged = subscription.resourcesChanged();
+		@Override
+		public void changed(List<SyncModernMcpChangeListener> listeners, McpModernConnectionInfo connectionInfo,
+				SubscriptionEvent event) {
+			tell(listeners, connectionInfo, listener -> listener.changed(connectionInfo, event));
 		}
 
-		private void open() {
-			RuntimeException failure;
-			long pauseMillis;
-			int failures;
-			synchronized (this) {
-				if (!SyncModernMcpChangeSubscriber.this.running || this.listening != null) {
-					return;
-				}
-				long stream = ++this.opened;
+		@Override
+		public void established(List<SyncModernMcpChangeListener> listeners, McpModernConnectionInfo connectionInfo) {
+			tell(listeners, connectionInfo, listener -> listener.streamEstablished(connectionInfo));
+			tell(listeners, connectionInfo, listener -> listener.changesMayBeMissed(connectionInfo));
+		}
+
+		@Override
+		public void ended(List<SyncModernMcpChangeListener> listeners, McpModernConnectionInfo connectionInfo) {
+			tell(listeners, connectionInfo, listener -> listener.changesMayBeMissed(connectionInfo));
+		}
+
+		private static void tell(List<SyncModernMcpChangeListener> listeners, McpModernConnectionInfo connectionInfo,
+				Consumer<SyncModernMcpChangeListener> call) {
+			for (SyncModernMcpChangeListener listener : listeners) {
 				try {
-					if (this.client == null) {
-						this.client = this.connection.applicationClient();
-					}
-					McpSyncClient.ListenSpec listenSpec = this.client.listen().toolsChanged();
-					if (this.promptsChanged) {
-						listenSpec = listenSpec.promptsChanged();
-					}
-					if (this.resourcesChanged) {
-						listenSpec = listenSpec.resourcesChanged();
-					}
-					this.listening = listenSpec.open(new StreamListener(stream));
-					return;
+					call.accept(listener);
 				}
 				catch (RuntimeException ex) {
-					failure = ex;
-					failures = ++this.failures;
-					pauseMillis = this.reopenPauses.nextBackOff();
+					// An exception that reaches the client would end the stream.
+					logger.warn("A listener failed for the MCP connection '" + connectionInfo.name() + "'", ex);
 				}
 			}
-			// The stream was not up, so there is nothing to tell the listeners.
-			this.log(failures, "The listen stream of the MCP connection '" + this.connectionInfo.name()
-					+ "' could not be opened; " + this.retryNote() + ": " + failure);
-			SyncModernMcpChangeSubscriber.this.openAgain(this, pauseMillis);
-		}
-
-		private synchronized void close() {
-			// Whatever the closed stream still reports is ignored.
-			this.opened++;
-			this.establishedAtNanos = 0;
-			if (this.listening != null) {
-				this.listening.close();
-				this.listening = null;
-			}
-		}
-
-		private void changed(long stream, SubscriptionEvent event) {
-			synchronized (this) {
-				if (stream != this.opened) {
-					return;
-				}
-			}
-			SyncModernMcpChangeSubscriber.this.tellListeners(this.connectionInfo,
-					listener -> listener.changed(this.connectionInfo, event));
-		}
-
-		private void established(long stream, SubscriptionEvent.Subscribed subscribed) {
-			int failuresBefore;
-			boolean reportMissing;
-			synchronized (this) {
-				if (stream != this.opened) {
-					return;
-				}
-				this.establishedAtNanos = System.nanoTime();
-				failuresBefore = this.failures;
-				reportMissing = !subscribed.missing().isEmpty() && !this.missingReported;
-				this.missingReported = this.missingReported || reportMissing;
-			}
-			if (failuresBefore > 0) {
-				this.log(failuresBefore,
-						"Listening for the changes of the MCP connection '" + this.connectionInfo.name() + "' again",
-						true);
-			}
-			if (reportMissing) {
-				SubscriptionFilter missing = subscribed.missing();
-				logger.warn("The MCP server of the connection '" + this.connectionInfo.name()
-						+ "' does not report all the changes that were asked for; not reported: " + missing);
-			}
-			SyncModernMcpChangeSubscriber.this.tellListeners(this.connectionInfo,
-					listener -> listener.streamEstablished(this.connectionInfo));
-			// What changed before the stream was established is not known.
-			SyncModernMcpChangeSubscriber.this.tellListeners(this.connectionInfo,
-					listener -> listener.changesMayBeMissed(this.connectionInfo));
-		}
-
-		private void ended(long stream, @Nullable Throwable error) {
-			boolean wasEstablished;
-			long pauseMillis;
-			int failures;
-			synchronized (this) {
-				if (stream != this.opened) {
-					return;
-				}
-				this.listening = null;
-				wasEstablished = this.establishedAtNanos != 0;
-				if (wasEstablished && System.nanoTime()
-						- this.establishedAtNanos >= SyncModernMcpChangeSubscriber.this.maxReopenDelay.toNanos()) {
-					// The stream stayed up, so this is a new interruption: the pauses
-					// start over.
-					this.failures = 0;
-					this.reopenPauses = SyncModernMcpChangeSubscriber.this.reopenBackOff.start();
-				}
-				this.establishedAtNanos = 0;
-				failures = ++this.failures;
-				pauseMillis = this.reopenPauses.nextBackOff();
-			}
-			if (!SyncModernMcpChangeSubscriber.this.running) {
-				return;
-			}
-			String message = "The listen stream of the MCP connection '" + this.connectionInfo.name() + "' "
-					+ (wasEstablished ? "ended" : "could not be established") + "; " + this.retryNote();
-			this.log(failures, error != null ? message + ": " + error : message);
-			if (wasEstablished) {
-				// Not for a stream that never reported anything: it changes nothing
-				// about what is kept.
-				SyncModernMcpChangeSubscriber.this.tellListeners(this.connectionInfo,
-						listener -> listener.changesMayBeMissed(this.connectionInfo));
-			}
-			SyncModernMcpChangeSubscriber.this.openAgain(this, pauseMillis);
-		}
-
-		private String retryNote() {
-			return "it is opened again until the server accepts it, with pauses that grow up to "
-					+ SyncModernMcpChangeSubscriber.this.maxReopenDelay.toSeconds() + " seconds";
-		}
-
-		private void log(int failures, String message) {
-			this.log(failures, message, false);
-		}
-
-		/**
-		 * Reports the first failure of an interruption, and the recovery from it, and
-		 * leaves the further ones to the debug level.
-		 */
-		private void log(int failures, String message, boolean recovery) {
-			// The end of an outage is always reported, like its first failure. Only the
-			// failures in between are not.
-			if (recovery) {
-				logger.info(message);
-			}
-			else if (failures > 1) {
-				logger.debug(message);
-			}
-			else {
-				logger.warn(message);
-			}
-		}
-
-		/**
-		 * Receives the events of one stream, with the number of that stream.
-		 */
-		private final class StreamListener implements McpSyncSubscriptionListener {
-
-			private final long stream;
-
-			private StreamListener(long stream) {
-				this.stream = stream;
-			}
-
-			@Override
-			public void onEvent(SubscriptionEvent event) {
-				if (event instanceof SubscriptionEvent.Subscribed subscribed) {
-					ListenStream.this.established(this.stream, subscribed);
-				}
-				else {
-					ListenStream.this.changed(this.stream, event);
-				}
-			}
-
-			@Override
-			public void onError(Throwable error) {
-				ListenStream.this.ended(this.stream, error);
-			}
-
-			@Override
-			public void onComplete() {
-				ListenStream.this.ended(this.stream, null);
-			}
-
 		}
 
 	}
@@ -467,7 +220,7 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 	 */
 	public static final class Builder {
 
-		private final List<Subscription> subscriptions = new ArrayList<>();
+		private final List<ModernChangeStreams.Subscription> subscriptions = new ArrayList<>();
 
 		private final List<SyncModernMcpChangeListener> listeners = new ArrayList<>();
 
@@ -508,7 +261,8 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 		public Builder connection(SyncModernMcpConnection connection, boolean promptsChanged,
 				boolean resourcesChanged) {
 			Assert.notNull(connection, "connection must not be null");
-			this.subscriptions.add(new Subscription(connection, promptsChanged, resourcesChanged));
+			this.subscriptions.add(new ModernChangeStreams.Subscription(connection.info(),
+					opener(connection, promptsChanged, resourcesChanged)));
 			return this;
 		}
 
@@ -566,12 +320,6 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 					this.maxReopenDelay, this.schedulerFactory);
 		}
 
-	}
-
-	/**
-	 * A connection and what its listen stream listens for, next to the tools.
-	 */
-	private record Subscription(SyncModernMcpConnection connection, boolean promptsChanged, boolean resourcesChanged) {
 	}
 
 }
