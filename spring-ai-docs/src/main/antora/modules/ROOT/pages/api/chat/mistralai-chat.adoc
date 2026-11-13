@@ -269,12 +269,7 @@ Mistral offers two approaches to reasoning:
 You can configure the reasoning effort using the `reasoningEffort` property in `MistralAiChatOptions`.
 This allows you to adjust the amount of computational effort the model spends on reasoning before generating a response.
 
-The accepted levels depend on the model:
-
-* Mistral Small 4 and Mistral Medium 3.5 accept `HIGH` and `NONE`.
-* Mistral Large 4 accepts `LOW`, `MEDIUM` and `HIGH`, and does not accept `NONE`.
-
-See the https://docs.mistral.ai/studio/conversations/reasoning[Mistral reasoning documentation] for the levels each model supports.
+The accepted levels depend on the model. See the https://docs.mistral.ai/studio/conversations/reasoning[Mistral AI reasoning documentation].
 
 [source,java]
 ----

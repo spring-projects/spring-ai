@@ -290,8 +290,7 @@ public class MistralAiApi {
 		// Mistral 3.5B model family
 		MISTRAL_SMALL("mistral-small-2603"),
 		MISTRAL_MEDIUM("mistral-medium-3-5"),
-		@Deprecated(forRemoval = true) // Deprecated in favor of mistral-medium-3-5
-		MISTRAL_LARGE("mistral-large-latest");
+		MISTRAL_LARGE("mistral-large-4");
 		// @formatter:on
 
 		private final String value;
@@ -786,10 +785,7 @@ public class MistralAiApi {
 		/**
 		 * <p>
 		 * Controls the reasoning effort level for adjustable reasoning models. The
-		 * accepted levels depend on the model: Mistral Small 4 and Mistral Medium 3.5
-		 * accept {@link ReasoningEffort#HIGH} and {@link ReasoningEffort#NONE}, while
-		 * Mistral Large 4 accepts {@link ReasoningEffort#LOW},
-		 * {@link ReasoningEffort#MEDIUM} and {@link ReasoningEffort#HIGH}.
+		 * accepted levels depend on the model. See the Mistral AI documentation.
 		 * </p>
 		 *
 		 * @see <a href="https://docs.mistral.ai/studio/conversations/reasoning">Mistral
