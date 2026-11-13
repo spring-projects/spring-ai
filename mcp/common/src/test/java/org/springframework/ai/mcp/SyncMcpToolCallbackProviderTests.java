@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
@@ -28,9 +29,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -440,6 +447,60 @@ class SyncMcpToolCallbackProviderTests {
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(1);
+	}
+
+	@Test
+	void modernToolCallbacksAreReturnedWithTheLegacyOnesAndResolvedOnEveryCall() {
+		stubLegacyClientWithTool("tool1");
+		AtomicInteger modernResolutions = new AtomicInteger();
+		ToolCallbackProvider modernProvider = () -> {
+			modernResolutions.incrementAndGet();
+			return new ToolCallback[] { toolCallbackNamed("tickets_search") };
+		};
+
+		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.modernToolCallbackProvider(modernProvider)
+			.build();
+
+		provider.getToolCallbacks();
+		ToolCallback[] callbacks = provider.getToolCallbacks();
+
+		assertThat(callbacks).extracting(callback -> callback.getToolDefinition().name())
+			.containsExactly("tool1", "tickets_search");
+		// The legacy tools are listed once and cached; the modern ones are not cached.
+		verify(this.mcpClient, times(1)).listTools();
+		assertThat(modernResolutions).hasValue(2);
+	}
+
+	@Test
+	void sameToolNameOnALegacyAndAModernConnectionIsRejected() {
+		stubLegacyClientWithTool("search");
+
+		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.modernToolCallbackProvider(() -> new ToolCallback[] { toolCallbackNamed("search") })
+			.build();
+
+		assertThatThrownBy(provider::getToolCallbacks).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("search");
+	}
+
+	private void stubLegacyClientWithTool(String toolName) {
+		when(this.mcpClient.getClientInfo()).thenReturn(Implementation.builder("testClient", "1.0.0").build());
+		when(this.mcpClient.getClientCapabilities()).thenReturn(new ClientCapabilities(null, null, null, null));
+		Tool tool = mock(Tool.class);
+		when(tool.name()).thenReturn(toolName);
+		ListToolsResult listToolsResult = mock(ListToolsResult.class);
+		when(listToolsResult.tools()).thenReturn(List.of(tool));
+		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+	}
+
+	private static ToolCallback toolCallbackNamed(String name) {
+		ToolCallback toolCallback = mock(ToolCallback.class);
+		when(toolCallback.getToolDefinition())
+			.thenReturn(DefaultToolDefinition.builder().name(name).description(name).inputSchema("{}").build());
+		return toolCallback;
 	}
 
 }

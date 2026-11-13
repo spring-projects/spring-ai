@@ -251,15 +251,52 @@ public final class SyncMcpAnnotationProviders {
 		return new SpringAiSyncMcpElicitationProvider(elicitationObjects).getElicitationSpecifications();
 	}
 
+	/**
+	 * The provider of the elicitation handlers of the given objects. One provider creates
+	 * the handlers for the legacy clients and those for the clients of the 2026-07-28
+	 * ("modern") MCP revision from the same callbacks.
+	 * @param elicitationObjects the objects with the {@code @McpElicitation} methods
+	 * @return the elicitation provider
+	 * @since 2.1.0
+	 */
+	public static SyncMcpElicitationProvider elicitationProvider(List<Object> elicitationObjects) {
+		return new SpringAiSyncMcpElicitationProvider(elicitationObjects);
+	}
+
 	// PROGRESS (CLIENT)
 	public static List<SyncProgressSpecification> progressSpecifications(List<Object> progressObjects) {
 		return new SpringAiSyncMcpProgressProvider(progressObjects).getProgressSpecifications();
+	}
+
+	/**
+	 * The provider of the progress handlers of the given objects. One provider creates
+	 * the handlers for the legacy clients and those for the clients of the 2026-07-28
+	 * ("modern") MCP revision from the same callbacks.
+	 * @param progressObjects the objects with the {@code @McpProgress} methods
+	 * @return the progress provider
+	 * @since 2.1.0
+	 */
+	public static SyncMcpProgressProvider progressProvider(List<Object> progressObjects) {
+		return new SpringAiSyncMcpProgressProvider(progressObjects);
 	}
 
 	// TOOL LIST CHANGED
 	public static List<SyncToolListChangedSpecification> toolListChangedSpecifications(
 			List<Object> toolListChangedObjects) {
 		return new SpringAiSyncMcpToolListChangedProvider(toolListChangedObjects).getToolListChangedSpecifications();
+	}
+
+	/**
+	 * The provider of the tool list changed handlers of the given objects. One provider
+	 * creates the handlers for the legacy clients and those for the clients of the
+	 * 2026-07-28 ("modern") MCP revision from the same callbacks.
+	 * @param toolListChangedObjects the objects with the {@code @McpToolListChanged}
+	 * methods
+	 * @return the tool list changed provider
+	 * @since 2.1.0
+	 */
+	public static SyncMcpToolListChangedProvider toolListChangedProvider(List<Object> toolListChangedObjects) {
+		return new SpringAiSyncMcpToolListChangedProvider(toolListChangedObjects);
 	}
 
 	// RESOURCE LIST CHANGED
@@ -269,11 +306,36 @@ public final class SyncMcpAnnotationProviders {
 			.getResourceListChangedSpecifications();
 	}
 
+	/**
+	 * The provider of the resource list changed handlers of the given objects, for the
+	 * clients of both protocols.
+	 * @param resourceListChangedObjects the objects with the
+	 * {@code @McpResourceListChanged} methods
+	 * @return the resource list changed provider
+	 * @since 2.1.0
+	 */
+	public static SyncMcpResourceListChangedProvider resourceListChangedProvider(
+			List<Object> resourceListChangedObjects) {
+		return new SpringAiSyncMcpResourceListChangedProvider(resourceListChangedObjects);
+	}
+
 	// PROMPT LIST CHANGED
 	public static List<SyncPromptListChangedSpecification> promptListChangedSpecifications(
 			List<Object> promptListChangedObjects) {
 		return new SpringAiSyncMcpPromptListChangedProvider(promptListChangedObjects)
 			.getPromptListChangedSpecifications();
+	}
+
+	/**
+	 * The provider of the prompt list changed handlers of the given objects, for the
+	 * clients of both protocols.
+	 * @param promptListChangedObjects the objects with the {@code @McpPromptListChanged}
+	 * methods
+	 * @return the prompt list changed provider
+	 * @since 2.1.0
+	 */
+	public static SyncMcpPromptListChangedProvider promptListChangedProvider(List<Object> promptListChangedObjects) {
+		return new SpringAiSyncMcpPromptListChangedProvider(promptListChangedObjects);
 	}
 
 	// COMPLETE

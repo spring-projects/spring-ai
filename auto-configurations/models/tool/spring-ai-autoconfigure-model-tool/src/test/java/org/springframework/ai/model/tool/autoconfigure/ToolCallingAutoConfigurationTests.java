@@ -19,9 +19,13 @@ package org.springframework.ai.model.tool.autoconfigure;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.micrometer.observation.ObservationRegistry;
+import io.modelcontextprotocol.modern.McpSchema.Implementation;
+import io.modelcontextprotocol.modern.client.McpClient;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -31,6 +35,9 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
+import org.springframework.ai.mcp.modern.client.McpModernConnectionInfo;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallLimitExceededException;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -248,6 +255,19 @@ class ToolCallingAutoConfigurationTests {
 
 				verify(syncMcpToolCallbackProvider, never()).getToolCallbacks();
 				verify(asyncMcpToolCallbackProvider, never()).getToolCallbacks();
+			});
+	}
+
+	@Test
+	void toolCallbackResolverDoesNotUseTheModernMcpToolCallbackProvider() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(Config.class, ModernMcpConfig.class)
+			.run(context -> {
+				var toolCallbackResolver = context.getBean(ToolCallbackResolver.class);
+				assertThat(toolCallbackResolver.resolve("getForecast")).isNotNull();
+
+				// The provider creates a client each time it lists its tools.
+				assertThat(context.getBean(ModernMcpConfig.class).clientsCreated).hasValue(0);
 			});
 	}
 
@@ -843,6 +863,25 @@ class ToolCallingAutoConfigurationTests {
 			AsyncMcpToolCallbackProvider provider = mock(AsyncMcpToolCallbackProvider.class);
 			when(provider.getToolCallbacks()).thenReturn(new ToolCallback[0]);
 			return provider;
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class ModernMcpConfig {
+
+		final AtomicInteger clientsCreated = new AtomicInteger();
+
+		@Bean
+		SyncModernMcpToolCallbackProvider modernMcpToolCallbackProvider() {
+			McpModernConnectionInfo info = new McpModernConnectionInfo("tickets",
+					Implementation.builder("test-client", "1").build());
+			return SyncModernMcpToolCallbackProvider.builder()
+				.connection(SyncModernMcpConnection.perRequest(info, () -> {
+					this.clientsCreated.incrementAndGet();
+					return McpClient.sync(request -> Flux.empty()).build();
+				}))
+				.build();
 		}
 
 	}

@@ -22,6 +22,7 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 /**
  * Configuration properties for Streamable Http client connections.
@@ -69,8 +70,74 @@ public class McpStreamableHttpClientProperties {
 	 *
 	 * @param url the URL endpoint for Streamable Http communication with the MCP server
 	 * @param endpoint the endpoint for the MCP server
+	 * @param protocol the MCP protocol revision the server speaks; {@code LEGACY} when
+	 * not set
+	 * @param clientScope how the clients of a modern connection are created and held;
+	 * {@code PER_REQUEST} when not set. It has no effect on a legacy connection.
+	 * @param listen whether a listen stream is kept open to the server of a modern
+	 * connection, to hear about its changes; {@code false} when not set. It has no effect
+	 * on a legacy connection.
 	 */
-	public record ConnectionParameters(@Nullable String url, @Nullable String endpoint) {
+	public record ConnectionParameters(@Nullable String url, @Nullable String endpoint,
+			McpClientCommonProperties.@Nullable Protocol protocol,
+			McpClientModernProperties.@Nullable ClientScope clientScope, @Nullable Boolean listen) {
+
+		/**
+		 * Creates the parameters of a connection. This is the constructor the
+		 * configuration properties are bound with.
+		 */
+		@ConstructorBinding
+		public ConnectionParameters {
+		}
+
+		/**
+		 * Creates the parameters of a connection that speaks the legacy protocol.
+		 * @param url the URL endpoint for Streamable Http communication with the MCP
+		 * server
+		 * @param endpoint the endpoint for the MCP server
+		 */
+		public ConnectionParameters(@Nullable String url, @Nullable String endpoint) {
+			this(url, endpoint, null, null, null);
+		}
+
+		/**
+		 * Whether the connection speaks the 2026-07-28 ("modern") protocol revision.
+		 * @return {@code true} for a modern connection, {@code false} for a legacy one
+		 * @since 2.1.0
+		 */
+		public boolean isModern() {
+			return this.protocol == McpClientCommonProperties.Protocol.MODERN;
+		}
+
+		/**
+		 * Whether one client serves all requests of the connection.
+		 * @return {@code true} for the {@code SHARED} client scope, {@code false} for the
+		 * other scopes
+		 * @since 2.1.0
+		 */
+		public boolean isSharedClient() {
+			return this.clientScope == McpClientModernProperties.ClientScope.SHARED;
+		}
+
+		/**
+		 * Whether the {@code SyncModernMcpClientScope} bean of the application selects
+		 * the client of each request of the connection.
+		 * @return {@code true} for the {@code CUSTOM} client scope
+		 * @since 2.1.0
+		 */
+		public boolean isCustomClientScope() {
+			return this.clientScope == McpClientModernProperties.ClientScope.CUSTOM;
+		}
+
+		/**
+		 * Whether a listen stream is kept open to the server of the connection.
+		 * @return {@code true} if the connection listens for the changes of its server
+		 * @since 2.1.0
+		 */
+		public boolean isListening() {
+			return Boolean.TRUE.equals(this.listen);
+		}
+
 	}
 
 }

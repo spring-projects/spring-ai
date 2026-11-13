@@ -23,6 +23,8 @@ import java.util.function.Consumer;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import org.springframework.ai.mcp.annotation.McpPromptListChanged;
+import org.springframework.ai.mcp.annotation.common.ModernClientHandlerSupport;
+import org.springframework.core.ResolvableType;
 
 /**
  * Class for creating Consumer callbacks around prompt list changed consumer methods.
@@ -37,8 +39,15 @@ import org.springframework.ai.mcp.annotation.McpPromptListChanged;
 public final class SyncMcpPromptListChangedMethodCallback extends AbstractMcpPromptListChangedMethodCallback
 		implements Consumer<List<McpSchema.Prompt>> {
 
+	/** Whether the method takes a list of the modern schema's type. */
+	private final boolean modernElements;
+
 	private SyncMcpPromptListChangedMethodCallback(Builder builder) {
 		super(builder.method, builder.bean);
+		this.modernElements = ResolvableType.forMethodParameter(this.method, 0)
+			.asCollection()
+			.getGeneric(0)
+			.resolve() == io.modelcontextprotocol.modern.McpSchema.Prompt.class;
 	}
 
 	/**
@@ -59,6 +68,38 @@ public final class SyncMcpPromptListChangedMethodCallback extends AbstractMcpPro
 		try {
 			// Build arguments for the method call
 			Object[] args = this.buildArgs(this.method, null, updatedPrompts);
+			if (this.modernElements) {
+				args[0] = ModernClientHandlerSupport.toModernPrompts(updatedPrompts);
+			}
+
+			// Invoke the method
+			this.method.setAccessible(true);
+			this.method.invoke(this.bean, args);
+		}
+		catch (Exception e) {
+			throw new McpPromptListChangedConsumerMethodException(
+					"Error invoking prompt list changed consumer method: " + this.method.getName(), e);
+		}
+	}
+
+	/**
+	 * Accept the prompts of a client that speaks the 2026-07-28 ("modern") MCP revision.
+	 * The method receives them in the schema type that it declares, so one method serves
+	 * the clients of both protocols.
+	 * @param updatedPrompts the prompts of the server, in the modern schema type
+	 * @throws McpPromptListChangedConsumerMethodException if there is an error invoking
+	 * the method
+	 * @throws IllegalArgumentException if the list is null
+	 * @since 2.1.0
+	 */
+	public void acceptModern(List<io.modelcontextprotocol.modern.McpSchema.Prompt> updatedPrompts) {
+		if (updatedPrompts == null) {
+			throw new IllegalArgumentException("Updated prompts list must not be null");
+		}
+
+		try {
+			Object[] args = {
+					this.modernElements ? updatedPrompts : ModernClientHandlerSupport.toLegacyPrompts(updatedPrompts) };
 
 			// Invoke the method
 			this.method.setAccessible(true);

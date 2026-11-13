@@ -17,21 +17,27 @@
 package org.springframework.ai.mcp.annotation.provider.elicitation;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import io.modelcontextprotocol.spec.McpSchema.ElicitRequest;
 import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
+import io.modelcontextprotocol.spec.McpSchema.ElicitUrlRequest;
 import io.modelcontextprotocol.util.Assert;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mcp.annotation.McpElicitation;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
-import org.springframework.ai.mcp.annotation.context.StructuredElicitResult;
+import org.springframework.ai.mcp.annotation.common.ModernClientHandlerSupport;
 import org.springframework.ai.mcp.annotation.method.elicitation.SyncElicitationSpecification;
 import org.springframework.ai.mcp.annotation.method.elicitation.SyncMcpElicitationMethodCallback;
+import org.springframework.ai.mcp.annotation.method.elicitation.SyncModernElicitationSpecification;
 
 /**
  * Provider for synchronous elicitation callbacks.
@@ -68,6 +74,8 @@ public class SyncMcpElicitationProvider {
 
 	private final List<Object> elicitationObjects;
 
+	private @Nullable List<HandlerMethod> handlerMethods;
+
 	/**
 	 * Create a new SyncMcpElicitationProvider.
 	 * @param elicitationObjects the objects containing methods annotated with
@@ -85,28 +93,13 @@ public class SyncMcpElicitationProvider {
 	 * elicitation methods are found
 	 */
 	public List<SyncElicitationSpecification> getElicitationSpecifications() {
-		List<SyncElicitationSpecification> elicitationHandlers = this.elicitationObjects.stream()
-			.map(elicitationObject -> Stream.of(doGetClassMethods(elicitationObject))
-				.filter(method -> method.isAnnotationPresent(McpElicitation.class))
-				.filter(McpPredicates.filterReactiveReturnTypeMethod())
-				.filter(method -> ElicitResult.class.isAssignableFrom(method.getReturnType())
-						|| StructuredElicitResult.class.isAssignableFrom(method.getReturnType()))
-				.filter(method -> method.getParameterCount() == 1
-						&& ElicitRequest.class.isAssignableFrom(method.getParameterTypes()[0]))
-				.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
-				.map(mcpElicitationMethod -> {
-					var elicitationAnnotation = mcpElicitationMethod.getAnnotation(McpElicitation.class);
-
-					Function<ElicitRequest, ElicitResult> methodCallback = SyncMcpElicitationMethodCallback.builder()
-						.method(mcpElicitationMethod)
-						.bean(elicitationObject)
-						.elicitation(elicitationAnnotation)
-						.build();
-
-					return new SyncElicitationSpecification(elicitationAnnotation.clients(), methodCallback);
-				})
-				.toList())
-			.flatMap(List::stream)
+		List<SyncElicitationSpecification> elicitationHandlers = this.handlerMethods()
+			.stream()
+			.filter(handlerMethod -> ModernClientHandlerSupport.handlesLegacyElicitation(handlerMethod.method()))
+			.map(handlerMethod -> {
+				Function<ElicitRequest, ElicitResult> methodCallback = handlerMethod.callback();
+				return new SyncElicitationSpecification(handlerMethod.clients(), methodCallback);
+			})
 			.toList();
 
 		if (elicitationHandlers.isEmpty()) {
@@ -122,12 +115,111 @@ public class SyncMcpElicitationProvider {
 	}
 
 	/**
+	 * Get the elicitation specifications for the connections that speak the 2026-07-28
+	 * ("modern") MCP revision. They are created from the same {@link McpElicitation}
+	 * methods as {@link #getElicitationSpecifications()}, and with the same callbacks: a
+	 * method serves the connections of both protocols, whichever schema types it takes. A
+	 * method that cannot answer a modern request, because it takes the legacy URL
+	 * request, is left out.
+	 * @return the modern elicitation specifications
+	 * @since 2.1.0
+	 */
+	public List<SyncModernElicitationSpecification> getModernElicitationSpecifications() {
+		return this.handlerMethods().stream().filter(handlerMethod -> {
+			Method method = handlerMethod.method();
+			return ModernClientHandlerSupport.handlesModernFormElicitation(method)
+					|| ModernClientHandlerSupport.handlesModernUrlElicitation(method);
+		})
+			.map(handlerMethod -> new SyncModernElicitationSpecification(handlerMethod.clients(),
+					ModernClientHandlerSupport.handlesModernFormElicitation(handlerMethod.method()),
+					ModernClientHandlerSupport.handlesModernUrlElicitation(handlerMethod.method()),
+					handlerMethod.callback()::applyModern))
+			.toList();
+	}
+
+	/**
+	 * The synchronous {@link McpElicitation} methods with their callbacks. The objects
+	 * are scanned once, on first use, so that each method gets one callback, which the
+	 * legacy and the modern specifications share.
+	 */
+	/**
+	 * The handlers of the legacy clients, one for each client that a synchronous
+	 * elicitation method names. A client may have one method for form requests and one
+	 * for URL requests, and its handler then calls the one that stands for the kind of
+	 * the request. The handler of a client with a single method always calls that method,
+	 * as before there could be two.
+	 * @return the handler of each client, by the name of the client
+	 * @since 2.1.0
+	 */
+	public Map<String, Function<ElicitRequest, ElicitResult>> getElicitationHandlersByClient() {
+		Map<String, List<HandlerMethod>> methodsByClient = new LinkedHashMap<>();
+		for (HandlerMethod handlerMethod : this.handlerMethods()) {
+			if (ModernClientHandlerSupport.handlesLegacyElicitation(handlerMethod.method())) {
+				for (String client : handlerMethod.clients()) {
+					methodsByClient.computeIfAbsent(client, name -> new ArrayList<>()).add(handlerMethod);
+				}
+			}
+		}
+		Map<String, Function<ElicitRequest, ElicitResult>> handlers = new LinkedHashMap<>();
+		methodsByClient.forEach((client, methods) -> handlers.put(client, methods.size() == 1
+				? methods.get(0).callback() : request -> methodFor(methods, request).callback().apply(request)));
+		return handlers;
+	}
+
+	/**
+	 * The method that stands for the kind of the request, or the last one if none does.
+	 */
+	private static HandlerMethod methodFor(List<HandlerMethod> methods, ElicitRequest request) {
+		boolean urlRequest = request instanceof ElicitUrlRequest;
+		for (int i = methods.size() - 1; i >= 0; i--) {
+			Method method = methods.get(i).method();
+			if (urlRequest ? ModernClientHandlerSupport.claimsUrlElicitation(method)
+					: ModernClientHandlerSupport.claimsFormElicitation(method)) {
+				return methods.get(i);
+			}
+		}
+		return methods.get(methods.size() - 1);
+	}
+
+	private List<HandlerMethod> handlerMethods() {
+		List<HandlerMethod> handlerMethods = this.handlerMethods;
+		if (handlerMethods == null) {
+			handlerMethods = this.elicitationObjects.stream()
+				.flatMap(elicitationObject -> Stream.of(doGetClassMethods(elicitationObject))
+					.filter(method -> method.isAnnotationPresent(McpElicitation.class))
+					.filter(McpPredicates.filterReactiveReturnTypeMethod())
+					.filter(method -> ModernClientHandlerSupport.elicitRequestParameterType(method) != null)
+					.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
+					.map(mcpElicitationMethod -> {
+						var elicitationAnnotation = mcpElicitationMethod.getAnnotation(McpElicitation.class);
+
+						SyncMcpElicitationMethodCallback methodCallback = SyncMcpElicitationMethodCallback.builder()
+							.method(mcpElicitationMethod)
+							.bean(elicitationObject)
+							.elicitation(elicitationAnnotation)
+							.build();
+
+						return new HandlerMethod(mcpElicitationMethod, elicitationAnnotation.clients(), methodCallback);
+					}))
+				.toList();
+			this.handlerMethods = handlerMethods;
+		}
+		return handlerMethods;
+	}
+
+	/**
 	 * Returns the methods of the given bean class.
 	 * @param bean the bean instance
 	 * @return the methods of the bean class
 	 */
 	protected Method[] doGetClassMethods(Object bean) {
 		return bean.getClass().getDeclaredMethods();
+	}
+
+	/**
+	 * An annotated method, the clients it names and its callback.
+	 */
+	private record HandlerMethod(Method method, String[] clients, SyncMcpElicitationMethodCallback callback) {
 	}
 
 }

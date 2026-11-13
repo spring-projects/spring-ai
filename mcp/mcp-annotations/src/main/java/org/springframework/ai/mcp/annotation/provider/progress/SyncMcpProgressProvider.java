@@ -22,10 +22,12 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import io.modelcontextprotocol.spec.McpSchema.ProgressNotification;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mcp.annotation.McpProgress;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.method.progress.SyncMcpProgressMethodCallback;
+import org.springframework.ai.mcp.annotation.method.progress.SyncModernProgressSpecification;
 import org.springframework.ai.mcp.annotation.method.progress.SyncProgressSpecification;
 
 /**
@@ -60,6 +62,8 @@ public class SyncMcpProgressProvider {
 
 	private final List<Object> progressObjects;
 
+	private @Nullable List<HandlerMethod> handlerMethods;
+
 	/**
 	 * Create a new SyncMcpProgressProvider.
 	 * @param progressObjects the objects containing methods annotated with
@@ -74,31 +78,58 @@ public class SyncMcpProgressProvider {
 	 * @return the list of progress specifications
 	 */
 	public List<SyncProgressSpecification> getProgressSpecifications() {
+		return this.handlerMethods().stream().map(handlerMethod -> {
+			Consumer<ProgressNotification> methodCallback = handlerMethod.callback();
+			return new SyncProgressSpecification(handlerMethod.clients(), methodCallback);
+		}).toList();
+	}
 
-		List<SyncProgressSpecification> progressConsumers = this.progressObjects.stream()
-			.map(progressObject -> Stream.of(doGetClassMethods(progressObject))
-				.filter(method -> method.isAnnotationPresent(McpProgress.class))
-				.filter(McpPredicates.filterReactiveReturnTypeMethod())
-				.filter(method -> method.getReturnType() == void.class) // Only void
-																		// return type is
-																		// valid for sync
-				.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
-				.map(mcpProgressMethod -> {
-					var progressAnnotation = mcpProgressMethod.getAnnotation(McpProgress.class);
-
-					Consumer<ProgressNotification> methodCallback = SyncMcpProgressMethodCallback.builder()
-						.method(mcpProgressMethod)
-						.bean(progressObject)
-						.progress(progressAnnotation)
-						.build();
-
-					return new SyncProgressSpecification(progressAnnotation.clients(), methodCallback);
-				})
-				.toList())
-			.flatMap(List::stream)
+	/**
+	 * Get the progress specifications for the connections that speak the 2026-07-28
+	 * ("modern") MCP revision. They are created from the same {@link McpProgress} methods
+	 * as {@link #getProgressSpecifications()}, and with the same callbacks: a method
+	 * serves the connections of both protocols, whichever schema type it takes.
+	 * @return the modern progress specifications
+	 * @since 2.1.0
+	 */
+	public List<SyncModernProgressSpecification> getModernProgressSpecifications() {
+		return this.handlerMethods()
+			.stream()
+			.map(handlerMethod -> new SyncModernProgressSpecification(handlerMethod.clients(),
+					handlerMethod.callback()::acceptModern))
 			.toList();
+	}
 
-		return progressConsumers;
+	/**
+	 * The synchronous {@link McpProgress} methods with their callbacks. The objects are
+	 * scanned once, on first use, so that each method gets one callback, which the legacy
+	 * and the modern specifications share.
+	 */
+	private List<HandlerMethod> handlerMethods() {
+		List<HandlerMethod> handlerMethods = this.handlerMethods;
+		if (handlerMethods == null) {
+			handlerMethods = this.progressObjects.stream()
+				.flatMap(progressObject -> Stream.of(doGetClassMethods(progressObject))
+					.filter(method -> method.isAnnotationPresent(McpProgress.class))
+					.filter(McpPredicates.filterReactiveReturnTypeMethod())
+					// Only void return type is valid for sync
+					.filter(method -> method.getReturnType() == void.class)
+					.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
+					.map(mcpProgressMethod -> {
+						var progressAnnotation = mcpProgressMethod.getAnnotation(McpProgress.class);
+
+						SyncMcpProgressMethodCallback methodCallback = SyncMcpProgressMethodCallback.builder()
+							.method(mcpProgressMethod)
+							.bean(progressObject)
+							.progress(progressAnnotation)
+							.build();
+
+						return new HandlerMethod(progressAnnotation.clients(), methodCallback);
+					}))
+				.toList();
+			this.handlerMethods = handlerMethods;
+		}
+		return handlerMethods;
 	}
 
 	/**
@@ -108,6 +139,12 @@ public class SyncMcpProgressProvider {
 	 */
 	protected Method[] doGetClassMethods(Object bean) {
 		return bean.getClass().getDeclaredMethods();
+	}
+
+	/**
+	 * The clients an annotated method names and its callback.
+	 */
+	private record HandlerMethod(String[] clients, SyncMcpProgressMethodCallback callback) {
 	}
 
 }

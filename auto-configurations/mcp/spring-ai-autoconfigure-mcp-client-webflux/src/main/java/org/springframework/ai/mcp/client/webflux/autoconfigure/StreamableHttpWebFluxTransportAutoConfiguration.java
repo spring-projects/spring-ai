@@ -101,6 +101,10 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 
 		for (Map.Entry<String, ConnectionParameters> serverParameters : streamableProperties.getConnections()
 			.entrySet()) {
+			if (serverParameters.getValue().isModern()) {
+				// Modern connections are served by McpClientModernAutoConfiguration.
+				continue;
+			}
 			String connectionName = serverParameters.getKey();
 			String url = Objects.requireNonNull(serverParameters.getValue().url(),
 					"Missing url for server named " + connectionName);

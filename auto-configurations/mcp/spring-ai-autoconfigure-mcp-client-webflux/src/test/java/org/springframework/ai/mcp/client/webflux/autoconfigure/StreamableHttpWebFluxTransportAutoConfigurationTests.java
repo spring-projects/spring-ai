@@ -213,6 +213,19 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 		return (String) ReflectionUtils.getField(privateField, transport);
 	}
 
+	@Test
+	void modernConnectionsAreLeftToTheModernAutoConfiguration() {
+		this.applicationContext
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.legacy.url=http://localhost:8080",
+					"spring.ai.mcp.client.streamable-http.connections.modern.url=http://localhost:8081",
+					"spring.ai.mcp.client.streamable-http.connections.modern.protocol=MODERN")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
+						List.class);
+				assertThat(transports).extracting(NamedClientMcpTransport::name).containsExactly("legacy");
+			});
+	}
+
 	@Configuration
 	static class CustomWebClientConfiguration {
 
