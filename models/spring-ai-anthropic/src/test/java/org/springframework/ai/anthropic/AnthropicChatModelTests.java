@@ -16,6 +16,7 @@
 
 package org.springframework.ai.anthropic;
 
+import java.lang.reflect.Method;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -54,6 +55,7 @@ import com.anthropic.models.messages.RedactedThinkingBlock;
 import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.ThinkingBlock;
+import com.anthropic.models.messages.Tool;
 import com.anthropic.models.messages.ToolResultBlockParam;
 import com.anthropic.models.messages.ToolUnion;
 import com.anthropic.models.messages.ToolUseBlock;
@@ -75,6 +77,9 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.SignalType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.BooleanNode;
 
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -92,6 +97,7 @@ import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -110,6 +116,7 @@ import static org.mockito.Mockito.verify;
  * @author Sebastien Deleuze
  * @author Jewoo Shin
  * @author Seeun Kim
+ * @author Dimitar Proynov
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -1346,6 +1353,100 @@ class AnthropicChatModelTests {
 		assertThat(tools.get(0).asTool().cacheControl()).isEmpty();
 	}
 
+	@Test
+	void toolInputSchemaKeepsDefsForReusedTypes() throws Exception {
+		Method method = SchemaTestTools.class.getDeclaredMethod("bookFlight", Flight.class);
+		String inputSchema = JsonSchemaGenerator.generateForMethodInput(method);
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.toolCallbacks(List.of(new TestToolCallback("bookFlight", inputSchema)))
+			.build();
+
+		MessageCreateParams request = this.chatModel.createRequest(new Prompt("Book a flight", options), false);
+
+		JsonNode sentSchema = sentInputSchema(request);
+		assertThat(sentSchema.at("/properties/flight/properties/origin/$ref").asString()).isEqualTo("#/$defs/City");
+		assertThat(sentSchema.at("/properties/flight/properties/destination/$ref").asString())
+			.isEqualTo("#/$defs/City");
+		assertThat(sentSchema.at("/$defs/City/properties/name/type").asString()).isEqualTo("string");
+	}
+
+	@Test
+	void toolInputSchemaKeepsDefsForRecursiveTypes() throws Exception {
+		Method method = SchemaTestTools.class.getDeclaredMethod("searchBooks", BookQuery.class);
+		String inputSchema = JsonSchemaGenerator.generateForMethodInput(method);
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.toolCallbacks(List.of(new TestToolCallback("searchBooks", inputSchema)))
+			.build();
+
+		MessageCreateParams request = this.chatModel.createRequest(new Prompt("Find books", options), false);
+
+		JsonNode sentSchema = sentInputSchema(request);
+		assertThat(sentSchema.at("/properties/query/properties/filters/items/$ref").asString())
+			.isEqualTo("#/$defs/Filter");
+		assertThat(sentSchema.at("/$defs/Filter/properties/field/type").asString()).isEqualTo("string");
+		assertThat(sentSchema.at("/$defs/Filter/properties/children/items/$ref").asString())
+			.isEqualTo("#/$defs/Filter");
+	}
+
+	@Test
+	void toolInputSchemaKeepsDefinitionsUsedByReferences() {
+		String inputSchema = """
+				{
+					"type": "object",
+					"properties": {
+						"billing": {"$ref": "#/definitions/Address"},
+						"shipping": {"$ref": "#/definitions/Address"}
+					},
+					"required": ["billing", "shipping"],
+					"definitions": {
+						"Address": {"type": "object", "properties": {"street": {"type": "string"}}}
+					}
+				}
+				""";
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.toolCallbacks(List.of(new TestToolCallback("book", inputSchema)))
+			.build();
+
+		MessageCreateParams request = this.chatModel.createRequest(new Prompt("Book it", options), false);
+
+		JsonNode sentSchema = sentInputSchema(request);
+		assertThat(sentSchema.at("/properties/billing/$ref").asString()).isEqualTo("#/definitions/Address");
+		assertThat(sentSchema.at("/properties/shipping/$ref").asString()).isEqualTo("#/definitions/Address");
+		assertThat(sentSchema.at("/definitions/Address/properties/street/type").asString()).isEqualTo("string");
+	}
+
+	@Test
+	void toolInputSchemaKeepsRootKeywordsExceptSchema() {
+		String inputSchema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+					"type": "object",
+					"title": "bookArguments",
+					"properties": {"seat": {"type": "string"}},
+					"required": ["seat"],
+					"additionalProperties": false
+				}
+				""";
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.toolCallbacks(List.of(new TestToolCallback("book", inputSchema)))
+			.build();
+
+		MessageCreateParams request = this.chatModel.createRequest(new Prompt("Book it", options), false);
+
+		JsonNode sentSchema = sentInputSchema(request);
+		assertThat(sentSchema.has("$schema")).isFalse();
+		assertThat(sentSchema.path("type").asString()).isEqualTo("object");
+		assertThat(sentSchema.path("title").asString()).isEqualTo("bookArguments");
+		assertThat(sentSchema.path("properties").has("seat")).isTrue();
+		assertThat(sentSchema.path("required").get(0).asString()).isEqualTo("seat");
+		assertThat(sentSchema.path("additionalProperties")).isEqualTo(BooleanNode.FALSE);
+	}
+
+	private static JsonNode sentInputSchema(MessageCreateParams request) {
+		Tool.InputSchema inputSchema = request.tools().orElseThrow().get(0).asTool().inputSchema();
+		return JsonMapper.shared().valueToTree(JsonValue.from(inputSchema).convert(Map.class));
+	}
+
 	private boolean lastDocumentHasCacheControl(AnthropicCacheStrategy strategy) {
 		AnthropicCitationDocument document = AnthropicCitationDocument.builder().plainText("Reference").build();
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
@@ -1364,7 +1465,11 @@ class AnthropicChatModelTests {
 		private final ToolDefinition toolDefinition;
 
 		TestToolCallback(String name) {
-			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
+			this(name, "{}");
+		}
+
+		TestToolCallback(String name, String inputSchema) {
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema(inputSchema).build();
 		}
 
 		@Override
@@ -1375,6 +1480,28 @@ class AnthropicChatModelTests {
 		@Override
 		public String call(String toolInput) {
 			return "Mission accomplished!";
+		}
+
+	}
+
+	record BookQuery(List<Filter> filters) {
+	}
+
+	record Filter(String field, List<Filter> children) {
+	}
+
+	record Flight(City origin, City destination) {
+	}
+
+	record City(String name) {
+	}
+
+	static class SchemaTestTools {
+
+		void searchBooks(BookQuery query) {
+		}
+
+		void bookFlight(Flight flight) {
 		}
 
 	}
