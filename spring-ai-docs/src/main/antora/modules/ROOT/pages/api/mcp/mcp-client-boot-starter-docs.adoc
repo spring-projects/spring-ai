@@ -1031,6 +1031,83 @@ The `McpToolFilter` and `McpToolNamePrefixGenerator` beans described in <<Tool F
 The `ToolContextToMcpMetaConverter` bean applies to both protocols.
 For a modern tool call, the `progressToken` entry and the entries whose key starts with `io.modelcontextprotocol/` are left out, because the client sets them itself.
 
+=== Elicitation and Progress Handlers
+
+The `@McpElicitation` and `@McpProgress` methods described in <<MCP Client Annotations>> serve modern connections as well.
+A method serves the connections that its `clients` attribute names, whichever protocol they speak, so one method can answer a legacy and a modern server:
+
+[source,java]
+----
+@McpElicitation(clients = { "billing", "tickets" })
+public ElicitResult confirm(ElicitRequest request) {
+    boolean confirmed = askUser(request.message());
+    return new ElicitResult(confirmed ? Action.ACCEPT : Action.DECLINE, Map.of("confirmed", confirmed));
+}
+
+@McpProgress(clients = { "billing", "tickets" })
+public void progress(ProgressNotification notification) {
+    logger.info("{} of {}: {}", notification.progress(), notification.total(), notification.message());
+}
+----
+
+A handler method may take the schema types of the legacy protocol (`io.modelcontextprotocol.spec.McpSchema`), as above, or those of the modern revision (`io.modelcontextprotocol.modern.McpSchema`).
+The request or notification is converted to the type that the method takes, and the answer of the method is converted back, with two limits:
+
+* A method that takes the legacy types answers the form elicitation requests of a modern connection but not its URL elicitation requests, because the legacy `ElicitUrlRequest` requires an `elicitationId` that the modern protocol does not have.
+To answer the URL requests of a modern connection, take the modern `ElicitUrlRequest` or the modern `ElicitRequest`.
+* The `_meta` of a legacy `ElicitResult` is not sent to a modern server, whose result has none.
+
+A connection can have one `@McpElicitation` method for form requests and one for URL requests, for example a method that takes `ElicitFormRequest` and a method that takes the modern `ElicitUrlRequest`.
+A method that takes the general `ElicitRequest` stands for both kinds of request, so it must be the only elicitation method of the connections that it names.
+A legacy connection is only asked form requests.
+
+A modern client declares the elicitation modes that it has a handler for, and it asks the server for progress only when it has a progress handler.
+A server tool that requires form elicitation is therefore refused for a connection that no `@McpElicitation` method names.
+
+On a modern connection an elicitation is not a request from the server.
+The server answers the tool call with the input that it needs, the client calls the handler, and it sends the tool call again with the answer.
+The elicitation handler runs on the thread that calls the tool, and a progress handler runs on another thread.
+
+A handler method can take the `ToolContext` of the tool call that it serves, as an additional parameter.
+For a modern connection the handlers are set for each tool call, so the method knows which call, and therefore which user, the request belongs to:
+
+[source,java]
+----
+@McpElicitation(clients = "tickets")
+public ElicitResult confirm(ElicitFormRequest request, ToolContext toolContext) {
+    String user = (String) toolContext.getContext().get("user");
+    boolean confirmed = askUser(user, request.message());
+    return confirmed ? ElicitResult.accept(Map.of("confirmed", true)) : ElicitResult.decline();
+}
+----
+
+The application supplies the tool context with the request, for example `chatClient.prompt(...).toolContext(Map.of("user", userName))`.
+This also works for a streaming response, where the handler does not run on the thread of the request.
+The `ToolContext` is `null` when the request does not belong to a tool call that Spring AI makes: for a legacy connection, whose elicitation requests and progress notifications are not tied to a tool call, and for a modern client that the application uses directly.
+
+IMPORTANT: The entries of the `ToolContext` are also sent to the server, in the `_meta` of the tool call, unless a `ToolContextToMcpMetaConverter` bean decides otherwise.
+Define a `ToolContextToMcpMetaConverter.noOp()` bean if the tool context holds data that the server must not see, see <<Tool Context to MCP Meta Converter>>.
+
+For the tool calls of a connection, the annotated methods that name it take precedence over handlers set by a `McpClientCustomizer<McpClient.SyncBuilder>` bean.
+Set `formElicitation(...)`, `urlElicitation(...)` or `progress(...)` in a customizer for the connections that no annotated method names.
+
+A `SyncModernMcpToolCallCustomizer` bean customizes each tool call of the modern connections, with the `ToolContext` of that call.
+Such beans are applied in their order, after the annotated handlers are set for the call, so they can replace a handler for one call or set anything else that depends on the call, such as a timeout:
+
+[source,java]
+----
+@Bean
+SyncModernMcpToolCallCustomizer reportTimeout() {
+    return (connection, toolSpec, toolContext) -> connection.name().equals("reports")
+            ? toolSpec.roundTimeout(Duration.ofMinutes(5)) : toolSpec;
+}
+----
+
+A handler method that names a modern connection but cannot serve it is reported with a warning at startup: an `@McpElicitation` method that takes only the legacy `ElicitUrlRequest`, or an `@McpProgress` method that is not synchronous.
+
+NOTE: `@McpSampling`, `@McpLogging`, `@McpToolListChanged`, `@McpPromptListChanged` and `@McpResourceListChanged` methods are not called for a modern connection, and a warning is logged at startup for them.
+The modern client supports neither sampling nor logging, and the change notifications are not supported yet.
+
 === Connect Timeout
 
 The time to establish a connection is limited by the connect timeout of the transport, not by `spring.ai.mcp.client.request-timeout`.

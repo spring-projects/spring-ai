@@ -22,22 +22,37 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.modelcontextprotocol.modern.McpSchema.ElicitFormRequest;
+import io.modelcontextprotocol.modern.McpSchema.ElicitResult;
+import io.modelcontextprotocol.modern.McpSchema.ProgressParams;
 import io.modelcontextprotocol.modern.client.McpClient;
 import io.modelcontextprotocol.modern.client.transport.HttpClientMcpTransport;
 import io.modelcontextprotocol.modern.client.transport.McpClientTransport;
+import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.McpToolFilter;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
+import org.springframework.ai.mcp.annotation.McpElicitation;
+import org.springframework.ai.mcp.annotation.McpLogging;
+import org.springframework.ai.mcp.annotation.McpProgress;
+import org.springframework.ai.mcp.annotation.McpSampling;
+import org.springframework.ai.mcp.annotation.McpToolListChanged;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties.ConnectionParameters;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.ai.mcp.modern.client.McpModernToolFilter;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallCustomizer;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -50,6 +65,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Christian Tzolov
  */
+@ExtendWith(OutputCaptureExtension.class)
 class McpClientModernAutoConfigurationTests {
 
 	private static final String CONNECTIONS = "spring.ai.mcp.client.streamable-http.connections.";
@@ -222,6 +238,52 @@ class McpClientModernAutoConfigurationTests {
 	}
 
 	@Test
+	void handlerAnnotationsThatAModernConnectionDoesNotSupportAreReportedAtStartup(CapturedOutput output) {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(McpClientAnnotationScannerAutoConfiguration.class))
+			.withUserConfiguration(HandlersConfiguration.class)
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(output).contains("The @McpSampling methods for the MCP connection 'tickets' are not called")
+					.contains("The @McpLogging methods for the MCP connection 'tickets' are not called")
+					.contains("The @McpToolListChanged methods for the MCP connection 'tickets' are not called")
+					.doesNotContain("The @McpElicitation methods")
+					.doesNotContain("The @McpProgress methods")
+					// The handlers of another connection are no concern of this one.
+					.doesNotContain("for the MCP connection 'billing'");
+			});
+	}
+
+	@Test
+	void handlerMethodsThatCannotServeAModernConnectionAreReportedAtStartup(CapturedOutput output) {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(McpClientAnnotationScannerAutoConfiguration.class))
+			.withUserConfiguration(UnusableHandlersConfiguration.class)
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(output)
+					.contains("The @McpElicitation methods for the MCP connection 'tickets' are not called")
+					.contains("The @McpProgress methods for the MCP connection 'tickets' are not called");
+			});
+	}
+
+	@Test
+	void toolCallCustomizerBeansAreSetOnTheModernProvider() {
+		this.contextRunner.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
+			.run(context -> assertThat(context.getBean(SyncMcpToolCallbackProvider.class))
+				.extracting("modernToolCallbackProvider")
+				.extracting("toolCallCustomizer")
+				.isNull());
+
+		this.contextRunner.withUserConfiguration(ToolCallCustomizerConfiguration.class)
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
+			.run(context -> assertThat(context.getBean(SyncMcpToolCallbackProvider.class))
+				.extracting("modernToolCallbackProvider")
+				.extracting("toolCallCustomizer")
+				.isSameAs(context.getBean(SyncModernMcpToolCallCustomizer.class)));
+	}
+
+	@Test
 	void legacyToolFilterAloneFailsTheStartupWhenThereAreModernConnections() {
 		this.contextRunner.withUserConfiguration(LegacyToolFilterConfiguration.class)
 			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
@@ -298,6 +360,79 @@ class McpClientModernAutoConfigurationTests {
 		@Bean
 		McpModernToolFilter modernToolFilter() {
 			return (connectionInfo, tool) -> !tool.name().startsWith("admin");
+		}
+
+	}
+
+	static class Handlers {
+
+		@McpElicitation(clients = "tickets")
+		ElicitResult elicitation(ElicitFormRequest request) {
+			return ElicitResult.decline();
+		}
+
+		@McpProgress(clients = "tickets")
+		void progress(ProgressParams progress) {
+		}
+
+		@McpSampling(clients = { "tickets", "billing" })
+		McpSchema.CreateMessageResult sampling(McpSchema.CreateMessageRequest request) {
+			throw new UnsupportedOperationException();
+		}
+
+		@McpLogging(clients = "tickets")
+		void logging(McpSchema.LoggingMessageNotification notification) {
+		}
+
+		@McpToolListChanged(clients = "tickets")
+		void toolListChanged(List<McpSchema.Tool> tools) {
+		}
+
+	}
+
+	/** Handler methods that name the modern connection but cannot serve it. */
+	static class UnusableHandlers {
+
+		// A legacy URL request needs an elicitationId, which the modern protocol lacks.
+		@McpElicitation(clients = "tickets")
+		McpSchema.ElicitResult legacyUrl(McpSchema.ElicitUrlRequest request) {
+			throw new UnsupportedOperationException();
+		}
+
+		// The modern client calls synchronous handlers only.
+		@McpProgress(clients = "tickets")
+		Mono<Void> reactiveProgress(McpSchema.ProgressNotification notification) {
+			return Mono.empty();
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class UnusableHandlersConfiguration {
+
+		@Bean
+		UnusableHandlers unusableHandlers() {
+			return new UnusableHandlers();
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class ToolCallCustomizerConfiguration {
+
+		@Bean
+		SyncModernMcpToolCallCustomizer toolCallCustomizer() {
+			return (connectionInfo, toolSpec, toolContext) -> toolSpec;
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class HandlersConfiguration {
+
+		@Bean
+		Handlers handlers() {
+			return new Handlers();
 		}
 
 	}

@@ -98,7 +98,7 @@ public abstract class AbstractMcpElicitationMethodCallback {
 		// Check parameter types
 		if (parameters.length == 1) {
 			// Single parameter must be ElicitRequest
-			if (!ElicitRequest.class.isAssignableFrom(parameters[0].getType())) {
+			if (!this.isRequestType(parameters[0].getType())) {
 				throw new IllegalArgumentException("Single parameter must be of type ElicitRequest: " + method.getName()
 						+ " in " + method.getDeclaringClass().getName() + " has parameter of type "
 						+ parameters[0].getType().getName());
@@ -113,6 +113,18 @@ public abstract class AbstractMcpElicitationMethodCallback {
 							+ " in " + method.getDeclaringClass().getName() + " has " + parameters.length
 							+ " parameters");
 		}
+	}
+
+	/**
+	 * Checks if a parameter type is an elicitation request that the callback can pass to
+	 * the method. The default accepts the {@code ElicitRequest} types of the legacy
+	 * protocol.
+	 * @param paramType The parameter type to check
+	 * @return true if the callback supports the parameter type
+	 * @since 2.1.0
+	 */
+	protected boolean isRequestType(Class<?> paramType) {
+		return ElicitRequest.class.isAssignableFrom(paramType);
 	}
 
 	/**

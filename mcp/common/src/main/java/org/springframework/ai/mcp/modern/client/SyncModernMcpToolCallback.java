@@ -77,12 +77,20 @@ public final class SyncModernMcpToolCallback implements ToolCallback {
 
 	private final ToolContextToMcpMetaConverter toolContextToMcpMetaConverter;
 
+	private final @Nullable McpModernConnectionInfo connectionInfo;
+
+	private final @Nullable SyncModernMcpToolCallCustomizer toolCallCustomizer;
+
 	private SyncModernMcpToolCallback(McpSyncClient mcpClient, Tool tool, String prefixedToolName,
-			ToolContextToMcpMetaConverter toolContextToMcpMetaConverter) {
+			ToolContextToMcpMetaConverter toolContextToMcpMetaConverter,
+			@Nullable McpModernConnectionInfo connectionInfo,
+			@Nullable SyncModernMcpToolCallCustomizer toolCallCustomizer) {
 		Assert.notNull(mcpClient, "mcpClient must not be null");
 		Assert.notNull(tool, "tool must not be null");
 		Assert.hasText(prefixedToolName, "prefixedToolName must not be empty");
 		Assert.notNull(toolContextToMcpMetaConverter, "toolContextToMcpMetaConverter must not be null");
+		Assert.isTrue(toolCallCustomizer == null || connectionInfo != null,
+				"connectionInfo must not be null when a toolCallCustomizer is set");
 
 		// Request specs are immutable: the prepared spec is shared by every call, and
 		// each call derives its own spec with the arguments and the _meta entries.
@@ -90,6 +98,8 @@ public final class SyncModernMcpToolCallback implements ToolCallback {
 		this.tool = tool;
 		this.prefixedToolName = prefixedToolName;
 		this.toolContextToMcpMetaConverter = toolContextToMcpMetaConverter;
+		this.connectionInfo = connectionInfo;
+		this.toolCallCustomizer = toolCallCustomizer;
 	}
 
 	/**
@@ -131,7 +141,12 @@ public final class SyncModernMcpToolCallback implements ToolCallback {
 
 		CallToolResult result;
 		try {
-			result = this.toolSpec.arguments(arguments).meta(this.requestMeta(toolContext)).call();
+			McpSyncClient.ToolSpec callSpec = this.toolSpec.arguments(arguments).meta(this.requestMeta(toolContext));
+			if (this.toolCallCustomizer != null && this.connectionInfo != null) {
+				callSpec = this.toolCallCustomizer.customize(this.connectionInfo, callSpec, toolContext);
+				Assert.state(callSpec != null, "toolCallCustomizer must not return null");
+			}
+			result = callSpec.call();
 		}
 		catch (McpClientException | McpException ex) {
 			// The call itself failed: the server answered with a protocol error, or the
@@ -199,6 +214,10 @@ public final class SyncModernMcpToolCallback implements ToolCallback {
 		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter
 			.defaultConverter();
 
+		private @Nullable McpModernConnectionInfo connectionInfo;
+
+		private @Nullable SyncModernMcpToolCallCustomizer toolCallCustomizer;
+
 		private Builder() {
 		}
 
@@ -246,6 +265,30 @@ public final class SyncModernMcpToolCallback implements ToolCallback {
 		}
 
 		/**
+		 * Sets the connection the tool belongs to. Required when a
+		 * {@link #toolCallCustomizer} is set, which receives it.
+		 * @param connectionInfo the connection of the tool
+		 * @return this builder
+		 */
+		public Builder connectionInfo(McpModernConnectionInfo connectionInfo) {
+			Assert.notNull(connectionInfo, "connectionInfo must not be null");
+			this.connectionInfo = connectionInfo;
+			return this;
+		}
+
+		/**
+		 * Sets the customizer that is applied to the request spec of every call, with the
+		 * {@link ToolContext} of that call.
+		 * @param toolCallCustomizer the customizer
+		 * @return this builder
+		 */
+		public Builder toolCallCustomizer(SyncModernMcpToolCallCustomizer toolCallCustomizer) {
+			Assert.notNull(toolCallCustomizer, "toolCallCustomizer must not be null");
+			this.toolCallCustomizer = toolCallCustomizer;
+			return this;
+		}
+
+		/**
 		 * Builds the callback.
 		 * @return the callback
 		 */
@@ -253,7 +296,8 @@ public final class SyncModernMcpToolCallback implements ToolCallback {
 			Assert.notNull(this.mcpClient, "mcpClient must not be null");
 			Assert.notNull(this.tool, "tool must not be null");
 			String name = this.prefixedToolName != null ? this.prefixedToolName : this.tool.name();
-			return new SyncModernMcpToolCallback(this.mcpClient, this.tool, name, this.toolContextToMcpMetaConverter);
+			return new SyncModernMcpToolCallback(this.mcpClient, this.tool, name, this.toolContextToMcpMetaConverter,
+					this.connectionInfo, this.toolCallCustomizer);
 		}
 
 	}

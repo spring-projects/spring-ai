@@ -85,7 +85,7 @@ class ClientMcpSyncHandlersRegistryTests {
 		assertThatThrownBy(() -> registry.postProcessBeanFactory(beanFactory))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage(
-					"Found 2 elicitation handlers for client [client-1], found in bean with names [firstConfig, secondConfig]. Only one @McpElicitation handler is allowed per client");
+					"Found 2 elicitation handlers for client [client-1], found in bean with names [firstConfig, secondConfig]. Only one @McpElicitation handler is allowed per client, or one for form requests and one for URL requests");
 	}
 
 	@Test
@@ -98,7 +98,7 @@ class ClientMcpSyncHandlersRegistryTests {
 		assertThatThrownBy(() -> registry.postProcessBeanFactory(beanFactory))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage(
-					"Found 2 elicitation handlers for client [client-1], found in bean with names [elicitationConfig]. Only one @McpElicitation handler is allowed per client");
+					"Found 2 elicitation handlers for client [client-1], found in bean with names [elicitationConfig]. Only one @McpElicitation handler is allowed per client, or one for form requests and one for URL requests");
 	}
 
 	@Test

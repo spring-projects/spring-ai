@@ -213,6 +213,59 @@ class SyncModernMcpToolCallbackProviderTests {
 	}
 
 	@Test
+	void toolCallCustomizerIsAppliedToEachCallWithItsToolContext() {
+		McpSyncClient client = McpClient.sync(transport(whoAmITool())).build();
+		List<String> calls = new CopyOnWriteArrayList<>();
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(SyncModernMcpConnection.shared(info("idp"), client))
+			.toolCallCustomizer((connectionInfo, toolSpec, toolContext) -> {
+				calls.add(connectionInfo.name() + ":"
+						+ (toolContext != null ? toolContext.getContext().get("user") : "no tool context"));
+				// The spec that the customizer returns is the one that is called.
+				return toolSpec.meta(Map.of("tenant", "set-by-customizer"));
+			})
+			.build();
+		ToolCallback callback = provider.getToolCallbacks()[0];
+
+		assertThat(callback.call("{}", new ToolContext(Map.of("user", "alice"))))
+			.contains("\"tenant\":\"set-by-customizer\"");
+		callback.call("{}");
+
+		assertThat(calls).containsExactly("idp:alice", "idp:no tool context");
+	}
+
+	@Test
+	void composedToolCallCustomizersAreAppliedInOrder() {
+		McpSyncClient client = McpClient.sync(transport(whoAmITool())).build();
+		SyncModernMcpToolCallCustomizer first = (connectionInfo, toolSpec, toolContext) -> toolSpec
+			.meta(Map.of("tenant", "set-by-first"));
+		SyncModernMcpToolCallCustomizer second = (connectionInfo, toolSpec, toolContext) -> toolSpec
+			.meta(Map.of("tenant", "set-by-second"));
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(SyncModernMcpConnection.shared(info("idp"), client))
+			.toolCallCustomizer(first.andThen(second))
+			.build();
+
+		// What the later customizer sets replaces what the earlier one set.
+		assertThat(provider.getToolCallbacks()[0].call("{}")).contains("\"tenant\":\"set-by-second\"");
+	}
+
+	@Test
+	void failingToolCallCustomizerBecomesToolExecutionException() {
+		McpSyncClient client = McpClient.sync(transport(echoTool())).build();
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(SyncModernMcpConnection.shared(info("demo"), client))
+			.toolCallCustomizer((connectionInfo, toolSpec, toolContext) -> {
+				throw new IllegalStateException("no handler for this user");
+			})
+			.build();
+		ToolCallback callback = provider.getToolCallbacks()[0];
+
+		assertThatThrownBy(() -> callback.call("{\"text\":\"hi\"}")).isInstanceOf(ToolExecutionException.class)
+			.hasMessageContaining("no handler for this user");
+	}
+
+	@Test
 	void perRequestConnectionBindsCallbacksToTheCallerOfThatRequest() {
 		InMemoryTransport transport = transport(whoAmITool());
 		AtomicReference<String> currentUser = new AtomicReference<>("alice");

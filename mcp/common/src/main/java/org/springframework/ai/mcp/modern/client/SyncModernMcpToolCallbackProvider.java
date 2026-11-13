@@ -35,6 +35,7 @@ import io.modelcontextprotocol.modern.client.McpTimeoutException;
 import io.modelcontextprotocol.modern.client.transport.McpHttpStatusException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import reactor.core.Exceptions;
 
 import org.springframework.ai.mcp.ToolContextToMcpMetaConverter;
@@ -116,9 +117,12 @@ public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProv
 
 	private final ToolContextToMcpMetaConverter toolContextToMcpMetaConverter;
 
+	private final @Nullable SyncModernMcpToolCallCustomizer toolCallCustomizer;
+
 	private SyncModernMcpToolCallbackProvider(List<SyncModernMcpConnection> connections, McpModernToolFilter toolFilter,
 			McpModernToolNamePrefixGenerator toolNamePrefixGenerator,
-			ToolContextToMcpMetaConverter toolContextToMcpMetaConverter, Duration unreachableCoolDown,
+			ToolContextToMcpMetaConverter toolContextToMcpMetaConverter,
+			@Nullable SyncModernMcpToolCallCustomizer toolCallCustomizer, Duration unreachableCoolDown,
 			LongSupplier nanoClock) {
 		Assert.notNull(connections, "connections must not be null");
 		Assert.notNull(toolFilter, "toolFilter must not be null");
@@ -128,6 +132,7 @@ public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProv
 		this.toolFilter = toolFilter;
 		this.toolNamePrefixGenerator = toolNamePrefixGenerator;
 		this.toolContextToMcpMetaConverter = toolContextToMcpMetaConverter;
+		this.toolCallCustomizer = toolCallCustomizer;
 		this.unreachableCoolDownNanos = unreachableCoolDown.toNanos();
 		this.nanoClock = nanoClock;
 	}
@@ -172,12 +177,16 @@ public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProv
 			this.serverReachable(connection);
 			for (Tool tool : tools) {
 				if (this.toolFilter.test(connectionInfo, tool)) {
-					toolCallbacks.add(SyncModernMcpToolCallback.builder()
+					SyncModernMcpToolCallback.Builder toolCallback = SyncModernMcpToolCallback.builder()
 						.mcpClient(mcpClient)
 						.tool(tool)
 						.prefixedToolName(this.toolNamePrefixGenerator.prefixedToolName(connectionInfo, tool))
 						.toolContextToMcpMetaConverter(this.toolContextToMcpMetaConverter)
-						.build());
+						.connectionInfo(connectionInfo);
+					if (this.toolCallCustomizer != null) {
+						toolCallback.toolCallCustomizer(this.toolCallCustomizer);
+					}
+					toolCallbacks.add(toolCallback.build());
 				}
 			}
 		}
@@ -281,6 +290,8 @@ public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProv
 		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter
 			.defaultConverter();
 
+		private @Nullable SyncModernMcpToolCallCustomizer toolCallCustomizer;
+
 		private Duration unreachableCoolDown = DEFAULT_UNREACHABLE_COOL_DOWN;
 
 		private LongSupplier nanoClock = System::nanoTime;
@@ -348,6 +359,19 @@ public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProv
 		}
 
 		/**
+		 * Sets the customizer that is applied to every tool call, with the
+		 * {@code ToolContext} of that call. Use it to set what depends on the call, such
+		 * as an elicitation handler that needs to know the user it has to ask.
+		 * @param toolCallCustomizer the customizer
+		 * @return this builder
+		 */
+		public Builder toolCallCustomizer(SyncModernMcpToolCallCustomizer toolCallCustomizer) {
+			Assert.notNull(toolCallCustomizer, "toolCallCustomizer must not be null");
+			this.toolCallCustomizer = toolCallCustomizer;
+			return this;
+		}
+
+		/**
 		 * Sets how long a server that could not be reached is left alone before it is
 		 * asked for its tools again. During that time its tools are left out without
 		 * contacting it. Defaults to 30 seconds; zero asks the server on every call.
@@ -376,8 +400,8 @@ public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProv
 		 */
 		public SyncModernMcpToolCallbackProvider build() {
 			return new SyncModernMcpToolCallbackProvider(this.connections, this.toolFilter,
-					this.toolNamePrefixGenerator, this.toolContextToMcpMetaConverter, this.unreachableCoolDown,
-					this.nanoClock);
+					this.toolNamePrefixGenerator, this.toolContextToMcpMetaConverter, this.toolCallCustomizer,
+					this.unreachableCoolDown, this.nanoClock);
 		}
 
 	}

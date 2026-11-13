@@ -99,7 +99,7 @@ public abstract class AbstractMcpProgressMethodCallback {
 		// Check parameter types
 		if (parameters.length == 1) {
 			// Single parameter must be ProgressNotification
-			if (!ProgressNotification.class.isAssignableFrom(parameters[0].getType())) {
+			if (!this.isNotificationType(parameters[0].getType())) {
 				throw new IllegalArgumentException("Single parameter must be of type ProgressNotification: "
 						+ method.getName() + " in " + method.getDeclaringClass().getName() + " has parameter of type "
 						+ parameters[0].getType().getName());
@@ -124,6 +124,18 @@ public abstract class AbstractMcpProgressMethodCallback {
 						+ parameters[2].getType().getName());
 			}
 		}
+	}
+
+	/**
+	 * Checks if a parameter type is a progress notification that the callback can pass to
+	 * the method. The default accepts the {@code ProgressNotification} of the legacy
+	 * protocol.
+	 * @param paramType The parameter type to check
+	 * @return true if the callback supports the parameter type
+	 * @since 2.1.0
+	 */
+	protected boolean isNotificationType(Class<?> paramType) {
+		return ProgressNotification.class.isAssignableFrom(paramType);
 	}
 
 	/**

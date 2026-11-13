@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.client.common.autoconfigure;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -29,11 +30,13 @@ import org.springframework.ai.mcp.McpToolFilter;
 import org.springframework.ai.mcp.McpToolNamePrefixGenerator;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.ToolContextToMcpMetaConverter;
+import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientModernProperties;
 import org.springframework.ai.mcp.modern.client.McpModernToolFilter;
 import org.springframework.ai.mcp.modern.client.McpModernToolNamePrefixGenerator;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallCustomizer;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -81,6 +84,11 @@ public class McpToolCallbackAutoConfiguration {
 	 * @param modernToolNamePrefixGenerator the name generator of the modern connections'
 	 * tools
 	 * @param modernProperties the properties of the modern connections
+	 * @param handlersRegistry the registry of the annotated client handler methods, if
+	 * the annotation scanner is enabled; its elicitation and progress methods handle the
+	 * tool calls of the modern connections
+	 * @param toolCallCustomizers the customizers of the tool calls of the modern
+	 * connections, applied in their order after the annotated handlers are set
 	 * @return list of tool callbacks for MCP integration
 	 */
 	@Bean
@@ -93,7 +101,8 @@ public class McpToolCallbackAutoConfiguration {
 			ObjectProvider<List<SyncModernMcpConnection>> modernMcpConnections,
 			ObjectProvider<McpModernToolFilter> modernToolFilter,
 			ObjectProvider<McpModernToolNamePrefixGenerator> modernToolNamePrefixGenerator,
-			McpClientModernProperties modernProperties) {
+			McpClientModernProperties modernProperties, ObjectProvider<ClientMcpSyncHandlersRegistry> handlersRegistry,
+			ObjectProvider<SyncModernMcpToolCallCustomizer> toolCallCustomizers) {
 
 		List<McpSyncClient> mcpClients = syncMcpClients.stream().flatMap(List::stream).toList();
 
@@ -131,14 +140,22 @@ public class McpToolCallbackAutoConfiguration {
 						+ ". They are named <connection>_<tool> unless a McpModernToolNamePrefixGenerator bean is "
 						+ "defined.");
 			}
-			builder.modernToolCallbackProvider(SyncModernMcpToolCallbackProvider.builder()
+			SyncModernMcpToolCallbackProvider.Builder modernBuilder = SyncModernMcpToolCallbackProvider.builder()
 				.connections(modernConnections)
 				.toolFilter(modernToolFilter.getIfUnique(McpModernToolFilter::acceptAll))
 				.toolNamePrefixGenerator(
 						modernToolNamePrefixGenerator.getIfUnique(McpModernToolNamePrefixGenerator::connectionPrefix))
 				.toolContextToMcpMetaConverter(metaConverter)
-				.unreachableCoolDown(modernProperties.getUnreachableCoolDown())
-				.build());
+				.unreachableCoolDown(modernProperties.getUnreachableCoolDown());
+			// The annotated handlers are set for each tool call, so that they receive
+			// the ToolContext of that call. The customizers of the application run after
+			// them and can replace what they set.
+			Stream<SyncModernMcpToolCallCustomizer> annotatedHandlers = handlersRegistry.stream()
+				.map(McpClientModernAutoConfiguration::annotatedHandlersToolCallCustomizer);
+			Stream.concat(annotatedHandlers, toolCallCustomizers.orderedStream())
+				.reduce(SyncModernMcpToolCallCustomizer::andThen)
+				.ifPresent(modernBuilder::toolCallCustomizer);
+			builder.modernToolCallbackProvider(modernBuilder.build());
 		}
 
 		return builder.build();
