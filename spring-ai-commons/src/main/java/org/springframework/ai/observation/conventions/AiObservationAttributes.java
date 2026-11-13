@@ -39,6 +39,10 @@ public enum AiObservationAttributes {
 	 * The model provider as identified by the client instrumentation.
 	 */
 	AI_PROVIDER("gen_ai.system"),
+	/**
+	 * Describes a class of error the operation ended with.
+	 */
+	ERROR_TYPE("error.type"),
 
 	// GenAI Request
 
