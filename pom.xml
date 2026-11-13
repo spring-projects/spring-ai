@@ -268,7 +268,7 @@
 		<spring-boot.version>4.2.0-SNAPSHOT</spring-boot.version>
 
 		<!-- MCP SDK -->
-		<mcp.sdk.version>2.2.0-SNAPSHOT</mcp.sdk.version>
+		<mcp.sdk.version>2.2.0</mcp.sdk.version>
 
 		<!-- AI model SDKs -->
 		<anthropic-sdk.version>3.4.0</anthropic-sdk.version>
