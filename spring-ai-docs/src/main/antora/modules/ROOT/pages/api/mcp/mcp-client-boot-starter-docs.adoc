@@ -310,6 +310,7 @@ See link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-c
 === Streamable-HTTP Transport Properties
 
 Used for connecting to Streamable-HTTP and Stateless Streamable-HTTP MCP servers.
+A connection can also speak the 2026-07-28 protocol revision, see <<mcp-modern-connections>>.
 
 Properties for Streamable-HTTP transport are prefixed with `spring.ai.mcp.client.streamable-http`:
 
@@ -835,6 +836,250 @@ If no custom converter bean is provided, the default converter is used automatic
 The MCP ToolCallback auto-configuration is enabled by default, but can be disabled with the `spring.ai.mcp.client.toolcallback.enabled=false` property.
 
 When disabled, no `ToolCallbackProvider` bean is created from the available MCP tools.
+
+[[mcp-modern-connections]]
+== MCP 2026-07-28 ("Modern") Connections
+
+A Streamable-HTTP connection can speak the link:https://modelcontextprotocol.io/specification/2026-07-28[2026-07-28 MCP specification revision] (the "modern" protocol), which is stateless and has no `initialize` handshake.
+A connection is modern when its `protocol` property is `MODERN`, and a connection without that property stays on the legacy protocol.
+Legacy and modern connections can be used in the same application, and the auto-configured `SyncMcpToolCallbackProvider` bean returns the tools of both.
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        streamable-http:
+          connections:
+            billing:
+              url: http://localhost:8081
+            tickets:
+              url: http://localhost:8080
+              protocol: MODERN
+----
+
+A modern client is created without contacting the server, so nothing is sent to a modern server at startup and `spring.ai.mcp.client.initialized` does not apply.
+Modern connections use the JDK `HttpClient` transport of the MCP Java SDK with both client starters.
+For the server side, see xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc[MCP 2026-07-28 ("Modern") Servers].
+
+NOTE: Modern connections require the MCP Java SDK `2.2.0` line or later and support only the synchronous client type.
+With `spring.ai.mcp.client.type=ASYNC` a modern connection fails the startup.
+
+=== Modern Connection Properties
+
+[cols="3,4,2"]
+|===
+|Property |Description |Default Value
+
+|`spring.ai.mcp.client.streamable-http.connections.[name].protocol`
+|The protocol the connection speaks: `LEGACY` or `MODERN`.
+|`LEGACY`
+
+|`spring.ai.mcp.client.streamable-http.connections.[name].client-scope`
+|How many clients serve a modern connection.
+`PER_REQUEST` creates a client each time the tools are resolved, which a `ChatClient` does once for each request.
+`SHARED` creates one client at startup, for an application that calls the server under a single identity.
+|`PER_REQUEST`
+
+|`spring.ai.mcp.client.request-timeout`
+|The timeout of one exchange with the server, from sending a request until its response arrives.
+The legacy clients use the same property.
+|`20s`
+
+|`spring.ai.mcp.client.modern.call-timeout`
+|The timeout of a whole call, including every exchange and every wait for input.
+|-
+
+|`spring.ai.mcp.client.modern.unreachable-cool-down`
+|How long a server that could not be reached is left alone before it is asked for its tools again.
+During that time its tools are left out, and the tools of the other connections stay usable.
+Zero asks the server on every request.
+|`30s`
+|===
+
+The `endpoint` of a modern connection is appended to its `url`, and a path in the `url` is kept: `http://host/api` and `/mcp` give `http://host/api/mcp`.
+
+=== Client Scope and Identity
+
+A modern client stands for one caller.
+It is cheap to create, because it holds no session and all clients of a connection share one transport.
+The `client-scope` of a connection decides how many clients serve it:
+
+* `PER_REQUEST` (the default) creates a client each time the tools of the connection are resolved.
+A `ChatClient` resolves them once for each request, so every request gets its own client, and the tool callbacks of that request call the server through it.
+* `SHARED` creates one client when the application starts and uses it for all requests.
+Use it when the application calls the server under a single identity, for example a service account.
+
+The legacy clients are always shared, see <<client-scope-and-session-boundaries>>.
+
+IMPORTANT: Register the provider with the `ChatClient`, not the callbacks it returns: `ChatClient.builder(chatModel).defaultToolCallbacks(toolCallbackProvider)`.
+Callbacks taken from `getToolCallbacks()` once, for example when a bean is created, stay bound to the client of that one call.
+
+The identity of a caller reaches the server in two steps.
+A `McpClientCustomizer<McpClient.SyncBuilder>` bean sets the `transportContextProvider` of the client, which supplies the `McpTransportContext` of each call.
+`McpHttpRequestCustomizer` beans are added to the transport of every modern connection and turn that context into HTTP headers:
+
+[source,java]
+----
+@Bean
+McpClientCustomizer<McpClient.SyncBuilder> callerCustomizer() {
+    return (connectionName, builder) -> {
+        // Runs when a client is built: with PER_REQUEST once for each request,
+        // on the thread that resolves the tools.
+        McpTransportContext caller = McpTransportContext.create(Map.of("user", CurrentUser.name()));
+        builder.transportContextProvider(() -> caller);
+    };
+}
+
+@Bean
+McpHttpRequestCustomizer accessTokenCustomizer(TokenService tokens) {
+    return McpHttpRequestCustomizer.fromSync((request, headers, context) ->
+            headers.set("Authorization", "Bearer " + tokens.accessToken((String) context.get("user"))));
+}
+----
+
+`CurrentUser` and `TokenService` stand for the way the application knows its caller and obtains a token, for example the Spring Security context.
+
+A `McpHttpAuthorizationErrorHandler` bean, if defined, decides whether a request answered with `401` or `403` is sent again.
+Without one, such an answer fails the call.
+When it is the answer to the tool listing, it fails `getToolCallbacks()`, so that the application can ask the user to log in again.
+
+[WARNING]
+====
+Do not share a client between callers of a server that answers them differently.
+A shared client may keep the tool listing that the first caller received and return it to every caller that follows.
+
+With `client-scope=SHARED` the client customizers run once, at startup.
+A `transportContextProvider` of a shared client must therefore read the caller on each call and cannot capture it as the example above does.
+====
+
+==== Streaming Responses
+
+With `ChatClient.stream()` the tools are resolved on the thread that calls `stream()`, and the tool calls of the model run later, on a Reactor scheduler thread.
+A value bound to the calling thread, such as a security context, is not visible on that thread.
+
+The customizer above is safe.
+It reads the caller when the client is built, on the calling thread, and the tool callbacks carry that client to the thread that executes the tool.
+
+A `transportContextProvider` that reads a thread-bound value on each call does not see the caller on the scheduler thread.
+This applies to every `SHARED` connection that takes the caller from the thread.
+Such an application must carry the caller to the tool execution thread itself.
+
+=== Tool Listings
+
+The tools of a modern connection are listed when a request resolves its tools, and all pages of the listing are read.
+The server decides whether a listing may be kept for later requests, with the `ttlMs` and the `cacheScope` that it sends with the listing:
+
+[cols="2,3,3"]
+|===
+|Listing from the server |`PER_REQUEST` connection |`SHARED` connection
+
+|`ttlMs` of zero
+|Listed again for each request.
+|Listed again for each request.
+
+|`ttlMs` above zero, `cacheScope` of `public`
+|Kept for the `ttlMs` and used for all requests.
+|Kept for the `ttlMs` and used for all requests.
+
+|`ttlMs` above zero, `cacheScope` of `private`
+|Listed again for each request, because the listing may differ from caller to caller.
+|Kept by the shared client for the `ttlMs`.
+|===
+
+A kept listing saves only the `tools/list` request.
+A tool call always goes to the server, through the client of the request that makes it.
+A change of the server's tools becomes visible when the `ttlMs` of a kept listing has passed.
+
+TIP: A Spring AI modern server sends a `ttlMs` of zero and a `cacheScope` of `private` unless configured otherwise, so by default its tools are listed for each request.
+If the server offers the same tools to every caller, set both `spring.ai.mcp.server.modern.list-ttl` and `spring.ai.mcp.server.modern.list-cache-scope=PUBLIC` on the server, see xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#_configuration_properties[its configuration properties].
+
+=== Tool Names and Filtering
+
+The tools of a modern connection are named `<connection>_<tool>`, for example `tickets_search` for the `search` tool of the `tickets` connection.
+Characters that are not allowed in a tool name are removed, hyphens become underscores, and a name longer than 64 characters keeps its last 64.
+Define a `McpModernToolNamePrefixGenerator` bean to name the tools differently:
+
+[source,java]
+----
+@Bean
+McpModernToolNamePrefixGenerator modernToolNames() {
+    return McpModernToolNamePrefixGenerator.noPrefix();
+}
+----
+
+Two tools that end up with the same name, among the legacy and the modern tools together, fail the resolution of the tools with an `IllegalStateException`.
+
+A `McpModernToolFilter` bean decides which tools of the modern connections are exposed.
+It receives the connection, with its name, and the tool:
+
+[source,java]
+----
+@Bean
+McpModernToolFilter modernToolFilter() {
+    return (connection, tool) -> !(connection.name().equals("tickets") && tool.name().startsWith("admin_"));
+}
+----
+
+The `McpToolFilter` and `McpToolNamePrefixGenerator` beans described in <<Tool Filtering>> and <<Tool Name Prefix Generation>> take the types of the legacy protocol and do not apply to modern connections:
+
+* An application that defines a `McpToolFilter` bean and has a modern connection must define a `McpModernToolFilter` bean as well, otherwise it fails to start.
+`McpModernToolFilter.acceptAll()` exposes all tools.
+* A custom `McpToolNamePrefixGenerator` bean without a `McpModernToolNamePrefixGenerator` bean logs a warning, and the modern tools keep their `<connection>_<tool>` names.
+
+The `ToolContextToMcpMetaConverter` bean applies to both protocols.
+For a modern tool call, the `progressToken` entry and the entries whose key starts with `io.modelcontextprotocol/` are left out, because the client sets them itself.
+
+=== Connect Timeout
+
+The time to establish a connection is limited by the connect timeout of the transport, not by `spring.ai.mcp.client.request-timeout`.
+It defaults to 10 seconds in the MCP Java SDK.
+There is no property for it.
+Set it with a `McpClientCustomizer<HttpClientMcpTransport.Builder>` bean, which receives the name of the connection:
+
+[source,java]
+----
+@Bean
+McpClientCustomizer<HttpClientMcpTransport.Builder> connectTimeoutCustomizer() {
+    return (name, builder) -> builder.connectTimeout(Duration.ofSeconds(2));
+}
+----
+
+The connect timeout decides how long a request waits for a server whose host does not answer.
+The first request that resolves the tools waits for the connect timeout, and the server is then left alone for the `unreachable-cool-down` time.
+A lower connect timeout shortens that first wait.
+
+NOTE: Set the connect timeout on the transport builder.
+A connect timeout set on the JDK `HttpClient` builder through `customizeClient(...)` or `clientBuilder(...)` is replaced by the value of the transport.
+
+=== STDIO and Other Transports
+
+The `spring.ai.mcp.client.stdio` properties create legacy clients only.
+To reach a modern server over another transport, define a `List<NamedModernClientMcpTransport>` bean.
+Each transport in the list becomes a modern connection with a client for each request, and the same `SyncMcpToolCallbackProvider` bean returns its tools.
+
+The following example runs a modern server as a process, with the `StdioMcpClientTransport` of the MCP Java SDK:
+
+[source,java]
+----
+@Bean
+StdioMcpClientTransport filesTransport() {
+    ServerParameters parameters = ServerParameters.builder("java")
+        .args("-jar", "files-mcp-server.jar")
+        .build();
+    return StdioMcpClientTransport.builder(parameters).start();
+}
+
+@Bean
+List<NamedModernClientMcpTransport> modernStdioTransports(StdioMcpClientTransport filesTransport) {
+    return List.of(new NamedModernClientMcpTransport("files", filesTransport));
+}
+----
+
+`start()` spawns the server process when the bean is created.
+A client does not own its transport, so the transport is a bean of its own.
+Spring closes it when the application context is closed, which ends the server process.
 
 == MCP Client Annotations
 
