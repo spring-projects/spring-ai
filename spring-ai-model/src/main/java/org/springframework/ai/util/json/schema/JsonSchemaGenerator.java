@@ -94,6 +94,25 @@ public final class JsonSchemaGenerator {
 	 * Initialize JSON Schema generators.
 	 */
 	static {
+		SchemaGeneratorConfigBuilder schemaGeneratorConfigBuilder = defaultSchemaGeneratorConfigBuilder();
+
+		SchemaGeneratorConfig typeSchemaGeneratorConfig = schemaGeneratorConfigBuilder.build();
+		typeSchemaGenerator = new SchemaGenerator(typeSchemaGeneratorConfig);
+
+		SchemaGeneratorConfig subtypeSchemaGeneratorConfig = schemaGeneratorConfigBuilder
+			.without(Option.SCHEMA_VERSION_INDICATOR)
+			.build();
+		subtypeSchemaGenerator = new SchemaGenerator(subtypeSchemaGeneratorConfig);
+	}
+
+	/**
+	 * Create a schema generator configuration builder pre-populated with the
+	 * modules Spring AI applies by default: Jackson, OpenAPI (Swagger 2) and the
+	 * Spring AI schema module, plus the Kotlin module when Kotlin reflection is
+	 * on the classpath.
+	 * @return a builder with the default modules applied
+	 */
+	private static SchemaGeneratorConfigBuilder defaultSchemaGeneratorConfigBuilder() {
 		Module jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
 				JacksonOption.RESPECT_JSONPROPERTY_ORDER);
 		Module openApiModule = new Swagger2Module();
@@ -111,14 +130,7 @@ public final class JsonSchemaGenerator {
 		if (KotlinDetector.isKotlinReflectPresent()) {
 			schemaGeneratorConfigBuilder.with(new KotlinModule());
 		}
-
-		SchemaGeneratorConfig typeSchemaGeneratorConfig = schemaGeneratorConfigBuilder.build();
-		typeSchemaGenerator = new SchemaGenerator(typeSchemaGeneratorConfig);
-
-		SchemaGeneratorConfig subtypeSchemaGeneratorConfig = schemaGeneratorConfigBuilder
-			.without(Option.SCHEMA_VERSION_INDICATOR)
-			.build();
-		subtypeSchemaGenerator = new SchemaGenerator(subtypeSchemaGeneratorConfig);
+		return schemaGeneratorConfigBuilder;
 	}
 
 	private JsonSchemaGenerator() {
@@ -196,6 +208,35 @@ public final class JsonSchemaGenerator {
 	public static String generateForType(Type type, SchemaOption... schemaOptions) {
 		Assert.notNull(type, "type cannot be null");
 		ObjectNode schema = generateSchema(typeSchemaGenerator, type);
+		if ((type == Void.class) && !schema.has("properties")) {
+			schema.putObject("properties");
+		}
+		processSchemaOptions(schemaOptions, schema);
+		return schema.toPrettyString();
+	}
+
+	/**
+	 * Generate a JSON Schema for a class type, applying the given additional
+	 * {@link Module}s on top of the modules Spring AI applies by default. This
+	 * allows callers to enrich the generated schema, for example with the
+	 * {@code jsonschema-module-jakarta-validation} module so that constraints
+	 * such as {@code @Size} or {@code @Min} are reflected in the schema.
+	 * @param type the type to generate a schema for
+	 * @param additionalModules extra schema generator modules to apply, may be
+	 * {@code null} or empty
+	 * @param schemaOptions options for generating the schema
+	 * @return the generated JSON Schema
+	 * @since 2.1.0
+	 */
+	public static String generateForType(Type type, @Nullable List<Module> additionalModules,
+			SchemaOption... schemaOptions) {
+		Assert.notNull(type, "type cannot be null");
+		SchemaGeneratorConfigBuilder schemaGeneratorConfigBuilder = defaultSchemaGeneratorConfigBuilder();
+		if (additionalModules != null) {
+			additionalModules.forEach(schemaGeneratorConfigBuilder::with);
+		}
+		SchemaGenerator schemaGenerator = new SchemaGenerator(schemaGeneratorConfigBuilder.build());
+		ObjectNode schema = generateSchema(schemaGenerator, type);
 		if ((type == Void.class) && !schema.has("properties")) {
 			schema.putObject("properties");
 		}
