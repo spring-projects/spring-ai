@@ -20,6 +20,8 @@ import java.util.List;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.DefaultMcpToolNamePrefixGenerator;
@@ -28,6 +30,11 @@ import org.springframework.ai.mcp.McpToolNamePrefixGenerator;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.ToolContextToMcpMetaConverter;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
+import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientModernProperties;
+import org.springframework.ai.mcp.modern.client.McpModernToolFilter;
+import org.springframework.ai.mcp.modern.client.McpModernToolNamePrefixGenerator;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
@@ -43,9 +50,11 @@ import org.springframework.context.annotation.Conditional;
  * tools.
  */
 @AutoConfiguration
-@EnableConfigurationProperties(McpClientCommonProperties.class)
+@EnableConfigurationProperties({ McpClientCommonProperties.class, McpClientModernProperties.class })
 @Conditional(McpToolCallbackAutoConfiguration.McpToolCallbackAutoConfigurationCondition.class)
 public class McpToolCallbackAutoConfiguration {
+
+	private static final Log logger = LogFactory.getLog(McpToolCallbackAutoConfiguration.class);
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -63,6 +72,15 @@ public class McpToolCallbackAutoConfiguration {
 	 * filter the discovered tools
 	 * @param syncMcpClients provider of MCP sync clients
 	 * @param mcpToolNamePrefixGenerator the tool name prefix generator
+	 * @param toolContextToMcpMetaConverter the converter of the tool context, used for
+	 * legacy and modern connections alike
+	 * @param modernMcpConnections the connections that speak the modern protocol, whose
+	 * tools the provider returns together with those of the legacy clients
+	 * @param modernToolFilter the filter of the modern connections' tools; required when
+	 * a legacy {@link McpToolFilter} bean is defined, which does not apply to them
+	 * @param modernToolNamePrefixGenerator the name generator of the modern connections'
+	 * tools
+	 * @param modernProperties the properties of the modern connections
 	 * @return list of tool callbacks for MCP integration
 	 */
 	@Bean
@@ -71,18 +89,59 @@ public class McpToolCallbackAutoConfiguration {
 	public SyncMcpToolCallbackProvider mcpToolCallbacks(ObjectProvider<McpToolFilter> syncClientsToolFilter,
 			ObjectProvider<List<McpSyncClient>> syncMcpClients,
 			ObjectProvider<McpToolNamePrefixGenerator> mcpToolNamePrefixGenerator,
-			ObjectProvider<ToolContextToMcpMetaConverter> toolContextToMcpMetaConverter) {
+			ObjectProvider<ToolContextToMcpMetaConverter> toolContextToMcpMetaConverter,
+			ObjectProvider<List<SyncModernMcpConnection>> modernMcpConnections,
+			ObjectProvider<McpModernToolFilter> modernToolFilter,
+			ObjectProvider<McpModernToolNamePrefixGenerator> modernToolNamePrefixGenerator,
+			McpClientModernProperties modernProperties) {
 
 		List<McpSyncClient> mcpClients = syncMcpClients.stream().flatMap(List::stream).toList();
 
-		return SyncMcpToolCallbackProvider.builder()
+		ToolContextToMcpMetaConverter metaConverter = toolContextToMcpMetaConverter
+			.getIfUnique(() -> ToolContextToMcpMetaConverter.defaultConverter());
+
+		SyncMcpToolCallbackProvider.Builder builder = SyncMcpToolCallbackProvider.builder()
 			.mcpClients(mcpClients)
 			.toolFilter(syncClientsToolFilter.getIfUnique((() -> (McpSyncClient, tool) -> true)))
 			.toolNamePrefixGenerator(
 					mcpToolNamePrefixGenerator.getIfUnique(() -> McpToolNamePrefixGenerator.noPrefix()))
-			.toolContextToMcpMetaConverter(
-					toolContextToMcpMetaConverter.getIfUnique(() -> ToolContextToMcpMetaConverter.defaultConverter()))
-			.build();
+			.toolContextToMcpMetaConverter(metaConverter);
+
+		// The tools of the connections that speak the modern protocol are served by the
+		// same provider bean, so that the application registers a single provider.
+		List<SyncModernMcpConnection> modernConnections = modernMcpConnections.stream().flatMap(List::stream).toList();
+		if (!modernConnections.isEmpty()) {
+			List<String> modernConnectionNames = modernConnections.stream()
+				.map(connection -> connection.info().name())
+				.toList();
+			// The legacy filter and name generator take the legacy schema types and are
+			// not applied to modern tools. A connection that moves to the modern protocol
+			// must not lose its filter without anyone noticing.
+			if (syncClientsToolFilter.stream().findAny().isPresent() && modernToolFilter.stream().findAny().isEmpty()) {
+				throw new IllegalStateException("A McpToolFilter bean is defined, but it does not filter the tools of "
+						+ "the MCP connections that use the MODERN protocol " + modernConnectionNames
+						+ ". Define a McpModernToolFilter bean for them, for example McpModernToolFilter.acceptAll() "
+						+ "to expose all their tools.");
+			}
+			McpToolNamePrefixGenerator legacyNameGenerator = mcpToolNamePrefixGenerator.getIfUnique();
+			if (legacyNameGenerator != null && !(legacyNameGenerator instanceof DefaultMcpToolNamePrefixGenerator)
+					&& modernToolNamePrefixGenerator.stream().findAny().isEmpty()) {
+				logger.warn("The McpToolNamePrefixGenerator bean does not name the tools of the MCP connections that "
+						+ "use the MODERN protocol " + modernConnectionNames
+						+ ". They are named <connection>_<tool> unless a McpModernToolNamePrefixGenerator bean is "
+						+ "defined.");
+			}
+			builder.modernToolCallbackProvider(SyncModernMcpToolCallbackProvider.builder()
+				.connections(modernConnections)
+				.toolFilter(modernToolFilter.getIfUnique(McpModernToolFilter::acceptAll))
+				.toolNamePrefixGenerator(
+						modernToolNamePrefixGenerator.getIfUnique(McpModernToolNamePrefixGenerator::connectionPrefix))
+				.toolContextToMcpMetaConverter(metaConverter)
+				.unreachableCoolDown(modernProperties.getUnreachableCoolDown())
+				.build());
+		}
+
+		return builder.build();
 	}
 
 	@Bean
