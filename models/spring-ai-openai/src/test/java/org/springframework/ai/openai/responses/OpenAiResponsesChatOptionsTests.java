@@ -55,12 +55,28 @@ class OpenAiResponsesChatOptionsTests {
 			.frequencyPenalty(0.5)
 			.presencePenalty(0.5)
 			.topK(10)
+			.seed(42)
+			.choiceCount(2)
 			.build();
 
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getPresencePenalty()).isNull();
 		assertThat(options.getTopK()).isNull();
+		assertThat(options.getSeed()).isNull();
+		assertThat(options.getChoiceCount()).isNull();
+	}
+
+	@Test
+	void portableReasoningLevelAndOutputTypeCarriedOver() {
+		ChatOptions.Builder<?> builder = OpenAiResponsesChatOptions.builder();
+		ChatOptions options = builder.model("gpt-5-mini").reasoningLevel("high").outputType("json").build();
+
+		assertThat(options.getReasoningLevel()).isEqualTo("high");
+		assertThat(options.getOutputType()).isEqualTo("json");
+
+		OpenAiResponsesChatOptions responsesOptions = (OpenAiResponsesChatOptions) options;
+		assertThat(responsesOptions.getReasoningEffort()).isEqualTo("high");
 	}
 
 	@Test

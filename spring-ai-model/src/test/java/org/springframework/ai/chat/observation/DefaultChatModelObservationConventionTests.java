@@ -32,6 +32,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
@@ -109,6 +110,10 @@ class DefaultChatModelObservationConventionTests {
 				.temperature(0.5)
 				.topK(1)
 				.topP(0.9)
+				.outputType("json")
+				.reasoningLevel("high")
+				.seed(42)
+				.choiceCount(2)
 				.build()))
 			.provider("superprovider")
 			.build();
@@ -126,6 +131,10 @@ class DefaultChatModelObservationConventionTests {
 				KeyValue.of(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.5"),
 				KeyValue.of(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), "1"),
 				KeyValue.of(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "0.9"),
+				KeyValue.of(HighCardinalityKeyNames.REQUEST_OUTPUT_TYPE.asString(), "json"),
+				KeyValue.of(HighCardinalityKeyNames.REQUEST_REASONING_LEVEL.asString(), "high"),
+				KeyValue.of(HighCardinalityKeyNames.REQUEST_SEED.asString(), "42"),
+				KeyValue.of(HighCardinalityKeyNames.REQUEST_CHOICE_COUNT.asString(), "2"),
 				KeyValue.of(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"this-is-the-end\"]"),
 				KeyValue.of(HighCardinalityKeyNames.RESPONSE_ID.asString(), "say33"),
 				KeyValue.of(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(), "1000"),
@@ -153,6 +162,10 @@ class DefaultChatModelObservationConventionTests {
 					HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(),
 					HighCardinalityKeyNames.REQUEST_TOOL_NAMES.asString(),
 					HighCardinalityKeyNames.REQUEST_TOP_K.asString(), HighCardinalityKeyNames.REQUEST_TOP_P.asString(),
+					HighCardinalityKeyNames.REQUEST_OUTPUT_TYPE.asString(),
+					HighCardinalityKeyNames.REQUEST_REASONING_LEVEL.asString(),
+					HighCardinalityKeyNames.REQUEST_SEED.asString(),
+					HighCardinalityKeyNames.REQUEST_CHOICE_COUNT.asString(),
 					HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(),
 					HighCardinalityKeyNames.RESPONSE_ID.asString(),
 					HighCardinalityKeyNames.USAGE_CACHE_WRITE_INPUT_TOKENS.asString(),
@@ -165,7 +178,8 @@ class DefaultChatModelObservationConventionTests {
 	@Test
 	void shouldNotHaveKeyValuesWhenEmptyValues() {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-			.prompt(generatePrompt(ChatOptions.builder().stopSequences(List.of()).build()))
+			.prompt(generatePrompt(
+					ChatOptions.builder().stopSequences(List.of()).outputType("").reasoningLevel("").build()))
 			.provider("superprovider")
 			.build();
 		observationContext.setResponse(new ChatResponse(
@@ -176,6 +190,8 @@ class DefaultChatModelObservationConventionTests {
 			.stream()
 			.map(KeyValue::getKey)
 			.toList()).doesNotContain(HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
+					HighCardinalityKeyNames.REQUEST_OUTPUT_TYPE.asString(),
+					HighCardinalityKeyNames.REQUEST_REASONING_LEVEL.asString(),
 					HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(),
 					HighCardinalityKeyNames.RESPONSE_ID.asString());
 	}
@@ -220,6 +236,45 @@ class DefaultChatModelObservationConventionTests {
 			assertThat(keyValue.getKey()).isEqualTo(HighCardinalityKeyNames.REQUEST_TOOL_NAMES.asString());
 			assertThat(keyValue.getValue()).contains("tool1", "tool2", "toolB");
 		});
+	}
+
+	@Test
+	void shouldHaveOutputTypeFromJsonSchemaWhenStructuredOutputOptions() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(StructuredOutputChatOptions.builder()
+				.model("mistral")
+				.outputSchema("{\"type\":\"object\"}")
+				.build()))
+			.provider("superprovider")
+			.build();
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
+			.contains(KeyValue.of(HighCardinalityKeyNames.REQUEST_OUTPUT_TYPE.asString(), "json"));
+	}
+
+	@Test
+	void shouldNotHaveOutputTypeWhenStructuredOutputOptionsHasNullSchema() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(StructuredOutputChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(HighCardinalityKeyNames.REQUEST_OUTPUT_TYPE.asString());
+	}
+
+	@Test
+	void shouldPrioritizeExplicitOutputTypeOverSchemaInStructuredOutputOptions() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(StructuredOutputChatOptions.builder()
+				.model("mistral")
+				.outputSchema("{\"type\":\"object\"}")
+				.outputType("custom")
+				.build()))
+			.provider("superprovider")
+			.build();
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
+			.contains(KeyValue.of(HighCardinalityKeyNames.REQUEST_OUTPUT_TYPE.asString(), "custom"));
 	}
 
 	private Prompt generatePrompt(ChatOptions chatOptions) {

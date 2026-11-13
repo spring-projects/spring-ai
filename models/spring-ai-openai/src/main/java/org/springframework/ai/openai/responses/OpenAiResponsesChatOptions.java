@@ -143,6 +143,8 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 
 	private final @Nullable Map<String, Object> toolContext;
 
+	private final @Nullable String outputType;
+
 	protected OpenAiResponsesChatOptions(AbstractBuilder<?> builder) {
 		this.baseUrl = builder.baseUrl;
 		this.apiKey = builder.apiKey;
@@ -159,7 +161,8 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 		this.maxOutputTokens = builder.resolveMaxTokens();
 		this.temperature = builder.resolveTemperature();
 		this.topP = builder.resolveTopP();
-		this.reasoningEffort = builder.reasoningEffort;
+		this.reasoningEffort = builder.reasoningEffort != null ? builder.reasoningEffort
+				: builder.resolveReasoningLevel();
 		this.reasoningSummary = builder.reasoningSummary;
 		this.verbosity = builder.verbosity;
 		this.responseFormat = builder.responseFormat;
@@ -178,6 +181,7 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 		this.toolCallbacks = builder.resolveToolCallbacks() != null ? List.copyOf(builder.resolveToolCallbacks())
 				: null;
 		this.toolContext = builder.resolveToolContext() != null ? Map.copyOf(builder.resolveToolContext()) : null;
+		this.outputType = builder.resolveOutputType();
 	}
 
 	public static Builder builder() {
@@ -274,6 +278,11 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 	 */
 	public @Nullable String getReasoningEffort() {
 		return this.reasoningEffort;
+	}
+
+	@Override
+	public @Nullable String getReasoningLevel() {
+		return getReasoningEffort();
 	}
 
 	/**
@@ -391,6 +400,33 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 	}
 
 	@Override
+	public @Nullable String getOutputType() {
+		if (this.outputType != null) {
+			return this.outputType;
+		}
+		if (this.responseFormat != null) {
+			if (this.responseFormat.getType() == OpenAiChatModel.ResponseFormat.Type.JSON_OBJECT
+					|| this.responseFormat.getType() == OpenAiChatModel.ResponseFormat.Type.JSON_SCHEMA) {
+				return "json";
+			}
+			if (this.responseFormat.getType() == OpenAiChatModel.ResponseFormat.Type.TEXT) {
+				return "text";
+			}
+		}
+		return StructuredOutputChatOptions.super.getOutputType();
+	}
+
+	@Override
+	public @Nullable Integer getChoiceCount() {
+		return null;
+	}
+
+	@Override
+	public @Nullable Integer getSeed() {
+		return null;
+	}
+
+	@Override
 	public @Nullable Integer getTopK() {
 		return null;
 	}
@@ -457,6 +493,7 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 			.maxTokens(this.maxOutputTokens)
 			.temperature(this.temperature)
 			.topP(this.topP)
+			.outputType(this.outputType)
 			.reasoningEffort(this.reasoningEffort)
 			.reasoningSummary(this.reasoningSummary)
 			.verbosity(this.verbosity)
@@ -504,7 +541,8 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 				&& Objects.equals(this.safetyIdentifier, that.safetyIdentifier)
 				&& Objects.equals(this.metadata, that.metadata) && Objects.equals(this.extraBody, that.extraBody)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
-				&& Objects.equals(this.toolContext, that.toolContext);
+				&& Objects.equals(this.toolContext, that.toolContext)
+				&& Objects.equals(this.outputType, that.outputType);
 	}
 
 	@Override
@@ -513,7 +551,7 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 				this.reasoningSummary, this.verbosity, this.responseFormat, this.strict, this.toolChoice,
 				this.parallelToolCalls, this.maxToolCalls, this.hostedTools, this.include, this.truncation,
 				this.serviceTier, this.promptCacheKey, this.safetyIdentifier, this.metadata, this.extraBody,
-				this.toolCallbacks, this.toolContext);
+				this.toolCallbacks, this.toolContext, this.outputType);
 	}
 
 	/**
@@ -607,6 +645,14 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 
 		@Nullable Map<String, Object> resolveToolContext() {
 			return this.toolContext;
+		}
+
+		@Nullable String resolveReasoningLevel() {
+			return this.reasoningLevel;
+		}
+
+		@Nullable String resolveOutputType() {
+			return this.outputType;
 		}
 
 		@Override
@@ -716,8 +762,22 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 			return this.maxTokens(maxOutputTokens);
 		}
 
+		@Override
+		public B reasoningLevel(@Nullable String reasoningLevel) {
+			super.reasoningLevel(reasoningLevel);
+			this.reasoningEffort = reasoningLevel;
+			return self();
+		}
+
 		public B reasoningEffort(@Nullable String reasoningEffort) {
+			super.reasoningLevel(reasoningEffort);
 			this.reasoningEffort = reasoningEffort;
+			return self();
+		}
+
+		@Override
+		public B outputType(@Nullable String outputType) {
+			super.outputType(outputType);
 			return self();
 		}
 
@@ -833,6 +893,14 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 			if (this.topK != null) {
 				warnUnsupported("topK");
 				this.topK = null;
+			}
+			if (this.choiceCount != null) {
+				warnUnsupported("choiceCount");
+				this.choiceCount = null;
+			}
+			if (this.seed != null) {
+				warnUnsupported("seed");
+				this.seed = null;
 			}
 		}
 

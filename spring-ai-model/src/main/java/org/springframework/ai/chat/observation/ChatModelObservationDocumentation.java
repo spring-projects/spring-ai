@@ -191,6 +191,46 @@ public enum ChatModelObservationDocumentation implements ObservationDocumentatio
 			}
 		},
 
+		/**
+		 * The expected format of the model output (e.g. 'text', 'json').
+		 */
+		REQUEST_OUTPUT_TYPE {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.REQUEST_OUTPUT_TYPE.value();
+			}
+		},
+
+		/**
+		 * The reasoning effort or level setting for the model request.
+		 */
+		REQUEST_REASONING_LEVEL {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.REQUEST_REASONING_LEVEL.value();
+			}
+		},
+
+		/**
+		 * The seed setting for the model request.
+		 */
+		REQUEST_SEED {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.REQUEST_SEED.value();
+			}
+		},
+
+		/**
+		 * The requested number of completions or choices to generate.
+		 */
+		REQUEST_CHOICE_COUNT {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.REQUEST_CHOICE_COUNT.value();
+			}
+		},
+
 		// Response
 
 		/**

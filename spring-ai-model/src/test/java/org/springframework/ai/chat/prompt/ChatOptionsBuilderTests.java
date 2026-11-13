@@ -52,6 +52,10 @@ public class ChatOptionsBuilderTests {
 			.topP(1.0)
 			.topK(40)
 			.stopSequences(List.of("stop1", "stop2"))
+			.outputType("json")
+			.reasoningLevel("high")
+			.seed(42)
+			.choiceCount(2)
 			.build();
 
 		assertThat(options.getModel()).isEqualTo("gpt-4");
@@ -60,6 +64,10 @@ public class ChatOptionsBuilderTests {
 		assertThat(options.getTopP()).isEqualTo(1.0);
 		assertThat(options.getTopK()).isEqualTo(40);
 		assertThat(options.getStopSequences()).containsExactly("stop1", "stop2");
+		assertThat(options.getOutputType()).isEqualTo("json");
+		assertThat(options.getReasoningLevel()).isEqualTo("high");
+		assertThat(options.getSeed()).isEqualTo(42);
+		assertThat(options.getChoiceCount()).isEqualTo(2);
 	}
 
 	@Test
@@ -140,6 +148,10 @@ public class ChatOptionsBuilderTests {
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getPresencePenalty()).isNull();
 		assertThat(options.getStopSequences()).isNull();
+		assertThat(options.getOutputType()).isNull();
+		assertThat(options.getReasoningLevel()).isNull();
+		assertThat(options.getSeed()).isNull();
+		assertThat(options.getChoiceCount()).isNull();
 	}
 
 	@Test
