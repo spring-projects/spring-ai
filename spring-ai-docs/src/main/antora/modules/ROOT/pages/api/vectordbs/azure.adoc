@@ -37,7 +37,7 @@ export OPENAI_API_KEY=<My Azure AI API Key> (Optional)
 
 [NOTE]
 ====
-You can replace Azure Open AI implementation with any valid OpenAI implementation that supports the Embeddings interface. For example, you could use Spring AI's Open AI or `TransformersEmbedding` implementations for embeddings instead of the Azure implementation.
+You can replace Azure Open AI implementation with any valid OpenAI implementation that supports the Embeddings interface. For example, you could use Spring AI's Open AI or `TransformersEmbeddingModel` implementations for embeddings instead of the Azure implementation.
 ====
 
 == Dependencies
