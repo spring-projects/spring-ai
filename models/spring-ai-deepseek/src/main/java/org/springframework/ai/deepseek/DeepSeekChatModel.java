@@ -30,12 +30,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
+import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.StreamingPartIndexer;
 import org.springframework.ai.chat.messages.part.StreamingParts;
@@ -71,6 +73,7 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -82,19 +85,21 @@ import org.springframework.util.StringUtils;
  * backed by {@link DeepSeekApi}.
  * <p>
  * The assistant message of each choice is built from ordered {@link MessagePart}s: the
- * {@code reasoning_content} becomes a {@link ReasoningPart} without a payload, the
- * {@code content} a {@link TextPart}, and each tool call a {@link ToolCallPart}. That is
- * also the only order DeepSeek produces them in: an assistant message has one field per
- * kind of content and no list of content blocks, and reasoning that is interleaved with
- * tool calls spans several assistant messages, one per tool call round.
+ * {@code reasoning_content} and any OpenAI-compatible {@code thinking_blocks} become a
+ * {@link ReasoningPart}, the {@code content} a {@link TextPart}, and each tool call a
+ * {@link ToolCallPart}. That is also the only order DeepSeek produces them in: an
+ * assistant message has one field per kind of content and no list of content blocks, and
+ * reasoning that is interleaved with tool calls spans several assistant messages, one per
+ * tool call round.
  * <p>
  * An assistant message is replayed as one message: the text parts are joined into the
  * {@code content}, the reasoning parts into {@code reasoning_content}, unless another
- * provider signed some of them, and the tool call parts become the {@code tool_calls}.
- * DeepSeek documents that in thinking mode every assistant message of a request with
- * tools must carry its {@code reasoning_content}, so the reasoning survives between the
- * rounds. The last message of a prompt is sent as a chat prefix completion when it
- * carries {@code true} under {@link #PREFIX_METADATA_KEY}.
+ * provider signed some of them, the {@code thinking_blocks} payload into
+ * {@code thinking_blocks}, and the tool call parts into {@code tool_calls}. DeepSeek
+ * documents that in thinking mode every assistant message of a request with tools must
+ * carry its {@code reasoning_content}, so the reasoning survives between the rounds. The
+ * last message of a prompt is sent as a chat prefix completion when it carries
+ * {@code true} under {@link #PREFIX_METADATA_KEY}.
  * <p>
  * When streaming, the reasoning and text deltas are partial parts stamped with a
  * synthesized index. While a tool call streams, each of its argument deltas arrives right
@@ -119,6 +124,16 @@ public class DeepSeekChatModel implements ChatModel {
 	 * @since 2.1.0
 	 */
 	public static final String PREFIX_METADATA_KEY = "deepseek.prefix";
+
+	/**
+	 * The {@link OpaquePayload#kind() kind} of the signed thinking blocks returned by
+	 * OpenAI-compatible gateways as {@code thinking_blocks}; the payload data is their
+	 * JSON array, replayed unchanged.
+	 * @since 2.1.0
+	 */
+	public static final String PAYLOAD_THINKING_BLOCKS = "thinking_blocks";
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final Log logger = LogFactory.getLog(DeepSeekChatModel.class);
 
@@ -373,8 +388,16 @@ public class DeepSeekChatModel implements ChatModel {
 		List<Generation> generations = new ArrayList<>();
 		for (DeepSeekApi.ChatCompletionChunk.ChunkChoice choice : chunk.choices()) {
 			ChatCompletionMessage delta = choice.delta();
-			List<ToolCall> toolCalls = (delta != null) ? delta.toolCalls() : null;
-			if (delta == null || toolCalls == null) {
+			if (delta == null) {
+				continue;
+			}
+			ReasoningPart reasoningPart = reasoningPart(delta);
+			if (reasoningPart != null) {
+				// The merged response emits this part later, at the index reserved here.
+				partIndexer.stamp(reasoningPart);
+			}
+			List<ToolCall> toolCalls = delta.toolCalls();
+			if (toolCalls == null) {
 				continue;
 			}
 			List<MessagePart> parts = new ArrayList<>();
@@ -442,11 +465,9 @@ public class DeepSeekChatModel implements ChatModel {
 	private static List<MessagePart> assistantParts(ChatCompletionMessage message,
 			@Nullable StreamingPartIndexer partIndexer) {
 		List<MessagePart> parts = new ArrayList<>();
-		// hasLength, not hasText: a streamed reasoning delta is often a single
-		// whitespace or newline token that must be kept.
-		String reasoning = message.reasoningContent();
-		if (StringUtils.hasLength(reasoning)) {
-			parts.add(ReasoningPart.of(reasoning));
+		ReasoningPart reasoningPart = reasoningPart(message);
+		if (reasoningPart != null) {
+			parts.add(reasoningPart);
 		}
 		// An empty content has no text part: a tool-call answer or a reasoning-only
 		// chunk carries none, and an empty text part between two reasoning deltas would
@@ -473,12 +494,25 @@ public class DeepSeekChatModel implements ChatModel {
 		return parts;
 	}
 
+	private static @Nullable ReasoningPart reasoningPart(ChatCompletionMessage message) {
+		// hasLength, not hasText: a streamed reasoning delta is often a single
+		// whitespace or newline token that must be kept.
+		String reasoning = message.reasoningContent();
+		JsonNode thinkingBlocks = message.thinkingBlocks();
+		if (!StringUtils.hasLength(reasoning) && thinkingBlocks == null) {
+			return null;
+		}
+		OpaquePayload payload = thinkingBlocks != null
+				? new OpaquePayload(DeepSeekConstants.PROVIDER_NAME, PAYLOAD_THINKING_BLOCKS, thinkingBlocks.toString())
+				: null;
+		return new ReasoningPart(reasoning, null, payload, Map.of());
+	}
+
 	/**
 	 * The reasoning of an assistant message to send back as {@code reasoning_content},
 	 * joined from its reasoning parts, unless it was overridden through the deprecated
-	 * {@link DeepSeekAssistantMessage#setReasoningContent(String)}. DeepSeek reasoning
-	 * carries no payload, so a payload means another provider signed the reasoning: it is
-	 * only valid with that payload, which this API has no field for, so none of the
+	 * {@link DeepSeekAssistantMessage#setReasoningContent(String)}. Reasoning signed by
+	 * another provider is only valid with that provider's payload, so none of the
 	 * reasoning of such a message is replayed.
 	 */
 	@SuppressWarnings("removal")
@@ -489,7 +523,7 @@ public class DeepSeekChatModel implements ChatModel {
 				&& deepSeekAssistantMessage.isReasoningContentOverridden()) {
 			reasoning = deepSeekAssistantMessage.getReasoningContent();
 		}
-		else if (reasoningParts.stream().anyMatch(part -> part.payload() != null)) {
+		else if (reasoningParts.stream().anyMatch(part -> !part.replayableTo(DeepSeekConstants.PROVIDER_NAME))) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Not replaying reasoning signed by another provider");
 			}
@@ -502,6 +536,17 @@ public class DeepSeekChatModel implements ChatModel {
 				.collect(Collectors.joining());
 		}
 		return StringUtils.hasLength(reasoning) ? reasoning : null;
+	}
+
+	private static @Nullable JsonNode thinkingBlocks(AssistantMessage assistantMessage) {
+		for (ReasoningPart part : assistantMessage.getReasoning()) {
+			OpaquePayload payload = part.payload();
+			if (payload != null && DeepSeekConstants.PROVIDER_NAME.equals(payload.provider())
+					&& PAYLOAD_THINKING_BLOCKS.equals(payload.kind())) {
+				return jsonHelper.fromJson(payload.data(), JsonNode.class);
+			}
+		}
+		return null;
 	}
 
 	private static boolean isPrefix(AssistantMessage assistantMessage) {
@@ -577,7 +622,8 @@ public class DeepSeekChatModel implements ChatModel {
 				String text = assistantMessage.getText();
 				Assert.state(text != null, "text must not be null");
 				return List.of(new ChatCompletionMessage(text, ChatCompletionMessage.Role.ASSISTANT, null, null,
-						toolCalls, isPrefixAssistantMessage, reasoningContent(assistantMessage)));
+						toolCalls, isPrefixAssistantMessage, reasoningContent(assistantMessage),
+						thinkingBlocks(assistantMessage)));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
