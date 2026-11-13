@@ -29,6 +29,7 @@
 **** xref:api/chat/minimax-chat.adoc[MiniMax]
 **** xref:api/chat/nvidia-chat.adoc[NVIDIA]
 **** xref:api/chat/ollama-chat.adoc[Ollama]
+**** xref:api/chat/reckoning-chat.adoc[Reckoning]
 **** xref:api/chat/perplexity-chat.adoc[Perplexity AI]
 **** xref:api/chat/oci-genai-chat.adoc[OCI Generative AI]
 **** xref:api/chat/openai-chat.adoc[OpenAI]
