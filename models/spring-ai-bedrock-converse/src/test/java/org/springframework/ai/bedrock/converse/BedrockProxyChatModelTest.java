@@ -35,11 +35,14 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.async.SdkPublisher;
+import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption;
 import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
@@ -198,6 +201,29 @@ class BedrockProxyChatModelTest {
 		// call receives no data until the whole response has been generated.
 		assertThat(ReflectionTestUtils.getField(BedrockProxyChatModel.builder(), "socketTimeout"))
 			.isEqualTo(Duration.ofSeconds(90));
+	}
+
+	@Test
+	void builderClientsAppendSpringAiToUserAgent() {
+		BedrockProxyChatModel model = BedrockProxyChatModel.builder()
+			.region(Region.US_EAST_1)
+			.credentialsProvider(AnonymousCredentialsProvider.create())
+			.build();
+
+		var syncClient = (BedrockRuntimeClient) ReflectionTestUtils.getField(model, "bedrockRuntimeClient");
+		var asyncClient = (BedrockRuntimeAsyncClient) ReflectionTestUtils.getField(model, "bedrockRuntimeAsyncClient");
+		try {
+			assertThat(syncClient.serviceClientConfiguration()
+				.overrideConfiguration()
+				.advancedOption(SdkAdvancedClientOption.USER_AGENT_SUFFIX)).hasValue("spring-ai");
+			assertThat(asyncClient.serviceClientConfiguration()
+				.overrideConfiguration()
+				.advancedOption(SdkAdvancedClientOption.USER_AGENT_SUFFIX)).hasValue("spring-ai");
+		}
+		finally {
+			syncClient.close();
+			asyncClient.close();
+		}
 	}
 
 	@Test

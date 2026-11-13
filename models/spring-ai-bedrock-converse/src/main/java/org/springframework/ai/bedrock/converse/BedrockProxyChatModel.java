@@ -36,6 +36,8 @@ import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption;
 import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
@@ -160,6 +162,11 @@ public class BedrockProxyChatModel implements ChatModel {
 	private static final Log logger = LogFactory.getLog(BedrockProxyChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
+
+	/**
+	 * Appended to the AWS SDK User-Agent of the clients created by the {@link Builder}.
+	 */
+	private static final String USER_AGENT_SUFFIX = "spring-ai";
 
 	private final BedrockRuntimeClient bedrockRuntimeClient;
 
@@ -1110,7 +1117,7 @@ public class BedrockProxyChatModel implements ChatModel {
 					.region(getRegion())
 					.httpClientBuilder(httpClientBuilder)
 					.credentialsProvider(this.credentialsProvider)
-					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout))
+					.overrideConfiguration(this::configureClientOverrides)
 					.build();
 			}
 
@@ -1127,7 +1134,7 @@ public class BedrockProxyChatModel implements ChatModel {
 					.region(getRegion())
 					.httpClientBuilder(httpClientBuilder)
 					.credentialsProvider(this.credentialsProvider)
-					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout))
+					.overrideConfiguration(this::configureClientOverrides)
 					.build();
 			}
 
@@ -1142,6 +1149,11 @@ public class BedrockProxyChatModel implements ChatModel {
 			}
 
 			return bedrockProxyChatModel;
+		}
+
+		private void configureClientOverrides(ClientOverrideConfiguration.Builder overrides) {
+			overrides.apiCallTimeout(this.timeout)
+				.putAdvancedOption(SdkAdvancedClientOption.USER_AGENT_SUFFIX, USER_AGENT_SUFFIX);
 		}
 
 		private Region getRegion() {
