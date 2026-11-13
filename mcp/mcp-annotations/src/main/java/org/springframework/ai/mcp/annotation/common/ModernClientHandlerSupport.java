@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.annotation.common;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -234,6 +235,29 @@ public final class ModernClientHandlerSupport {
 			return null;
 		}
 		return requestParameterType(method);
+	}
+
+	/**
+	 * Whether the method takes one elicitation request of either schema and nothing else
+	 * but, optionally, a {@link ToolContext}, whatever it returns.
+	 * @param method the annotated method
+	 * @return {@code true} if the parameters are those of an elicitation handler
+	 */
+	public static boolean takesElicitRequest(Method method) {
+		return requestParameterType(method) != null;
+	}
+
+	/**
+	 * Whether a reactive {@code @McpProgress} method can be called: it returns a
+	 * {@code Mono<Void>}.
+	 * @param method the annotated method
+	 * @return {@code true} if the method returns {@code Mono<Void>}
+	 */
+	public static boolean returnsMonoOfVoid(Method method) {
+		return Mono.class.isAssignableFrom(method.getReturnType())
+				&& method.getGenericReturnType() instanceof ParameterizedType returnType
+				&& returnType.getActualTypeArguments().length == 1
+				&& returnType.getActualTypeArguments()[0] == Void.class;
 	}
 
 	/**

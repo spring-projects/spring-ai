@@ -29,7 +29,9 @@ import reactor.core.publisher.Mono;
  * told when the {@code Mono} of the previous one has completed. What the server of a
  * connection reports is told in the order it was reported, and the next report is told
  * when all listeners are done with the previous one. A listener must not block, and it
- * may call the server, for example to list its tools again.
+ * may call the server, for example to list its tools again. A {@code Mono} that never
+ * completes holds up the later reports of its connection, so a call that may hang needs a
+ * timeout.
  *
  * @author Christian Tzolov
  * @since 2.1.0

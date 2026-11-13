@@ -242,19 +242,20 @@ class AsyncModernMcpToolCallbackProviderTests {
 	}
 
 	@Test
-	void callbackWithoutACallerUsesTheTransportContextOfTheReactorContext() {
+	void callbackWithoutACallerIgnoresTheTransportContextOfTheReactorContext() {
 		InMemoryTransport transport = transport(whoAmITool());
 		ToolCallback callback = AsyncModernMcpToolCallbackProvider.builder()
 			.connection(AsyncModernMcpConnection.shared(info("idp"), McpClient.async(transport).build()))
 			.build()
 			.getToolCallbacks()[0];
 
-		// An application that supplies no caller when the tools are resolved can still
-		// put one into the Reactor context of its chat call, as the SDK client expects.
-		ToolCallReactiveContextHolder
-			.setContext(Context.of(McpTransportContext.KEY, McpTransportContext.create(Map.of("user", "carol"))));
+		// The transport context of the chat call may be that of the request an MCP
+		// server of the same application is serving. It must not reach this server.
+		ToolCallReactiveContextHolder.setContext(Context.of(McpTransportContext.KEY,
+				McpTransportContext.create(Map.of("user", "inbound")), "trace", "t-1"));
 
-		assertThat(callback.call("{}")).contains("\"user\":\"carol\"");
+		// The tool is called without a caller, as it was listed.
+		assertThat(callback.call("{}")).contains("\"user\":null");
 	}
 
 	@Test
@@ -285,6 +286,26 @@ class AsyncModernMcpToolCallbackProviderTests {
 				assertThat(secondAttempt).isInstanceOf(IllegalStateException.class);
 			}
 		}
+	}
+
+	@Test
+	void toolIsNotCalledOnAThreadThatMayNotBlock() {
+		InMemoryTransport transport = transport(echoTool());
+		ToolCallback callback = AsyncModernMcpToolCallbackProvider.builder()
+			.connection(AsyncModernMcpConnection.shared(info("tickets"), McpClient.async(transport).build()))
+			.build()
+			.getToolCallbacks()[0];
+
+		Object attempt = onANonBlockingThread(() -> callback.call("{}"));
+
+		// Not a ToolExecutionException, which would reach the model as a tool error and
+		// invite it to call the tool again.
+		assertThat(attempt).isInstanceOf(IllegalStateException.class);
+		assertThat(((IllegalStateException) attempt).getMessage()).contains("tickets_echo")
+			.contains("non-blocking thread")
+			.contains("Nothing was sent");
+		// Reactor alone would have sent the request before it refused to wait.
+		assertThat(transport.methods()).containsExactly(McpSchema.METHOD_TOOLS_LIST);
 	}
 
 	@Test

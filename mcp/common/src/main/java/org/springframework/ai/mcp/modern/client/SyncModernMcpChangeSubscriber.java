@@ -143,8 +143,12 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 			boolean resourcesChanged) {
 		AtomicReference<McpSyncClient> streamClient = new AtomicReference<>();
 		return signals -> {
-			McpSyncClient client = streamClient
-				.updateAndGet(current -> current != null ? current : connection.applicationClient());
+			// Never called concurrently for one connection.
+			McpSyncClient client = streamClient.get();
+			if (client == null) {
+				client = connection.applicationClient();
+				streamClient.set(client);
+			}
 			McpSyncClient.ListenSpec listenSpec = client.listen().toolsChanged();
 			if (promptsChanged) {
 				listenSpec = listenSpec.promptsChanged();

@@ -30,6 +30,7 @@ import io.modelcontextprotocol.modern.McpSchema.Resource;
 import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -45,6 +46,7 @@ import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests for the handlers that {@link ClientMcpAsyncHandlersRegistry} provides to the
@@ -93,6 +95,28 @@ class ClientMcpAsyncHandlersRegistryModernTests {
 		assertThat(registry.handlesModernProgress("sync")).isFalse();
 		assertThat(registry.hasHandlers("sync", McpToolListChanged.class)).isTrue();
 		assertThat(registry.handlesModernListChanged("sync", McpToolListChanged.class)).isFalse();
+	}
+
+	@Test
+	void progressMethodThatDoesNotReturnMonoOfVoidDoesNotServeAModernClient() {
+		var beanFactory = new DefaultListableBeanFactory();
+		ClientMcpAsyncHandlersRegistry registry = resolved(beanFactory, MonoOfValueProgressHandlers.class);
+
+		// The provider of the progress handlers leaves such a method out, so the client
+		// must not ask its server for progress.
+		assertThat(registry.hasHandlers("valued", McpProgress.class)).isTrue();
+		assertThat(registry.handlesModernProgress("valued")).isFalse();
+	}
+
+	@Test
+	void elicitationMethodThatReturnsAFluxFailsTheStartup() {
+		var beanFactory = new DefaultListableBeanFactory();
+		ClientMcpAsyncHandlersRegistry registry = postProcessed(beanFactory, FluxElicitationHandlers.class);
+
+		// It is not left out, which would let the client declare an elicitation that
+		// nothing answers.
+		assertThatThrownBy(registry::afterSingletonsInstantiated).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Method must return Mono");
 	}
 
 	@Test
@@ -351,6 +375,26 @@ class ClientMcpAsyncHandlersRegistryModernTests {
 
 		@McpToolListChanged(clients = "sync")
 		void tools(List<Tool> tools) {
+		}
+
+	}
+
+	/** A progress method whose {@code Mono} is not a {@code Mono<Void>}. */
+	static class MonoOfValueProgressHandlers {
+
+		@McpProgress(clients = "valued")
+		Mono<String> progress(ProgressParams progress) {
+			return Mono.just("seen");
+		}
+
+	}
+
+	/** An elicitation method with a reactive return type that is not a {@code Mono}. */
+	static class FluxElicitationHandlers {
+
+		@McpElicitation(clients = "flux")
+		Flux<ElicitResult> elicitation(ElicitFormRequest request) {
+			return Flux.just(ElicitResult.decline());
 		}
 
 	}

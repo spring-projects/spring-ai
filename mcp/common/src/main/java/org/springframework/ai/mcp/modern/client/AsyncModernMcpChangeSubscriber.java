@@ -81,7 +81,7 @@ public final class AsyncModernMcpChangeSubscriber implements SmartLifecycle {
 
 	private static final Duration DEFAULT_INITIAL_REOPEN_DELAY = Duration.ofSeconds(1);
 
-	/** The streams and the listeners, shared with the asynchronous subscriber. */
+	/** The streams and the listeners, shared with the synchronous subscriber. */
 	private final ModernChangeStreams<AsyncModernMcpChangeListener> streams;
 
 	private AsyncModernMcpChangeSubscriber(List<ModernChangeStreams.Subscription> subscriptions,
@@ -148,8 +148,12 @@ public final class AsyncModernMcpChangeSubscriber implements SmartLifecycle {
 			boolean resourcesChanged) {
 		AtomicReference<McpAsyncClient> streamClient = new AtomicReference<>();
 		return signals -> {
-			McpAsyncClient client = streamClient
-				.updateAndGet(current -> current != null ? current : connection.applicationClient());
+			// Never called concurrently for one connection.
+			McpAsyncClient client = streamClient.get();
+			if (client == null) {
+				client = connection.applicationClient();
+				streamClient.set(client);
+			}
 			McpAsyncClient.ListenSpec listenSpec = client.listen().toolsChanged();
 			if (promptsChanged) {
 				listenSpec = listenSpec.promptsChanged();

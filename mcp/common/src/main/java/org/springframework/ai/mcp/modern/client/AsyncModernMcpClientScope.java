@@ -41,8 +41,7 @@ import io.modelcontextprotocol.modern.client.McpAsyncClient;
  * A scope that keeps clients decides how many it keeps and for how long. A client holds
  * no resource that must be released, so a client that is no longer needed is simply
  * dropped. An asynchronous client holds no caller: the caller of a request comes from an
- * {@link AsyncModernMcpTransportContextProvider}, or from the Reactor context of the
- * call.
+ * {@link AsyncModernMcpTransportContextProvider}.
  *
  * @author Christian Tzolov
  * @since 2.1.0

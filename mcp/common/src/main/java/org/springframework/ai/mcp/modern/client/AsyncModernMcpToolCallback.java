@@ -26,6 +26,7 @@ import io.modelcontextprotocol.modern.client.McpAsyncClient;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.context.Context;
 
 import org.springframework.ai.chat.model.ToolContext;
@@ -51,10 +52,10 @@ import org.springframework.util.Assert;
  * <p>
  * The tool is called through the asynchronous client, and the call blocks until the
  * result is there, as the {@link ToolCallback} contract requires. The Reactor context of
- * the chat call is passed on to the client. The caller of the request is the transport
- * context the callback was created with, which is the caller the tool was listed for.
- * Only a callback that was created without a caller leaves the transport context of that
- * Reactor context in place, if there is one.
+ * the chat call is passed on to the client, except for its transport context: the caller
+ * of the request is always the transport context the callback was created with, which is
+ * the caller the tool was listed for. A callback that was created without a caller calls
+ * the tool without one.
  * <p>
  * A call fails in one of two ways, as a call of a legacy tool does. A protocol error that
  * the server answers with ({@code McpException}) is thrown as it is and fails the model
@@ -63,6 +64,9 @@ import org.springframework.util.Assert;
  * error, and a failure in the client or on the way to the server, such as a timeout
  * ({@code McpTimeoutException}), a lost response or an HTTP error status. After a timeout
  * or a lost response it is unknown whether the server ran the tool.
+ * <p>
+ * The call blocks until the result is there. On a Reactor non-blocking thread it fails
+ * with an {@link IllegalStateException} before anything is sent to the server.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -140,6 +144,16 @@ public final class AsyncModernMcpToolCallback implements ToolCallback {
 
 		Map<String, Object> arguments = ModernToolCalls.arguments(toolCallInput);
 
+		if (Schedulers.isInNonBlockingThread()) {
+			// Reactor would send the request and only then refuse to wait for the
+			// result. The server would run the tool, and the failure would reach the
+			// model as a tool error, which it may answer by calling the tool again.
+			throw new IllegalStateException("The MCP tool '" + this.toolDefinition.name()
+					+ "' is called with a blocking call, which is not possible on the non-blocking thread '"
+					+ Thread.currentThread().getName() + "'. Nothing was sent to the server. Call the tools on a "
+					+ "thread that may block, for example with subscribeOn(Schedulers.boundedElastic()).");
+		}
+
 		CallToolResult result;
 		try {
 			McpAsyncClient.ToolSpec callSpec = this.toolSpec.arguments(arguments)
@@ -177,13 +191,12 @@ public final class AsyncModernMcpToolCallback implements ToolCallback {
 	 * The Reactor context of the tool call: that of the chat call, with the caller the
 	 * callback was created for. The Reactor context of a chat call may hold a transport
 	 * context that is not the caller of this server, such as that of the request an MCP
-	 * server of the same application is serving. So it is only left in place when the
-	 * callback has no caller of its own.
+	 * server of the same application is serving. So it is always replaced, also when the
+	 * callback has no caller: the tool is then called without one, as it was listed.
 	 */
 	private Context withCaller(Context context) {
-		Context chatCallContext = context.putAll(ToolCallReactiveContextHolder.getContext());
-		return this.transportContext == McpTransportContext.EMPTY ? chatCallContext
-				: chatCallContext.put(McpTransportContext.KEY, this.transportContext);
+		return context.putAll(ToolCallReactiveContextHolder.getContext())
+			.put(McpTransportContext.KEY, this.transportContext);
 	}
 
 	/**

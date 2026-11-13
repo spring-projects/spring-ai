@@ -16,13 +16,11 @@
 
 package org.springframework.ai.mcp.annotation.spring;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 
 import io.modelcontextprotocol.modern.McpSchema.ElicitRequest;
@@ -153,57 +151,6 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 	}
 
 	/**
-	 * Whether a handler answers form elicitation requests for the given client when it
-	 * speaks the modern revision: a reactive {@code @McpElicitation} method that takes a
-	 * form request names the client. The answer is available before the handlers are
-	 * resolved, so it can be used while the clients are created.
-	 * @param name the name of the client, which is the name of its connection
-	 * @return {@code true} if a modern client of that name may declare form elicitation
-	 * @since 2.1.0
-	 */
-	public boolean handlesModernFormElicitation(String name) {
-		return this.modernFormElicitationClients.contains(name);
-	}
-
-	/**
-	 * Whether a handler answers URL elicitation requests for the given client when it
-	 * speaks the modern revision: a reactive {@code @McpElicitation} method that takes
-	 * the modern URL request names the client.
-	 * @param name the name of the client, which is the name of its connection
-	 * @return {@code true} if a modern client of that name may declare URL elicitation
-	 * @since 2.1.0
-	 */
-	public boolean handlesModernUrlElicitation(String name) {
-		return this.modernUrlElicitationClients.contains(name);
-	}
-
-	/**
-	 * Whether a handler receives the progress of the given client when it speaks the
-	 * modern revision: a reactive {@code @McpProgress} method names the client.
-	 * @param name the name of the client, which is the name of its connection
-	 * @return {@code true} if a modern client of that name has a progress handler
-	 * @since 2.1.0
-	 */
-	public boolean handlesModernProgress(String name) {
-		return this.modernProgressClients.contains(name);
-	}
-
-	/**
-	 * Whether a handler hears about the list changes of the given kind for the given
-	 * client when it speaks the modern revision: a reactive method with that annotation
-	 * names the client. The answer is available before the handlers are resolved.
-	 * @param name the name of the client, which is the name of its connection
-	 * @param annotationType {@code McpToolListChanged}, {@code McpPromptListChanged} or
-	 * {@code McpResourceListChanged}
-	 * @return {@code true} if a modern client of that name has a method to call for such
-	 * a change
-	 * @since 2.1.0
-	 */
-	public boolean handlesModernListChanged(String name, Class<? extends Annotation> annotationType) {
-		return this.modernListChangedClients.getOrDefault(annotationType, Set.of()).contains(name);
-	}
-
-	/**
 	 * Invoke the elicitation handler for a given client that speaks the modern revision.
 	 * It is the same {@code @McpElicitation} method that answers a legacy client of that
 	 * name.
@@ -292,11 +239,11 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 
 	/**
 	 * The provider of the reactive progress handlers only takes methods that return a
-	 * {@code Mono}.
+	 * {@code Mono<Void>}.
 	 */
 	@Override
 	protected boolean isModernProgressMethod(Method method) {
-		return Mono.class.isAssignableFrom(method.getReturnType());
+		return ModernClientHandlerSupport.returnsMonoOfVoid(method);
 	}
 
 	/**

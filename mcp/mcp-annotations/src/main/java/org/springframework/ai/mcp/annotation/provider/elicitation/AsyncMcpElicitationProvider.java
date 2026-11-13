@@ -132,7 +132,9 @@ public class AsyncMcpElicitationProvider {
 				.flatMap(elicitationObject -> Stream.of(doGetClassMethods(elicitationObject))
 					.filter(method -> method.isAnnotationPresent(McpElicitation.class))
 					.filter(McpPredicates.filterNonReactiveReturnTypeMethod())
-					.filter(method -> ModernClientHandlerSupport.asyncElicitRequestParameterType(method) != null)
+					// A reactive method that does not return a Mono fails in the builder
+					// of its callback, and so at startup, rather than being left out.
+					.filter(ModernClientHandlerSupport::takesElicitRequest)
 					.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
 					.map(mcpElicitationMethod -> {
 						var elicitationAnnotation = mcpElicitationMethod.getAnnotation(McpElicitation.class);

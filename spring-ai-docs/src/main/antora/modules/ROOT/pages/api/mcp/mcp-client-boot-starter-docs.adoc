@@ -1328,8 +1328,11 @@ The bean is asked each time the tools of a connection are resolved, which a `Cha
 The context that it returns goes with the tool listing, and the tool callbacks of that request keep it, so a tool that runs later, or on another thread, is still called for that caller.
 The `McpHttpRequestCustomizer` beans turn the context into HTTP headers, as they do for the synchronous type.
 
-The caller that the bean returns takes precedence over a transport context in the Reactor context of a tool call, so the listing and the call go out for the same caller.
-Without the bean, or when it returns `McpTransportContext.EMPTY`, a tool call uses the transport context that the Reactor context of the chat call holds under `McpTransportContext.KEY`, if there is one.
+The bean is the only source of the caller, so the listing and the tool calls always go out for the same caller.
+Without the bean, or when it returns `McpTransportContext.EMPTY`, both go out without a caller.
+
+NOTE: A `McpTransportContext` in the Reactor context of the chat call is not used.
+It may belong to someone else, such as the request that an MCP server of the same application is serving, and must not travel to another server.
 
 WARNING: Do not combine the bean with `client-scope=SHARED` for a server that answers callers differently.
 A shared client keeps a `private` tool listing for all its requests, whoever the caller is, and a warning is logged at startup for this combination.
@@ -1385,6 +1388,7 @@ AsyncModernMcpChangeListener toolChangeLogger() {
 
 The listeners and the methods are told one after the other, and the reports of a connection are told in the order they arrive: the next report is told when all listeners are done with the previous one.
 A listener must not block.
+A `Mono` that never completes holds up the later reports of its connection, the dropping of its kept tool listing included, so give a call that may hang a timeout.
 
 The listen stream belongs to the application here as well: the `AsyncModernMcpTransportContextProvider` bean is not asked for it, and the items for the list-changed methods are listed without a caller.
 A synchronous list-changed method that names an asynchronous modern connection is not called, and a warning is logged at startup.
@@ -1405,6 +1409,10 @@ Flux<String> answer = Flux.defer(() -> chatClient.prompt(question).stream().cont
 
 A listing that is kept needs no request and no blocking call.
 The tool calls themselves run on the threads that Spring AI executes tools on, which may block.
+
+An application that executes the tools itself must do so on a thread that may block as well.
+With the asynchronous client type a tool call on a non-blocking thread fails with an `IllegalStateException` before anything is sent to the server.
+The failure is not a tool error, so the model is not asked to try again.
 
 === Connect Timeout
 

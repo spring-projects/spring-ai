@@ -182,7 +182,8 @@ final class ModernChangeStreams<L> {
 	interface StreamOpener {
 
 		/**
-		 * Opens a stream, without waiting for the server.
+		 * Opens a stream, without waiting for the server. It is called with the monitor
+		 * of the stream held, so never concurrently for one connection.
 		 * @param signals receives what the stream reports
 		 * @return closes the stream
 		 */

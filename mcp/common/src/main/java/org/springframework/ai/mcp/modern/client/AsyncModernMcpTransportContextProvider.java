@@ -29,9 +29,10 @@ import io.modelcontextprotocol.common.McpTransportContext;
  * returned goes with the tool listing, and the tool callbacks of that call keep it, so a
  * tool that runs later, or on another thread, is still called for that caller.
  * <p>
- * The caller that is returned here takes precedence over a transport context in the
- * Reactor context of a tool call. Only for {@link McpTransportContext#EMPTY}, which
- * stands for no caller, is the transport context of that Reactor context used.
+ * The caller that is returned here is the only caller of the listing and of the tool
+ * calls. A transport context in the Reactor context of a chat call is not used, because
+ * it may belong to someone else, such as the request that an MCP server of the same
+ * application is serving. Return {@link McpTransportContext#EMPTY} for no caller.
  * <p>
  * Do not combine a provider that returns different callers with a
  * {@link AsyncModernMcpConnection#shared shared} connection for a server that answers
