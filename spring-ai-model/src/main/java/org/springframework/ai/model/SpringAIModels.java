@@ -32,6 +32,8 @@ public final class SpringAIModels {
 
 	public static final String BEDROCK_TITAN = "bedrock-titan";
 
+	public static final String JITLLM = "jitllm";
+
 	public static final String MISTRAL = "mistral";
 
 	public static final String OCI_GENAI = "oci-genai";
