@@ -106,7 +106,10 @@ public class ToolCallingAutoConfiguration {
 
 	private static boolean isMcpToolCallbackProvider(ResolvableType type) {
 		if (type.getType().getTypeName().equals("org.springframework.ai.mcp.SyncMcpToolCallbackProvider")
-				|| type.getType().getTypeName().equals("org.springframework.ai.mcp.AsyncMcpToolCallbackProvider")) {
+				|| type.getType().getTypeName().equals("org.springframework.ai.mcp.AsyncMcpToolCallbackProvider")
+				|| type.getType()
+					.getTypeName()
+					.equals("org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider")) {
 			return true;
 		}
 		var superType = type.getSuperType();
