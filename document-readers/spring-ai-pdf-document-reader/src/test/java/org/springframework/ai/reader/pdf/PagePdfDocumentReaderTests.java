@@ -286,4 +286,12 @@ class PagePdfDocumentReaderTests {
 		assertThat(closed).isTrue();
 	}
 
+	@Test
+	void closeReleasesParsedDocument() throws Exception {
+		var reader = new PagePdfDocumentReader("classpath:/sample1.pdf");
+		assertThat(reader.document.getDocument().isClosed()).isFalse();
+		reader.close();
+		assertThat(reader.document.getDocument().isClosed()).isTrue();
+	}
+
 }
