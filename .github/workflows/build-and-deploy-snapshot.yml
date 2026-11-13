@@ -27,10 +27,10 @@ jobs:
     runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.1.0
 
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5.7.0
         with:
           java-version: '17'
           distribution: 'liberica'
@@ -38,7 +38,7 @@ jobs:
 
       - name: Setup Maven Build-Cache (~/.m2/build-cache)
         if: ${{ github.event_name != 'schedule' }}
-        uses: actions/cache@v5
+        uses: actions/cache@v5.1.0
         with:
           path: ~/.m2/build-cache
           # See pr-check.yml for an explanation of the key format
@@ -57,7 +57,7 @@ jobs:
           ./mvnw ${{ vars.COMMERCIAL && '-s commercial-settings.xml -Pcommercial' || '' }} --batch-mode -ntp --update-snapshots clean install
 
       - name: Upload Spring-AI Built Artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: build-artifacts
           path: ~/.m2/repository/org/springframework/ai
@@ -82,17 +82,17 @@ jobs:
       OLLAMA_AUTOCONF_TESTS_ENABLED: "true"
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.1.0
 
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5.7.0
         with:
           java-version: '17'
           distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Maven Build-Cache (~/.m2/build-cache)
-        uses: actions/cache@v5
+        uses: actions/cache@v5.1.0
         if: ${{ github.event_name != 'schedule' }}
         with:
           path: ~/.m2/build-cache
@@ -102,7 +102,7 @@ jobs:
             build-cache-${{ runner.os }}-
 
       - name: Download Spring-AI Built Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v7.0.0
         with:
           name: build-artifacts
           path: ~/.m2/repository/org/springframework/ai
@@ -132,17 +132,17 @@ jobs:
     needs: build-all
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.1.0
 
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5.7.0
         with:
           java-version: '17'
           distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Maven Build-Cache (~/.m2/build-cache)
-        uses: actions/cache@v5
+        uses: actions/cache@v5.1.0
         with:
           path: ~/.m2/build-cache
           key: build-cache-${{ runner.os }}-openai-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
@@ -151,7 +151,7 @@ jobs:
             build-cache-${{ runner.os }}-
 
       - name: Download Spring-AI Built Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v7.0.0
         with:
           name: build-artifacts
           path: ~/.m2/repository/org/springframework/ai
@@ -181,17 +181,17 @@ jobs:
     needs: build-all
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.1.0
 
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5.7.0
         with:
           java-version: '17'
           distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Maven Build-Cache (~/.m2/build-cache)
-        uses: actions/cache@v5
+        uses: actions/cache@v5.1.0
         with:
           path: ~/.m2/build-cache
           key: build-cache-${{ runner.os }}-other-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
@@ -200,7 +200,7 @@ jobs:
             build-cache-${{ runner.os }}-
 
       - name: Download Spring-AI Built Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v7.0.0
         with:
           name: build-artifacts
           path: ~/.m2/repository/org/springframework/ai
@@ -244,17 +244,17 @@ jobs:
     needs: [build-all, test-ollama, test-openai, test-remaining]
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.1.0
 
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5.7.0
         with:
           java-version: '17'
           distribution: 'liberica'
           cache: 'maven'
 
       - name: Setup Maven Build-Cache (~/.m2/build-cache)
-        uses: actions/cache@v5
+        uses: actions/cache@v5.1.0
         with:
           path: ~/.m2/build-cache
           key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}

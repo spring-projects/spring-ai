@@ -26,7 +26,7 @@ runs:
   using: composite
   steps:
     - name: Generate Changelog
-      uses: spring-io/github-changelog-generator@f7d7a87a3e7c627ecb8c26cf086c38ac5a939721 #v0.0.14
+      uses: spring-io/github-changelog-generator@v0.0.14
       with:
         config-file: ${{ inputs.commercial == 'true' && '.github/actions/create-github-release/changelog-generator-commercial.yml' || '.github/actions/create-github-release/changelog-generator-oss.yml' }}
         milestone: ${{ inputs.milestone }}
