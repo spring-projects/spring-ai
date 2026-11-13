@@ -137,6 +137,21 @@ class ModernListChangedHandlersTests {
 	}
 
 	@Test
+	void itemsOfAScopedConnectionAreListedWithoutAskingTheScope() {
+		SyncModernMcpConnection scoped = SyncModernMcpConnection.scoped(TICKETS, () -> this.client,
+				(connectionInfo, clientFactory) -> {
+					throw new IllegalStateException("There is no user to select a client for");
+				});
+		ModernListChangedHandlers listChangedHandlers = ModernListChangedHandlers.forConnections(List.of(scoped),
+				this.registry(Handlers.class));
+		assertThat(listChangedHandlers).isNotNull();
+
+		listChangedHandlers.changed(TICKETS, mock(SubscriptionEvent.ToolsListChanged.class));
+
+		assertThat(this.beanFactory.getBean(Handlers.class).seen).containsExactly("tools [search]");
+	}
+
+	@Test
 	void methodsAreCalledWhenAStreamIsEstablishedAgainButNotForTheFirstOne() {
 		ModernListChangedHandlers listChangedHandlers = this.listChangedHandlers(Handlers.class);
 		Handlers handlers = this.beanFactory.getBean(Handlers.class);

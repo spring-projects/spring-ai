@@ -191,7 +191,7 @@ final class ModernListChangedHandlers implements SyncModernMcpChangeListener {
 		return this.clients.computeIfAbsent(name, connectionName -> {
 			SyncModernMcpConnection connection = this.connections.get(connectionName);
 			Assert.state(connection != null, () -> "No modern MCP connection named '" + connectionName + "'");
-			return connection.client();
+			return connection.applicationClient();
 		});
 	}
 

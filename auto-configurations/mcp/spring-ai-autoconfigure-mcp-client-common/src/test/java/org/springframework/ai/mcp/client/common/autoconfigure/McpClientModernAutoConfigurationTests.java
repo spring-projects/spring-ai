@@ -20,12 +20,16 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
 import io.modelcontextprotocol.modern.McpSchema.ElicitFormRequest;
 import io.modelcontextprotocol.modern.McpSchema.ElicitResult;
 import io.modelcontextprotocol.modern.McpSchema.ProgressParams;
 import io.modelcontextprotocol.modern.client.McpClient;
+import io.modelcontextprotocol.modern.client.McpSyncClient;
 import io.modelcontextprotocol.modern.client.transport.HttpClientMcpTransport;
 import io.modelcontextprotocol.modern.client.transport.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -46,10 +50,12 @@ import org.springframework.ai.mcp.annotation.McpToolListChanged;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties.ConnectionParameters;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
+import org.springframework.ai.mcp.modern.client.McpModernConnectionInfo;
 import org.springframework.ai.mcp.modern.client.McpModernToolFilter;
 import org.springframework.ai.mcp.modern.client.McpModernToolNamePrefixGenerator;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeListener;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeSubscriber;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpClientScope;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallCustomizer;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider;
@@ -161,6 +167,61 @@ class McpClientModernAutoConfigurationTests {
 
 				assertThat(connection.client()).isNotSameAs(connection.client());
 				assertThat(customizer.customized).containsExactly("tickets", "tickets");
+			});
+	}
+
+	@Test
+	void customScopeLetsTheBeanOfTheApplicationSelectTheClients() {
+		this.contextRunner.withUserConfiguration(RecordingCustomizerConfiguration.class, ClientScopeConfiguration.class)
+			.withPropertyValues(CONNECTIONS + "tickets.client-scope=CUSTOM", MODERN_TICKETS_URL,
+					MODERN_TICKETS_PROTOCOL)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				SyncModernMcpConnection connection = connections(context.getBean("modernMcpSyncConnections")).get(0);
+				RecordingCustomizer customizer = context.getBean(RecordingCustomizer.class);
+				KeepingClientScope scope = context.getBean(KeepingClientScope.class);
+
+				// Nothing is built at startup.
+				assertThat(customizer.customized).isEmpty();
+
+				// The scope keeps the client that the factory built for the connection,
+				// configured as every client of that connection is.
+				assertThat(connection.client()).isSameAs(connection.client());
+				assertThat(scope.asked).containsExactly("tickets", "tickets");
+				assertThat(customizer.customized).containsExactly("tickets");
+
+				// The client of the application does not come from the scope.
+				assertThat(connection.applicationClient()).isNotSameAs(connection.client());
+				assertThat(scope.asked).hasSize(3);
+				assertThat(customizer.customized).containsExactly("tickets", "tickets");
+			});
+	}
+
+	@Test
+	void customScopeWithoutAScopeBeanFailsTheStartup() {
+		this.contextRunner
+			.withPropertyValues(CONNECTIONS + "tickets.client-scope=CUSTOM", MODERN_TICKETS_URL,
+					MODERN_TICKETS_PROTOCOL)
+			.run(context -> assertThat(context).hasFailed()
+				.getFailure()
+				.rootCause()
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("The MCP connection 'tickets' sets client-scope=CUSTOM")
+				.hasMessageContaining("no SyncModernMcpClientScope bean is defined"));
+	}
+
+	@Test
+	void scopeBeanIsLeftAloneByTheConnectionsThatDoNotAskForIt(CapturedOutput output) {
+		// The application may use the bean for connections that it builds itself.
+		this.contextRunner.withUserConfiguration(ClientScopeConfiguration.class)
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				SyncModernMcpConnection connection = connections(context.getBean("modernMcpSyncConnections")).get(0);
+
+				assertThat(connection.client()).isNotSameAs(connection.client());
+				assertThat(context.getBean(KeepingClientScope.class).asked).isEmpty();
+				assertThat(output).doesNotContain("SyncModernMcpClientScope");
 			});
 	}
 
@@ -565,6 +626,31 @@ class McpClientModernAutoConfigurationTests {
 		@Override
 		public void customize(String name, McpClient.SyncBuilder builder) {
 			this.customized.add(name);
+		}
+
+	}
+
+	/** Keeps the first client it is given for each connection. */
+	static class KeepingClientScope implements SyncModernMcpClientScope {
+
+		final List<String> asked = new ArrayList<>();
+
+		private final Map<String, McpSyncClient> clients = new HashMap<>();
+
+		@Override
+		public McpSyncClient client(McpModernConnectionInfo connectionInfo, Supplier<McpSyncClient> clientFactory) {
+			this.asked.add(connectionInfo.name());
+			return this.clients.computeIfAbsent(connectionInfo.name(), name -> clientFactory.get());
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class ClientScopeConfiguration {
+
+		@Bean
+		KeepingClientScope clientScope() {
+			return new KeepingClientScope();
 		}
 
 	}

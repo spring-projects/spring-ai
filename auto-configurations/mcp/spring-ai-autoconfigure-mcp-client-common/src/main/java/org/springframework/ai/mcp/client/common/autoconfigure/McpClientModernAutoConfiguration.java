@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.modern.McpSchema.Implementation;
@@ -51,6 +52,7 @@ import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.ai.mcp.modern.client.McpModernConnectionInfo;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeListener;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeSubscriber;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpClientScope;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallCustomizer;
 import org.springframework.beans.factory.ObjectProvider;
@@ -87,9 +89,10 @@ import org.springframework.util.StringUtils;
  * dropped as soon as the server reports that its tools changed.</li>
  * </ul>
  * A tool listing is kept for as long as the server allows when the server marks it as
- * {@code public}. A listing the server marks as {@code private} is kept only by a
- * connection with {@code client-scope=SHARED}, which is meant for an application that
- * calls the server under a single identity.
+ * {@code public}. A listing the server marks as {@code private} is kept only by a client
+ * that outlives a request: the one of a connection with {@code client-scope=SHARED},
+ * which is meant for an application that calls the server under a single identity, or a
+ * client that the scope bean of a connection with {@code client-scope=CUSTOM} keeps.
  * <p>
  * {@link McpToolCallbackAutoConfiguration} adds the tools of these connections to the
  * {@code SyncMcpToolCallbackProvider} bean, next to the tools of the legacy clients, so
@@ -123,6 +126,9 @@ import org.springframework.util.StringUtils;
  * resolves the tools. A handler set by a customizer is used for the connections that no
  * annotated handler method names; for the tool calls of the others the annotated methods
  * take precedence.</li>
+ * <li>A {@link SyncModernMcpClientScope} bean selects the client of each request of the
+ * connections with {@code client-scope=CUSTOM}, for example to keep one for each
+ * user;</li>
  * <li>{@link SyncModernMcpChangeListener} beans hear about the changes that the servers
  * of the listening connections report.</li>
  * <li>{@code SyncModernMcpToolCallCustomizer} beans customize each tool call, with the
@@ -224,6 +230,9 @@ public class McpClientModernAutoConfiguration {
 	 * @param clientCustomizers the customizers of the client builders
 	 * @param handlersRegistry the registry of the annotated client handler methods, if
 	 * the annotation scanner is enabled
+	 * @param clientScopeProvider the bean that selects the clients of the connections
+	 * with the {@code CUSTOM} client scope, which must be defined if there is such a
+	 * connection
 	 * @return the connections
 	 */
 	@Bean
@@ -234,7 +243,8 @@ public class McpClientModernAutoConfiguration {
 			McpStreamableHttpClientProperties streamableProperties, McpClientCommonProperties commonProperties,
 			McpClientModernProperties modernProperties,
 			ObjectProvider<McpClientCustomizer<McpClient.SyncBuilder>> clientCustomizers,
-			ObjectProvider<ClientMcpSyncHandlersRegistry> handlersRegistry) {
+			ObjectProvider<ClientMcpSyncHandlersRegistry> handlersRegistry,
+			ObjectProvider<SyncModernMcpClientScope> clientScopeProvider) {
 
 		ClientMcpSyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
 
@@ -260,13 +270,23 @@ public class McpClientModernAutoConfiguration {
 						parameters != null && parameters.isListening());
 			}
 
+			Supplier<McpSyncClient> clientFactory = () -> buildClient(namedTransport, clientInfo, commonProperties,
+					modernProperties, handlers, customizers);
 			if (parameters != null && parameters.isSharedClient()) {
-				connections.add(SyncModernMcpConnection.shared(connectionInfo, buildClient(namedTransport, clientInfo,
-						commonProperties, modernProperties, handlers, customizers)));
+				connections.add(SyncModernMcpConnection.shared(connectionInfo, clientFactory.get()));
+			}
+			else if (parameters != null && parameters.isCustomClientScope()) {
+				// Asked for only by a connection that needs it.
+				SyncModernMcpClientScope clientScope = clientScopeProvider.getIfAvailable();
+				if (clientScope == null) {
+					throw new IllegalStateException("The MCP connection '" + namedTransport.name()
+							+ "' sets client-scope=CUSTOM, but no SyncModernMcpClientScope bean is defined to select "
+							+ "its clients.");
+				}
+				connections.add(SyncModernMcpConnection.scoped(connectionInfo, clientFactory, clientScope));
 			}
 			else {
-				connections.add(SyncModernMcpConnection.perRequest(connectionInfo, () -> buildClient(namedTransport,
-						clientInfo, commonProperties, modernProperties, handlers, customizers)));
+				connections.add(SyncModernMcpConnection.perRequest(connectionInfo, clientFactory));
 			}
 		}
 

@@ -111,12 +111,22 @@ public class McpStreamableHttpClientProperties {
 
 		/**
 		 * Whether one client serves all requests of the connection.
-		 * @return {@code true} for the {@code SHARED} client scope, {@code false} for a
-		 * client for each request
+		 * @return {@code true} for the {@code SHARED} client scope, {@code false} for the
+		 * other scopes
 		 * @since 2.1.0
 		 */
 		public boolean isSharedClient() {
 			return this.clientScope == McpClientModernProperties.ClientScope.SHARED;
+		}
+
+		/**
+		 * Whether the {@code SyncModernMcpClientScope} bean of the application selects
+		 * the client of each request of the connection.
+		 * @return {@code true} for the {@code CUSTOM} client scope
+		 * @since 2.1.0
+		 */
+		public boolean isCustomClientScope() {
+			return this.clientScope == McpClientModernProperties.ClientScope.CUSTOM;
 		}
 
 		/**

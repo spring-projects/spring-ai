@@ -46,9 +46,9 @@ import org.springframework.util.backoff.ExponentialBackOff;
  * <p>
  * A listen stream is a long-lived request, so it is not opened by the client of a chat
  * request. Each connection gets one client for its stream, taken from
- * {@link SyncModernMcpConnection#client()} when the subscriber starts. That happens
- * outside of any request, so the stream is opened for the application and not for a
- * caller: the server must accept it with the credentials of the application, or with
+ * {@link SyncModernMcpConnection#applicationClient()} when the subscriber starts. That
+ * happens outside of any request, so the stream is opened for the application and not for
+ * a caller: the server must accept it with the credentials of the application, or with
  * none.
  * <p>
  * The streams are opened when the subscriber is started, without waiting for the servers,
@@ -291,7 +291,7 @@ public final class SyncModernMcpChangeSubscriber implements SmartLifecycle {
 				long stream = ++this.opened;
 				try {
 					if (this.client == null) {
-						this.client = this.connection.client();
+						this.client = this.connection.applicationClient();
 					}
 					McpSyncClient.ListenSpec listenSpec = this.client.listen().toolsChanged();
 					if (this.promptsChanged) {

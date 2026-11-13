@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -55,6 +56,7 @@ import io.modelcontextprotocol.modern.server.McpSyncResponse;
 import io.modelcontextprotocol.modern.server.McpTransportResponse;
 import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.modern.server.feature.ToolsFeature;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
@@ -132,6 +134,20 @@ class SyncModernMcpToolCallbackProviderTests {
 					McpJsonDefaults.getMapper(), McpJsonDefaults.getSchemaValidator(), listTtlMs, listCacheScope))
 			.build();
 		return new InMemoryTransport(server);
+	}
+
+	/**
+	 * A connection named {@code tickets} whose scope keeps one client for each user. A
+	 * client sends its requests on behalf of the user it was built for.
+	 */
+	private static SyncModernMcpConnection perUserConnection(InMemoryTransport transport,
+			AtomicReference<String> currentUser, AtomicInteger clientsCreated) {
+		Map<String, McpSyncClient> clients = new ConcurrentHashMap<>();
+		return SyncModernMcpConnection.scoped(info("tickets"), () -> {
+			clientsCreated.incrementAndGet();
+			McpTransportContext caller = McpTransportContext.create(Map.of("user", currentUser.get()));
+			return McpClient.sync(transport).transportContextProvider(() -> caller).build();
+		}, (connectionInfo, clientFactory) -> clients.computeIfAbsent(currentUser.get(), user -> clientFactory.get()));
 	}
 
 	private static McpModernConnectionInfo info(String name) {
@@ -369,6 +385,200 @@ class SyncModernMcpToolCallbackProviderTests {
 
 		// A shared client stands for one identity and keeps its own listing.
 		assertThat(transport.methods()).containsExactly(McpSchema.METHOD_TOOLS_LIST);
+	}
+
+	@Test
+	void scopedConnectionKeepsAClientAndItsPrivateListingForEachUser() {
+		InMemoryTransport transport = transport(60_000, CacheScope.PRIVATE, whoAmITool());
+		AtomicReference<String> currentUser = new AtomicReference<>("alice");
+		AtomicInteger clientsCreated = new AtomicInteger();
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(perUserConnection(transport, currentUser, clientsCreated))
+			.build();
+
+		ToolCallback alicesCallback = provider.getToolCallbacks()[0];
+		provider.getToolCallbacks();
+		currentUser.set("bob");
+		ToolCallback bobsCallback = provider.getToolCallbacks()[0];
+		currentUser.set("alice");
+		provider.getToolCallbacks();
+
+		// Each user has one client, which keeps the private listing of that user.
+		assertThat(clientsCreated).hasValue(2);
+		assertThat(transport.methods()).containsExactly(McpSchema.METHOD_TOOLS_LIST, McpSchema.METHOD_TOOLS_LIST);
+		assertThat(alicesCallback.call("{}")).contains("\"user\":\"alice\"");
+		assertThat(bobsCallback.call("{}")).contains("\"user\":\"bob\"");
+	}
+
+	@Test
+	void droppedListingIsListedAgainFromTheServerByEveryClientOfAScopedConnection() {
+		InMemoryTransport transport = transport(60_000, CacheScope.PRIVATE, echoTool());
+		AtomicReference<String> currentUser = new AtomicReference<>("alice");
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(perUserConnection(transport, currentUser, new AtomicInteger()))
+			.build();
+
+		for (String user : List.of("alice", "bob", "alice", "bob")) {
+			currentUser.set(user);
+			provider.getToolCallbacks();
+		}
+		assertThat(transport.methods()).hasSize(2);
+
+		provider.invalidateToolListing("tickets");
+
+		// Not only the first client that lists after the drop asks the server: the
+		// client of the other user keeps a listing of its own, which is dropped too.
+		for (String user : List.of("alice", "bob", "alice", "bob")) {
+			currentUser.set(user);
+			provider.getToolCallbacks();
+		}
+		assertThat(transport.methods()).hasSize(4);
+	}
+
+	@Test
+	void scopeThatReturnsTheClientOfAnotherConnectionIsRejected() {
+		InMemoryTransport tickets = transport(echoTool());
+		InMemoryTransport billing = transport(structuredTool());
+		// One scope for both connections, which forgets to tell them apart.
+		Map<String, McpSyncClient> clientsByUser = new ConcurrentHashMap<>();
+		SyncModernMcpClientScope byUserOnly = (connectionInfo, clientFactory) -> clientsByUser.computeIfAbsent("alice",
+				user -> clientFactory.get());
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(
+					SyncModernMcpConnection.scoped(info("tickets"), () -> McpClient.sync(tickets).build(), byUserOnly))
+			.connection(
+					SyncModernMcpConnection.scoped(info("billing"), () -> McpClient.sync(billing).build(), byUserOnly))
+			.build();
+
+		// The client of the tickets connection would list and call the tools of the
+		// tickets server under the name of the billing connection.
+		assertThatThrownBy(provider::getToolCallbacks).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("was not built for the MCP connection 'billing'")
+			.hasMessageContaining("a key that contains the name of the connection");
+		assertThat(billing.methods()).isEmpty();
+	}
+
+	@Test
+	void droppedListingIsListedFromTheServerByAKeptClientThatListedElsewhere() {
+		InMemoryTransport transport = transport(60_000, CacheScope.PRIVATE, echoTool());
+		McpSyncClient client = McpClient.sync(transport).build();
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(SyncModernMcpConnection.shared(info("tickets"), client))
+			.build();
+
+		// The client lists the tools for someone else than this provider, and keeps them.
+		client.listTools().list();
+		provider.invalidateToolListing("tickets");
+		provider.getToolCallbacks();
+
+		// The provider has not seen this client list, but its copy is dropped as well.
+		assertThat(transport.methods()).containsExactly(McpSchema.METHOD_TOOLS_LIST, McpSchema.METHOD_TOOLS_LIST);
+
+		provider.getToolCallbacks();
+		assertThat(transport.methods()).hasSize(2);
+	}
+
+	@Test
+	void droppedListingThatCouldNotBeListedAgainIsStillListedFromTheServer() {
+		InMemoryTransport server = transport(60_000, CacheScope.PRIVATE, echoTool());
+		AtomicReference<RuntimeException> outage = new AtomicReference<>();
+		McpClientTransport flaky = request -> (outage.get() != null) ? Flux.error(outage.get())
+				: server.exchange(request);
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(SyncModernMcpConnection.shared(info("tickets"), McpClient.sync(flaky).build()))
+			.unreachableCoolDown(Duration.ZERO)
+			.build();
+
+		assertThat(provider.getToolCallbacks()).hasSize(1);
+		assertThat(server.methods()).hasSize(1);
+
+		// The listing is dropped while the server cannot be reached.
+		provider.invalidateToolListing("tickets");
+		outage.set(httpStatus(503));
+		assertThat(provider.getToolCallbacks()).isEmpty();
+
+		// The shared client still keeps the listing from before the drop. It must not
+		// answer with it once the server is back.
+		outage.set(null);
+		assertThat(provider.getToolCallbacks()).hasSize(1);
+		assertThat(server.methods()).hasSize(2);
+	}
+
+	@Test
+	void scopeIsNotAskedForTheClientOfTheApplication() {
+		InMemoryTransport transport = transport(echoTool());
+		AtomicInteger clientsCreated = new AtomicInteger();
+		AtomicInteger scopeAsked = new AtomicInteger();
+		SyncModernMcpConnection connection = SyncModernMcpConnection.scoped(info("tickets"), () -> {
+			clientsCreated.incrementAndGet();
+			return McpClient.sync(transport).build();
+		}, (connectionInfo, clientFactory) -> {
+			scopeAsked.incrementAndGet();
+			assertThat(connectionInfo.name()).isEqualTo("tickets");
+			return clientFactory.get();
+		});
+
+		// What the application does for itself, such as a listen stream, has no request
+		// for the scope to look at.
+		assertThat(connection.applicationClient()).isNotNull();
+		assertThat(scopeAsked).hasValue(0);
+		assertThat(clientsCreated).hasValue(1);
+
+		assertThat(connection.client()).isNotNull();
+		assertThat(scopeAsked).hasValue(1);
+		assertThat(clientsCreated).hasValue(2);
+
+		SyncModernMcpConnection withoutClient = SyncModernMcpConnection.scoped(info("tickets"),
+				() -> McpClient.sync(transport).build(), (connectionInfo, clientFactory) -> null);
+		assertThatThrownBy(withoutClient::client).isInstanceOf(IllegalStateException.class)
+			.hasMessage("clientScope must not return null");
+	}
+
+	@Test
+	void privateListingThatAClientForEachRequestCannotKeepIsPointedOutOnce() {
+		InMemoryTransport privateWithTtl = transport(60_000, CacheScope.PRIVATE, echoTool());
+		SyncModernMcpToolCallbackProvider perRequest = SyncModernMcpToolCallbackProvider.builder()
+			.connection(
+					SyncModernMcpConnection.perRequest(info("tickets"), () -> McpClient.sync(privateWithTtl).build()))
+			.build();
+
+		perRequest.getToolCallbacks();
+		perRequest.getToolCallbacks();
+
+		// The server allows the listing to be kept, but each request has a new client.
+		assertThat(privateWithTtl.methods()).hasSize(2);
+		assertThat(perRequest).extracting("privateListingHints")
+			.asInstanceOf(InstanceOfAssertFactories.collection(String.class))
+			.containsExactly("tickets");
+	}
+
+	@Test
+	void listingThatIsKeptOrThatMayNotBeKeptIsNotPointedOut() {
+		InMemoryTransport privateWithTtl = transport(60_000, CacheScope.PRIVATE, echoTool());
+		List<SyncModernMcpConnection> connections = List.of(
+				// kept by the shared client
+				SyncModernMcpConnection.shared(info("tickets"), McpClient.sync(privateWithTtl).build()),
+				// the scope decides whether its clients are kept
+				SyncModernMcpConnection.scoped(info("tickets"), () -> McpClient.sync(privateWithTtl).build(),
+						(connectionInfo, clientFactory) -> clientFactory.get()),
+				// kept by the provider
+				SyncModernMcpConnection.perRequest(info("tickets"),
+						() -> McpClient.sync(transport(60_000, CacheScope.PUBLIC, echoTool())).build()),
+				// the server does not allow the listing to be kept
+				SyncModernMcpConnection.perRequest(info("tickets"),
+						() -> McpClient.sync(transport(0, CacheScope.PRIVATE, echoTool())).build()));
+
+		for (SyncModernMcpConnection connection : connections) {
+			SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+				.connection(connection)
+				.build();
+
+			provider.getToolCallbacks();
+
+			assertThat(provider).extracting("privateListingHints")
+				.asInstanceOf(InstanceOfAssertFactories.collection(String.class))
+				.isEmpty();
+		}
 	}
 
 	@Test

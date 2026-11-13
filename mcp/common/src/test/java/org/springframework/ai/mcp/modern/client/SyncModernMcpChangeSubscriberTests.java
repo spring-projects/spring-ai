@@ -274,6 +274,27 @@ class SyncModernMcpChangeSubscriberTests {
 	}
 
 	@Test
+	void listenStreamOfAScopedConnectionIsOpenedWithoutAskingTheScope() {
+		SyncModernMcpConnection scoped = SyncModernMcpConnection.scoped(this.connection.info(),
+				() -> McpClient.sync(this.server).build(), (connectionInfo, clientFactory) -> {
+					throw new IllegalStateException("There is no user to select a client for");
+				});
+		SyncModernMcpChangeSubscriber ofScoped = SyncModernMcpChangeSubscriber.builder()
+			.connection(scoped)
+			.listener(this.listener)
+			.maxReopenDelay(REOPEN_DELAY)
+			.build();
+		try {
+			ofScoped.start();
+			await(() -> this.listener.established.size() == 1);
+			assertThat(this.server.requests("subscriptions/listen")).isEqualTo(1);
+		}
+		finally {
+			ofScoped.stop();
+		}
+	}
+
+	@Test
 	void listenerAddedToAStoppedSubscriberOpensNoStream() throws InterruptedException {
 		SyncModernMcpChangeSubscriber stopped = SyncModernMcpChangeSubscriber.builder()
 			.connection(this.connection)

@@ -19,6 +19,7 @@ package org.springframework.ai.mcp.server.webflux.autoconfigure;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -27,11 +28,13 @@ import io.modelcontextprotocol.modern.McpSchema.CallToolResult;
 import io.modelcontextprotocol.modern.McpSchema.TextContent;
 import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.modern.client.McpClient;
+import io.modelcontextprotocol.modern.client.McpSyncClient;
 import io.modelcontextprotocol.modern.client.transport.McpHttpRequestCustomizer;
 import io.modelcontextprotocol.modern.server.McpSyncResponse;
 import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
@@ -55,6 +58,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAut
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.ai.mcp.modern.InMemorySyncToolRepository;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpClientScope;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerModernAutoConfiguration;
@@ -69,6 +73,8 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -164,6 +170,80 @@ class ModernMcpClientServerIT {
 							// tools/list for alice; bob's request uses the kept
 							// listing and only sends its tools/call, as bob
 							assertThat(seenUsers.names).containsExactly("alice", "bob");
+						});
+				}
+				finally {
+					modernServer.disposeNow();
+				}
+			});
+	}
+
+	@Test
+	@ExtendWith(OutputCaptureExtension.class)
+	void privateToolListingThatAClientForEachRequestCannotKeepIsPointedOutOnce(CapturedOutput output) {
+		int modernPort = TestSocketUtils.findAvailableTcpPort();
+
+		this.modernServerContextRunner.withPropertyValues("spring.ai.mcp.server.modern.list-ttl=5m")
+			.run(serverContext -> {
+				DisposableServer modernServer = startModernServer(serverContext, modernPort);
+				try {
+					this.clientContextRunner
+						.withPropertyValues(CONNECTIONS + "greeter.url=http://localhost:" + modernPort,
+								CONNECTIONS + "greeter.protocol=MODERN")
+						.run(clientContext -> {
+							SeenUsers seenUsers = serverContext.getBean(SeenUsers.class);
+							ToolCallbackProvider provider = clientContext.getBean(ToolCallbackProvider.class);
+
+							assertThat(provider.getToolCallbacks()).hasSize(1);
+							assertThat(provider.getToolCallbacks()).hasSize(1);
+
+							// Listed for each request, although the server allows the
+							// listing to be kept: by the client that listed it only.
+							assertThat(seenUsers.names).hasSize(2);
+							assertThat(output.getOut().split("allows its tool listing to be kept for 300000 ms", -1))
+								.hasSize(2);
+							assertThat(output).contains("The MCP server of the connection 'greeter'")
+								.contains("client-scope=SHARED")
+								.contains("client-scope=CUSTOM");
+						});
+				}
+				finally {
+					modernServer.disposeNow();
+				}
+			});
+	}
+
+	@Test
+	void privateToolListingIsKeptForEachUserByAClientScopeOfTheApplication() {
+		int modernPort = TestSocketUtils.findAvailableTcpPort();
+
+		// The listing is private, which is the default: it must not go from one user to
+		// another, so the provider does not keep it.
+		this.modernServerContextRunner.withPropertyValues("spring.ai.mcp.server.modern.list-ttl=5m")
+			.run(serverContext -> {
+				DisposableServer modernServer = startModernServer(serverContext, modernPort);
+				try {
+					this.clientContextRunner.withUserConfiguration(PerUserClientScopeConfiguration.class)
+						.withPropertyValues(CONNECTIONS + "greeter.url=http://localhost:" + modernPort,
+								CONNECTIONS + "greeter.protocol=MODERN", CONNECTIONS + "greeter.client-scope=CUSTOM")
+						.run(clientContext -> {
+							SeenUsers seenUsers = serverContext.getBean(SeenUsers.class);
+							CurrentUser currentUser = clientContext.getBean(CurrentUser.class);
+							ToolCallbackProvider provider = clientContext.getBean(ToolCallbackProvider.class);
+
+							currentUser.name.set("alice");
+							assertThat(provider.getToolCallbacks()).hasSize(1);
+							assertThat(provider.getToolCallbacks()).hasSize(1);
+
+							currentUser.name.set("bob");
+							assertThat(provider.getToolCallbacks()[0].call("{\"name\":\"AI\"}")).contains("Hello AI");
+
+							currentUser.name.set("alice");
+							assertThat(provider.getToolCallbacks()).hasSize(1);
+
+							// One tools/list for each user, whose client keeps that
+							// listing, and the tools/call of bob.
+							assertThat(seenUsers.names).containsExactly("alice", "bob", "bob");
 						});
 				}
 				finally {
@@ -477,6 +557,19 @@ class ModernMcpClientServerIT {
 		@Bean
 		McpHttpRequestCustomizer userHeaderCustomizer() {
 			return userHeader();
+		}
+
+	}
+
+	/** Keeps one client of a connection for each user of the client application. */
+	@Configuration(proxyBeanMethods = false)
+	static class PerUserClientScopeConfiguration {
+
+		@Bean
+		SyncModernMcpClientScope perUserClientScope(CurrentUser currentUser) {
+			Map<String, McpSyncClient> clients = new ConcurrentHashMap<>();
+			return (connectionInfo, clientFactory) -> clients
+				.computeIfAbsent(connectionInfo.name() + "/" + currentUser.name.get(), key -> clientFactory.get());
 		}
 
 	}

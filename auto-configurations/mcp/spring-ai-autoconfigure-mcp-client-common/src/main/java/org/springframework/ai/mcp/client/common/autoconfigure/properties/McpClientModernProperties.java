@@ -77,7 +77,7 @@ public class McpClientModernProperties {
 	 * <p>
 	 * The scope only matters for a tool listing the server marks as {@code private}: a
 	 * listing the server marks as {@code public} is kept for as long as the server allows
-	 * in both scopes.
+	 * in every scope.
 	 */
 	public enum ClientScope {
 
@@ -96,7 +96,15 @@ public class McpClientModernProperties {
 		 * one. Use it when the application calls the server under a single identity, for
 		 * example with client credentials.
 		 */
-		SHARED
+		SHARED,
+
+		/**
+		 * The {@code SyncModernMcpClientScope} bean of the application selects the client
+		 * of each request. Use it to keep clients in a way of your own, for example one
+		 * for each user, so that a {@code private} tool listing is kept for that user.
+		 * The startup fails if no such bean is defined.
+		 */
+		CUSTOM
 
 	}
 

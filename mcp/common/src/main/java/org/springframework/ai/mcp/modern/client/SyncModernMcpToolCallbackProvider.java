@@ -19,9 +19,11 @@ package org.springframework.ai.mcp.modern.client;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -65,9 +67,10 @@ import org.springframework.util.Assert;
  * <li>A {@code public} listing is the same for every caller. The provider keeps it for
  * its {@code ttlMs} and uses it for all requests, whichever client serves them.</li>
  * <li>A {@code private} listing may differ from caller to caller, so the provider does
- * not keep it. It is only kept by a client that serves all requests, as the client of a
- * {@link SyncModernMcpConnection#shared shared} connection does; use such a connection
- * when the application calls the server under a single identity.</li>
+ * not keep it. It is only kept by a client that outlives a request, as the client of a
+ * {@link SyncModernMcpConnection#shared shared} connection does, or the client that a
+ * {@link SyncModernMcpConnection#scoped scoped} connection keeps for a user. Use a shared
+ * connection when the application calls the server under a single identity.</li>
  * </ul>
  * A tool call is never served from a kept listing: it always goes to the server, through
  * the client of the request that resolved the callback.
@@ -120,15 +123,26 @@ public final class SyncModernMcpToolCallbackProvider
 
 	/**
 	 * Counts the dropped listings of each connection, by its name, so that a listing that
-	 * was under way when the server reported a change is not kept.
+	 * was under way when the server reported a change is not kept, and so that each
+	 * client knows whether the listing it keeps itself is still the latest.
 	 */
 	private final Map<String, AtomicLong> invalidations = new ConcurrentHashMap<>();
 
 	/**
-	 * The connections whose next listing must come from the server and not from a copy
-	 * that the client itself keeps, as the client of a shared connection does.
+	 * The count of dropped listings of its connection at which each client last listed
+	 * the tools. A client that listed them before the latest drop may answer from a copy
+	 * that it keeps itself, as a shared client or the client that a scope keeps for a
+	 * user does, so its next listing must come from the server. A connection can have
+	 * many clients, and each of them has to find that out for itself. The clients are
+	 * held weakly: one for a single request is gone with that request.
 	 */
-	private final Set<SyncModernMcpConnection> listFromServer = ConcurrentHashMap.newKeySet();
+	private final Map<McpSyncClient, Long> listedAtInvalidations = Collections.synchronizedMap(new WeakHashMap<>());
+
+	/**
+	 * The connections that were told that a private listing could be kept with another
+	 * kind of connection.
+	 */
+	private final Set<String> privateListingHints = ConcurrentHashMap.newKeySet();
 
 	private final LongSupplier nanoClock;
 
@@ -225,35 +239,47 @@ public final class SyncModernMcpToolCallbackProvider
 	 */
 	private List<Tool> tools(SyncModernMcpConnection connection, McpSyncClient mcpClient) {
 		long now = this.nanoClock.getAsLong();
+		AtomicLong invalidations = this.invalidations.computeIfAbsent(connection.info().name(),
+				name -> new AtomicLong());
 		KeptListing kept = this.keptListings.get(connection);
 		boolean fromServer = false;
 		if (kept != null) {
 			if (kept.isFresh(now)) {
 				return kept.tools();
 			}
-			this.keptListings.remove(connection, kept);
-			// The client of a shared connection keeps this listing as well, and its copy
-			// is as old as the one that has just expired here.
+			// A client that keeps this listing as well has a copy that is as old as the
+			// one that has just expired here. So the expiry counts as a dropped listing,
+			// which makes every such client ask the server.
+			if (this.keptListings.remove(connection, kept)) {
+				invalidations.incrementAndGet();
+			}
 			fromServer = true;
 		}
-		// A dropped listing must not be answered from the client's copy either.
-		// The counter is read before the mark is taken: an invalidation in between
-		// then either sets the mark that is taken here or changes the counter, so the
-		// listing is asked from the server or is not kept.
-		AtomicLong invalidations = this.invalidations.computeIfAbsent(connection.info().name(),
-				name -> new AtomicLong());
+		// The count is read before the listing: a drop during the listing changes it,
+		// and the listing is then not kept.
 		long invalidationsBefore = invalidations.get();
-		fromServer = this.listFromServer.remove(connection) || fromServer;
-		ListToolsResult listing;
-		try {
-			listing = fromServer ? mcpClient.listTools().skipCache().list() : mcpClient.listTools().list();
+		// A listing that was dropped must not be answered from the client's own copy.
+		// A client for one request has no copy and is not remembered. One that is not
+		// known here may have listed the tools elsewhere, so it asks the server once a
+		// listing was dropped.
+		boolean remembered = !connection.clientPerRequest();
+		Long listedAt = remembered ? this.listedAtInvalidations.get(mcpClient) : null;
+		fromServer = fromServer || (listedAt != null ? listedAt < invalidationsBefore : invalidationsBefore > 0);
+		ListToolsResult listing = fromServer ? mcpClient.listTools().skipCache().list() : mcpClient.listTools().list();
+		if (remembered) {
+			// Not reached if the listing fails: the client then asks the server again.
+			this.listedAtInvalidations.put(mcpClient, invalidationsBefore);
 		}
-		catch (RuntimeException ex) {
-			if (fromServer) {
-				// The next listing still has to come from the server.
-				this.listFromServer.add(connection);
-			}
-			throw ex;
+		if (listing.ttlMs() > 0 && listing.cacheScope() != CacheScope.PUBLIC && connection.clientPerRequest()
+				&& this.privateListingHints.add(connection.info().name())) {
+			// Said once for a connection: the server allows a listing to be kept that
+			// this kind of connection cannot keep.
+			logger.info("The MCP server of the connection '" + connection.info().name()
+					+ "' allows its tool listing to be kept for " + listing.ttlMs() + " ms, but marks it as "
+					+ "private, so only the client that listed it may keep it. The connection creates a client for "
+					+ "each request, so its tools are listed for each request. If the application calls the server "
+					+ "under a single identity, use a shared connection (client-scope=SHARED). To keep the listing "
+					+ "for each user, use a scoped connection (client-scope=CUSTOM with a SyncModernMcpClientScope).");
 		}
 		// Only a public listing may be handed to other callers. A private one is left to
 		// the client, which keeps it for as long as that client lives.
@@ -271,13 +297,6 @@ public final class SyncModernMcpToolCallbackProvider
 	}
 
 	/**
-	 * Drops the kept tool listing of a connection, so that the next call to
-	 * {@link #getToolCallbacks()} lists its tools again. Use it when the tools of the
-	 * server are known to have changed before the {@code ttlMs} of the listing has
-	 * passed.
-	 * @param connectionName the name of the connection
-	 */
-	/**
 	 * The provider hears about a change before the other listeners of a
 	 * {@link SyncModernMcpChangeSubscriber}, so that a listener that asks it for the
 	 * tools finds the kept listing dropped.
@@ -288,14 +307,21 @@ public final class SyncModernMcpToolCallbackProvider
 		return Ordered.HIGHEST_PRECEDENCE;
 	}
 
+	/**
+	 * Drops the kept tool listing of a connection, so that the next call to
+	 * {@link #getToolCallbacks()} lists its tools again. Use it when the tools of the
+	 * server are known to have changed before the {@code ttlMs} of the listing has
+	 * passed. A client that keeps a listing itself, as a shared client or a client that a
+	 * {@link SyncModernMcpClientScope} keeps for a user does, asks the server the next
+	 * time it lists the tools.
+	 * @param connectionName the name of the connection
+	 */
 	public void invalidateToolListing(String connectionName) {
 		Assert.notNull(connectionName, "connectionName must not be null");
+		// The count also tells each client that the listing it keeps itself is dropped.
 		this.invalidations.computeIfAbsent(connectionName, name -> new AtomicLong()).incrementAndGet();
 		for (SyncModernMcpConnection connection : this.connections) {
 			if (connection.info().name().equals(connectionName)) {
-				// Also for a listing that only the client keeps, as a private one of a
-				// shared connection.
-				this.listFromServer.add(connection);
 				this.keptListings.remove(connection);
 			}
 		}

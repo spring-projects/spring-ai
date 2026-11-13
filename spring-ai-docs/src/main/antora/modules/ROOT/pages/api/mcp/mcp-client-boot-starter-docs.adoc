@@ -880,6 +880,7 @@ With `spring.ai.mcp.client.type=ASYNC` a modern connection fails the startup.
 |How many clients serve a modern connection.
 `PER_REQUEST` creates a client each time the tools are resolved, which a `ChatClient` does once for each request.
 `SHARED` creates one client at startup, for an application that calls the server under a single identity.
+`CUSTOM` lets a `SyncModernMcpClientScope` bean of the application select the client of each request, for example one for each user.
 |`PER_REQUEST`
 
 |`spring.ai.mcp.client.streamable-http.connections.[name].listen`
@@ -923,6 +924,8 @@ The `client-scope` of a connection decides how many clients serve it:
 A `ChatClient` resolves them once for each request, so every request gets its own client, and the tool callbacks of that request call the server through it.
 * `SHARED` creates one client when the application starts and uses it for all requests.
 Use it when the application calls the server under a single identity, for example a service account.
+* `CUSTOM` asks a `SyncModernMcpClientScope` bean of the application for the client of each request.
+Use it to keep clients in a way of your own, for example one for each user, see <<Custom Client Scope>>.
 
 The legacy clients are always shared, see <<client-scope-and-session-boundaries>>.
 
@@ -979,6 +982,57 @@ A `transportContextProvider` that reads a thread-bound value on each call does n
 This applies to every `SHARED` connection that takes the caller from the thread.
 Such an application must carry the caller to the tool execution thread itself.
 
+==== Custom Client Scope
+
+Neither built-in scope keeps a `private` tool listing for each caller: `PER_REQUEST` keeps nothing, and `SHARED` has one client for all callers.
+A connection with `client-scope=CUSTOM` leaves the choice of the client to a `SyncModernMcpClientScope` bean.
+The bean gets the connection and a factory that builds a new client, configured as every client of that connection is: with the timeouts, the annotated handlers and the client customizers.
+The following scope keeps one client for each user:
+
+[source,java]
+----
+@Bean
+SyncModernMcpClientScope perUserClientScope() {
+    Map<String, McpSyncClient> clients = new ConcurrentHashMap<>();
+    return (connection, clientFactory) -> clients.computeIfAbsent(
+            connection.name() + "/" + CurrentUser.name(), key -> clientFactory.get());
+}
+----
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        streamable-http:
+          connections:
+            tickets:
+              url: http://localhost:8080
+              protocol: MODERN
+              client-scope: CUSTOM
+----
+
+The client of a user keeps the `private` listing of that user for its `ttlMs`, so the tools are listed once for each user and not once for each request.
+The scope is called each time the tools of the connection are resolved, on the thread that resolves them, and the tool callbacks of that request call the server through the client it returns.
+The startup fails if a connection sets `client-scope=CUSTOM` and no `SyncModernMcpClientScope` bean is defined.
+The scope must return a client that the factory built, either a new one or one that it kept from an earlier call.
+
+Keep the following in mind when you write a scope:
+
+* *Connections:* one scope bean serves all connections with `client-scope=CUSTOM`.
+Keep the clients for each connection, as the key of the example does.
+A client that was built for another connection would send its requests to the server of that connection, so it is rejected with an `IllegalStateException`.
+* *Number of clients:* the scope decides how many clients it keeps and for how long.
+A client holds no resource that must be released, so a client that is no longer needed is simply dropped.
+Bound a registry that grows with the users, for example with a cache that removes idle entries.
+* *Credentials:* a kept client outlives the request it was built for.
+A client customizer may capture who the caller is when the client is built, as the `callerCustomizer` above does, but not a credential that expires.
+Read the current token of that caller on each call, as the `accessTokenCustomizer` above does.
+* *Changed tools:* when the listing of a connection is dropped, by a listen stream or with `invalidateToolListing`, every client of the connection asks the server the next time it lists the tools.
+* *Work of the application:* the scope is not called for a listen stream or for the listing that precedes a list-changed method.
+They use a client of their own, built with the same factory outside of any request, so the scope is never asked for a client when there is no caller.
+
 === Tool Listings
 
 The tools of a modern connection are listed when a request resolves its tools, and all pages of the listing are read.
@@ -1001,12 +1055,19 @@ The server decides whether a listing may be kept for later requests, with the `t
 |Kept by the shared client for the `ttlMs`.
 |===
 
+A connection with `client-scope=CUSTOM` behaves like the scope that its clients resemble: a client that is kept, for example for a user, keeps a `private` listing for the `ttlMs` as a shared client does, and a client that is built for one request keeps nothing.
+
 A kept listing saves only the `tools/list` request.
 A tool call always goes to the server, through the client of the request that makes it.
 A change of the server's tools becomes visible when the `ttlMs` of a kept listing has passed, or at once if the connection listens for the changes of its server, see <<Change Notifications>>.
 
 TIP: A Spring AI modern server sends a `ttlMs` of zero and a `cacheScope` of `private` unless configured otherwise, so by default its tools are listed for each request.
 If the server offers the same tools to every caller, set both `spring.ai.mcp.server.modern.list-ttl` and `spring.ai.mcp.server.modern.list-cache-scope=PUBLIC` on the server, see xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#_configuration_properties[its configuration properties].
+
+NOTE: A `PER_REQUEST` connection cannot keep a `private` listing, even when the server allows it with a `ttlMs` above zero.
+An `INFO` message is logged once for such a connection.
+If the application calls the server under a single identity, set `client-scope=SHARED` for the connection.
+To keep the listing for each user, set `client-scope=CUSTOM`, see <<Custom Client Scope>>.
 
 === Change Notifications
 
@@ -1038,7 +1099,7 @@ A stream that cannot be established leaves the kept listing alone.
 The `ttlMs` of a listing remains the longest time a change can go unnoticed, with or without a stream.
 
 A connection without `listen=true` opens no stream, and nothing is sent to its server at startup.
-Listening only pays off for a connection whose tool listing is kept: one with a public listing, or one with `client-scope=SHARED`.
+Listening only pays off for a connection whose tool listing is kept: one with a public listing, one with `client-scope=SHARED`, or one with a `CUSTOM` scope that keeps its clients.
 The property applies to the modern connections that are configured with properties.
 A warning is logged for a legacy connection that sets it, and a connection that the application contributes as a `NamedModernClientMcpTransport` bean does not listen.
 
