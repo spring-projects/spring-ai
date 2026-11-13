@@ -1028,6 +1028,9 @@ The `McpToolFilter` and `McpToolNamePrefixGenerator` beans described in <<Tool F
 `McpModernToolFilter.acceptAll()` exposes all tools.
 * A custom `McpToolNamePrefixGenerator` bean without a `McpModernToolNamePrefixGenerator` bean logs a warning, and the modern tools keep their `<connection>_<tool>` names.
 
+Define a single `McpModernToolFilter` bean and a single `McpModernToolNamePrefixGenerator` bean.
+Several beans of one of these types fail the startup unless one of them is marked as `@Primary`, so that a filter is never dropped without notice.
+
 The `ToolContextToMcpMetaConverter` bean applies to both protocols.
 For a modern tool call, the `progressToken` entry and the entries whose key starts with `io.modelcontextprotocol/` are left out, because the client sets them itself.
 

@@ -23,7 +23,6 @@ import io.modelcontextprotocol.modern.McpException;
 import io.modelcontextprotocol.modern.McpSchema.CallToolResult;
 import io.modelcontextprotocol.modern.McpSchema.MetaKeys;
 import io.modelcontextprotocol.modern.McpSchema.Tool;
-import io.modelcontextprotocol.modern.client.McpClientException;
 import io.modelcontextprotocol.modern.client.McpSyncClient;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -52,6 +51,14 @@ import org.springframework.util.StringUtils;
  * A callback is only as long-lived as its client. Register the
  * {@link SyncModernMcpToolCallbackProvider} with the {@code ChatClient}, not the
  * callbacks it returns, so that each request gets callbacks for its own client.
+ * <p>
+ * A call fails in one of two ways, as a call of a legacy tool does. A protocol error that
+ * the server answers with ({@code McpException}) is thrown as it is and fails the model
+ * interaction. Every other failure is thrown as a {@link ToolExecutionException}, which
+ * the application's tool error handling decides about: a tool result that is marked as an
+ * error, and a failure in the client or on the way to the server, such as a timeout
+ * ({@code McpTimeoutException}), a lost response or an HTTP error status. After a timeout
+ * or a lost response it is unknown whether the server ran the tool.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -148,11 +155,13 @@ public final class SyncModernMcpToolCallback implements ToolCallback {
 			}
 			result = callSpec.call();
 		}
-		catch (McpClientException | McpException ex) {
-			// The call itself failed: the server answered with a protocol error, or the
-			// client could not complete the exchange. Such failures are not conveyed to
-			// the model; they fail the model interaction, as the legacy callbacks do.
-			logger.error("MCP failure while calling tool: " + this.tool.name(), ex);
+		catch (McpException ex) {
+			// A protocol-level error of the server indicates the tool invocation itself
+			// failed and must not be conveyed to the model. Rethrow it as a hard failure,
+			// as the legacy callbacks do with their protocol errors. Since the tool
+			// calling manager only handles ToolExecutionException, this bubbles up and
+			// fails the model interaction.
+			logger.error("Protocol error while calling tool: " + this.tool.name(), ex);
 			throw ex;
 		}
 		catch (Exception ex) {

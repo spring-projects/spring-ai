@@ -46,6 +46,7 @@ import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.modern.client.McpClient;
 import io.modelcontextprotocol.modern.client.McpResponseLostException;
 import io.modelcontextprotocol.modern.client.McpSyncClient;
+import io.modelcontextprotocol.modern.client.McpTimeoutException;
 import io.modelcontextprotocol.modern.client.transport.McpClientTransport;
 import io.modelcontextprotocol.modern.client.transport.McpHttpStatusException;
 import io.modelcontextprotocol.modern.client.transport.McpTransportRequest;
@@ -194,6 +195,23 @@ class SyncModernMcpToolCallbackProviderTests {
 			.build();
 
 		assertThatThrownBy(() -> callback.call("{}")).isInstanceOf(McpException.class);
+	}
+
+	@Test
+	void timeoutBecomesToolExecutionException() {
+		// accepts the request and never answers
+		McpClientTransport hanging = request -> request.withRoundTimeout(Flux.never());
+		McpSyncClient client = McpClient.sync(hanging).roundTimeout(Duration.ofMillis(200)).build();
+		ToolCallback callback = SyncModernMcpToolCallback.builder()
+			.mcpClient(client)
+			.tool(Tool.builder("slow", EMPTY_SCHEMA).build())
+			.build();
+
+		// A failure in the client or on the way to the server is left to the tool error
+		// handling of the application, as the timeout of a legacy client is. Only a
+		// protocol error of the server is rethrown as it is.
+		assertThatThrownBy(() -> callback.call("{}")).isInstanceOf(ToolExecutionException.class)
+			.hasCauseInstanceOf(McpTimeoutException.class);
 	}
 
 	@Test

@@ -80,7 +80,8 @@ public class McpToolCallbackAutoConfiguration {
 	 * @param modernMcpConnections the connections that speak the modern protocol, whose
 	 * tools the provider returns together with those of the legacy clients
 	 * @param modernToolFilter the filter of the modern connections' tools; required when
-	 * a legacy {@link McpToolFilter} bean is defined, which does not apply to them
+	 * a legacy {@link McpToolFilter} bean is defined, which does not apply to them.
+	 * Several such beans without a primary one fail the startup
 	 * @param modernToolNamePrefixGenerator the name generator of the modern connections'
 	 * tools
 	 * @param modernProperties the properties of the modern connections
@@ -142,9 +143,11 @@ public class McpToolCallbackAutoConfiguration {
 			}
 			SyncModernMcpToolCallbackProvider.Builder modernBuilder = SyncModernMcpToolCallbackProvider.builder()
 				.connections(modernConnections)
-				.toolFilter(modernToolFilter.getIfUnique(McpModernToolFilter::acceptAll))
-				.toolNamePrefixGenerator(
-						modernToolNamePrefixGenerator.getIfUnique(McpModernToolNamePrefixGenerator::connectionPrefix))
+				// getIfAvailable, not getIfUnique: several beans without a primary one
+				// fail the startup. Falling back to the default would expose all tools.
+				.toolFilter(modernToolFilter.getIfAvailable(McpModernToolFilter::acceptAll))
+				.toolNamePrefixGenerator(modernToolNamePrefixGenerator
+					.getIfAvailable(McpModernToolNamePrefixGenerator::connectionPrefix))
 				.toolContextToMcpMetaConverter(metaConverter)
 				.unreachableCoolDown(modernProperties.getUnreachableCoolDown());
 			// The annotated handlers are set for each tool call, so that they receive

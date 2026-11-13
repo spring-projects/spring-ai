@@ -45,16 +45,19 @@ import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpCli
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties.ConnectionParameters;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.ai.mcp.modern.client.McpModernToolFilter;
+import org.springframework.ai.mcp.modern.client.McpModernToolNamePrefixGenerator;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallCustomizer;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -295,6 +298,34 @@ class McpClientModernAutoConfigurationTests {
 	}
 
 	@Test
+	void severalModernToolFiltersFailTheStartupUnlessOneIsPrimary() {
+		// Falling back to the default filter would expose all tools.
+		this.contextRunner.withUserConfiguration(TwoModernToolFiltersConfiguration.class)
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
+			.run(context -> assertThat(context).getFailure()
+				.rootCause()
+				.isInstanceOf(NoUniqueBeanDefinitionException.class)
+				.hasMessageContaining("McpModernToolFilter"));
+
+		this.contextRunner.withUserConfiguration(PrimaryModernToolFilterConfiguration.class)
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
+			.run(context -> assertThat(context.getBean(SyncMcpToolCallbackProvider.class))
+				.extracting("modernToolCallbackProvider")
+				.extracting("toolFilter")
+				.isSameAs(context.getBean("primaryToolFilter")));
+	}
+
+	@Test
+	void severalModernToolNameGeneratorsFailTheStartup() {
+		this.contextRunner.withUserConfiguration(TwoModernToolNameGeneratorsConfiguration.class)
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
+			.run(context -> assertThat(context).getFailure()
+				.rootCause()
+				.isInstanceOf(NoUniqueBeanDefinitionException.class)
+				.hasMessageContaining("McpModernToolNamePrefixGenerator"));
+	}
+
+	@Test
 	void legacyToolFilterIsEnoughWithoutModernConnections() {
 		this.contextRunner.withUserConfiguration(LegacyToolFilterConfiguration.class)
 			.withPropertyValues(LEGACY_BILLING_URL)
@@ -455,6 +486,52 @@ class McpClientModernAutoConfigurationTests {
 			// A modern client does no I/O when built, so the transport is never used.
 			McpClientTransport transport = request -> Flux.empty();
 			return List.of(new NamedModernClientMcpTransport("files", transport));
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class TwoModernToolFiltersConfiguration {
+
+		@Bean
+		McpModernToolFilter noAdminTools() {
+			return (connectionInfo, tool) -> !tool.name().startsWith("admin");
+		}
+
+		@Bean
+		McpModernToolFilter noDebugTools() {
+			return (connectionInfo, tool) -> !tool.name().startsWith("debug");
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class PrimaryModernToolFilterConfiguration {
+
+		@Bean
+		@Primary
+		McpModernToolFilter primaryToolFilter() {
+			return (connectionInfo, tool) -> !tool.name().startsWith("admin");
+		}
+
+		@Bean
+		McpModernToolFilter otherToolFilter() {
+			return (connectionInfo, tool) -> !tool.name().startsWith("debug");
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class TwoModernToolNameGeneratorsConfiguration {
+
+		@Bean
+		McpModernToolNamePrefixGenerator noPrefix() {
+			return McpModernToolNamePrefixGenerator.noPrefix();
+		}
+
+		@Bean
+		McpModernToolNamePrefixGenerator connectionPrefix() {
+			return McpModernToolNamePrefixGenerator.connectionPrefix();
 		}
 
 	}
