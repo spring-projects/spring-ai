@@ -434,6 +434,7 @@ The values are unchanged.
 ===== Impact
 
 Dashboards, alerts and queries that filter on `db.system` must switch to `db.system.name`.
+In Prometheus, the `db_system` label becomes `db_system_name`.
 The `DB_SYSTEM` constants keep their names, so code that uses them needs no change.
 
 === Advisors
