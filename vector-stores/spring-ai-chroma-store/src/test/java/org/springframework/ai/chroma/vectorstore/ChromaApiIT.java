@@ -291,6 +291,71 @@ public class ChromaApiIT {
 		net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson(processed.get("mapVal")).isEqualTo("{a:1,b:2}");
 	}
 
+	@Test
+	void shouldCreateCollectionWithCosineDistanceType() {
+		ChromaVectorStore store = ChromaVectorStore.builder(this.chromaApi, this.embeddingModel)
+			.collectionName("cosine-collection")
+			.initializeSchema(true)
+			.distanceType(ChromaVectorStore.ChromaDistanceType.COSINE)
+			.initializeImmediately(true)
+			.build();
+
+		var collection = this.chromaApi.getCollection(this.defaultTenantName, this.defaultDatabaseName,
+				"cosine-collection");
+		assertThat(collection).isNotNull();
+		assertThat(collection.name()).isEqualTo("cosine-collection");
+		assertThat(collection.metadata()).containsEntry("hnsw:space", "cosine");
+	}
+
+	@Test
+	void shouldCreateCollectionWithEuclideanDistanceType() {
+		ChromaVectorStore store = ChromaVectorStore.builder(this.chromaApi, this.embeddingModel)
+			.collectionName("euclidean-collection")
+			.initializeSchema(true)
+			.distanceType(ChromaVectorStore.ChromaDistanceType.EUCLIDEAN)
+			.initializeImmediately(true)
+			.build();
+
+		var collection = this.chromaApi.getCollection(this.defaultTenantName, this.defaultDatabaseName,
+				"euclidean-collection");
+		assertThat(collection).isNotNull();
+		assertThat(collection.metadata()).containsEntry("hnsw:space", "l2");
+	}
+
+	@Test
+	void shouldCreateCollectionWithInnerProductDistanceType() {
+		ChromaVectorStore store = ChromaVectorStore.builder(this.chromaApi, this.embeddingModel)
+			.collectionName("ip-collection")
+			.initializeSchema(true)
+			.distanceType(ChromaVectorStore.ChromaDistanceType.INNER_PRODUCT)
+			.initializeImmediately(true)
+			.build();
+
+		var collection = this.chromaApi.getCollection(this.defaultTenantName, this.defaultDatabaseName,
+				"ip-collection");
+		assertThat(collection).isNotNull();
+		assertThat(collection.metadata()).containsEntry("hnsw:space", "ip");
+	}
+
+	@Test
+	void shouldCreateCollectionWithCustomHnswParameters() {
+		ChromaVectorStore store = ChromaVectorStore.builder(this.chromaApi, this.embeddingModel)
+			.collectionName("custom-hnsw-collection")
+			.initializeSchema(true)
+			.efConstruction(200)
+			.efSearch(50)
+			.distanceType(ChromaVectorStore.ChromaDistanceType.COSINE)
+			.initializeImmediately(true)
+			.build();
+
+		var collection = this.chromaApi.getCollection(this.defaultTenantName, this.defaultDatabaseName,
+				"custom-hnsw-collection");
+		assertThat(collection).isNotNull();
+		assertThat(collection.metadata()).containsEntry("hnsw:space", "cosine");
+		assertThat(collection.metadata()).containsEntry("hnsw:construction_ef", 200);
+		assertThat(collection.metadata()).containsEntry("hnsw:search_ef", 50);
+	}
+
 	@SpringBootConfiguration
 	public static class Config {
 
