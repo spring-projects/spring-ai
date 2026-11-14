@@ -100,6 +100,8 @@ Spring AI provides MCP integration through the following Spring Boot starters:
 * `spring-ai-starter-mcp-client` - Core starter providing `STDIO`, Servlet-based `Streamable-HTTP`, `Stateless Streamable-HTTP` and `SSE` support
 * `spring-ai-starter-mcp-client-webflux` - WebFlux-based  `Streamable-HTTP`, `Stateless Streamable-HTTP` and `SSE` transport implementation
 
+A Streamable-HTTP connection of either starter can also speak the MCP 2026-07-28 ("modern") protocol revision, see xref:api/mcp/mcp-client-boot-starter-docs.adoc#mcp-modern-connections[Modern Connections].
+
 === link:mcp-server-boot-starter-docs.html[Server Starters]
 
 ==== STDIO
@@ -108,6 +110,7 @@ Spring AI provides MCP integration through the following Spring Boot starters:
 |===
 |Server Type | Dependency | Property
 | xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc[Standard Input/Output (STDIO)] | `spring-ai-starter-mcp-server` | `spring.ai.mcp.server.stdio=true`
+| xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#_stdio_server[Modern STDIO] | `spring-ai-starter-mcp-server` | `spring.ai.mcp.server.stdio=true` and `spring.ai.mcp.server.protocol=MODERN`
 |===
 
 ==== WebMVC
@@ -117,6 +120,7 @@ Spring AI provides MCP integration through the following Spring Boot starters:
 | xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webmvc_server[SSE WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=SSE` or empty
 | xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc#_streamable_http_webmvc_server[Streamable-HTTP WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=STREAMABLE`
 | xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc#_stateless_webmvc_server[Stateless Streamable-HTTP WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=STATELESS`
+| xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#_webmvc_server[Modern WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=MODERN`
 |===
 
 ==== WebFlux (Reactive)
@@ -125,6 +129,7 @@ Spring AI provides MCP integration through the following Spring Boot starters:
 | xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webflux_server[SSE WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=SSE` or empty
 | xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc#_streamable_http_webflux_server[Streamable-HTTP WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=STREAMABLE`
 | xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc#_stateless_webflux_server[Stateless Streamable-HTTP WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=STATELESS`
+| xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#_webflux_server[Modern WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=MODERN`
 |===
 
 == xref:api/mcp/mcp-annotations-overview.adoc[Spring AI MCP Annotations]

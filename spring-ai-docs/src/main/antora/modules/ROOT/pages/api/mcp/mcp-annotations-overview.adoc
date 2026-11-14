@@ -33,6 +33,7 @@ For MCP Clients, the following annotations are provided:
 * `@McpResourceListChanged` - Handles resource list change notifications
 * `@McpPromptListChanged` - Handles prompt list change notifications
 
+The client annotations serve legacy connections as well as connections that speak the MCP 2026-07-28 ("modern") protocol revision, see xref:api/mcp/mcp-client-boot-starter-docs.adoc#mcp-modern-connections[Modern Connections].
 
 === Special Parameters and Annotations
 

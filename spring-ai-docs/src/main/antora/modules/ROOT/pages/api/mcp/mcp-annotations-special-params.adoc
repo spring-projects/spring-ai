@@ -461,6 +461,26 @@ public CallToolResult flexibleWithProgress(
 }
 ----
 
+=== ToolContext
+
+The `@McpElicitation` and `@McpProgress` methods of a client can take the `ToolContext` of the tool call that they serve, as an additional parameter.
+It holds the entries that the application passes with the chat request, for example `chatClient.prompt(...).toolContext(Map.of("user", userName))`, so the handler knows which caller a request belongs to.
+The example takes the modern schema types of `io.modelcontextprotocol.modern.McpSchema`; a handler can also take the legacy types of `io.modelcontextprotocol.spec.McpSchema`:
+
+[source,java]
+----
+@McpElicitation(clients = "tickets")
+public ElicitResult confirm(ElicitFormRequest request, ToolContext toolContext) {
+    String user = (String) toolContext.getContext().get("user");
+    boolean confirmed = askUser(user, request.message());
+    return confirmed ? ElicitResult.accept(Map.of("confirmed", true)) : ElicitResult.decline();
+}
+----
+
+The `ToolContext` is set for the connections that speak the MCP 2026-07-28 ("modern") protocol revision, for both client types.
+It is `null` for a legacy connection, whose elicitation requests and progress notifications are not tied to a tool call, and for a modern client that the application uses directly.
+See xref:api/mcp/mcp-client-boot-starter-docs.adoc#_elicitation_and_progress_handlers[Elicitation and Progress Handlers].
+
 == Parameter Injection Rules
 
 === Automatic Injection
@@ -473,6 +493,7 @@ The following parameters are automatically injected by the framework:
 4. `McpSyncServerExchange` / `McpAsyncServerExchange` - Low-level server exchange context (stateful only)
 5. `McpTransportContext` - Transport context for stateless operations
 6. `CallToolRequest` - Full tool request for dynamic schema (tools only)
+7. `ToolContext` - Tool context of the tool call (client `@McpElicitation` and `@McpProgress` methods only)
 
 === Schema Generation
 
