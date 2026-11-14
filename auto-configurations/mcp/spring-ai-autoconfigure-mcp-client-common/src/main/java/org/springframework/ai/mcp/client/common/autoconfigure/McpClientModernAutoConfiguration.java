@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.modern.McpSchema.Implementation;
 import io.modelcontextprotocol.modern.client.McpAsyncClient;
@@ -243,6 +244,7 @@ public class McpClientModernAutoConfiguration {
 	 * @param streamableProperties the configured connections
 	 * @param commonProperties the common MCP client properties
 	 * @param modernProperties the modern MCP client properties
+	 * @param jsonMapperProvider the JSON mapper of the application, if any
 	 * @param clientCustomizers the customizers of the client builders
 	 * @param handlersRegistry the registry of the annotated client handler methods, if
 	 * the annotation scanner is enabled
@@ -257,12 +259,13 @@ public class McpClientModernAutoConfiguration {
 	public List<SyncModernMcpConnection> modernMcpSyncConnections(
 			ObjectProvider<List<NamedModernClientMcpTransport>> transportsProvider,
 			McpStreamableHttpClientProperties streamableProperties, McpClientCommonProperties commonProperties,
-			McpClientModernProperties modernProperties,
+			McpClientModernProperties modernProperties, ObjectProvider<JsonMapper> jsonMapperProvider,
 			ObjectProvider<McpClientCustomizer<McpClient.SyncBuilder>> clientCustomizers,
 			ObjectProvider<ClientMcpSyncHandlersRegistry> handlersRegistry,
 			ObjectProvider<SyncModernMcpClientScope> clientScopeProvider) {
 
 		ClientMcpSyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
+		McpJsonMapper jsonMapper = mcpJsonMapper(jsonMapperProvider);
 
 		Implementation clientInfo = Implementation.builder(commonProperties.getName(), commonProperties.getVersion())
 			.build();
@@ -287,7 +290,7 @@ public class McpClientModernAutoConfiguration {
 			}
 
 			Supplier<McpSyncClient> clientFactory = () -> buildClient(namedTransport, clientInfo, commonProperties,
-					modernProperties, handlers, customizers);
+					modernProperties, jsonMapper, handlers, customizers);
 			if (parameters != null && parameters.isSharedClient()) {
 				connections.add(SyncModernMcpConnection.shared(connectionInfo, clientFactory.get()));
 			}
@@ -323,6 +326,7 @@ public class McpClientModernAutoConfiguration {
 	 * @param streamableProperties the configured connections
 	 * @param commonProperties the common MCP client properties
 	 * @param modernProperties the modern MCP client properties
+	 * @param jsonMapperProvider the JSON mapper of the application, if any
 	 * @param clientCustomizers the customizers of the client builders
 	 * @param clientScopeProvider the bean that selects the clients of the connections
 	 * with the {@code CUSTOM} client scope, which must be defined if there is such a
@@ -337,13 +341,14 @@ public class McpClientModernAutoConfiguration {
 	public List<AsyncModernMcpConnection> modernMcpAsyncConnections(
 			ObjectProvider<List<NamedModernClientMcpTransport>> transportsProvider,
 			McpStreamableHttpClientProperties streamableProperties, McpClientCommonProperties commonProperties,
-			McpClientModernProperties modernProperties,
+			McpClientModernProperties modernProperties, ObjectProvider<JsonMapper> jsonMapperProvider,
 			ObjectProvider<McpClientCustomizer<McpClient.AsyncBuilder>> clientCustomizers,
 			ObjectProvider<AsyncModernMcpClientScope> clientScopeProvider,
 			ObjectProvider<AsyncModernMcpTransportContextProvider> transportContextProvider,
 			ObjectProvider<ClientMcpAsyncHandlersRegistry> handlersRegistry) {
 
 		ClientMcpAsyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
+		McpJsonMapper jsonMapper = mcpJsonMapper(jsonMapperProvider);
 
 		Implementation clientInfo = Implementation.builder(commonProperties.getName(), commonProperties.getVersion())
 			.build();
@@ -368,7 +373,7 @@ public class McpClientModernAutoConfiguration {
 			}
 
 			Supplier<McpAsyncClient> clientFactory = () -> buildAsyncClient(namedTransport, clientInfo,
-					commonProperties, modernProperties, handlers, customizers);
+					commonProperties, modernProperties, jsonMapper, handlers, customizers);
 			AsyncModernMcpConnection connection;
 			if (parameters != null && parameters.isSharedClient()) {
 				if (callerProvider != null) {
@@ -586,13 +591,25 @@ public class McpClientModernAutoConfiguration {
 		};
 	}
 
+	/**
+	 * The JSON mapper of the modern clients: that of the application, as for the
+	 * transports. A client built without one would look the default up with the
+	 * {@code ServiceLoader} of the thread that builds it, which, with a client for each
+	 * request, is any thread that resolves the tools; the threads of the common
+	 * {@code ForkJoinPool} of an executable jar cannot see it.
+	 */
+	private static McpJsonMapper mcpJsonMapper(ObjectProvider<JsonMapper> jsonMapperProvider) {
+		return new JacksonMcpJsonMapper(jsonMapperProvider.getIfAvailable(JsonMapper::shared));
+	}
+
 	private static McpSyncClient buildClient(NamedModernClientMcpTransport namedTransport, Implementation clientInfo,
 			McpClientCommonProperties commonProperties, McpClientModernProperties modernProperties,
-			@Nullable ClientMcpSyncHandlersRegistry handlers,
+			McpJsonMapper jsonMapper, @Nullable ClientMcpSyncHandlersRegistry handlers,
 			List<McpClientCustomizer<McpClient.SyncBuilder>> clientCustomizers) {
 
 		McpClient.SyncBuilder clientBuilder = McpClient.sync(namedTransport.transport())
 			.clientInfo(clientInfo)
+			.jsonMapper(jsonMapper)
 			.roundTimeout(commonProperties.getRequestTimeout());
 
 		if (modernProperties.getCallTimeout() != null) {
@@ -610,11 +627,13 @@ public class McpClientModernAutoConfiguration {
 
 	private static McpAsyncClient buildAsyncClient(NamedModernClientMcpTransport namedTransport,
 			Implementation clientInfo, McpClientCommonProperties commonProperties,
-			McpClientModernProperties modernProperties, @Nullable ClientMcpAsyncHandlersRegistry handlers,
+			McpClientModernProperties modernProperties, McpJsonMapper jsonMapper,
+			@Nullable ClientMcpAsyncHandlersRegistry handlers,
 			List<McpClientCustomizer<McpClient.AsyncBuilder>> clientCustomizers) {
 
 		McpClient.AsyncBuilder clientBuilder = McpClient.async(namedTransport.transport())
 			.clientInfo(clientInfo)
+			.jsonMapper(jsonMapper)
 			.roundTimeout(commonProperties.getRequestTimeout());
 
 		if (modernProperties.getCallTimeout() != null) {

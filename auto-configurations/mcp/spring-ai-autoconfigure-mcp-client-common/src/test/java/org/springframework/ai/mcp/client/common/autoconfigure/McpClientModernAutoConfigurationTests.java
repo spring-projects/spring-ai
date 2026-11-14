@@ -157,6 +157,17 @@ class McpClientModernAutoConfigurationTests {
 	}
 
 	@Test
+	void clientsAreBuiltWithTheJsonMapperOfTheApplication() {
+		this.contextRunner.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL).run(context -> {
+			SyncModernMcpConnection connection = connections(context.getBean("modernMcpSyncConnections")).get(0);
+
+			// With a client for each request, every thread that resolves the tools builds
+			// a client, whatever its context class loader.
+			assertThat(ServiceLoaderBlindThread.call(connection::client)).isNotNull();
+		});
+	}
+
+	@Test
 	void customScopeLetsTheBeanOfTheApplicationSelectTheClients() {
 		this.contextRunner.withUserConfiguration(RecordingCustomizerConfiguration.class, ClientScopeConfiguration.class)
 			.withPropertyValues(CONNECTIONS + "tickets.client-scope=CUSTOM", MODERN_TICKETS_URL,

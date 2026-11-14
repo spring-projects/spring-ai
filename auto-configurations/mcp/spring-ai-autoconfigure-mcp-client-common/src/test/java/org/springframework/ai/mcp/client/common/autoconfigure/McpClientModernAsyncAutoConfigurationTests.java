@@ -129,6 +129,17 @@ class McpClientModernAsyncAutoConfigurationTests {
 	}
 
 	@Test
+	void clientsAreBuiltWithTheJsonMapperOfTheApplication() {
+		this.contextRunner.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL).run(context -> {
+			AsyncModernMcpConnection connection = connections(context.getBean("modernMcpAsyncConnections")).get(0);
+
+			// With a client for each request, every thread that resolves the tools builds
+			// a client, whatever its context class loader.
+			assertThat(ServiceLoaderBlindThread.call(connection::client)).isNotNull();
+		});
+	}
+
+	@Test
 	void sharedScopeBuildsOneClientForTheConnection() {
 		this.contextRunner.withUserConfiguration(RecordingCustomizerConfiguration.class)
 			.withPropertyValues(CONNECTIONS + "tickets.client-scope=SHARED", MODERN_TICKETS_URL,
