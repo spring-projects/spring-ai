@@ -58,4 +58,6 @@ public final class SpringAIModels {
 
 	public static final String SYSTEMONE = "systemone";
 
+	public static final String VOYAGE_AI = "voyage-ai";
+
 }

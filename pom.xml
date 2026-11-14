@@ -75,6 +75,7 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-systemone</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-voyage-ai</module>
 		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
@@ -134,6 +135,7 @@
 		<module>models/spring-ai-systemone</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
+		<module>models/spring-ai-voyage-ai</module>
 
 		<module>starters/spring-ai-starter-mcp-client</module>
 		<module>starters/spring-ai-starter-mcp-client-webflux</module>
@@ -166,6 +168,7 @@
 		<module>starters/spring-ai-starter-model-systemone</module>
 		<module>starters/spring-ai-starter-model-transformers</module>
 		<module>starters/spring-ai-starter-model-vertex-ai-embedding</module>
+		<module>starters/spring-ai-starter-model-voyage-ai</module>
 
 		<module>starters/spring-ai-starter-tool-search-advisor</module>
 
@@ -888,6 +891,7 @@
 								<exclude>org.springframework.ai.stabilityai/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.transformers/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.vertexai.embedding/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.voyageai/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.vertexai.gemini/**/*IT.java</exclude>
 
 								<!-- Vector Stores -->
