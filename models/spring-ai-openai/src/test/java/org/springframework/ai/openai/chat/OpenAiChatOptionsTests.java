@@ -538,6 +538,53 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	}
 
 	@Test
+	void testCombineWithMaxCompletionTokensClearsMaxTokens() {
+		OpenAiChatOptions base = OpenAiChatOptions.builder().model("gpt-4o").maxTokens(500).build();
+
+		OpenAiChatOptions merged = base.mutate()
+			.combineWith(OpenAiChatOptions.builder().model("gpt-5").maxCompletionTokens(2000))
+			.build();
+
+		assertThat(merged.getMaxTokens()).isNull();
+		assertThat(merged.getMaxCompletionTokens()).isEqualTo(2000);
+	}
+
+	@Test
+	void testCombineWithMaxTokensKeepsMaxCompletionTokens() {
+		OpenAiChatOptions base = OpenAiChatOptions.builder().model("gpt-5").maxCompletionTokens(2000).build();
+
+		OpenAiChatOptions merged = base.mutate()
+			.combineWith(OpenAiChatOptions.builder().model("gpt-4o").maxTokens(500))
+			.build();
+
+		assertThat(merged.getMaxTokens()).isNull();
+		assertThat(merged.getMaxCompletionTokens()).isEqualTo(2000);
+	}
+
+	@Test
+	void testCombineWithGenericMaxTokensKeepsMaxCompletionTokens() {
+		OpenAiChatOptions base = OpenAiChatOptions.builder().model("gpt-5").maxCompletionTokens(2000).build();
+
+		OpenAiChatOptions merged = base.mutate().combineWith(ChatOptions.builder().maxTokens(500)).build();
+
+		assertThat(merged.getMaxTokens()).isNull();
+		assertThat(merged.getMaxCompletionTokens()).isEqualTo(2000);
+	}
+
+	@Test
+	void testCombineWithoutTokenLimitsKeepsExistingOne() {
+		OpenAiChatOptions base = OpenAiChatOptions.builder().model("gpt-5").maxCompletionTokens(2000).build();
+
+		OpenAiChatOptions merged = base.mutate()
+			.combineWith(OpenAiChatOptions.builder().temperature(1.0))
+			.combineWith(ChatOptions.builder().topP(0.5))
+			.build();
+
+		assertThat(merged.getMaxTokens()).isNull();
+		assertThat(merged.getMaxCompletionTokens()).isEqualTo(2000);
+	}
+
+	@Test
 	void testMutateAndBuild() {
 		Map<String, Integer> logitBias = Map.of("token", 1);
 		List<String> stop = List.of("stop");
