@@ -208,6 +208,9 @@ Request context objects provide unified access to MCP request information and se
 * Enables advanced features like logging, progress notifications, sampling, elicitation, and roots access
 * Works with both stateful (server exchange) and stateless (transport context) modes
 
+NOTE: The modern server (`spring.ai.mcp.server.protocol=MODERN`) has no session to call back on, so it skips methods that declare `McpSyncRequestContext`, `McpAsyncRequestContext` or a server exchange, with a warning.
+Declare `McpModernRequestContext` there, and the SDK notifier for progress, see xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#_request_context[Request Context].
+
 ==== Context Getters
 
 Both `McpSyncRequestContext` and `McpAsyncRequestContext` expose the following read-only context:
@@ -494,6 +497,9 @@ The following parameters are automatically injected by the framework:
 5. `McpTransportContext` - Transport context for stateless operations
 6. `CallToolRequest` - Full tool request for dynamic schema (tools only)
 7. `ToolContext` - Tool context of the tool call (client `@McpElicitation` and `@McpProgress` methods only)
+
+The modern server injects its own types instead of 3 and 4: `McpModernRequestContext`, the SDK `McpRequestContext`, the `McpSyncNotifier` or `McpAsyncNotifier`, and the modern `CallToolRequest`, `ReadResourceRequest` or `GetPromptRequest`.
+See xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#_tools_resources_prompts_and_completions[Tools, Resources, Prompts and Completions].
 
 === Schema Generation
 
