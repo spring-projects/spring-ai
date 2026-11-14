@@ -80,6 +80,7 @@ The common properties (`spring.ai.mcp.server.name`, `version`, `instructions`, `
 
 `spring.ai.mcp.server.tool-callback-converter=false` stops `ToolCallback` beans from being exposed as MCP tools.
 It does not affect `@McpTool`, `@McpResource`, `@McpPrompt` or `@McpComplete` methods, which are controlled by the annotation scanner property `spring.ai.mcp.server.annotation-scanner.enabled`.
+`spring.ai.mcp.server.expose-mcp-client-tools=true` re-exposes the tools of the application's MCP clients; for modern client connections, see the xref:api/mcp/mcp-client-boot-starter-docs.adoc#mcp-modern-re-exposed-tools[warning about re-exposed tools] first.
 The following properties are specific to the modern server.
 `mcp-endpoint`, `keep-alive-interval` and `max-request-size` apply to the WebMVC and WebFlux transports only, not to STDIO.
 

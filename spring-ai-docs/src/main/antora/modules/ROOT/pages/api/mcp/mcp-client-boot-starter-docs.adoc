@@ -938,6 +938,19 @@ With `client-scope=SHARED` the client customizers run once, at startup.
 A `transportContextProvider` of a shared client must therefore read the caller on each call and cannot capture it as the example above does.
 ====
 
+[[mcp-modern-re-exposed-tools]]
+[WARNING]
+====
+Do not re-expose the tools of a modern connection from an MCP server of the same application with `spring.ai.mcp.server.expose-mcp-client-tools=true`.
+The server takes the tool callbacks once, when it starts, outside of any request.
+The tools are therefore listed for no caller, and the callbacks stay bound to the client of that one resolution.
+
+Every caller of the server then sees the tools that the downstream server shows to no caller, and the tools are called on behalf of no caller.
+A client customizer that supplies a credential of the application when there is no caller, such as that of a service account, lends that credential to every caller of the server.
+
+To call the tools of a modern server for the callers of your own server, resolve them in your own tool method, for the caller of each request, as described above.
+====
+
 ==== Streaming Responses
 
 With `ChatClient.stream()` the tools are resolved on the thread that calls `stream()`, and the tool calls of the model run later, on a Reactor scheduler thread.
