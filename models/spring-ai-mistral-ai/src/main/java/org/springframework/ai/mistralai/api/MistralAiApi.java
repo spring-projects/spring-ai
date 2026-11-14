@@ -290,8 +290,7 @@ public class MistralAiApi {
 		// Mistral 3.5B model family
 		MISTRAL_SMALL("mistral-small-2603"),
 		MISTRAL_MEDIUM("mistral-medium-3-5"),
-		@Deprecated(forRemoval = true) // Deprecated in favor of mistral-medium-3-5
-		MISTRAL_LARGE("mistral-large-latest");
+		MISTRAL_LARGE("mistral-large-4");
 		// @formatter:on
 
 		private final String value;
@@ -785,18 +784,24 @@ public class MistralAiApi {
 
 		/**
 		 * <p>
-		 * Controls the reasoning effort level for adjustable reasoning models.
-		 * {@link ReasoningEffort#HIGH} enables comprehensive reasoning traces,
-		 * {@link ReasoningEffort#NONE} disables reasoning effort.
+		 * Controls the reasoning effort level for adjustable reasoning models. The
+		 * accepted levels depend on the model. See the Mistral AI documentation.
 		 * </p>
+		 *
+		 * @see <a href="https://docs.mistral.ai/studio/conversations/reasoning">Mistral
+		 * AI Reasoning</a>
 		 */
 		public enum ReasoningEffort {
 
 			// @formatter:off
-			@JsonProperty("high")
-			HIGH,
 			@JsonProperty("none")
-			NONE
+			NONE,
+			@JsonProperty("low")
+			LOW,
+			@JsonProperty("medium")
+			MEDIUM,
+			@JsonProperty("high")
+			HIGH
 			// @formatter:on
 
 		}

@@ -29,6 +29,7 @@ public interface ThinkingModelUtils {
 
 	// @formatter:off
 	Set<ChatModel> THINKING_MODELS = Set.of(
+			ChatModel.MISTRAL_LARGE,
 			ChatModel.MISTRAL_MEDIUM,
 			ChatModel.MISTRAL_SMALL
 	);
@@ -43,7 +44,8 @@ public interface ThinkingModelUtils {
 	static ReasoningEffort provideReasoningEffort(ChatModel chatModel) {
 		verifyChatModelIsReasoning(chatModel);
 
-		return ReasoningEffort.HIGH;
+		// Mistral Large 4 does not accept NONE, LOW gives the fastest responses
+		return (chatModel == ChatModel.MISTRAL_LARGE) ? ReasoningEffort.LOW : ReasoningEffort.HIGH;
 	}
 
 	private static void verifyChatModelIsReasoning(ChatModel chatModel) {

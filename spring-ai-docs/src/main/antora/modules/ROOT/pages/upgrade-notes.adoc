@@ -325,6 +325,10 @@ NOTE: Map keys bind literally — use the exact provider field name (e.g. `outpu
 
 === Mistral AI
 
+==== Changed: `ChatModel.MISTRAL_LARGE` Targets Mistral Large 4
+
+`MistralAiApi.ChatModel.MISTRAL_LARGE` now targets `mistral-large-4` (previously `mistral-large-latest`) and is no longer deprecated.
+
 ==== Changed: `MistralAiChatModel` Builds Its Messages from Message Parts
 
 `MistralAiChatModel` maps every content chunk of a response to one `MessagePart`, in chunk order: thinking becomes a `ReasoningPart`, text a `TextPart`, and a citation reference or an image chunk an `UnknownPart`; the tool calls follow as `ToolCallPart`s.
