@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.azure.autoconfigure;
 
+import java.util.List;
+
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.vectorstore.azure.AzureVectorStore;
@@ -50,6 +52,8 @@ public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 	private @Nullable String embeddingFieldName;
 
 	private @Nullable String metadataFieldName;
+
+	private List<AzureVectorStore.MetadataField> metadataFields = List.of();
 
 	public @Nullable String getUrl() {
 		return this.url;
@@ -121,6 +125,14 @@ public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setMetadataFieldName(@Nullable String metadataFieldName) {
 		this.metadataFieldName = metadataFieldName;
+	}
+
+	public List<AzureVectorStore.MetadataField> getMetadataFields() {
+		return this.metadataFields;
+	}
+
+	public void setMetadataFields(List<AzureVectorStore.MetadataField> metadataFields) {
+		this.metadataFields = metadataFields != null ? metadataFields : List.of();
 	}
 
 }

@@ -16,13 +16,12 @@
 
 package org.springframework.ai.vectorstore.azure.autoconfigure;
 
-import java.util.List;
-
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.util.ClientOptions;
 import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.search.documents.indexes.SearchIndexClient;
 import com.azure.search.documents.indexes.SearchIndexClientBuilder;
+import com.azure.search.documents.indexes.models.SearchFieldDataType;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.embedding.BatchingStrategy;
@@ -36,8 +35,10 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.convert.converter.Converter;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Azure Vector Store.
@@ -81,6 +82,12 @@ public class AzureVectorStoreAutoConfiguration {
 	}
 
 	@Bean
+	@ConfigurationPropertiesBinding
+	public Converter<String, SearchFieldDataType> searchFieldDataTypeConverter() {
+		return new SearchFieldDataTypeConverter();
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
 	public AzureVectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
 			AzureVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
@@ -89,7 +96,7 @@ public class AzureVectorStoreAutoConfiguration {
 
 		var builder = AzureVectorStore.builder(searchIndexClient, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
-			.filterMetadataFields(List.of())
+			.filterMetadataFields(properties.getMetadataFields())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
 			.batchingStrategy(batchingStrategy)
