@@ -259,7 +259,10 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 				assertThat(syncTools).hasSize(1);
 			});
 	}
-
+		private static List<String> expectedToolNames() {
+			return IntStream.rangeClosed(1, 30).mapToObj(i -> "tool_%02d".formatted(i)).toList();
+		}
+	
 	@Configuration
 	static class TestMcpToolConfiguration {
 
@@ -294,9 +297,6 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 
 	}
 
-	private static List<String> expectedToolNames() {
-		return IntStream.rangeClosed(1, 30).mapToObj(i -> "tool_%02d".formatted(i)).toList();
-	}
 
 	@Configuration
 	static class TestOrderedToolCallbackProviderConfiguration {
