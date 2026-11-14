@@ -20,6 +20,8 @@ import java.util.List;
 
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.embedding.EmbeddingRequest;
@@ -56,6 +58,11 @@ public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 	@Autowired
 	OllamaEmbeddingModel embeddingModel;
 
+	@BeforeEach
+	void clearObservationRegistry() {
+		this.observationRegistry.clear();
+	}
+
 	@Test
 	void observationForEmbeddingOperation() {
 		var options = OllamaEmbeddingOptions.builder().model(OllamaModel.NOMIC_EMBED_TEXT.getName()).build();
@@ -88,6 +95,23 @@ public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 			.hasBeenStopped();
 	}
 
+	@Test
+	void observationUsesModelFromDefaultOptions() {
+
+		EmbeddingRequest request = new EmbeddingRequest(List.of("Here comes the sun"), null);
+
+		EmbeddingResponse response = this.embeddingModel.call(request);
+
+		assertThat(response.getResults()).isNotEmpty();
+
+		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+			.hasObservationWithNameEqualTo(DefaultEmbeddingModelObservationConvention.DEFAULT_NAME)
+			.that()
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(), MODEL)
+			.hasBeenStarted()
+			.hasBeenStopped();
+	}
+
 	@SpringBootConfiguration
 	static class Config {
 
@@ -104,7 +128,11 @@ public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 		@Bean
 		public OllamaEmbeddingModel ollamaEmbeddingModel(OllamaApi ollamaApi,
 				TestObservationRegistry observationRegistry) {
-			return OllamaEmbeddingModel.builder().ollamaApi(ollamaApi).observationRegistry(observationRegistry).build();
+			return OllamaEmbeddingModel.builder()
+				.ollamaApi(ollamaApi)
+				.options(OllamaEmbeddingOptions.builder().model(MODEL).build())
+				.observationRegistry(observationRegistry)
+				.build();
 		}
 
 	}
