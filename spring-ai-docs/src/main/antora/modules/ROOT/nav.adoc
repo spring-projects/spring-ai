@@ -6,6 +6,7 @@
 ** xref:api/chatclient.adoc[]
 *** xref:api/advisors.adoc[Advisors]
 **** xref:api/advisors-recursive.adoc[Recursive Advisors]
+**** xref:api/advisors-guardrail.adoc[Guardrail Advisor]
 
 ** xref:api/prompt.adoc[]
 ** xref:api/usage-handling.adoc[Chat Response Metadata]
