@@ -23,6 +23,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.github.victools.jsonschema.generator.Module;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.TextBlockAssertion;
 import org.springframework.core.ParameterizedTypeReference;
 
@@ -55,6 +57,24 @@ class BeanOutputConverterTest {
 		});
 		var jsonMapper = converter.getJsonMapper();
 		assertThat(jsonMapper.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)).isFalse();
+	}
+
+	@Test
+	void shouldApplyAdditionalJsonSchemaModules() {
+		Module minLengthModule = configBuilder -> configBuilder.forFields()
+			.withStringMinLengthResolver(field -> 3);
+
+		var converter = new BeanOutputConverter<>(TestClass.class, List.of(minLengthModule));
+
+		JsonNode schema = JacksonUtils.getDefaultJsonMapper().readTree(converter.getJsonSchema());
+		assertThat(schema.at("/properties/someString/minLength").asInt()).isEqualTo(3);
+	}
+
+	@Test
+	void shouldNotApplyAdditionalJsonSchemaModulesByDefault() {
+		var converter = new BeanOutputConverter<>(TestClass.class);
+
+		assertThat(converter.getJsonSchema()).doesNotContain("minLength");
 	}
 
 	static class TestClass {
