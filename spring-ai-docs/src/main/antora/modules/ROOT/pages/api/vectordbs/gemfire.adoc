@@ -87,7 +87,7 @@ dependencies {
 
 == Usage
 
-Here is a sample that creates an instance of the `GemfireVectorStore` instead of using AutoConfiguration
+Here is a sample that creates an instance of the `GemFireVectorStore` instead of using AutoConfiguration
 
 [source,java]
 ----
