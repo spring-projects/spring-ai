@@ -34,7 +34,7 @@ import tools.jackson.databind.annotation.JsonSerialize;
  * @since 1.0.0
  */
 @JsonPropertyOrder({ "promptTokens", "completionTokens", "totalTokens", "cacheReadInputTokens", "cacheWriteInputTokens",
-		"nativeUsage" })
+		"reasoningOutputTokens", "nativeUsage" })
 public class DefaultUsage implements Usage {
 
 	private final Integer promptTokens;
@@ -48,6 +48,8 @@ public class DefaultUsage implements Usage {
 	private final @Nullable Long cacheReadInputTokens;
 
 	private final @Nullable Long cacheWriteInputTokens;
+
+	private final @Nullable Long reasoningOutputTokens;
 
 	/**
 	 * Create a new DefaultUsage with promptTokens, completionTokens, totalTokens and
@@ -85,6 +87,26 @@ public class DefaultUsage implements Usage {
 	public DefaultUsage(@Nullable Integer promptTokens, @Nullable Integer completionTokens,
 			@Nullable Integer totalTokens, @Nullable Object nativeUsage, @Nullable Long cacheReadInputTokens,
 			@Nullable Long cacheWriteInputTokens) {
+		this(promptTokens, completionTokens, totalTokens, nativeUsage, cacheReadInputTokens, cacheWriteInputTokens,
+				null);
+	}
+
+	/**
+	 * Create usage including cache and reasoning output token counts.
+	 * @param promptTokens the prompt token count, or {@code null} when unavailable
+	 * @param completionTokens the completion token count, or {@code null} when
+	 * unavailable
+	 * @param totalTokens the total token count, or {@code null} to calculate it
+	 * @param nativeUsage the provider usage object, or {@code null}
+	 * @param cacheReadInputTokens the cache read count, or {@code null}
+	 * @param cacheWriteInputTokens the cache write count, or {@code null}
+	 * @param reasoningOutputTokens the reasoning output count, or {@code null}
+	 * @since 2.1.0
+	 */
+	public DefaultUsage(@Nullable Integer promptTokens, @Nullable Integer completionTokens,
+			@Nullable Integer totalTokens, @Nullable Object nativeUsage, @Nullable Long cacheReadInputTokens,
+			@Nullable Long cacheWriteInputTokens, @Nullable Long reasoningOutputTokens) {
+		this.reasoningOutputTokens = reasoningOutputTokens;
 		this.promptTokens = promptTokens != null ? promptTokens : 0;
 		this.completionTokens = completionTokens != null ? completionTokens : 0;
 		this.totalTokens = totalTokens != null ? totalTokens
@@ -130,7 +152,6 @@ public class DefaultUsage implements Usage {
 	 * @param nativeUsage the native usage object
 	 * @return a new DefaultUsage instance
 	 */
-	@JsonCreator
 	public static DefaultUsage fromJson(@JsonProperty("promptTokens") Integer promptTokens,
 			@JsonProperty("completionTokens") @JsonAlias("generationTokens") Integer completionTokens,
 			@JsonProperty("totalTokens") Integer totalTokens, @JsonProperty("nativeUsage") Object nativeUsage,
@@ -138,6 +159,36 @@ public class DefaultUsage implements Usage {
 			@JsonProperty("cacheWriteInputTokens") @Nullable Long cacheWriteInputTokens) {
 		return new DefaultUsage(promptTokens, completionTokens, totalTokens, nativeUsage, cacheReadInputTokens,
 				cacheWriteInputTokens);
+	}
+
+	/**
+	 * Deserialize usage including the optional reasoning token count.
+	 * @param promptTokens the prompt token count
+	 * @param completionTokens the completion token count
+	 * @param totalTokens the total token count
+	 * @param nativeUsage the provider usage object
+	 * @param cacheReadInputTokens the cache read count
+	 * @param cacheWriteInputTokens the cache write count
+	 * @param reasoningOutputTokens the reasoning output count
+	 * @return the usage
+	 * @since 2.1.0
+	 */
+	@JsonCreator
+	public static DefaultUsage fromJson(@JsonProperty("promptTokens") Integer promptTokens,
+			@JsonProperty("completionTokens") @JsonAlias("generationTokens") Integer completionTokens,
+			@JsonProperty("totalTokens") Integer totalTokens, @JsonProperty("nativeUsage") Object nativeUsage,
+			@JsonProperty("cacheReadInputTokens") @Nullable Long cacheReadInputTokens,
+			@JsonProperty("cacheWriteInputTokens") @Nullable Long cacheWriteInputTokens,
+			@JsonProperty("reasoningOutputTokens") @Nullable Long reasoningOutputTokens) {
+		return new DefaultUsage(promptTokens, completionTokens, totalTokens, nativeUsage, cacheReadInputTokens,
+				cacheWriteInputTokens, reasoningOutputTokens);
+	}
+
+	@Override
+	@JsonProperty("reasoningOutputTokens")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public @Nullable Long getReasoningOutputTokens() {
+		return this.reasoningOutputTokens;
 	}
 
 	@Override
@@ -198,7 +249,8 @@ public class DefaultUsage implements Usage {
 				&& Objects.equals(this.completionTokens, that.completionTokens)
 				&& Objects.equals(this.nativeUsage, that.nativeUsage)
 				&& Objects.equals(this.cacheReadInputTokens, that.cacheReadInputTokens)
-				&& Objects.equals(this.cacheWriteInputTokens, that.cacheWriteInputTokens);
+				&& Objects.equals(this.cacheWriteInputTokens, that.cacheWriteInputTokens)
+				&& Objects.equals(this.reasoningOutputTokens, that.reasoningOutputTokens);
 	}
 
 	@Override
@@ -209,6 +261,7 @@ public class DefaultUsage implements Usage {
 		result = 31 * result + Objects.hashCode(this.nativeUsage);
 		result = 31 * result + Objects.hashCode(this.cacheReadInputTokens);
 		result = 31 * result + Objects.hashCode(this.cacheWriteInputTokens);
+		result = 31 * result + Objects.hashCode(this.reasoningOutputTokens);
 		return result;
 	}
 
@@ -223,6 +276,9 @@ public class DefaultUsage implements Usage {
 		}
 		if (this.cacheWriteInputTokens != null) {
 			sb.append(", cacheWriteInputTokens=").append(this.cacheWriteInputTokens);
+		}
+		if (this.reasoningOutputTokens != null) {
+			sb.append(", reasoningOutputTokens=").append(this.reasoningOutputTokens);
 		}
 		sb.append('}');
 		return sb.toString();

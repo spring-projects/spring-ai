@@ -77,6 +77,24 @@ class DeepSeekChatModelMessagePartsTests {
 	// -- inbound, non-streaming --
 
 	@Test
+	void reasoningTokensAreMappedWhenReportedByTheProvider() {
+		givenCompletion(new ChatCompletionMessage("hello", Role.ASSISTANT), tools.jackson.databind.json.JsonMapper
+			.shared()
+			.readValue(
+					"{\"completion_tokens\":20,\"prompt_tokens\":10,\"total_tokens\":30,\"completion_tokens_details\":{\"reasoning_tokens\":7}}",
+					DeepSeekApi.Usage.class));
+		ChatResponse response = chatModel().call(new Prompt("hi"));
+		assertThat(response.getMetadata().getUsage().getReasoningOutputTokens()).isEqualTo(7L);
+	}
+
+	@Test
+	void missingReasoningTokensRemainUnavailable() {
+		givenCompletion(new ChatCompletionMessage("hello", Role.ASSISTANT));
+		ChatResponse response = chatModel().call(new Prompt("hi"));
+		assertThat(response.getMetadata().getUsage().getReasoningOutputTokens()).isNull();
+	}
+
+	@Test
 	void reasoningTextAndToolCallBecomeOrderedParts() {
 		givenCompletion(
 				new ChatCompletionMessage("Let me check.", Role.ASSISTANT, null, null,
@@ -289,6 +307,19 @@ class DeepSeekChatModelMessagePartsTests {
 	// -- streaming --
 
 	@Test
+	void streamingReasoningUsageSurvivesAggregation() {
+		var usage = new DeepSeekApi.Usage(20, 10, 30, null, new DeepSeekApi.Usage.CompletionTokensDetails(7L));
+		givenStream(chunk(delta("Answer", null), null), new ChatCompletionChunk("chatcmpl-123", List.of(), 1777799928L,
+				"deepseek-v4-flash", null, "fp", "chat.completion.chunk", usage));
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(chatModel().stream(new Prompt("hi")), aggregated::set).blockLast();
+
+		assertThat(aggregated.get().getMetadata().getUsage().getReasoningOutputTokens()).isEqualTo(7L);
+		assertThat(aggregated.get().getResult().getOutput().getText()).isEqualTo("Answer");
+	}
+
+	@Test
 	void streamingReasoningTextAndToolCallProduceIndexedParts() {
 		// As DeepSeek streams a tool call: the first delta carries the id and name, the
 		// later ones an empty id and an arguments fragment
@@ -397,9 +428,13 @@ class DeepSeekChatModelMessagePartsTests {
 	}
 
 	private void givenCompletion(ChatCompletionMessage message) {
+		givenCompletion(message, new DeepSeekApi.Usage(1, 1, 2));
+	}
+
+	private void givenCompletion(ChatCompletionMessage message, DeepSeekApi.Usage usage) {
 		ChatCompletion completion = new ChatCompletion("chatcmpl-123",
 				List.of(new Choice(ChatCompletionFinishReason.STOP, 0, message, null)), 1777799928L,
-				"deepseek-v4-flash", "fp", "chat.completion", new DeepSeekApi.Usage(1, 1, 2));
+				"deepseek-v4-flash", "fp", "chat.completion", usage);
 		given(this.deepSeekApi.chatCompletionEntity(any(ChatCompletionRequest.class)))
 			.willReturn(ResponseEntity.ok(completion));
 	}

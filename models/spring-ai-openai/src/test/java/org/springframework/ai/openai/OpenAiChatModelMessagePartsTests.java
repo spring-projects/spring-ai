@@ -103,6 +103,26 @@ class OpenAiChatModelMessagePartsTests {
 	// -- inbound, non-streaming --
 
 	@Test
+	void reasoningTokenUsageIsMappedFromChatCompletions() {
+		CompletionUsage usage = CompletionUsage.builder()
+			.promptTokens(10)
+			.completionTokens(20)
+			.totalTokens(30)
+			.completionTokensDetails(CompletionUsage.CompletionTokensDetails.builder().reasoningTokens(7).build())
+			.build();
+		givenCompletion(assistantMessage().content("hello").build(), usage);
+		ChatResponse response = chatModel("test-model").call(new Prompt("hi"));
+		assertThat(response.getMetadata().getUsage().getReasoningOutputTokens()).isEqualTo(7L);
+	}
+
+	@Test
+	void missingReasoningTokenUsageStaysUnavailable() {
+		givenCompletion(assistantMessage().content("hello").build());
+		ChatResponse response = chatModel("test-model").call(new Prompt("hi"));
+		assertThat(response.getMetadata().getUsage().getReasoningOutputTokens()).isNull();
+	}
+
+	@Test
 	void reasoningTextAndToolCallBecomeOrderedParts() {
 		givenCompletion(assistantMessage().content("Let me check.")
 			.toolCalls(List.of(ChatCompletionMessageToolCall.ofFunction(ChatCompletionMessageFunctionToolCall.builder()
@@ -761,6 +781,11 @@ class OpenAiChatModelMessagePartsTests {
 
 	@SuppressWarnings("unchecked")
 	private void givenCompletion(ChatCompletionMessage message) {
+		givenCompletion(message, CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build());
+	}
+
+	@SuppressWarnings("unchecked")
+	private void givenCompletion(ChatCompletionMessage message, CompletionUsage usage) {
 		ChatService chatService = mock(ChatService.class);
 		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
 		ChatCompletionService.WithRawResponse chatCompletions = mock(ChatCompletionService.WithRawResponse.class);
@@ -775,7 +800,7 @@ class OpenAiChatModelMessagePartsTests {
 			.id("chatcmpl-123")
 			.created(1777799928)
 			.model("test-model")
-			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+			.usage(usage)
 			.addChoice(ChatCompletion.Choice.builder()
 				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
 				.index(0)

@@ -94,6 +94,7 @@ public class MessageAggregator {
 		AtomicReference<Integer> metadataUsagePromptTokensRef = new AtomicReference<>(0);
 		AtomicReference<Integer> metadataUsageGenerationTokensRef = new AtomicReference<>(0);
 		AtomicReference<Integer> metadataUsageTotalTokensRef = new AtomicReference<>(0);
+		AtomicReference<@Nullable Long> reasoningOutputTokensRef = new AtomicReference<>();
 
 		AtomicReference<PromptMetadata> metadataPromptMetadataRef = new AtomicReference<>(PromptMetadata.empty());
 		AtomicReference<RateLimit> metadataRateLimitRef = new AtomicReference<>(new EmptyRateLimit());
@@ -114,6 +115,7 @@ public class MessageAggregator {
 			metadataUsagePromptTokensRef.set(0);
 			metadataUsageGenerationTokensRef.set(0);
 			metadataUsageTotalTokensRef.set(0);
+			reasoningOutputTokensRef.set(null);
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
@@ -164,6 +166,9 @@ public class MessageAggregator {
 			if (chatResponse.getMetadata() != null) {
 				if (chatResponse.getMetadata().getUsage() != null) {
 					Usage usage = chatResponse.getMetadata().getUsage();
+					if (usage.getReasoningOutputTokens() != null) {
+						reasoningOutputTokensRef.set(usage.getReasoningOutputTokens());
+					}
 					metadataUsagePromptTokensRef.set(
 							usage.getPromptTokens() > 0 ? usage.getPromptTokens() : metadataUsagePromptTokensRef.get());
 					metadataUsageGenerationTokensRef.set(usage.getCompletionTokens() > 0 ? usage.getCompletionTokens()
@@ -195,8 +200,13 @@ public class MessageAggregator {
 			}
 		}).doOnComplete(() -> {
 
-			var usage = new DefaultUsage(metadataUsagePromptTokensRef.get(), metadataUsageGenerationTokensRef.get(),
+			Usage usage = new DefaultUsage(metadataUsagePromptTokensRef.get(), metadataUsageGenerationTokensRef.get(),
 					metadataUsageTotalTokensRef.get());
+			if (reasoningOutputTokensRef.get() != null) {
+				usage = new org.springframework.ai.chat.metadata.DefaultUsage(usage.getPromptTokens(),
+						usage.getCompletionTokens(), usage.getTotalTokens(), usage.getNativeUsage(), null, null,
+						reasoningOutputTokensRef.get());
+			}
 
 			var chatResponseMetadata = ChatResponseMetadata.builder()
 				.id(metadataIdRef.get())

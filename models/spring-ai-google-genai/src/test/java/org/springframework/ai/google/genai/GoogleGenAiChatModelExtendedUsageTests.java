@@ -132,7 +132,8 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 		assertThat(genAiUsage.getPromptTokens()).isEqualTo(100);
 		assertThat(genAiUsage.getCompletionTokens()).isEqualTo(50);
 		assertThat(genAiUsage.getTotalTokens()).isEqualTo(175);
-		assertThat(genAiUsage.getThoughtsTokenCount()).isEqualTo(25); // Verify thinking
+		assertThat(genAiUsage.getThoughtsTokenCount()).isEqualTo(25);
+		assertThat(usage.getReasoningOutputTokens()).isEqualTo(25L); // Verify thinking
 																		// tokens
 	}
 

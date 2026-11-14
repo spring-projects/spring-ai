@@ -46,6 +46,7 @@ import com.anthropic.models.messages.MessageDeltaUsage;
 import com.anthropic.models.messages.MessageParam;
 import com.anthropic.models.messages.Model;
 import com.anthropic.models.messages.OutputConfig;
+import com.anthropic.models.messages.OutputTokensDetails;
 import com.anthropic.models.messages.RawContentBlockDeltaEvent;
 import com.anthropic.models.messages.RawContentBlockStartEvent;
 import com.anthropic.models.messages.RawContentBlockStopEvent;
@@ -171,6 +172,44 @@ class AnthropicChatModelTests {
 			.anthropicClient(this.anthropicClient)
 			.options(AnthropicChatOptions.builder().model(Model.CLAUDE_SONNET_4_5).maxTokens(1024).build())
 			.build();
+	}
+
+	@ParameterizedTest
+	@CsvSource({ "0", "7" })
+	void mapsReportedReasoningOutputTokens(long tokens) {
+		Message message = createMockMessage("Hello!", StopReason.END_TURN);
+		given(message.usage().outputTokensDetails())
+			.willReturn(Optional.of(OutputTokensDetails.builder().thinkingTokens(tokens).build()));
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(message);
+		ChatResponse response = this.chatModel.call(new Prompt("Hello"));
+		assertThat(response.getMetadata().getUsage().getReasoningOutputTokens()).isEqualTo(tokens);
+	}
+
+	@Test
+	void missingThinkingTokenFieldRemainsUnavailable() throws Exception {
+		Message message = createMockMessage("Hello!", StopReason.END_TURN);
+		OutputTokensDetails details = com.anthropic.core.ObjectMappers.jsonMapper()
+			.readValue("{}", OutputTokensDetails.class);
+		given(message.usage().outputTokensDetails()).willReturn(Optional.of(details));
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(message);
+		ChatResponse response = this.chatModel.call(new Prompt("Hello"));
+		assertThat(response.getMetadata().getUsage().getReasoningOutputTokens()).isNull();
+	}
+
+	@Test
+	void streamingRetainsReasoningUsageWhenTheFinalDeltaOmitsIt() {
+		var delta = messageDeltaEvent(null, null, null, null).messageDelta().orElseThrow();
+		var reasoningDelta = RawMessageStreamEvent.ofMessageDelta(delta.toBuilder()
+			.usage(delta.usage()
+				.toBuilder()
+				.outputTokensDetails(OutputTokensDetails.builder().thinkingTokens(7L).build())
+				.build())
+			.build());
+		givenStream(List.of(messageStartEvent(), reasoningDelta, messageDeltaEvent(StopReason.END_TURN)));
+		var responses = this.chatModel.stream(new Prompt("Hello")).collectList().block();
+		assertThat(responses).isNotEmpty();
+		assertThat(responses.get(responses.size() - 1).getMetadata().getUsage().getReasoningOutputTokens())
+			.isEqualTo(7L);
 	}
 
 	@Test

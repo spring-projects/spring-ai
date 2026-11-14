@@ -35,6 +35,7 @@ import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.content.Media;
@@ -49,6 +50,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 class MessageAggregatorTests {
+
+	@Test
+	void reasoningTokensSurviveAggregationWithoutAddingCumulativeSnapshots() {
+		var firstUsage = new DefaultUsage(10, 20, 30, null, null, null, 5L);
+		var finalUsage = new DefaultUsage(10, 25, 35, null, null, null, 7L);
+		Flux<ChatResponse> responses = Flux.just(
+				new ChatResponse(List.of(), ChatResponseMetadata.builder().usage(firstUsage).build()),
+				new ChatResponse(List.of(), ChatResponseMetadata.builder().usage(finalUsage).build()),
+				new ChatResponse(List.of()));
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(responses, aggregated::set).blockLast();
+		assertThat(aggregated.get().getMetadata().getUsage().getReasoningOutputTokens()).isEqualTo(7L);
+	}
 
 	@Test
 	void rateLimitFromStreamedChunkSurvivesAggregation() {
