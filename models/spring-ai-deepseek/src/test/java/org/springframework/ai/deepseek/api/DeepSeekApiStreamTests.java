@@ -16,17 +16,23 @@
 
 package org.springframework.ai.deepseek.api;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionChunk;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.Role;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,6 +93,36 @@ class DeepSeekApiStreamTests {
 		assertThat(delta.reasoningContent()).isEqualTo("Think first.");
 		assertThat(chunks.get(0).choices().get(0).finishReason())
 			.isEqualTo(DeepSeekApi.ChatCompletionFinishReason.TOOL_CALLS);
+	}
+
+	@Test
+	void streamedChunksKeepOrderUnderSlowDemand() {
+		int chunkCount = 60;
+		StringBuilder sse = new StringBuilder();
+		for (int i = 0; i < chunkCount; i++) {
+			sse.append("data: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"index\":0,"
+					+ "\"delta\":{\"role\":\"assistant\",\"content\":\"t" + i + "\"},\"finish_reason\":null}]}\n\n");
+		}
+		sse.append("data: [DONE]\n\n");
+
+		DeepSeekApi streamingApi = DeepSeekApi.builder()
+			.apiKey("test")
+			.webClientBuilder(WebClient.builder()
+				.exchangeFunction(
+						request -> Mono.just(ClientResponse.create(HttpStatus.OK, ExchangeStrategies.withDefaults())
+							.header("Content-Type", MediaType.TEXT_EVENT_STREAM_VALUE)
+							.body(sse.toString())
+							.build())))
+			.build();
+
+		List<String> expected = IntStream.range(0, chunkCount).mapToObj(i -> "t" + i).toList();
+		for (int run = 0; run < 50; run++) {
+			List<String> received = new ArrayList<>();
+			Flux<ChatCompletionChunk> stream = streamingApi.chatCompletionStream(request())
+				.publishOn(Schedulers.boundedElastic(), 1);
+			stream.doOnNext(chunk -> received.add(chunk.choices().get(0).delta().content())).blockLast();
+			assertThat(received).as("run %d", run).containsExactlyElementsOf(expected);
+		}
 	}
 
 	private static ChatCompletionRequest request() {

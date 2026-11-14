@@ -203,7 +203,7 @@ public class DeepSeekApi {
 				return List.of(monoChunk);
 			})
 			// Flux<Mono<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>
-			.flatMap(mono -> mono);
+			.concatMap(mono -> mono);
 	}
 
 	/**
