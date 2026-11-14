@@ -35,6 +35,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.publisher.Flux;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
@@ -63,7 +65,9 @@ import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -80,6 +84,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for {@link AnthropicChatModel}.
  *
  * @author Soby Chacko
+ * @author Raphael Vullriede
+ * @author Dimitar Proynov
  */
 @SpringBootTest(classes = AnthropicTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
@@ -854,6 +860,45 @@ class AnthropicChatModelIT {
 	}
 
 	@Test
+	void structuredOutputWithJsonSchemaDefinitions() {
+		String schema = """
+				{
+					"$defs": {
+						"City": {
+							"type": "object",
+							"properties": {
+								"name": {"type": "string"},
+								"country": {"type": "string"}
+							},
+							"required": ["name", "country"],
+							"additionalProperties": false
+						}
+					},
+					"type": "object",
+					"properties": {
+						"origin": {"$ref": "#/$defs/City"},
+						"destination": {"$ref": "#/$defs/City"}
+					},
+					"required": ["origin", "destination"],
+					"additionalProperties": false
+				}
+				""";
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_6)
+			.outputSchema(schema)
+			.build();
+
+		ChatResponse response = this.chatModel
+			.call(new Prompt("Describe a flight from Paris to Tokyo. Respond in JSON.", options));
+
+		assertThat(response).isNotNull();
+		String text = response.getResult().getOutput().getText();
+		assertThat(text).contains("origin");
+		assertThat(text).contains("destination");
+	}
+
+	@Test
 	void structuredOutputWithEffort() {
 		String schema = """
 				{
@@ -907,7 +952,94 @@ class AnthropicChatModelIT {
 		}
 	}
 
+	@Test
+	void toolInputSchemaWithReusedType() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model(Model.CLAUDE_HAIKU_4_5)
+			.toolCallbacks(ToolCallbacks.from(new FlightBookingTools()))
+			.toolChoice(ToolChoice.ofTool(ToolChoiceTool.builder().name("bookFlight").build()))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt("Book a flight from Paris to Tokyo.", options));
+
+		JsonNode arguments = toolCallArguments(response, "bookFlight");
+		assertThat(arguments.at("/flight/origin/name").asString()).containsIgnoringCase("Paris");
+		assertThat(arguments.at("/flight/destination/name").asString()).containsIgnoringCase("Tokyo");
+	}
+
+	@Test
+	void toolInputSchemaWithPydanticDefs() {
+		// The input schema a Python MCP server built with FastMCP sends for
+		// book_order(billing: Address, shipping: Address)
+		String inputSchema = """
+				{
+					"$defs": {
+						"Address": {
+							"properties": {
+								"street": {"title": "Street", "type": "string"},
+								"city": {"title": "City", "type": "string"}
+							},
+							"required": ["street", "city"],
+							"title": "Address",
+							"type": "object"
+						}
+					},
+					"properties": {
+						"billing": {"$ref": "#/$defs/Address"},
+						"shipping": {"$ref": "#/$defs/Address"}
+					},
+					"required": ["billing", "shipping"],
+					"title": "book_orderArguments",
+					"type": "object"
+				}
+				""";
+		ToolCallback bookOrder = FunctionToolCallback.builder("book_order", (Map<String, Object> input) -> "Booked")
+			.description("Book an order with a billing and a shipping address")
+			.inputType(Map.class)
+			.inputSchema(inputSchema)
+			.build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model(Model.CLAUDE_HAIKU_4_5)
+			.toolCallbacks(bookOrder)
+			.toolChoice(ToolChoice.ofTool(ToolChoiceTool.builder().name("book_order").build()))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(
+				"Book my order. Bill it to 1 Main Street, Springfield and ship it to 5 Elm Street, Shelbyville.",
+				options));
+
+		JsonNode arguments = toolCallArguments(response, "book_order");
+		assertThat(arguments.at("/billing/street").asString()).containsIgnoringCase("Main");
+		assertThat(arguments.at("/billing/city").asString()).containsIgnoringCase("Springfield");
+		assertThat(arguments.at("/shipping/street").asString()).containsIgnoringCase("Elm");
+		assertThat(arguments.at("/shipping/city").asString()).containsIgnoringCase("Shelbyville");
+	}
+
+	private static JsonNode toolCallArguments(ChatResponse response, String toolName) {
+		List<AssistantMessage.ToolCall> toolCalls = response.getResult().getOutput().getToolCalls();
+		assertThat(toolCalls).hasSize(1);
+		assertThat(toolCalls.get(0).name()).isEqualTo(toolName);
+		return JsonMapper.shared().readTree(toolCalls.get(0).arguments());
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
+
+	}
+
+	record Flight(City origin, City destination) {
+
+	}
+
+	record City(String name) {
+
+	}
+
+	static class FlightBookingTools {
+
+		@Tool(description = "Book a flight between two cities")
+		String bookFlight(Flight flight) {
+			return "Booked";
+		}
 
 	}
 
