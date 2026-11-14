@@ -151,6 +151,13 @@ public final class MethodToolCallback implements ToolCallback {
 				return toolContext;
 			}
 			Object rawArgument = toolInputArguments.get(parameter.getName());
+			// Missing/null values cannot be unboxed to primitives by Method.invoke and
+			// would otherwise escape as a raw IllegalArgumentException (GH-6723).
+			if (rawArgument == null && parameter.getType().isPrimitive()) {
+				throw new ToolExecutionException(this.toolDefinition,
+						new IllegalArgumentException("Cannot pass a null value for primitive tool parameter '"
+								+ parameter.getName() + "' of type " + parameter.getType().getName()));
+			}
 			return buildTypedArgument(rawArgument, parameter.getParameterizedType());
 		}).toArray();
 	}
@@ -187,6 +194,12 @@ public final class MethodToolCallback implements ToolCallback {
 		}
 		catch (IllegalAccessException ex) {
 			throw new IllegalStateException("Could not access method: " + ex.getMessage(), ex);
+		}
+		catch (IllegalArgumentException ex) {
+			// Method.invoke throws IllegalArgumentException (not
+			// InvocationTargetException)
+			// for argument mismatches such as null-to-primitive; wrap for GH-6723.
+			throw new ToolExecutionException(this.toolDefinition, ex);
 		}
 		catch (InvocationTargetException ex) {
 			throw new ToolExecutionException(this.toolDefinition, ex.getCause());
