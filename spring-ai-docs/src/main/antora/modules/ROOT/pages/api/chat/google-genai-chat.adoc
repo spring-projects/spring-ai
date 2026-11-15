@@ -642,6 +642,39 @@ Reasoning and unknown parts produced by another provider are skipped.
 
 When streaming, every chunk carries the response id and its parts are stamped with a synthesized content block index, so that `MessageAggregator` concatenates consecutive text or thought deltas and keeps the signature Gemini sends on the last delta of a part.
 
+== Safety Feedback [[safety-feedback]]
+
+When Gemini blocks a response, the finish reason says so, and the safety feedback Gemini returns says why.
+It is available in the metadata:
+
+[cols="1,1,2", stripes=even]
+|====
+| Key | Metadata | Value
+
+| `safetyRatings` | `ChatGenerationMetadata` | the safety ratings of the candidate, as a `List<GoogleGenAiSafetyRating>`
+| `finishMessage` | `ChatGenerationMetadata` | the readable explanation Gemini gives when it stops a candidate, as a `String`
+| `promptFeedback` | `ChatResponseMetadata` | the feedback on the prompt, as a `GoogleGenAiPromptFeedback`
+|====
+
+A blocked prompt has no candidates, so its block reason is only available in the response metadata:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(prompt);
+
+if (response.getResults().isEmpty()) {
+    GoogleGenAiPromptFeedback promptFeedback = response.getMetadata().get("promptFeedback");
+    String blockReason = promptFeedback.blockReason();
+}
+else {
+    List<GoogleGenAiSafetyRating> safetyRatings = response.getResult().getMetadata().get("safetyRatings");
+}
+----
+
+The harm categories, probabilities, severities and block reasons keep the values the API sent, so a value the SDK does not know yet is not lost.
+
+NOTE: With the Gemini Developer API, the Google GenAI SDK does not keep the `finishMessage` of a candidate, so it is only available when the SDK provides it.
+
 == Multimodal
 
 Multimodality refers to a model's ability to simultaneously understand and process information from various (input) sources, including `text`, `pdf`, `images`, `audio`, and other data formats.

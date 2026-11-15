@@ -99,6 +99,8 @@ import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContentService
 import org.springframework.ai.google.genai.common.GoogleGenAiConstants;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
+import org.springframework.ai.google.genai.metadata.GoogleGenAiPromptFeedback;
+import org.springframework.ai.google.genai.metadata.GoogleGenAiSafetyRating;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
 import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
 import org.springframework.ai.model.ChatModelDescription;
@@ -194,6 +196,25 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	 * of an assistant message carries a Google payload.
 	 */
 	private static final String THOUGHT_SIGNATURES_METADATA_KEY = "thoughtSignatures";
+
+	/**
+	 * Generation metadata key holding the readable explanation Gemini gives when it stops
+	 * a candidate, for example because of safety.
+	 */
+	private static final String FINISH_MESSAGE_METADATA_KEY = "finishMessage";
+
+	/**
+	 * Generation metadata key holding the {@link GoogleGenAiSafetyRating safety ratings}
+	 * of a candidate.
+	 */
+	private static final String SAFETY_RATINGS_METADATA_KEY = "safetyRatings";
+
+	/**
+	 * Response metadata key holding the {@link GoogleGenAiPromptFeedback feedback} on the
+	 * prompt. A blocked prompt has no candidates, so this is the only place that says
+	 * why.
+	 */
+	private static final String PROMPT_FEEDBACK_METADATA_KEY = "promptFeedback";
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -773,12 +794,18 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 
 		AssistantMessage assistantMessage = messageBuilder.build();
-		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
+		ChatGenerationMetadata.Builder chatGenerationMetadataBuilder = ChatGenerationMetadata.builder()
 			.finishReason(candidateFinishReason.toString())
-			.finishReasonCategory(finishReasonCategory(candidateFinishReason, assistantMessage.hasToolCalls()))
-			.build();
+			.finishReasonCategory(finishReasonCategory(candidateFinishReason, assistantMessage.hasToolCalls()));
+		candidate.finishMessage()
+			.ifPresent(finishMessage -> chatGenerationMetadataBuilder.metadata(FINISH_MESSAGE_METADATA_KEY,
+					finishMessage));
+		candidate.safetyRatings()
+			.filter(safetyRatings -> !safetyRatings.isEmpty())
+			.ifPresent(safetyRatings -> chatGenerationMetadataBuilder.metadata(SAFETY_RATINGS_METADATA_KEY,
+					safetyRatings.stream().map(GoogleGenAiSafetyRating::from).toList()));
 
-		return List.of(new Generation(assistantMessage, chatGenerationMetadata));
+		return List.of(new Generation(assistantMessage, chatGenerationMetadataBuilder.build()));
 	}
 
 	/**
@@ -900,6 +927,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			.usage(usage)
 			.model(response.modelVersion().orElse(""))
 			.id(response.responseId().orElse(""))
+			.keyValue(PROMPT_FEEDBACK_METADATA_KEY,
+					response.promptFeedback().map(GoogleGenAiPromptFeedback::from).orElse(null))
 			.build();
 	}
 
