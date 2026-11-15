@@ -24,9 +24,9 @@ A session keeps the conversation as an append-only log of events, and the prompt
 | `SessionRepository`, `InMemorySessionRepository`
 
 | `JdbcChatMemoryRepository`, `spring-ai-starter-model-chat-memory-repository-jdbc`
-| `JdbcSessionRepository`, `spring-ai-starter-model-session-jdbc`: PostgreSQL, MySQL, MariaDB, Microsoft SQL Server and H2
+| `JdbcSessionRepository`, `spring-ai-starter-model-session-jdbc`: PostgreSQL, MySQL, MariaDB, Microsoft SQL Server, Oracle and H2
 
-| The Cassandra, Neo4j, MongoDB and Redis repositories; the HSQLDB, Oracle and SQLite dialects
+| The Cassandra, Neo4j, MongoDB and Redis repositories; the HSQLDB and SQLite dialects
 | No session counterpart yet; they are planned before 3.0.0, when these modules are removed.
 Until then, a store implements `SessionRepository` and checks itself with `AbstractSessionRepositoryContractTests` from `spring-ai-test`, and a dialect implements `JdbcSessionRepositoryDialect`.
 |===
