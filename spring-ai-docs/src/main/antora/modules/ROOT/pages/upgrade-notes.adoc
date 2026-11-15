@@ -451,6 +451,21 @@ In a stream, advisors built on `BaseAdvisor` run their `after` step on a respons
 Catch `GuardrailRefusalException` around `entity(...)` where a `SafeGuardAdvisor` is in the chain, and read the refusal with `getRefusal()`.
 Use `responseEntity(...)` to get the refusal without an exception.
 
+=== Modern MCP Server
+
+[[upgrading-modern-mcp-completions]]
+==== Changed: Completions Belong to Their Prompt or Template
+
+In Spring AI 2.1.0-RC2 the modern MCP server (`spring.ai.mcp.server.protocol=MODERN`) served completions from a separate `List<SyncCompletionRegistration>` bean and `McpSyncCompletionRepository`.
+Both are gone: a completion now belongs to its prompt or resource template.
+See xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#_completions[Completions].
+
+===== Migration
+
+* Move a programmatic completion to `withCompletionHandler` on its prompt or template.
+* `SyncResourceTemplateRegistration` now holds the SDK's `McpSyncResourceTemplate`.
+Its `of(...)` factories are unchanged, but the accessor is `template()`, whose `definition()` is the `ResourceTemplate` that `resourceTemplate()` returned, and the canonical constructor takes the SDK template.
+
 [[upgrading-to-2-0-3]]
 == Upgrading to 2.0.3
 

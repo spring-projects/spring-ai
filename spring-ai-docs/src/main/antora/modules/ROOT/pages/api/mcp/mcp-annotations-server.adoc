@@ -63,7 +63,8 @@ The `@McpTool` annotation supports the following attributes:
 
 |`requiredCapabilities`
 |`{}`
-|`McpClientCapability` values (`ELICITATION_FORM`, `ELICITATION_URL`, `SAMPLING`, `ROOTS`) the tool cannot work without. The modern server refuses a request that does not declare them with `-32021` before the method runs; the legacy servers ignore the attribute with a warning.
+|`McpClientCapability` values (`ELICITATION_FORM`, `ELICITATION_URL`, `SAMPLING`, `ROOTS`) the tool cannot work without.
+The modern server refuses a request that does not declare them with `-32021` before the method runs; the legacy servers ignore the attribute with a warning.
 
 |===
 
@@ -262,11 +263,13 @@ The `@McpResource` annotation provides access to resources via URI templates.
 
 |`ttlMs`
 |`0`
-|How long, in milliseconds, clients may cache the read result. Only transmitted by the modern (`protocol=MODERN`) server; ignored with a warning otherwise.
+|How long, in milliseconds, clients may cache the read result.
+Only transmitted by the modern (`protocol=MODERN`) server; ignored with a warning otherwise.
 
 |`cacheScope`
 |`CacheScope.PRIVATE`
-|Whether a cached read result may be shared across authorization contexts (`PUBLIC`) or not (`PRIVATE`). Only transmitted by the modern server.
+|Whether a cached read result may be shared across authorization contexts (`PUBLIC`) or not (`PRIVATE`).
+Only transmitted by the modern server.
 
 |`icons`
 |`{}`
@@ -278,7 +281,8 @@ The `@McpResource` annotation provides access to resources via URI templates.
 
 |`requiredCapabilities`
 |`{}`
-|`McpClientCapability` values (`ELICITATION_FORM`, `ELICITATION_URL`, `SAMPLING`, `ROOTS`) the resource cannot work without. The modern server refuses a request that does not declare them with `-32021` before the method runs; the legacy servers ignore the attribute with a warning.
+|`McpClientCapability` values (`ELICITATION_FORM`, `ELICITATION_URL`, `SAMPLING`, `ROOTS`) the resource cannot work without.
+The modern server refuses a request that does not declare them with `-32021` before the method runs; the legacy servers ignore the attribute with a warning.
 
 |===
 
@@ -397,7 +401,8 @@ The `@McpPrompt` annotation generates prompt messages for AI interactions.
 
 |`requiredCapabilities`
 |`{}`
-|`McpClientCapability` values (`ELICITATION_FORM`, `ELICITATION_URL`, `SAMPLING`, `ROOTS`) the prompt cannot work without. The modern server refuses a request that does not declare them with `-32021` before the method runs; the legacy servers ignore the attribute with a warning.
+|`McpClientCapability` values (`ELICITATION_FORM`, `ELICITATION_URL`, `SAMPLING`, `ROOTS`) the prompt cannot work without.
+The modern server refuses a request that does not declare them with `-32021` before the method runs; the legacy servers ignore the attribute with a warning.
 
 |===
 

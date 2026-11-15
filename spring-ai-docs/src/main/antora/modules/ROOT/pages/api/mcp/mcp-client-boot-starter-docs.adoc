@@ -423,43 +423,6 @@ When you have a full SSE URL, split it into base URL and endpoint path:
 * Check the `sse-endpoint` starts with `/` and includes the full path and query parameters
 * Test the full URL directly in a browser or curl to confirm it's accessible
 
-=== Streamable Http Transport Properties
-
-Properties for Streamable Http transport are prefixed with `spring.ai.mcp.client.streamable-http`:
-
-[cols="3,4,3"]
-|===
-|Property |Description | Default Value
-
-|`connections`
-|Map of named Streamable Http connection configurations
-|-
-
-|`connections.[name].url`
-|Base URL endpoint for Streamable-Http communication with the MCP server
-|-
-
-|`connections.[name].endpoint`
-|the streamable-http endpoint (as url suffix) to use for the connection
-|`/mcp`
-|===
-
-Example configuration:
-[source,yaml]
-----
-spring:
-  ai:
-    mcp:
-      client:
-        streamable-http:
-          connections:
-            server1:
-              url: http://localhost:8080
-            server2:
-              url: http://otherserver:8081
-              endpoint: /custom-sse
-----
-
 == Features
 
 === Sync/Async Client Types
@@ -473,6 +436,8 @@ The starter supports two types of clients:
 * Asynchronous - suitable for reactive applications with non-blocking operations, configured using `spring.ai.mcp.client.type=ASYNC`
 
 **NOTE:** The ASYNC client will register only asynchronous MCP annotated methods. Synchronous methods will be ignored.
+
+The tools of both types are resolved and called through the blocking `ToolCallback` contract; for the modern connections see <<Blocking Calls>>.
 
 [[client-scope-and-session-boundaries]]
 === Client Scope and Session Boundaries
@@ -511,6 +476,7 @@ Consider a separate session per user or per tenant when:
 Applications that need a separate MCP protocol session per user or per tenant must manage that lifecycle themselves, creating one transport and client per principal and closing it when that principal's work completes.
 The auto-configured beans are not suitable for this, and Spring AI does not provide per-user client pooling.
 See xref:api/mcp/mcp-security.adoc#_working_around_spring_ai_autoconfiguration[Working Around Spring AI Autoconfiguration] for programmatic client construction.
+This applies to the legacy protocol: a modern connection has no session and can keep a client for each user with `client-scope=CUSTOM`, see <<Client Scope and Identity>>.
 
 === Client Customization
 
@@ -859,8 +825,9 @@ spring:
               protocol: MODERN
 ----
 
-A modern client is created without contacting the server, so nothing is sent to a modern server at startup and `spring.ai.mcp.client.initialized` does not apply.
+A modern client is created without contacting the server, so `spring.ai.mcp.client.initialized` does not apply, and nothing is sent to a modern server at startup unless the connection sets `listen=true`, see <<Change Notifications>>.
 Modern connections use the JDK `HttpClient` transport of the MCP Java SDK with both client starters.
+The client and transport types named in this section, such as `McpClient`, `McpSyncClient`, `McpAsyncClient` and `McpHttpRequestCustomizer`, are those of the `io.modelcontextprotocol.modern.client` package and its `transport` subpackage, not the legacy classes of the same name.
 For the server side, see xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc[MCP 2026-07-28 ("Modern") Servers].
 
 NOTE: Modern connections require the MCP Java SDK `2.2.0` line or later.
@@ -881,7 +848,7 @@ The sections that follow describe the default, synchronous type; for `spring.ai.
 |How many clients serve a modern connection.
 `PER_REQUEST` creates a client each time the tools are resolved, which a `ChatClient` does once for each request.
 `SHARED` creates one client at startup, for an application that calls the server under a single identity.
-`CUSTOM` lets a `SyncModernMcpClientScope` bean of the application select the client of each request, for example one for each user.
+`CUSTOM` lets a `SyncModernMcpClientScope` bean (`AsyncModernMcpClientScope` with `type=ASYNC`) of the application select the client of each request, for example one for each user.
 |`PER_REQUEST`
 
 |`spring.ai.mcp.client.streamable-http.connections.[name].listen`
@@ -904,7 +871,7 @@ During that time its tools are left out, and the tools of the other connections 
 A server counts as not reachable when the connection fails, the request times out, the response is lost, or the server answers with a `5xx`, `408` or `429` status.
 Any other failure, such as a `401`, `403` or `404` status, is thrown to the caller, so that the application can ask the user to log in again or the configuration gets fixed.
 Zero asks the server on every request.
-It is also the longest pause before a listen stream that ended is opened again, see <<Change Notifications>>.
+It is also the longest pause before a listen stream that ended is opened again, but at least one second, see <<Change Notifications>>.
 |`30s`
 |===
 
@@ -925,7 +892,7 @@ The `client-scope` of a connection decides how many clients serve it:
 A `ChatClient` resolves them once for each request, so every request gets its own client, and the tool callbacks of that request call the server through it.
 * `SHARED` creates one client when the application starts and uses it for all requests.
 Use it when the application calls the server under a single identity, for example a service account.
-* `CUSTOM` asks a `SyncModernMcpClientScope` bean of the application for the client of each request.
+* `CUSTOM` asks a `SyncModernMcpClientScope` bean (`AsyncModernMcpClientScope` with `type=ASYNC`) of the application for the client of each request.
 Use it to keep clients in a way of your own, for example one for each user, see <<Custom Client Scope>>.
 
 The legacy clients are always shared, see <<client-scope-and-session-boundaries>>.
@@ -969,6 +936,19 @@ A shared client may keep the tool listing that the first caller received and ret
 
 With `client-scope=SHARED` the client customizers run once, at startup.
 A `transportContextProvider` of a shared client must therefore read the caller on each call and cannot capture it as the example above does.
+====
+
+[[mcp-modern-re-exposed-tools]]
+[WARNING]
+====
+Do not re-expose the tools of a modern connection from an MCP server of the same application with `spring.ai.mcp.server.expose-mcp-client-tools=true`.
+The server takes the tool callbacks once, when it starts, outside of any request.
+The tools are therefore listed for no caller, and the callbacks stay bound to the client of that one resolution.
+
+Every caller of the server then sees the tools that the downstream server shows to no caller, and the tools are called on behalf of no caller.
+A client customizer that supplies a credential of the application when there is no caller, such as that of a service account, lends that credential to every caller of the server.
+
+To call the tools of a modern server for the callers of your own server, resolve them in your own tool method, for the caller of each request, as described above.
 ====
 
 ==== Streaming Responses
@@ -1016,7 +996,7 @@ spring:
 
 The client of a user keeps the `private` listing of that user for its `ttlMs`, so the tools are listed once for each user and not once for each request.
 The scope is called each time the tools of the connection are resolved, on the thread that resolves them, and the tool callbacks of that request call the server through the client it returns.
-The startup fails if a connection sets `client-scope=CUSTOM` and no `SyncModernMcpClientScope` bean is defined.
+The startup fails if a connection sets `client-scope=CUSTOM` and no `SyncModernMcpClientScope` bean (`AsyncModernMcpClientScope` with `type=ASYNC`) is defined.
 The scope must return a client that the factory built, either a new one or one that it kept from an earlier call.
 
 Keep the following in mind when you write a scope:
@@ -1030,7 +1010,8 @@ Bound a registry that grows with the users, for example with a cache that remove
 * *Credentials:* a kept client outlives the request it was built for.
 A client customizer may capture who the caller is when the client is built, as the `callerCustomizer` above does, but not a credential that expires.
 Read the current token of that caller on each call, as the `accessTokenCustomizer` above does.
-* *Changed tools:* when the listing of a connection is dropped, by a listen stream or with `invalidateToolListing`, every client of the connection asks the server the next time it lists the tools.
+* *Changed tools:* when a listen stream drops the listing of a connection, every client of the connection asks the server the next time it lists the tools.
+`invalidateCache()` of the tool callback provider and a `McpToolsChangedEvent` apply to the legacy clients only and do not drop the listings of modern connections.
 * *Work of the application:* the scope is not called for a listen stream or for the listing that precedes a list-changed method.
 They use a client of their own, built with the same factory outside of any request, so the scope is never asked for a client when there is no caller.
 
@@ -1117,7 +1098,7 @@ SyncModernMcpChangeListener toolChangeLogger() {
 It can also define the `SyncModernMcpChangeSubscriber` bean itself, to choose the connections that have a listen stream.
 
 IMPORTANT: A listen stream belongs to the application, not to a caller.
-It is opened by a client of its own, outside of any request, so a `transportContextProvider` and the `McpHttpRequestCustomizer` beans see no caller for it.
+It is opened outside of any request, by a client of its own or, with `client-scope=SHARED`, by the shared client, so a `transportContextProvider` and the `McpHttpRequestCustomizer` beans see no caller for it.
 The server must accept the stream with the credentials of the application, or with none.
 A client customizer that reads the caller, for example from the security context, must cope with there being none.
 
@@ -1222,7 +1203,7 @@ A method that takes the general `ElicitRequest` stands for both kinds of request
 A legacy connection declares the kinds of request that its methods take: form elicitation, and also URL elicitation when one of its methods takes URL requests only.
 
 A modern client declares the elicitation modes that it has a handler for, and it asks the server for progress only when it has a progress handler.
-A server tool that requires form elicitation is therefore refused for a connection that no `@McpElicitation` method names.
+A server tool that requires form elicitation is therefore refused for a connection that has no form elicitation handler, set by an `@McpElicitation` method or by a client customizer.
 
 On a modern connection an elicitation is not a request from the server.
 The server answers the tool call with the input that it needs, the client calls the handler, and it sends the tool call again with the answer.
@@ -1263,7 +1244,7 @@ SyncModernMcpToolCallCustomizer reportTimeout() {
 }
 ----
 
-A handler method that names a modern connection but cannot serve it is reported with a warning at startup: an `@McpElicitation` method that takes only the legacy `ElicitUrlRequest`, or an `@McpProgress` method that is not synchronous.
+A handler method that names a modern connection but cannot serve it is reported with a warning at startup, for example an `@McpElicitation` method that takes only the legacy `ElicitUrlRequest`, or a handler method that is not synchronous.
 
 NOTE: `@McpSampling` and `@McpLogging` methods are not called for a modern connection, and a warning is logged at startup for them.
 The modern client supports neither sampling nor logging.
@@ -1272,7 +1253,7 @@ For the `@McpToolListChanged`, `@McpPromptListChanged` and `@McpResourceListChan
 === Asynchronous Client Type
 
 With `spring.ai.mcp.client.type=ASYNC` the modern connections use the asynchronous client of the MCP Java SDK, and the `AsyncMcpToolCallbackProvider` bean returns their tools next to those of the legacy clients.
-The connection properties are the same: `protocol`, `client-scope` and the global `spring.ai.mcp.client.modern` properties.
+The connection properties are the same: `protocol`, `client-scope`, `listen` and the global `spring.ai.mcp.client.modern` properties.
 
 The tools are still resolved and called through the `ToolCallback` contract, which blocks until the result is there, see <<Blocking Calls>>.
 
@@ -1357,6 +1338,7 @@ public Mono<Void> progress(ProgressParams progress) {
 }
 ----
 
+The example takes the legacy schema types (`io.modelcontextprotocol.spec.McpSchema`), which `StructuredElicitResult` uses, so it answers form requests only.
 A method may take the schema types of either protocol and, optionally, the `ToolContext` of the tool call that it serves, as a synchronous method may.
 A connection has one elicitation method with the asynchronous type; a method that takes the modern `ElicitRequest` answers form and URL requests.
 A method that names an asynchronous modern connection but cannot serve it, such as a synchronous one, is reported with a warning at startup.
@@ -1441,7 +1423,8 @@ A connect timeout set on the JDK `HttpClient` builder through `customizeClient(.
 
 The `spring.ai.mcp.client.stdio` properties create legacy clients only.
 To reach a modern server over another transport, define a `List<NamedModernClientMcpTransport>` bean.
-Each transport in the list becomes a modern connection with a client for each request, and the same `SyncMcpToolCallbackProvider` bean returns its tools.
+Each transport in the list becomes a modern connection, and the same `SyncMcpToolCallbackProvider` bean (`AsyncMcpToolCallbackProvider` with `type=ASYNC`) returns its tools.
+The connection has a client for each request, unless a connection configured with properties has the same name: then the transport takes the `client-scope` of that connection.
 
 The following example runs a modern server as a process, with the `StdioMcpClientTransport` of the MCP Java SDK:
 
@@ -1603,6 +1586,9 @@ ToolCallback[] toolCallbacks = toolCallbackProvider.getToolCallbacks();
 - link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/web-search/brave-chatbot[Brave Web Search Chatbot] - A chatbot that uses the Model Context Protocol to interact with a web search server.
 - link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-default-client[Default MCP Client Starter] - A simple example of using the default `spring-ai-starter-mcp-client` MCP Client Boot Starter.
 - link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-webflux-client[WebFlux MCP Client Starter] - A simple example of using the `spring-ai-starter-mcp-client-webflux` MCP Client Boot Starter.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/modern-migration/modern-client-from-legacy[Modern MCP Client] - A synchronous client with modern connections: client scopes, annotated elicitation and progress handlers that take the `ToolContext`, list-changed handlers, and a legacy connection next to a modern one.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/modern-migration/modern-client-async[Asynchronous Modern MCP Client] - The same client with `spring.ai.mcp.client.type=ASYNC`: reactive handlers, the caller identity and reactive change notifications.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/modern-migration[Migrating to the Modern Protocol] - The same ticket application on the legacy and the modern protocol, as servers and clients, with what changes in each migration.
 
 == Additional Resources
 
