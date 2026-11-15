@@ -75,12 +75,11 @@ public class MilvusVectorStoreAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
-		return MilvusVectorStore.builder(milvusClient, embeddingModel)
+		MilvusVectorStore.Builder builder = MilvusVectorStore.builder(milvusClient, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.databaseName(properties.getDatabaseName())
 			.collectionName(properties.getCollectionName())
 			.partitionName(properties.getPartitionName())
-			.embeddingDimension(properties.getEmbeddingDimension())
 			.indexType(IndexType.valueOf(properties.getIndexType().name()))
 			.metricType(MetricType.valueOf(properties.getMetricType().name()))
 			.indexParameters(properties.getIndexParameters())
@@ -91,8 +90,12 @@ public class MilvusVectorStoreAutoConfiguration {
 			.embeddingFieldName(properties.getEmbeddingFieldName())
 			.batchingStrategy(batchingStrategy)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable())
-			.build();
+			.customObservationConvention(customObservationConvention.getIfAvailable());
+		// When not set, the size is taken from the embedding model
+		if (properties.getEmbeddingDimension() > 0) {
+			builder.embeddingDimension(properties.getEmbeddingDimension());
+		}
+		return builder.build();
 	}
 
 	@Bean
