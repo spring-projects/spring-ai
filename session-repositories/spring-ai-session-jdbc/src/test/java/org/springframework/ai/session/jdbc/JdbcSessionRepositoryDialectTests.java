@@ -53,6 +53,8 @@ class JdbcSessionRepositoryDialectTests {
 			.isInstanceOf(MysqlJdbcSessionRepositoryDialect.class);
 		assertThat(JdbcSessionRepositoryDialect.from(dataSourceReporting("Microsoft SQL Server")))
 			.isInstanceOf(SqlServerJdbcSessionRepositoryDialect.class);
+		assertThat(JdbcSessionRepositoryDialect.from(dataSourceReporting("HSQL Database Engine")))
+			.isInstanceOf(HsqldbJdbcSessionRepositoryDialect.class);
 	}
 
 	// -------------------------------------------------------------------------
@@ -64,6 +66,18 @@ class JdbcSessionRepositoryDialectTests {
 		assertThat(new PostgresJdbcSessionRepositoryDialect().getLimitClause()).isEqualTo("LIMIT ?");
 		assertThat(new H2JdbcSessionRepositoryDialect().getLimitClause()).isEqualTo("LIMIT ?");
 		assertThat(new MysqlJdbcSessionRepositoryDialect().getLimitClause()).isEqualTo("LIMIT ?");
+		assertThat(new HsqldbJdbcSessionRepositoryDialect().getLimitClause()).isEqualTo("LIMIT ?");
+	}
+
+	@Test
+	void hsqldbUpsertKeepsCreatedAtAndDoesNotCutTheId() {
+		String upsert = new HsqldbJdbcSessionRepositoryDialect().getUpsertSessionSql();
+		assertThat(upsert.strip()).startsWith("MERGE INTO AI_SESSION");
+		assertThat(upsert).contains("SET expires_at = s.expires_at, metadata = s.metadata")
+			.doesNotContain("created_at = s.created_at")
+			// cast to the column width, an over-long id would be cut to another id
+			.contains("CAST(? AS LONGVARCHAR)")
+			.doesNotContain("VARCHAR(255)");
 	}
 
 	@Test
