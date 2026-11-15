@@ -33,12 +33,25 @@ public class OpenAiImageResponseMetadata extends ImageResponseMetadata {
 
 	private final Long created;
 
+	private final @Nullable OpenAiImageUsage usage;
+
 	/**
 	 * Creates a new OpenAiImageResponseMetadata.
 	 * @param created the creation timestamp
 	 */
 	protected OpenAiImageResponseMetadata(Long created) {
+		this(created, null);
+	}
+
+	/**
+	 * Creates a new OpenAiImageResponseMetadata.
+	 * @param created the creation timestamp
+	 * @param usage the image token usage, or {@code null} if not available
+	 * @since 2.0.1
+	 */
+	protected OpenAiImageResponseMetadata(Long created, @Nullable OpenAiImageUsage usage) {
 		this.created = created;
+		this.usage = usage;
 	}
 
 	/**
@@ -48,7 +61,20 @@ public class OpenAiImageResponseMetadata extends ImageResponseMetadata {
 	 */
 	public static OpenAiImageResponseMetadata from(ImagesResponse imagesResponse) {
 		Assert.notNull(imagesResponse, "imagesResponse must not be null");
-		return new OpenAiImageResponseMetadata(imagesResponse.created());
+		@Nullable OpenAiImageUsage usage = imagesResponse.usage().map(OpenAiImageResponseMetadata::from).orElse(null);
+		return new OpenAiImageResponseMetadata(imagesResponse.created(), usage);
+	}
+
+	private static OpenAiImageUsage from(ImagesResponse.Usage usage) {
+		ImagesResponse.Usage.InputTokensDetails inputDetails = usage.inputTokensDetails();
+		@Nullable Long outputTextTokens = usage.outputTokensDetails()
+			.map(ImagesResponse.Usage.OutputTokensDetails::textTokens)
+			.orElse(null);
+		@Nullable Long outputImageTokens = usage.outputTokensDetails()
+			.map(ImagesResponse.Usage.OutputTokensDetails::imageTokens)
+			.orElse(null);
+		return new OpenAiImageUsage(usage.inputTokens(), usage.outputTokens(), usage.totalTokens(),
+				inputDetails.textTokens(), inputDetails.imageTokens(), outputTextTokens, outputImageTokens);
 	}
 
 	@Override
@@ -56,9 +82,21 @@ public class OpenAiImageResponseMetadata extends ImageResponseMetadata {
 		return this.created;
 	}
 
+	/**
+	 * Returns the token usage reported by the OpenAI Images API.
+	 * @return the image token usage, or {@code null} if not available
+	 * @since 2.0.1
+	 */
+	public @Nullable OpenAiImageUsage getUsage() {
+		return this.usage;
+	}
+
 	@Override
 	public String toString() {
-		return "OpenAiImageResponseMetadata{" + "created=" + this.created + '}';
+		if (this.usage == null) {
+			return "OpenAiImageResponseMetadata{" + "created=" + this.created + '}';
+		}
+		return "OpenAiImageResponseMetadata{" + "created=" + this.created + ", usage=" + this.usage + '}';
 	}
 
 	@Override
@@ -69,12 +107,12 @@ public class OpenAiImageResponseMetadata extends ImageResponseMetadata {
 		if (!(o instanceof OpenAiImageResponseMetadata that)) {
 			return false;
 		}
-		return Objects.equals(this.created, that.created);
+		return Objects.equals(this.created, that.created) && Objects.equals(this.usage, that.usage);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.created);
+		return this.usage == null ? Objects.hash(this.created) : Objects.hash(this.created, this.usage);
 	}
 
 }
