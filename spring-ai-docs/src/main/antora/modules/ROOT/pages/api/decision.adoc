@@ -318,4 +318,5 @@ Other Spring AI features use decision models too.
 
 * In xref:api/retrieval-augmented-generation.adoc[RAG pipelines], the xref:api/retrieval-augmented-generation.adoc#_decisiondocumentreranker[`DecisionDocumentReranker`] sorts the retrieved documents by asking whether each one answers the query.
 The xref:api/retrieval-augmented-generation.adoc#_decisiondocumentfilter[`DecisionDocumentFilter`] checks them for prompt injection, contradictions, and relevance before they reach the prompt.
+* As a guardrail of a `ChatClient`, the xref:api/advisors-guardrail.adoc[`DecisionGuardrailAdvisor`] screens the user message and the reply for hazards such as jailbreak attempts, and refuses the turn when one fires.
 * In xref:api/tools/tool-search-tool.adoc[tool search], the xref:api/tools/tool-search-tool.adoc#decision-tool-index[`DecisionToolIndex`] picks the tool that can handle a request, or reports that no tool can.

@@ -31,6 +31,7 @@
 		<module>spring-ai-tool-search-tool</module>
 		<module>spring-ai-vector-store</module>
 
+		<module>advisors/spring-ai-guardrail-advisor</module>
 		<module>advisors/spring-ai-session-advisor</module>
 		<module>advisors/spring-ai-tool-search-advisor</module>
 		<module>advisors/spring-ai-vector-store-advisor</module>
