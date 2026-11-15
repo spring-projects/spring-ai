@@ -990,7 +990,7 @@ That metadata key is deprecated and will be removed in a future release; new cod
 * **Official OpenAI models** (GPT-5, o1, o3): Do **NOT** expose reasoning text in Chat Completions API responses ❌
 
 Official OpenAI reasoning models hide the chain-of-thought content when using the Chat Completions API.
-They only expose `reasoning_tokens` count in usage statistics.
+They only expose `reasoning_tokens` count in usage statistics, available through `response.getMetadata().getUsage().getReasoningOutputTokens()`.
 To get reasoning summaries from official OpenAI models, use OpenAI's Responses API through xref:api/chat/openai-responses-chat.adoc[`OpenAiResponsesChatModel`].
 That endpoint is also the only one that supports reasoning together with tool calling on GPT-5.4 and later.
 

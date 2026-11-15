@@ -545,7 +545,10 @@ public class DeepSeekChatModel implements ChatModel {
 	}
 
 	private DefaultUsage getDefaultUsage(DeepSeekApi.Usage usage) {
-		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
+		Long reasoning = usage.completionTokensDetails() != null ? usage.completionTokensDetails().reasoningTokens()
+				: null;
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage, null, null,
+				reasoning);
 	}
 
 	/**

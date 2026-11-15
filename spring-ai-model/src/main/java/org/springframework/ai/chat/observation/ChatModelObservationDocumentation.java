@@ -257,6 +257,17 @@ public enum ChatModelObservationDocumentation implements ObservationDocumentatio
 		},
 
 		/**
+		 * The number of output tokens used for reasoning.
+		 * @since 2.1.0
+		 */
+		USAGE_REASONING_OUTPUT_TOKENS {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.USAGE_REASONING_OUTPUT_TOKENS.value();
+			}
+		},
+
+		/**
 		 * The total number of tokens used in the model exchange.
 		 */
 		USAGE_TOTAL_TOKENS {

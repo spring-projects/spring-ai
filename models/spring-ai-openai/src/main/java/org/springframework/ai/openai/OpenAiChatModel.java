@@ -753,10 +753,16 @@ public final class OpenAiChatModel implements ChatModel {
 	}
 
 	private DefaultUsage getDefaultUsage(CompletionUsage usage) {
+		// Read leniently: a malformed optional breakdown must not fail the request.
+		Long reasoning = usage._completionTokensDetails()
+			.asKnown()
+			.flatMap(details -> details._reasoningTokens().asNumber())
+			.map(Number::longValue)
+			.orElse(null);
 		Long cacheRead = usage.promptTokensDetails().flatMap(details -> details.cachedTokens()).orElse(null);
 		return new DefaultUsage(toIntTokenCount("promptTokens", usage.promptTokens()),
 				toIntTokenCount("completionTokens", usage.completionTokens()),
-				toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, null);
+				toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, null, reasoning);
 	}
 
 	/**

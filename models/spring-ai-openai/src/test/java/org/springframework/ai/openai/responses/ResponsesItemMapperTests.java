@@ -653,7 +653,16 @@ class ResponsesItemMapperTests {
 		assertThat(usage.getCompletionTokens()).isEqualTo(40);
 		assertThat(usage.getTotalTokens()).isEqualTo(160);
 		assertThat(usage.getCacheReadInputTokens()).isEqualTo(20);
+		assertThat(usage.getReasoningOutputTokens()).isEqualTo(32);
 		assertThat(usage.getNativeUsage()).isNotNull();
+	}
+
+	@Test
+	void usageKeepsAReportedZeroReasoningTokenCount() {
+		// The fixture reports output_tokens_details.reasoning_tokens as 0.
+		var usage = ResponsesItemMapper.toUsage(fixture("incomplete-max-output-tokens.json"));
+
+		assertThat(usage.getReasoningOutputTokens()).isZero();
 	}
 
 	/**
@@ -669,6 +678,7 @@ class ResponsesItemMapperTests {
 		assertThat(usage.getPromptTokens()).isEqualTo(120);
 		assertThat(usage.getTotalTokens()).isEqualTo(160);
 		assertThat(usage.getCacheReadInputTokens()).isNull();
+		assertThat(usage.getReasoningOutputTokens()).isNull();
 	}
 
 	/**

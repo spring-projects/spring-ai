@@ -29,6 +29,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
@@ -38,6 +39,7 @@ import com.anthropic.core.RequestOptions;
 import com.anthropic.core.http.HttpResponse;
 import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.core.http.StreamResponse;
+import com.anthropic.errors.AnthropicInvalidDataException;
 import com.anthropic.models.messages.Base64ImageSource;
 import com.anthropic.models.messages.Base64PdfSource;
 import com.anthropic.models.messages.CacheControlEphemeral;
@@ -54,6 +56,7 @@ import com.anthropic.models.messages.ImageBlockParam;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.MessageDeltaUsage;
+import com.anthropic.models.messages.OutputTokensDetails;
 import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.RedactedThinkingBlock;
 import com.anthropic.models.messages.RedactedThinkingBlockParam;
@@ -605,7 +608,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(promptTokens)),
 					Integer.valueOf(Math.toIntExact(outputTokens)),
 					Integer.valueOf(Math.toIntExact(promptTokens + outputTokens)), deltaEvent.usage(), cacheRead,
-					cacheWrite);
+					cacheWrite, streamingState.getReasoningOutputTokens());
 
 			Usage accumulatedUsage = previousChatResponse != null
 					? UsageCalculator.getCumulativeUsage(usage, previousChatResponse) : usage;
@@ -1470,7 +1473,18 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		long promptTokens = promptTokens(inputTokens, cacheRead, cacheWrite);
 		return new DefaultUsage(Integer.valueOf(Math.toIntExact(promptTokens)),
 				Integer.valueOf(Math.toIntExact(outputTokens)),
-				Integer.valueOf(Math.toIntExact(promptTokens + outputTokens)), usage, cacheRead, cacheWrite);
+				Integer.valueOf(Math.toIntExact(promptTokens + outputTokens)), usage, cacheRead, cacheWrite,
+				reasoningOutputTokens(usage::outputTokensDetails).orElse(null));
+	}
+
+	private static Optional<Long> reasoningOutputTokens(Supplier<Optional<OutputTokensDetails>> details) {
+		try {
+			return details.get().flatMap(value -> value._thinkingTokens().asNumber()).map(Number::longValue);
+		}
+		catch (AnthropicInvalidDataException ex) {
+			// The breakdown is optional: a malformed value must not fail the request.
+			return Optional.empty();
+		}
 	}
 
 	/**
@@ -1952,6 +1966,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private final AtomicReference<@Nullable Long> cacheCreationInputTokens = new AtomicReference<>();
 
+		private final AtomicReference<@Nullable Long> reasoningOutputTokens = new AtomicReference<>();
+
 		// Tool use blocks being streamed, keyed by content block index
 		private final Map<Integer, InFlightToolUse> inFlightToolUses = new LinkedHashMap<>();
 
@@ -1974,12 +1990,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			this.inputTokens.set(usage.inputTokens());
 			this.cacheReadInputTokens.set(usage.cacheReadInputTokens().orElse(null));
 			this.cacheCreationInputTokens.set(usage.cacheCreationInputTokens().orElse(null));
+			this.reasoningOutputTokens.set(reasoningOutputTokens(usage::outputTokensDetails).orElse(null));
 		}
 
 		void updateUsage(MessageDeltaUsage usage) {
 			usage.inputTokens().ifPresent(this.inputTokens::set);
 			usage.cacheReadInputTokens().ifPresent(this.cacheReadInputTokens::set);
 			usage.cacheCreationInputTokens().ifPresent(this.cacheCreationInputTokens::set);
+			reasoningOutputTokens(usage::outputTokensDetails).ifPresent(this.reasoningOutputTokens::set);
 		}
 
 		String getMessageId() {
@@ -2000,6 +2018,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		@Nullable Long getCacheCreationInputTokens() {
 			return this.cacheCreationInputTokens.get();
+		}
+
+		@Nullable Long getReasoningOutputTokens() {
+			return this.reasoningOutputTokens.get();
 		}
 
 		void setRateLimit(RateLimit rateLimit) {

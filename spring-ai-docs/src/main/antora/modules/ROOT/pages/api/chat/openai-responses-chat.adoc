@@ -226,7 +226,8 @@ String summary = response.getResult().getMetadata().get(OpenAiResponsesMetadata.
 ----
 
 OpenAI never returns raw reasoning text - only summaries and the encrypted blob.
-Reasoning token counts are available through the native usage object, `response.getMetadata().getUsage().getNativeUsage()`.
+Reasoning token counts are available through `response.getMetadata().getUsage().getReasoningOutputTokens()`.
+The native usage object, `response.getMetadata().getUsage().getNativeUsage()`, holds the full provider usage.
 
 Spring AI always adds `include: ["reasoning.encrypted_content"]` to the request.
 This is one of only two framework-level defaults on this model, and it is there for correctness: without the blob coming back, replaying a reasoning turn is impossible rather than merely degraded.

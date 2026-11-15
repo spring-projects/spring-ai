@@ -113,6 +113,7 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 		keyValues = usageInputTokens(keyValues, context);
 		keyValues = usageOutputTokens(keyValues, context);
 		keyValues = usageTotalTokens(keyValues, context);
+		keyValues = usageReasoningOutputTokens(keyValues, context);
 		return keyValues;
 	}
 
@@ -282,6 +283,16 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 			return keyValues.and(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
 					String.valueOf(context.getResponse().getMetadata().getUsage().getCompletionTokens()));
+		}
+		return keyValues;
+	}
+
+	protected KeyValues usageReasoningOutputTokens(KeyValues keyValues, ChatModelObservationContext context) {
+		if (context.getResponse() != null && context.getResponse().getMetadata().getUsage() != null
+				&& context.getResponse().getMetadata().getUsage().getReasoningOutputTokens() != null) {
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.USAGE_REASONING_OUTPUT_TOKENS.asString(),
+					String.valueOf(context.getResponse().getMetadata().getUsage().getReasoningOutputTokens()));
 		}
 		return keyValues;
 	}

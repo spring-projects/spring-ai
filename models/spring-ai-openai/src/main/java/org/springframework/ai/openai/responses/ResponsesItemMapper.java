@@ -806,11 +806,11 @@ final class ResponsesItemMapper {
 			var details = usage._inputTokensDetails().asKnown().orElse(null);
 			Long cacheRead = (details != null) ? optionalLong(details._cachedTokens()) : null;
 			Long cacheWrite = (details != null) ? optionalLong(details._cacheWriteTokens()) : null;
-			// Reasoning tokens are only reachable through the native usage object: the
-			// portable Usage type has no field for them.
+			var outputDetails = usage._outputTokensDetails().asKnown().orElse(null);
+			Long reasoning = (outputDetails != null) ? optionalLong(outputDetails._reasoningTokens()) : null;
 			return new DefaultUsage(toIntTokenCount("inputTokens", usage.inputTokens()),
 					toIntTokenCount("outputTokens", usage.outputTokens()),
-					toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, cacheWrite);
+					toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, cacheWrite, reasoning);
 		}).orElseGet(EmptyUsage::new);
 	}
 

@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -51,6 +52,34 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
 class DefaultChatModelObservationConventionTests {
 
 	private final DefaultChatModelObservationConvention observationConvention = new DefaultChatModelObservationConvention();
+
+	@Test
+	void reasoningTokenObservationIsPresentOnlyWhenReported() {
+		ChatModelObservationContext context = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("test-model").build()))
+			.provider("test")
+			.build();
+		context.setResponse(new ChatResponse(List.of(),
+				ChatResponseMetadata.builder().usage(new DefaultUsage(10, 20, 30, null, null, null, 7L)).build()));
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(context))
+			.contains(KeyValue.of("gen_ai.usage.reasoning.output_tokens", "7"));
+		context.setResponse(
+				new ChatResponse(List.of(), ChatResponseMetadata.builder().usage(new DefaultUsage(10, 20)).build()));
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(context))
+			.noneMatch(keyValue -> keyValue.getKey().equals("gen_ai.usage.reasoning.output_tokens"));
+	}
+
+	@Test
+	void reasoningTokenObservationKeepsReportedZero() {
+		ChatModelObservationContext context = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("test-model").build()))
+			.provider("test")
+			.build();
+		context.setResponse(new ChatResponse(List.of(),
+				ChatResponseMetadata.builder().usage(new DefaultUsage(10, 20, 30, null, null, null, 0L)).build()));
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(context))
+			.contains(KeyValue.of("gen_ai.usage.reasoning.output_tokens", "0"));
+	}
 
 	@Test
 	void shouldHaveName() {
@@ -159,6 +188,7 @@ class DefaultChatModelObservationConventionTests {
 					HighCardinalityKeyNames.USAGE_CACHE_READ_INPUT_TOKENS.asString(),
 					HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					HighCardinalityKeyNames.USAGE_OUTPUT_TOKENS.asString(),
+					HighCardinalityKeyNames.USAGE_REASONING_OUTPUT_TOKENS.asString(),
 					HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString());
 	}
 

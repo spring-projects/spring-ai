@@ -33,6 +33,9 @@ import com.openai.models.responses.ResponseStreamEvent;
 import com.openai.models.responses.ResponseTextDeltaEvent;
 import com.openai.services.async.ResponseServiceAsync;
 import com.openai.services.blocking.ResponseService;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -43,6 +46,7 @@ import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 
@@ -72,10 +76,16 @@ class OpenAiResponsesChatModelTests {
 	private ResponseServiceAsync responseServiceAsync;
 
 	private OpenAiResponsesChatModel model(OpenAiResponsesChatOptions options) {
+		return model(options, ObservationRegistry.NOOP);
+	}
+
+	private OpenAiResponsesChatModel model(OpenAiResponsesChatOptions options,
+			ObservationRegistry observationRegistry) {
 		return OpenAiResponsesChatModel.builder()
 			.openAiClient(this.openAiClient)
 			.openAiClientAsync(this.openAiClientAsync)
 			.options(options)
+			.observationRegistry(observationRegistry)
 			.build();
 	}
 
@@ -237,6 +247,40 @@ class OpenAiResponsesChatModelTests {
 		// repeat a block the deltas already carried.
 		assertThat(chunks.stream().map(chunk -> chunk.getResult().getOutput().getText()).reduce("", String::concat))
 			.isEqualTo("It is 18 degrees in Paris.");
+	}
+
+	@Test
+	void streamObservationCarriesTheReasoningUsageOfTheTerminalEvent() {
+		Response response = ResponsesTestFixtures.response("text-with-reasoning-summary.json");
+		givenStream(List.of(
+				ResponseStreamEvent
+					.ofCreated(ResponseCreatedEvent.builder().response(response).sequenceNumber(0).build()),
+				ResponseStreamEvent.ofOutputTextDelta(ResponseTextDeltaEvent.builder()
+					.contentIndex(0)
+					.delta("It is 18 degrees in Paris.")
+					.itemId("msg_1")
+					.outputIndex(1)
+					.logprobs(List.of())
+					.sequenceNumber(1)
+					.build()),
+				ResponseStreamEvent
+					.ofCompleted(ResponseCompletedEvent.builder().response(response).sequenceNumber(2).build())));
+		TestObservationRegistry observationRegistry = TestObservationRegistry.create();
+
+		model(OpenAiResponsesChatOptions.builder().model("gpt-5-mini").build(), observationRegistry)
+			.stream(new Prompt("Weather in Paris?"))
+			.collectList()
+			.block();
+
+		// The fixture reports output 25 (reasoning 10 included) and total 225.
+		TestObservationRegistryAssert.assertThat(observationRegistry)
+			.doesNotHaveAnyRemainingCurrentObservation()
+			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
+			.that()
+			.hasBeenStopped()
+			.hasHighCardinalityKeyValue("gen_ai.usage.output_tokens", "25")
+			.hasHighCardinalityKeyValue("gen_ai.usage.total_tokens", "225")
+			.hasHighCardinalityKeyValue("gen_ai.usage.reasoning.output_tokens", "10");
 	}
 
 	private void givenStream(List<ResponseStreamEvent> events) {

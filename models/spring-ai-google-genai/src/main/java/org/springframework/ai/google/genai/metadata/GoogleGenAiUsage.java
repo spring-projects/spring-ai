@@ -132,6 +132,11 @@ public class GoogleGenAiUsage extends DefaultUsage {
 	}
 
 	@Override
+	public @Nullable Long getReasoningOutputTokens() {
+		return this.thoughtsTokenCount != null ? this.thoughtsTokenCount.longValue() : null;
+	}
+
+	@Override
 	public @Nullable Long getCacheReadInputTokens() {
 		return this.cachedContentTokenCount != null ? this.cachedContentTokenCount.longValue() : null;
 	}

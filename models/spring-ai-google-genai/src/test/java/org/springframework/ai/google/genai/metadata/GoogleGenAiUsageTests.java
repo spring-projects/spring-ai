@@ -50,6 +50,7 @@ public class GoogleGenAiUsageTests {
 		assertThat(usage.getCompletionTokens()).isEqualTo(50);
 		assertThat(usage.getTotalTokens()).isEqualTo(150);
 		assertThat(usage.getThoughtsTokenCount()).isNull();
+		assertThat(usage.getReasoningOutputTokens()).isNull();
 		assertThat(usage.getCachedContentTokenCount()).isNull();
 		assertThat(usage.getToolUsePromptTokenCount()).isNull();
 	}
@@ -69,6 +70,7 @@ public class GoogleGenAiUsageTests {
 		assertThat(usage.getCompletionTokens()).isEqualTo(50);
 		assertThat(usage.getTotalTokens()).isEqualTo(175);
 		assertThat(usage.getThoughtsTokenCount()).isEqualTo(25);
+		assertThat(usage.getReasoningOutputTokens()).isEqualTo(25L);
 	}
 
 	@Test
@@ -243,6 +245,7 @@ public class GoogleGenAiUsageTests {
 		assertThat(json).contains("\"completionTokens\":50");
 		assertThat(json).contains("\"totalTokens\":175");
 		assertThat(json).contains("\"thoughtsTokenCount\":25");
+		assertThat(json).contains("\"reasoningOutputTokens\":25");
 		assertThat(json).contains("\"cachedContentTokenCount\":30");
 		assertThat(json).contains("\"toolUsePromptTokenCount\":15");
 		assertThat(json).contains("\"trafficType\":\"ON_DEMAND\"");

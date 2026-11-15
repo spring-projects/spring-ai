@@ -148,6 +148,11 @@ public enum AiObservationAttributes {
 	 */
 	USAGE_OUTPUT_TOKENS("gen_ai.usage.output_tokens"),
 	/**
+	 * Output tokens used for reasoning.
+	 * @since 2.1.0
+	 */
+	USAGE_REASONING_OUTPUT_TOKENS("gen_ai.usage.reasoning.output_tokens"),
+	/**
 	 * The total number of tokens used in the model exchange.
 	 */
 	USAGE_TOTAL_TOKENS("gen_ai.usage.total_tokens");
