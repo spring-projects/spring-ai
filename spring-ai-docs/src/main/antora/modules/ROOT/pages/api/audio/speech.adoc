@@ -352,4 +352,4 @@ public class FlexibleNarrationService {
 
 == Provider-Specific Features
 
-While the shared interfaces provide portability, each provider also offers specific features through provider-specific options classes (e.g., `OpenAiAudioSpeechOptions`, `ElevenLabsSpeechOptions`). These classes implement the `TextToSpeechOptions` interface while adding provider-specific capabilities.
+While the shared interfaces provide portability, each provider also offers specific features through provider-specific options classes (e.g., `OpenAiAudioSpeechOptions`, `ElevenLabsTextToSpeechOptions`). These classes implement the `TextToSpeechOptions` interface while adding provider-specific capabilities.
