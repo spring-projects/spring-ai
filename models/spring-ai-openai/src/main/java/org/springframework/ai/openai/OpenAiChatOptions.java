@@ -1251,6 +1251,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 					this.maxRetries = that.maxRetries;
 				}
 			}
+			// maxTokens and maxCompletionTokens are mutually exclusive, and
+			// maxCompletionTokens takes precedence as in the setters
+			if (this.maxTokens != null && this.maxCompletionTokens != null) {
+				this.maxTokens = null;
+			}
 			return self();
 		}
 
