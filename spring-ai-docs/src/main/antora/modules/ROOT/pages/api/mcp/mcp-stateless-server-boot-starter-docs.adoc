@@ -9,6 +9,18 @@ TIP: Set the `spring.ai.mcp.server.protocol=STATELESS` property
 TIP: Use the xref:api/mcp/mcp-client-boot-starter-docs#_streamable_http_transport_properties[Streamable-HTTP clients] to connect to the stateless servers.
 
 NOTE: The stateless servers don't support message requests to the MCP client (e.g., elicitation, sampling, ping).
+They also don't send notifications, so tool, resource and prompt list-changed notifications and resource subscriptions are not available.
+
+=== Stateless Servers and MCP Protocol Versions
+
+The `STATELESS` protocol is a server-side mode of the Streamable-HTTP transport.
+It is not the stateless protocol model introduced in the MCP `2026-07-28` specification.
+
+* The server keeps no session between HTTP requests, does not issue an `Mcp-Session-Id` header, and answers `GET` requests on the MCP endpoint with `405 Method Not Allowed`.
+* Clients still send an `initialize` request, and the server negotiates one of the protocol versions supported by the MCP Java SDK (`2025-03-26`, `2025-06-18` or `2025-11-25`).
+* The server does not store anything from the `initialize` request, so each request can be handled by any server instance.
+
+Support for the `2026-07-28` specification, which replaces `initialize` with `server/discover`, depends on a future MCP Java SDK release.
 
 === Stateless WebMVC Server
 
@@ -95,14 +107,15 @@ The server mcp-annotations properties are prefixed with `spring.ai.mcp.server.an
 
 === Stateless Connection Properties
 
-All connection properties are prefixed with `spring.ai.mcp.server.stateless`:
+Stateless servers share the connection properties of Streamable-HTTP servers, prefixed with `spring.ai.mcp.server.streamable-http`:
 
 [options="header"]
 |===
 |Property |Description |Default
 |`mcp-endpoint` |Custom MCP endpoint path |`/mcp`
-|`disallow-delete` |Disallow delete operations |`false`
 |===
+
+NOTE: The `disallow-delete` property applies only to stateful Streamable-HTTP servers and has no effect on stateless servers.
 
 == Features and Capabilities
 
@@ -112,7 +125,6 @@ It automatically converts custom capability handlers registered as Spring beans 
 === link:https://modelcontextprotocol.io/specification/2025-03-26/server/tools[Tools]
 Allows servers to expose tools that can be invoked by language models. The MCP Server Boot Starter provides:
 
-* Change notification support
 * xref:api/tools.adoc[Spring AI Tools] are automatically converted to sync/async specifications based on the server type
 * Automatic tool specification through Spring beans:
 
@@ -153,7 +165,6 @@ NOTE: Tool Context Support is not applicable for stateless servers.
 Provides a standardized way for servers to expose resources to clients.
 
 * Static and dynamic resource specifications
-* Optional change notifications
 * Support for resource templates
 * Automatic conversion between sync/async resource specifications
 * Automatic resource specification through Spring beans:
@@ -183,7 +194,6 @@ public List<McpStatelessServerFeatures.SyncResourceSpecification> myResources(..
 
 Provides a standardized way for servers to expose prompt templates to clients.
 
-* Change notification support
 * Template versioning
 * Automatic conversion between sync/async prompt specifications
 * Automatic prompt specification through Spring beans:
