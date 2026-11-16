@@ -25,6 +25,36 @@ public class CalculatorTools {
 }
 ----
 
+[NOTE]
+====
+The tool's input schema uses the method's parameter names (`a` and `b` above) as its property names, and incoming arguments are bound by those names.
+Java keeps parameter names in the compiled class only when the code is compiled with the `-parameters` flag.
+`spring-boot-starter-parent` enables it by default, but a project that imports `spring-boot-dependencies` as a BOM, or doesn't use Spring Boot's build setup, must enable it itself.
+Otherwise the schema advertises the parameters as `arg0`, `arg1`, and so on, and a client that sends the source names (for example `{"a": 1, "b": 2}`) gets `null` or default values.
+
+For Maven:
+
+[source,xml]
+----
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <configuration>
+        <parameters>true</parameters>
+    </configuration>
+</plugin>
+----
+
+For Gradle:
+
+[source,groovy]
+----
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add('-parameters')
+}
+----
+====
+
 ==== Annotation Attributes
 
 The `@McpTool` annotation supports the following attributes:
