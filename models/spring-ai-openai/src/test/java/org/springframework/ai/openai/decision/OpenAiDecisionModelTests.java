@@ -186,12 +186,12 @@ class OpenAiDecisionModelTests {
 
 		var predicate = params.questions().get(0).asPredicate();
 		assertThat(predicate.name()).contains("defect");
-		assertThat(predicate.instructions()).isEqualTo(
+		assertThat(predicate.instructions().asString()).isEqualTo(
 				"Does the customer report a defect?\nAnswer \"yes\" if: Part of the item does not work\nAnswer \"no\" if: The item works");
 
 		var choice = params.questions().get(1).asChoice();
 		assertThat(choice.name()).contains("topic");
-		assertThat(choice.instructions()).isEqualTo("What is the message about?");
+		assertThat(choice.instructions().asString()).isEqualTo("What is the message about?");
 		assertThat(choice.choices()).hasSize(2);
 		assertThat(choice.choices().get(0).value().asString()).isEqualTo("delivery");
 		assertThat(choice.choices().get(0).description()).contains("Where an order is");
@@ -548,9 +548,9 @@ class OpenAiDecisionModelTests {
 	}
 
 	private List<DecisionInputPart> sentParts() {
-		var messages = sentParams().input().asDecisionInputMessages();
-		assertThat(messages).hasSize(1);
-		return messages.get(0).content().asParts();
+		var items = sentParams().input().asDecisionInputItems();
+		assertThat(items).hasSize(1);
+		return items.get(0).asDecisionInputMessage().asUser().content().asParts();
 	}
 
 	private static Decision yesNoResponse() {

@@ -18,7 +18,6 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
@@ -29,9 +28,8 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
-import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.GuardrailRefusal;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -40,11 +38,15 @@ import org.springframework.util.CollectionUtils;
  * the sensitive words. The advisor does a simple case-insensitive check and can be used
  * as a starting point to implement a more advanced security barrier. It does <b>not</b>
  * handle advanced cases like homoglyphs, fullwidth chars or zero-width chars.
+ * <p>
+ * The failure response is marked as a {@link GuardrailRefusal}, so that the rest of the
+ * chain can tell it from an answer of the model.
  *
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
  * @author Dimitar Proynov
+ * @author Minju Kim
  * @since 1.0.0
  */
 public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
@@ -101,9 +103,9 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 	private ChatClientResponse createFailureResponse(ChatClientRequest chatClientRequest) {
 		return ChatClientResponse.builder()
 			.chatResponse(ChatResponse.builder()
-				.generations(List.of(new Generation(new AssistantMessage(this.failureResponse))))
+				.generations(List.of(GuardrailRefusal.generation(this.failureResponse)))
 				.build())
-			.context(Map.copyOf(chatClientRequest.context()))
+			.context(chatClientRequest.context())
 			.build();
 	}
 

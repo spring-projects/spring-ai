@@ -99,6 +99,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -587,12 +588,46 @@ public final class OpenAiChatModel implements ChatModel {
 		return metadata;
 	}
 
+	/**
+	 * The finish reason of a choice as it is reported: the name of the value for one that
+	 * the API defines, and the value as it was sent for another one, such as an
+	 * OpenAI-compatible provider may send. {@code null} when there is none.
+	 */
+	static @Nullable String finishReason(ChatCompletion.Choice choice) {
+		ChatCompletion.Choice.FinishReason finishReason = choice.finishReason();
+		if (finishReason.value() != ChatCompletion.Choice.FinishReason.Value._UNKNOWN) {
+			return finishReason.value().name();
+		}
+		String sent = finishReason._value().asString().orElse(null);
+		return StringUtils.hasText(sent) ? sent : null;
+	}
+
+	/**
+	 * Classifies why a choice ended. A refusal of the model is reported in its own field
+	 * of the message while the finish reason is an ordinary stop, so it is looked at
+	 * first.
+	 */
+	static FinishReasonCategory finishReasonCategory(ChatCompletion.Choice choice) {
+		if (StringUtils.hasText(choice.message().refusal().orElse(null))) {
+			return FinishReasonCategory.FILTERED;
+		}
+		return switch (choice.finishReason().value()) {
+			case STOP -> FinishReasonCategory.COMPLETED;
+			case LENGTH -> FinishReasonCategory.TRUNCATED;
+			case TOOL_CALLS, FUNCTION_CALL -> FinishReasonCategory.TOOL_CALL;
+			case CONTENT_FILTER -> FinishReasonCategory.FILTERED;
+			// No finish reason, or one that the API does not define: by its common name
+			case _UNKNOWN -> FinishReasonCategory.categorize(finishReason(choice));
+			// A value that a newer version of the SDK adds
+			default -> FinishReasonCategory.OTHER;
+		};
+	}
+
 	private static ChatGenerationMetadata generationMetadata(ChatCompletion.Choice choice,
 			@Nullable ChatCompletionAudio audioOutput) {
-		ChatCompletion.Choice.FinishReason.Value finishReason = choice.finishReason().value();
 		ChatGenerationMetadata.Builder builder = ChatGenerationMetadata.builder()
-			.finishReason(
-					finishReason != ChatCompletion.Choice.FinishReason.Value._UNKNOWN ? finishReason.name() : null);
+			.finishReason(finishReason(choice))
+			.finishReasonCategory(finishReasonCategory(choice));
 		if (audioOutput != null) {
 			builder.metadata("audioId", audioOutput.id());
 			builder.metadata("audioExpiresAt", audioOutput.expiresAt());
@@ -1828,9 +1863,9 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 
 		private static ChatCompletion.Choice.FinishReason toFinishReason(Choice choice) {
-			return ChatCompletion.Choice.FinishReason.of(choice.finishReason()
-				.map(finishReason -> finishReason.value().name().toLowerCase(Locale.ROOT))
-				.orElse(""));
+			// As it was sent, so that a value the API does not define is not lost
+			return ChatCompletion.Choice.FinishReason
+				.of(choice.finishReason().flatMap(finishReason -> finishReason._value().asString()).orElse(""));
 		}
 
 		private static ChatCompletion.Choice.Logprobs toLogprobs(Choice choice) {

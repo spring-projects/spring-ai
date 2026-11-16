@@ -239,8 +239,7 @@ public final class WebMvcModernServerTransport {
 					new JSONRPCError(ErrorCodes.HEADER_MISMATCH, headerMismatch)));
 		}
 
-		McpTransportContext requestContext = ModernTransportSupport.withParamHeaders(request, jsonRpcRequest,
-				transportContext);
+		McpTransportContext requestContext = ModernTransportSupport.withHeaders(request, transportContext);
 		boolean listen = ModernTransportSupport.isListen(jsonRpcRequest);
 		Mono<McpTransportResponse> resolved = listen ? this.requestManager.handle(requestContext, jsonRpcRequest)
 				: this.requestManager.handleBlocking(requestContext, jsonRpcRequest);

@@ -51,6 +51,7 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -387,6 +388,21 @@ public class MistralAiChatModel implements ChatModel {
 	}
 
 	/**
+	 * Classifies the finish reason of a choice. Mistral reports no safety stop.
+	 */
+	static FinishReasonCategory finishReasonCategory(MistralAiApi.@Nullable FinishReason finishReason) {
+		if (finishReason == null) {
+			return FinishReasonCategory.UNSPECIFIED;
+		}
+		return switch (finishReason) {
+			case STOP -> FinishReasonCategory.COMPLETED;
+			case LENGTH, MODEL_LENGTH -> FinishReasonCategory.TRUNCATED;
+			case TOOL_CALLS -> FinishReasonCategory.TOOL_CALL;
+			case ERROR -> FinishReasonCategory.OTHER;
+		};
+	}
+
+	/**
 	 * Builds the generation of one choice. When {@code partIndexer} is not {@code null}
 	 * the choice is a streamed chunk, and its parts are stamped with their stream index,
 	 * see {@link StreamingPartIndexer}.
@@ -398,7 +414,10 @@ public class MistralAiChatModel implements ChatModel {
 			.properties(metadata)
 			.build();
 		var finishReason = choice.finishReason() != null ? choice.finishReason().name() : "";
-		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
+		var generationMetadata = ChatGenerationMetadata.builder()
+			.finishReason(finishReason)
+			.finishReasonCategory(finishReasonCategory(choice.finishReason()))
+			.build();
 
 		return new Generation(assistantMessage, generationMetadata);
 	}

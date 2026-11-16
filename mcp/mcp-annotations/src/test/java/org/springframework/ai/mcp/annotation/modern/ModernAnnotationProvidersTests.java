@@ -47,7 +47,6 @@ import io.modelcontextprotocol.modern.McpSchema.ElicitFormRequest;
 import io.modelcontextprotocol.modern.McpSchema.GetPromptOutcome;
 import io.modelcontextprotocol.modern.McpSchema.GetPromptRequest;
 import io.modelcontextprotocol.modern.McpSchema.Implementation;
-import io.modelcontextprotocol.modern.McpSchema.InputRequest;
 import io.modelcontextprotocol.modern.McpSchema.InputRequiredResult;
 import io.modelcontextprotocol.modern.McpSchema.MetaKeys;
 import io.modelcontextprotocol.modern.McpSchema.PromptMessage;
@@ -57,6 +56,7 @@ import io.modelcontextprotocol.modern.McpSchema.Role;
 import io.modelcontextprotocol.modern.McpSchema.SamplingMessage;
 import io.modelcontextprotocol.modern.McpSchema.TextContent;
 import io.modelcontextprotocol.modern.McpSchema.TextResourceContents;
+import io.modelcontextprotocol.modern.McpSchema.UnknownInputRequest;
 import io.modelcontextprotocol.modern.server.McpServer;
 import io.modelcontextprotocol.modern.server.McpSyncNotifier;
 import io.modelcontextprotocol.modern.server.McpTransportResponse;
@@ -856,7 +856,7 @@ class ModernAnnotationProvidersTests {
 				case "url" -> InputRequiredResult.builder().elicitUrl("k", "m", "https://example.com").build();
 				case "url-map" -> new InputRequiredResult(
 						Map.of("k",
-								new InputRequest(McpSchema.METHOD_ELICITATION_CREATE,
+								new UnknownInputRequest(McpSchema.METHOD_ELICITATION_CREATE,
 										Map.of("mode", "url", "message", "m", "url", "https://example.com"))),
 						null, null, null);
 				case "sampling" -> InputRequiredResult.builder()

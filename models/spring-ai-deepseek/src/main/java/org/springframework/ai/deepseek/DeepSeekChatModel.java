@@ -45,6 +45,7 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -59,6 +60,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletion;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletion.Choice;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionFinishReason;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ToolCall;
@@ -396,6 +398,21 @@ public class DeepSeekChatModel implements ChatModel {
 	}
 
 	/**
+	 * Classifies the finish reason of a choice.
+	 */
+	static FinishReasonCategory finishReasonCategory(@Nullable ChatCompletionFinishReason finishReason) {
+		if (finishReason == null) {
+			return FinishReasonCategory.UNSPECIFIED;
+		}
+		return switch (finishReason) {
+			case STOP -> FinishReasonCategory.COMPLETED;
+			case LENGTH -> FinishReasonCategory.TRUNCATED;
+			case TOOL_CALLS, TOOL_CALL -> FinishReasonCategory.TOOL_CALL;
+			case CONTENT_FILTER -> FinishReasonCategory.FILTERED;
+		};
+	}
+
+	/**
 	 * Builds the generation of one choice. When {@code partIndexer} is not {@code null}
 	 * the choice is a streamed chunk, and its parts are stamped with their stream index,
 	 * see {@link StreamingPartIndexer}.
@@ -404,7 +421,9 @@ public class DeepSeekChatModel implements ChatModel {
 	private Generation buildGeneration(Choice choice, Map<String, Object> metadata,
 			@Nullable StreamingPartIndexer partIndexer) {
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
-		var generationMetadataBuilder = ChatGenerationMetadata.builder().finishReason(finishReason);
+		var generationMetadataBuilder = ChatGenerationMetadata.builder()
+			.finishReason(finishReason)
+			.finishReasonCategory(finishReasonCategory(choice.finishReason()));
 
 		// Still a DeepSeekAssistantMessage while that type is deprecated, so that
 		// existing casts keep working

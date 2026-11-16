@@ -87,6 +87,7 @@
 *** xref:api/session/concepts.adoc[Concepts]
 *** xref:api/session/event-filter.adoc[Event Filtering]
 *** xref:api/session/compaction.adoc[Compaction]
+*** xref:api/session/recall.adoc[Recall]
 *** xref:api/session/system-messages.adoc[System Messages]
 *** xref:api/session/chat-client.adoc[ChatClient Integration]
 *** xref:api/session/jdbc.adoc[JDBC Repository]

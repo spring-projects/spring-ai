@@ -32,6 +32,7 @@ import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.GuardrailRefusal;
 import org.springframework.util.Assert;
 
 /**
@@ -52,6 +53,9 @@ import org.springframework.util.Assert;
  * <li>Support for both synchronous and streaming chat operations</li>
  * <li>Configurable execution order in the advisor chain</li>
  * </ul>
+ *
+ * <p>
+ * The refusal of a guardrail (see {@link GuardrailRefusal}) is returned and not cached.
  *
  * @author Brian Sam-Bodden
  * @author Soby Chacko
@@ -132,9 +136,12 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 		// Cache miss - call the model
 		ChatClientResponse response = chain.nextCall(request);
 
-		// Cache the response (with context hash for isolation)
-		if (response.chatResponse() != null) {
-			this.cache.set(userText, response.chatResponse(), contextHash);
+		// Cache the response (with context hash for isolation). The refusal of a
+		// guardrail is not cached: it is not an answer of the model, and the cache keeps
+		// the text of a response without the finish reason that marks it as a refusal.
+		ChatResponse chatResponse = response.chatResponse();
+		if (chatResponse != null && !GuardrailRefusal.isRefusal(chatResponse)) {
+			this.cache.set(userText, chatResponse, contextHash);
 		}
 
 		return response;
@@ -172,9 +179,12 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 		return chain.nextStream(request)
 			.transform(
 					flux -> new ChatClientMessageAggregator().aggregateChatClientResponse(flux, aggregatedResponse -> {
-						// Cache the aggregated response when the stream completes
-						if (aggregatedResponse.chatResponse() != null) {
-							this.cache.set(userText, aggregatedResponse.chatResponse(), contextHash);
+						// Cache the aggregated response when the stream completes, unless
+						// it
+						// is the refusal of a guardrail
+						ChatResponse chatResponse = aggregatedResponse.chatResponse();
+						if (chatResponse != null && !GuardrailRefusal.isRefusal(chatResponse)) {
+							this.cache.set(userText, chatResponse, contextHash);
 						}
 					}));
 	}

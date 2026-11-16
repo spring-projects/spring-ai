@@ -3,9 +3,9 @@
 Spring AI supports the System One protocol through the xref:api/decision.adoc[Decision Models] API.
 A decision model picks one result from a known set of possible results, such as yes or no, one of a few categories, or a level on a scale, and tells you how likely each result is.
 
-System One is the `POST /v1/systemone` protocol of the Jev decision models of https://www.typesafe.ai[TypeSafe].
+System One is the `POST /v1/systemone` protocol of the decision models of https://www.typesafe.ai[TypeSafe].
 https://github.com/NandhaKishorM/laya[Laya], https://llmmanorg.github.io/[llmman] and https://ollama.com[Ollama] serve it too, so one implementation works with all four.
-`SystemOneDecisionModel` is built on the `TypeSafeClient` of the https://github.com/spring-ai-community/spring-ai-typesafe[TypeSafe Java SDK].
+`SystemOneDecisionModel` is built on the `SystemOneClient`, the client of the protocol that ships in the `spring-ai-systemone` module.
 
 == Prerequisites
 
@@ -15,12 +15,103 @@ https://github.com/NandhaKishorM/laya[Laya], https://llmmanorg.github.io/[llmman
 We recommend Ollama 0.40.4 or later;
 * Laya, with `laya-serve`;
 * llmman 0.1.497 or later, with `llmman serve`.
-. The `spring-ai-systemone` dependency in your project, as described in <<manual-configuration>>.
+. The `spring-ai-starter-model-systemone` dependency, as described in <<auto-configuration>>, or the `spring-ai-systemone` dependency for a <<manual-configuration,manual configuration>>.
+
+[[auto-configuration]]
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the System One decision model.
+To enable it, add the following dependency to your Maven `pom.xml` or Gradle `build.gradle` build files:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-systemone</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-systemone'
+}
+----
+======
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+The auto-configuration creates a `SystemOneClient` and a `SystemOneDecisionModel` over it.
+Both are regular beans: inject the client to call `listModels()`, and define your own bean of either type to replace the auto-configured one.
+
+If your application doesn't use the decision model, turn off its auto-configuration with `spring.ai.model.decision=none`, as described in <<decision-properties>>.
+
+=== Connection Properties
+
+The prefix `spring.ai.systemone` is the property prefix to configure the connection to the System One server.
+
+[cols="3,5,2"]
+|====
+| Property | Description | Default
+| spring.ai.systemone.api-key | The API key.
+Required for the auto-configured client, which is not created without it.
+Not needed when you define your own `SystemOneClient` bean, or a `SystemOneDecisionModel` bean over a client of its own. | -
+| spring.ai.systemone.base-url | The API root.
+Point it at Laya, llmman or another server of the protocol. | `+https://api.typesafe.ai+`
+| spring.ai.systemone.timeout | The read timeout of each attempt.
+Unset, the `spring.http.clients.read-timeout` of your application applies, or `10s` when the client builds its own transport. | -
+| spring.ai.systemone.retry.max-retries | Retries after the initial attempt.
+`0` disables retrying. | `2`
+| spring.ai.systemone.retry.initial-backoff | The first wait, doubled on each further retry. | `500ms`
+| spring.ai.systemone.retry.max-backoff | The upper bound on a single wait. | `5s`
+| spring.ai.systemone.retry.timeout | No further attempt is started once this much time has passed since the first. | `30s`
+|====
+
+The client sends its requests through the `RestClient.Builder` of your application when there is one, so your `RestClientCustomizer` beans and the `spring.http.clients` settings, such as the connect timeout, redirects and the SSL bundle, apply.
+When you set `spring.ai.systemone.timeout`, the request factory of the client is built again from the `ClientHttpRequestFactoryBuilder` and the `spring.http.clients` settings of your application, with that read timeout.
+This replaces a request factory that a `RestClientCustomizer` installed, so in that case leave the property unset and set the timeout on your own factory.
+Retries cover connection failures, request timeouts, rate limits and server errors, and wait as long as the server asks on a rate limit.
+The `spring.ai.retry` properties of the other models do not apply to this client.
+
+[[decision-properties]]
+=== Decision Properties
+
+[NOTE]
+====
+The `spring.ai.model.decision` property enables and disables the decision auto-configuration.
+
+To enable it, set `spring.ai.model.decision=systemone` (this is the default).
+
+To disable it, set `spring.ai.model.decision=none`, or any value other than `systemone`.
+====
+
+The prefix `spring.ai.systemone.decision` is the property prefix to configure the System One decision model.
+
+[cols="3,5,2"]
+|====
+| Property | Description | Default
+| spring.ai.model.decision | Enables the System One decision model. | `systemone`
+| spring.ai.systemone.decision.model | The model name or alias.
+Unset, the default model of the `SystemOneClient` applies: `jev-latest` for the auto-configured client, or the `defaultModel(...)` of a client bean you define.
+Ollama, Laya and llmman have no `jev-latest`, so set it when you point at one of them. | -
+| spring.ai.systemone.decision.provider | The provider name recorded in observations, such as `laya` or `llmman`. | `systemone`
+|====
+
+NOTE: When the Ollama or OpenAI starter is on the classpath too, each auto-configures its own decision model by default.
+Select one with `spring.ai.model.decision`, or qualify the injection point.
+
+TIP: You can change the model for one call, with the <<decision-options>> of the `DecisionPrompt`.
 
 [[manual-configuration]]
 == Manual Configuration
 
-Spring Boot auto-configuration is not available for this model yet, so you configure the `SystemOneDecisionModel` yourself.
+Without the starter, configure the `SystemOneDecisionModel` yourself.
 Add the `spring-ai-systemone` dependency to your Maven `pom.xml` or Gradle `build.gradle` build files:
 
 [tabs]
@@ -47,13 +138,13 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-The `TypeSafeClient` holds the connection settings: the base URL, the API key, the default model, the timeout of each attempt and the retry policy.
+The `SystemOneClient` holds the connection settings: the base URL, the API key, the default model, the timeout of the transport it builds and the retry policy.
 The model takes the client and, optionally, the default options and the provider name for observations.
 
 [source,java]
 ----
-TypeSafeClient client = TypeSafeClient.builder()
-    .apiKey(System.getenv("TYPESAFE_API_KEY"))
+SystemOneClient client = SystemOneClient.builder()
+    .apiKey(System.getenv("SYSTEMONE_API_KEY"))
     .defaultModel("jev-latest")
     .timeout(Duration.ofSeconds(10))
     .build();
@@ -63,8 +154,8 @@ SystemOneDecisionModel decisionModel = SystemOneDecisionModel.builder(client).bu
 include::partial$decision/example-short-call.adoc[]
 ----
 
-When you call `TypeSafeClient.builder().build()` without settings, the client reads the `TYPESAFE_API_KEY`, `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL` environment variables.
-The official TypeSafe SDKs read the same variables.
+The API key is required.
+The base URL defaults to `https://api.typesafe.ai`, and the default model to `jev-latest`.
 
 [cols="2,5,2"]
 |====
@@ -91,7 +182,7 @@ They differ in where the client points to, and in what the response leaves out.
 
 | TypeSafe Jev
 | `baseUrl` `https://api.typesafe.ai` (the default), and your API key
-| `jev-latest` (the default), or another `TypeSafeModels` constant
+| `jev-latest` (the default), or another `SystemOneModel` alias
 | The reference implementation.
 It reports a request id, which becomes the response id.
 
@@ -129,12 +220,12 @@ Set the provider name to tell the backends apart in observations:
 
 [source,java]
 ----
-TypeSafeClient ollama = TypeSafeClient.builder()
+SystemOneClient ollama = SystemOneClient.builder()
     .baseUrl("http://localhost:11434")
     .apiKey("ollama")
     .defaultModel("d1-omni:600m")
     .timeout(Duration.ofSeconds(60))
-    .retryPolicy(RetryPolicy.noRetry())
+    .retryTemplate(SystemOneRetryUtils.noRetryTemplate())
     .build();
 
 SystemOneDecisionModel decisionModel = SystemOneDecisionModel.builder(ollama)
@@ -160,7 +251,7 @@ include::partial$decision/example-answers.adoc[]
 ----
 
 The portable `DecisionOptions` work too.
-The timeout, the retry policy and the headers are settings of the `TypeSafeClient`, and they apply to every call.
+The timeout, the retry policy and the headers are settings of the `SystemOneClient`, and they apply to every call.
 
 == Supported Features
 
@@ -217,17 +308,124 @@ A `score` answer becomes a `ScoreAnswer`, with the probability of each level and
 
 Spring AI checks the answers against the prompt.
 An answer for a question that the prompt didn't ask, or an answer of the wrong kind, makes the call fail.
-An answer of a kind that the SDK doesn't know makes the call fail too.
+An answer of a kind that the client doesn't know makes the call fail too.
 
-The SDK reports a confidence of `0` when the server sends none, so a confidence of `0` can mean that there is no confidence.
+The client reports a confidence of `0` when the server sends none, so a confidence of `0` can mean that there is no confidence.
 
 The model that answered and the token usage come from the response body.
 When the server sends a request id in the `x-typesafe-request-id` header, Spring AI records it as the id of the response.
 You get it from `response.getMetadata().getId()` and from the `gen_ai.response.id` observation key.
 Ollama, Laya and llmman send no request id, so the id is `null`, and the observation has no such key.
 
-Errors come as exceptions of the `TypeSafeException` hierarchy of the SDK, such as `TypeSafeBadRequestException` or `TypeSafeRateLimitException`.
-They come after the retries of the `RetryPolicy` of the client.
+Errors come as exceptions of the `SystemOneException` hierarchy, such as `SystemOneBadRequestException` or `SystemOneRateLimitException`, listed in <<low-level-api>>.
+They come after the retries of the `RetryTemplate` of the client, which retries connection failures, request timeouts, rate limits and server errors twice by default, and waits as long as the server asks on a rate limit.
+See `SystemOneRetryUtils` for the default policy, and for the predicate and the wrapper that a policy of your own should use.
+
+[[low-level-api]]
+== Low-level SystemOneClient
+
+`SystemOneClient` is the client of the `/v1/systemone` protocol that the decision model is built on.
+With the starter it is a regular bean, and `SystemOneDecisionModel` is the recommended way to use it.
+Reach for the client itself to list the models of a server, or to send a request of the protocol as it is.
+
+=== Builder
+
+[cols="2,5,2"]
+|====
+| Builder method | Description | Default
+
+| `apiKey(String)` | The API key, sent as a bearer token.
+Required, unless `systemOneApi` supplies the transport. | -
+| `apiKey(Supplier<String>)` | Consulted on every request, so a rotated key takes effect without rebuilding the client. | -
+| `baseUrl(String)` | The API root. | `+https://api.typesafe.ai+`
+| `defaultModel(String)` | The model applied to a request that names none. | `jev-latest`
+| `timeout(Duration)` | The read timeout of the transport the client builds.
+Not applied when you supply the transport. | `10s`
+| `retryTemplate(RetryTemplate)` | How transient failures are retried.
+See `SystemOneRetryUtils` for the default policy and for the pieces of a policy of your own. | `SystemOneRetryUtils.defaultRetryTemplate()`
+| `headers(HttpHeaders)` | Headers sent on every request.
+Calling it twice sends both sets.
+`Authorization`, `Content-Type` and `Accept` are set by the client after yours. | none
+| `restClientBuilder(RestClient.Builder)` | The builder to derive the HTTP client from.
+It is cloned, not changed, so you keep control of interceptors and observability. | the client builds its own
+| `systemOneApi(SystemOneApi)` | A fully assembled transport, in place of every other transport setting. | -
+|====
+
+The client is immutable and safe to share between threads.
+
+=== Sending a Request
+
+The `systemOne` methods take the state as text, a map, a list or a `JsonContent`, with the questions as a map.
+A request built with `SystemOneRequest.builder()` can also name the model for one call:
+
+[source,java]
+----
+SystemOneResponse response = client.systemOne(SystemOneRequest.builder()
+    .state(JsonContent.object("message", "Help! My payouts have been failing for 3 days."))
+    .model("jev-preview")
+    .question("is_urgent", Noul.of("Does this convey urgency?"))
+    .question("department", Choice.builder()
+        .instructions("Which team should handle this?")
+        .option("billing", "Payments, invoicing, refunds")
+        .option("technical", "Bugs, outages, integrations")
+        .build())
+    .build());
+----
+
+The server reads the state, the questions and the criteria in the order they are sent, and a different order can change an answer.
+`Map.of(...)` has no order, so build content with more than one key with `JsonContent.object(...)`, with the `question(...)` calls of the builder, or with a `LinkedHashMap`.
+
+=== Reading the Answers
+
+[source,java]
+----
+double urgency = response.noulValue("is_urgent");
+String department = response.choiceValue("department");
+
+ChoiceAnswer choice = response.choice("department");
+choice.confidence();
+choice.probabilityOf("billing");
+choice.optionsAbove(0.1); // the options above the threshold, the likeliest first
+
+response.usage().inputTokens();
+response.requestId(); // quote it when you report a problem
+----
+
+Asking for an answer of another kind throws `SystemOneAnswerTypeException`, and asking for a name the response does not carry throws `SystemOneMissingAnswerException`.
+Both say which name you asked for and what the response has.
+
+=== Listing the Models
+
+[source,java]
+----
+for (ModelMetadata model : client.listModels()) {
+    System.out.printf("%s: %s (%s)%n", model.name(), model.description(), model.releaseDate());
+}
+----
+
+The aliases of the hosted service are in `SystemOneModel`.
+A response reports the model it resolved an alias to, so a request for `jev-latest` comes back with a pinned version.
+
+=== Errors
+
+Every failure of the client is a `SystemOneException`, thrown after the retries.
+
+[cols="3,5"]
+|====
+| Exception | When
+
+| `SystemOneApiException` | An HTTP error response.
+It carries the `status()`, the raw `body()`, the `requestId()` and the parsed `errorDetail()`.
+| `SystemOneBadRequestException`, `SystemOneAuthenticationException`, `SystemOnePermissionDeniedException`, `SystemOneNotFoundException`, `SystemOneUnprocessableEntityException` | A 400, 401, 403, 404 or 422 response.
+| `SystemOneRateLimitException` | A 429 response.
+`retryAfter()` carries the wait the server asks for, which the default retry policy honours.
+| `SystemOneInternalServerException` | A 5xx response.
+`SystemOneOverloadedException` is the non-standard 529 of the hosted service.
+| `SystemOneApiConnectionException` | No HTTP response at all.
+`SystemOneApiTimeoutException` when the attempt timed out.
+| `SystemOneApiResponseValidationException` | A successful response that misses what the client needs, such as an empty body or no answers.
+| `SystemOneAnswerTypeException`, `SystemOneMissingAnswerException` | Raised on the client when you read an answer of another kind, or one the response does not carry.
+|====
 
 == Observability
 
@@ -236,5 +434,5 @@ See xref:observability/index.adoc#_decision_model[Decision Model observability].
 
 == Example Code
 
-The `SystemOneDecisionModelIT` test runs against the server that the `TYPESAFE_BASE_URL`, `TYPESAFE_API_KEY` and `TYPESAFE_DEFAULT_MODEL` environment variables point to.
+The `SystemOneDecisionModelIT` test runs against the server that the `SYSTEMONE_BASE_URL`, `SYSTEMONE_API_KEY` and `SYSTEMONE_MODEL` environment variables point to.
 It shows the three kinds of questions, and the fields and conversation inputs.

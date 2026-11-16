@@ -73,4 +73,11 @@ public class SqlServerJdbcSessionRepositoryDialect implements JdbcSessionReposit
 		return "OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY";
 	}
 
+	@Override
+	public String toKeywordParameter(String keyword) {
+		// LIKE takes [ as the start of a character set here; escaped, it is text. The
+		// default escaping leaves the brackets alone, so this adds no second escape
+		return JdbcSessionRepositoryDialect.super.toKeywordParameter(keyword).replace("[", "![");
+	}
+
 }

@@ -29,11 +29,11 @@ import org.springframework.util.Assert;
 
 /**
  * The sessions of an application and their conversations: creating and finding sessions,
- * appending and reading their events, compacting them. {@link #appendEvent} appends one
- * event. {@link #appendEvents(String, List, long)} appends a batch only if the log has
- * not changed since the caller read its version. Compaction writes this way, and so can
- * any other code that builds events from the log. {@link DefaultSessionService}
- * implements it on a {@link SessionRepository}.
+ * appending, reading and searching their events, compacting them. {@link #appendEvent}
+ * appends one event. {@link #appendEvents(String, List, long)} appends a batch only if
+ * the log has not changed since the caller read its version. Compaction writes this way,
+ * and so can any other code that builds events from the log.
+ * {@link DefaultSessionService} implements it on a {@link SessionRepository}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -174,6 +174,19 @@ public interface SessionService {
 	 */
 	default List<Message> getActiveMessages(String sessionId) {
 		return getEvents(sessionId, EventFilter.active()).stream().map(SessionEvent::getMessage).toList();
+	}
+
+	/**
+	 * The message events of the session the query finds, oldest first, a page at a time:
+	 * a keyword search for recall. It covers the whole log, so it finds what a compaction
+	 * no longer sends to the model. See {@link EventQuery}. The default reads the log and
+	 * matches in memory; {@link DefaultSessionService} leaves the search to the
+	 * repository.
+	 */
+	default List<SessionEvent> searchEvents(String sessionId, EventQuery query) {
+		Assert.hasText(sessionId, "sessionId must not be null or empty");
+		Assert.notNull(query, "query must not be null");
+		return query.apply(getEvents(sessionId, EventFilter.all()));
 	}
 
 	// Compaction

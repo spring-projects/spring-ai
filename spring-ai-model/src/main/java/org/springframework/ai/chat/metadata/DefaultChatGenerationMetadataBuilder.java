@@ -34,6 +34,8 @@ public class DefaultChatGenerationMetadataBuilder implements Builder {
 
 	private @Nullable String finishReason;
 
+	private @Nullable FinishReasonCategory finishReasonCategory;
+
 	private final Map<String, Object> metadata = new HashMap<>();
 
 	private final Set<String> contentFilters = new HashSet<>();
@@ -44,6 +46,12 @@ public class DefaultChatGenerationMetadataBuilder implements Builder {
 	@Override
 	public Builder finishReason(@Nullable String finishReason) {
 		this.finishReason = finishReason;
+		return this;
+	}
+
+	@Override
+	public Builder finishReasonCategory(@Nullable FinishReasonCategory finishReasonCategory) {
+		this.finishReasonCategory = finishReasonCategory;
 		return this;
 	}
 
@@ -73,7 +81,8 @@ public class DefaultChatGenerationMetadataBuilder implements Builder {
 
 	@Override
 	public ChatGenerationMetadata build() {
-		return new DefaultChatGenerationMetadata(this.metadata, this.finishReason, this.contentFilters);
+		return new DefaultChatGenerationMetadata(this.metadata, this.finishReason, this.finishReasonCategory,
+				this.contentFilters);
 	}
 
 }

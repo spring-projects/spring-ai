@@ -106,8 +106,8 @@ class OllamaDecisionAutoConfigurationTests {
 	}
 
 	@Test
-	void decisionModelIsSkippedWhenTheTypeSafeSdkIsExcluded() {
-		new ApplicationContextRunner().withClassLoader(new FilteredClassLoader("org.springaicommunity.typesafe"))
+	void decisionModelIsSkippedWhenTheSystemOneModuleIsExcluded() {
+		new ApplicationContextRunner().withClassLoader(new FilteredClassLoader("org.springframework.ai.systemone"))
 			.withConfiguration(BaseOllamaIT.ollamaAutoConfig(OllamaChatAutoConfiguration.class,
 					OllamaEmbeddingAutoConfiguration.class, OllamaDecisionAutoConfiguration.class))
 			.run(context -> {

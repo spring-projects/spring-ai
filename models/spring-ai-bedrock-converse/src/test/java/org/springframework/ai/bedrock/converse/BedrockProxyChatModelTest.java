@@ -18,6 +18,7 @@ package org.springframework.ai.bedrock.converse;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -34,11 +35,14 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
+import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider;
 import software.amazon.awssdk.awscore.DefaultAwsResponseMetadata;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.async.SdkPublisher;
+import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption;
 import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
@@ -83,6 +87,7 @@ import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -90,6 +95,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -186,6 +192,37 @@ class BedrockProxyChatModelTest {
 				.thenThrow(SdkClientException.builder().message("failed load").build());
 			mocked.when(DefaultAwsRegionProviderChain::builder).thenReturn(this.awsRegionProviderBuilder);
 			BedrockProxyChatModel.builder().build();
+		}
+	}
+
+	@Test
+	void builderDefaultSocketTimeoutMatchesAutoConfiguration() {
+		// Same default as spring.ai.bedrock.aws.socket-timeout: a non-streaming Converse
+		// call receives no data until the whole response has been generated.
+		assertThat(ReflectionTestUtils.getField(BedrockProxyChatModel.builder(), "socketTimeout"))
+			.isEqualTo(Duration.ofSeconds(90));
+	}
+
+	@Test
+	void builderClientsAppendSpringAiToUserAgent() {
+		BedrockProxyChatModel model = BedrockProxyChatModel.builder()
+			.region(Region.US_EAST_1)
+			.credentialsProvider(AnonymousCredentialsProvider.create())
+			.build();
+
+		var syncClient = (BedrockRuntimeClient) ReflectionTestUtils.getField(model, "bedrockRuntimeClient");
+		var asyncClient = (BedrockRuntimeAsyncClient) ReflectionTestUtils.getField(model, "bedrockRuntimeAsyncClient");
+		try {
+			assertThat(syncClient.serviceClientConfiguration()
+				.overrideConfiguration()
+				.advancedOption(SdkAdvancedClientOption.USER_AGENT_SUFFIX)).hasValue("spring-ai");
+			assertThat(asyncClient.serviceClientConfiguration()
+				.overrideConfiguration()
+				.advancedOption(SdkAdvancedClientOption.USER_AGENT_SUFFIX)).hasValue("spring-ai");
+		}
+		finally {
+			syncClient.close();
+			asyncClient.close();
 		}
 	}
 
@@ -663,6 +700,8 @@ class BedrockProxyChatModelTest {
 		assertThat(output.getToolCalls()).containsExactly(WEATHER_CALL);
 		assertThat(chatResponse.hasToolCalls()).isTrue();
 		assertThat(chatResponse.getResult().getMetadata().getFinishReason()).isEqualTo("tool_use");
+		assertThat(chatResponse.getResult().getMetadata().getFinishReasonCategory())
+			.isEqualTo(FinishReasonCategory.TOOL_CALL);
 	}
 
 	@Test

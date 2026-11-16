@@ -67,6 +67,25 @@ class JdbcSessionRepositoryDialectTests {
 	}
 
 	@Test
+	void keywordParameterIsKeywordAsLiteralPattern() {
+		JdbcSessionRepositoryDialect dialect = new PostgresJdbcSessionRepositoryDialect();
+
+		// The database folds the case of both sides
+		assertThat(dialect.getKeywordPredicate())
+			.isEqualTo("LOWER(COALESCE(e.message_content, '')) LIKE LOWER(?) ESCAPE '!'");
+		assertThat(dialect.toKeywordParameter("Invoice")).isEqualTo("%Invoice%");
+		assertThat(dialect.toKeywordParameter("100%_done!")).isEqualTo("%100!%!_done!!%");
+		assertThat(dialect.toKeywordParameter("[a-z]")).isEqualTo("%[a-z]%");
+	}
+
+	@Test
+	void sqlServerEscapesCharacterSetBracket() {
+		JdbcSessionRepositoryDialect dialect = new SqlServerJdbcSessionRepositoryDialect();
+
+		assertThat(dialect.toKeywordParameter("[A-Z]!")).isEqualTo("%![A-Z]!!%");
+	}
+
+	@Test
 	void sqlServerLimitsRowsWithOffsetFetch() {
 		SqlServerJdbcSessionRepositoryDialect dialect = new SqlServerJdbcSessionRepositoryDialect();
 		assertThat(dialect.getLimitClause()).isEqualTo("OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY");

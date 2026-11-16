@@ -57,6 +57,7 @@ import com.anthropic.models.messages.MessageDeltaUsage;
 import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.RedactedThinkingBlock;
 import com.anthropic.models.messages.RedactedThinkingBlockParam;
+import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.TextBlockParam;
 import com.anthropic.models.messages.TextCitation;
@@ -109,6 +110,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -579,7 +581,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		// indexed complete parts so the aggregator places them in block order.
 		Optional<ChatResponse> messageDeltaResponse = event.messageDelta().map(deltaEvent -> {
 			String stopReason = deltaEvent.delta().stopReason().map(r -> r.toString()).orElse("");
-			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder().finishReason(stopReason).build();
+			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder()
+				.finishReason(stopReason)
+				.finishReasonCategory(finishReasonCategory(deltaEvent.delta().stopReason()))
+				.build();
 
 			// The final chunk keeps an empty text, as it always had, so a streamed chunk
 			// never reports a null text and chunk texts can be joined as before.
@@ -1181,7 +1186,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			List<AnthropicWebSearchResult> webSearchAccumulator) {
 
 		String finishReason = message.stopReason().map(r -> r.toString()).orElse("");
-		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
+		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder()
+			.finishReason(finishReason)
+			.finishReasonCategory(finishReasonCategory(message.stopReason()))
+			.build();
 
 		List<MessagePart> parts = new ArrayList<>();
 
@@ -1233,6 +1241,24 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		AssistantMessage assistantMessage = AssistantMessage.builder().parts(parts).build();
 		return List.of(new Generation(assistantMessage, generationMetadata));
+	}
+
+	/**
+	 * Classifies the stop reason of a message.
+	 */
+	static FinishReasonCategory finishReasonCategory(Optional<StopReason> stopReason) {
+		if (stopReason.isEmpty()) {
+			return FinishReasonCategory.UNSPECIFIED;
+		}
+		return switch (stopReason.get().value()) {
+			case END_TURN, STOP_SEQUENCE -> FinishReasonCategory.COMPLETED;
+			case MAX_TOKENS, MODEL_CONTEXT_WINDOW_EXCEEDED -> FinishReasonCategory.TRUNCATED;
+			case TOOL_USE -> FinishReasonCategory.TOOL_CALL;
+			case REFUSAL -> FinishReasonCategory.FILTERED;
+			// A paused turn, a value the SDK does not know, and one that a newer version
+			// of the SDK adds
+			default -> FinishReasonCategory.OTHER;
+		};
 	}
 
 	private static ReasoningPart thinkingReasoningPart(String thinking, String signature) {

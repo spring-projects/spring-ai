@@ -24,25 +24,27 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
-import org.springaicommunity.typesafe.JsonContent;
-import org.springaicommunity.typesafe.question.Choice;
-import org.springaicommunity.typesafe.question.Noul;
-import org.springaicommunity.typesafe.question.NoulCriteria;
-import org.springaicommunity.typesafe.question.Question;
-import org.springaicommunity.typesafe.question.QuestionType;
-import org.springaicommunity.typesafe.question.Score;
-import org.springaicommunity.typesafe.question.SystemOneRequest;
-import org.springaicommunity.typesafe.response.Answer;
-import org.springaicommunity.typesafe.response.AnswerType;
-import org.springaicommunity.typesafe.response.ChoiceAnswer;
-import org.springaicommunity.typesafe.response.NoulAnswer;
-import org.springaicommunity.typesafe.response.ScoreAnswer;
-import org.springaicommunity.typesafe.response.SystemOneResponse;
-import org.springaicommunity.typesafe.response.UnknownAnswer;
-import org.springaicommunity.typesafe.response.Usage;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.annotation.JsonDeserialize;
 
+import org.springframework.ai.systemone.api.JsonContent;
+import org.springframework.ai.systemone.api.question.Choice;
+import org.springframework.ai.systemone.api.question.Noul;
+import org.springframework.ai.systemone.api.question.NoulCriteria;
+import org.springframework.ai.systemone.api.question.Question;
+import org.springframework.ai.systemone.api.question.QuestionType;
+import org.springframework.ai.systemone.api.question.Score;
+import org.springframework.ai.systemone.api.question.SystemOneRequest;
+import org.springframework.ai.systemone.api.response.Answer;
+import org.springframework.ai.systemone.api.response.AnswerType;
+import org.springframework.ai.systemone.api.response.ChoiceAnswer;
+import org.springframework.ai.systemone.api.response.ListModelsResponse;
+import org.springframework.ai.systemone.api.response.ModelMetadata;
+import org.springframework.ai.systemone.api.response.NoulAnswer;
+import org.springframework.ai.systemone.api.response.ScoreAnswer;
+import org.springframework.ai.systemone.api.response.SystemOneResponse;
+import org.springframework.ai.systemone.api.response.UnknownAnswer;
+import org.springframework.ai.systemone.api.response.Usage;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -60,7 +62,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
  */
 class SystemOneRuntimeHintsTests {
 
-	private static final String TYPESAFE_PACKAGE = "org.springaicommunity.typesafe.";
+	private static final String SYSTEM_ONE_PACKAGE = "org.springframework.ai.systemone.api.";
 
 	private final RuntimeHints hints = new RuntimeHints();
 
@@ -82,13 +84,13 @@ class SystemOneRuntimeHintsTests {
 	}
 
 	@Test
-	void registerExactlyTheTypeSafeSdkTypesUsedByTheDecisionModel() throws Exception {
+	void registerExactlyTheSystemOneApiTypesUsedByTheDecisionModel() throws Exception {
 		this.registrar.registerHints(this.hints, getClass().getClassLoader());
 
 		Set<String> registeredTypes = new HashSet<>();
 		this.hints.reflection().typeHints().map(typeHint -> typeHint.getType().getName()).forEach(registeredTypes::add);
 
-		Set<Class<?>> expectedTypes = expectedTypeSafeTypes();
+		Set<Class<?>> expectedTypes = expectedSystemOneTypes();
 		assertThat(registeredTypes)
 			.containsExactlyInAnyOrderElementsOf(expectedTypes.stream().map(Class::getName).toList());
 		for (Class<?> type : expectedTypes) {
@@ -97,19 +99,19 @@ class SystemOneRuntimeHintsTests {
 	}
 
 	@Test
-	void expectedTypeSafeSdkTypesCoverEveryTypeTheyReach() throws Exception {
-		Set<Class<?>> expectedTypes = expectedTypeSafeTypes();
+	void expectedSystemOneApiTypesCoverEveryTypeTheyReach() throws Exception {
+		Set<Class<?>> expectedTypes = expectedSystemOneTypes();
 
-		// A question or answer kind added to the SDK must be registered too
+		// A question or answer kind added to the client must be registered too
 		assertThat(expectedTypes).contains(Question.class.getPermittedSubclasses())
 			.contains(Answer.class.getPermittedSubclasses());
 
-		// And so must a type the SDK records start to hold
+		// And so must a type the API records start to hold
 		Set<Class<?>> reachedTypes = new HashSet<>();
 		for (Class<?> type : expectedTypes) {
 			if (type.isRecord()) {
 				for (RecordComponent component : type.getRecordComponents()) {
-					collectTypeSafeTypes(component.getGenericType(), reachedTypes);
+					collectSystemOneTypes(component.getGenericType(), reachedTypes);
 				}
 			}
 		}
@@ -117,11 +119,11 @@ class SystemOneRuntimeHintsTests {
 	}
 
 	/**
-	 * The TypeSafe SDK types the decision model sends and receives as JSON, including the
+	 * The System One API types the client sends and receives as JSON, including the
 	 * package-private answer deserializer the registrar can only name. Listed here on
 	 * their own, not taken from the registrar, so that a type dropped from it is caught.
 	 */
-	private static Set<Class<?>> expectedTypeSafeTypes() throws NoSuchMethodException {
+	private static Set<Class<?>> expectedSystemOneTypes() throws NoSuchMethodException {
 		// Reached through the annotation that uses it: the answers parameter of the
 		// constructor Jackson creates the response with
 		Class<?> answerDeserializer = SystemOneResponse.class
@@ -133,17 +135,17 @@ class SystemOneRuntimeHintsTests {
 		return Set.of(SystemOneRequest.class, Question.class, QuestionType.class, Noul.class, NoulCriteria.class,
 				Choice.class, Score.class, JsonContent.class, SystemOneResponse.class, Answer.class, AnswerType.class,
 				answerDeserializer, NoulAnswer.class, ChoiceAnswer.class, ScoreAnswer.class, UnknownAnswer.class,
-				Usage.class);
+				Usage.class, ListModelsResponse.class, ModelMetadata.class);
 	}
 
-	private static void collectTypeSafeTypes(Type type, Set<Class<?>> collected) {
-		if (type instanceof Class<?> clazz && clazz.getName().startsWith(TYPESAFE_PACKAGE)) {
+	private static void collectSystemOneTypes(Type type, Set<Class<?>> collected) {
+		if (type instanceof Class<?> clazz && clazz.getName().startsWith(SYSTEM_ONE_PACKAGE)) {
 			collected.add(clazz);
 		}
 		else if (type instanceof ParameterizedType parameterizedType) {
-			collectTypeSafeTypes(parameterizedType.getRawType(), collected);
+			collectSystemOneTypes(parameterizedType.getRawType(), collected);
 			for (Type argument : parameterizedType.getActualTypeArguments()) {
-				collectTypeSafeTypes(argument, collected);
+				collectSystemOneTypes(argument, collected);
 			}
 		}
 	}

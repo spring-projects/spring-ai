@@ -17,7 +17,6 @@
 package org.springframework.ai.model.ollama.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
-import org.springaicommunity.typesafe.TypeSafeClient;
 
 import org.springframework.ai.decision.observation.DecisionModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
@@ -26,6 +25,7 @@ import org.springframework.ai.ollama.OllamaDecisionModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.ai.systemone.api.SystemOneClient;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -39,17 +39,18 @@ import org.springframework.web.client.RestClient;
  * {@link AutoConfiguration Auto-configuration} for Ollama Decision Model.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 2.1.0
  */
 @AutoConfiguration
-@ConditionalOnClass({ OllamaDecisionModel.class, TypeSafeClient.class })
+@ConditionalOnClass({ OllamaDecisionModel.class, SystemOneClient.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.DECISION_MODEL, havingValue = SpringAIModels.OLLAMA,
 		matchIfMissing = true)
 @EnableConfigurationProperties({ OllamaDecisionProperties.class, OllamaInitializationProperties.class })
 public class OllamaDecisionAutoConfiguration {
 
 	/**
-	 * Ollama ignores the API key, but the SystemOne SDK requires one.
+	 * Ollama ignores the API key, but the {@code SystemOneClient} requires one.
 	 */
 	private static final String PLACEHOLDER_API_KEY = "ollama";
 
@@ -64,7 +65,7 @@ public class OllamaDecisionAutoConfiguration {
 				: PullModelStrategy.NEVER;
 
 		// The System One client talks to the same Ollama server as the Ollama API.
-		var systemOneClient = TypeSafeClient.builder()
+		var systemOneClient = SystemOneClient.builder()
 			.baseUrl(connectionDetails.getBaseUrl())
 			.apiKey(PLACEHOLDER_API_KEY)
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))

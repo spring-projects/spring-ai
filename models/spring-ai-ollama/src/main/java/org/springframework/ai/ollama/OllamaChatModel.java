@@ -43,6 +43,7 @@ import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -220,6 +221,22 @@ public class OllamaChatModel implements ChatModel {
 			.build();
 	}
 
+	/**
+	 * Classifies the reason a response is done. Ollama reports no safety stop, and
+	 * reports an ordinary stop when the model asks for a tool.
+	 */
+	static FinishReasonCategory finishReasonCategory(@Nullable String doneReason, boolean hasToolCalls) {
+		if (!StringUtils.hasText(doneReason)) {
+			return FinishReasonCategory.UNSPECIFIED;
+		}
+		return switch (doneReason) {
+			case "stop" -> hasToolCalls ? FinishReasonCategory.TOOL_CALL : FinishReasonCategory.COMPLETED;
+			case "length" -> FinishReasonCategory.TRUNCATED;
+			// "load" and "unload" of a model, and anything new
+			default -> FinishReasonCategory.OTHER;
+		};
+	}
+
 	private static DefaultUsage getDefaultUsage(OllamaApi.ChatResponse response) {
 		return new DefaultUsage(Optional.ofNullable(response.promptEvalCount()).orElse(0),
 				Optional.ofNullable(response.evalCount()).orElse(0));
@@ -264,7 +281,9 @@ public class OllamaChatModel implements ChatModel {
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 				if (ollamaResponse.promptEvalCount() != null && ollamaResponse.evalCount() != null) {
 					ChatGenerationMetadata.Builder builder = ChatGenerationMetadata.builder()
-						.finishReason(ollamaResponse.doneReason());
+						.finishReason(ollamaResponse.doneReason())
+						.finishReasonCategory(
+								finishReasonCategory(ollamaResponse.doneReason(), assistantMessage.hasToolCalls()));
 					if (thinking != null) {
 						builder.metadata(THINKING_METADATA_KEY, thinking);
 					}
@@ -334,6 +353,8 @@ public class OllamaChatModel implements ChatModel {
 					ChatGenerationMetadata.Builder builder = ChatGenerationMetadata.builder();
 					if (hasEvalCount) {
 						builder.finishReason(chunk.doneReason());
+						builder.finishReasonCategory(
+								finishReasonCategory(chunk.doneReason(), assistantMessage.hasToolCalls()));
 					}
 					if (thinking != null) {
 						builder.metadata(THINKING_METADATA_KEY, thinking);

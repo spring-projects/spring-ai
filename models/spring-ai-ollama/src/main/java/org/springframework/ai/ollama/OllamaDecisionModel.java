@@ -20,9 +20,6 @@ import java.util.Objects;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
-import org.springaicommunity.typesafe.TypeSafeClient;
-import org.springaicommunity.typesafe.question.SystemOneRequest;
-import org.springaicommunity.typesafe.response.SystemOneResponse;
 
 import org.springframework.ai.decision.DecisionModel;
 import org.springframework.ai.decision.DecisionPrompt;
@@ -39,6 +36,9 @@ import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.ai.systemone.SystemOneDecisionMapper;
+import org.springframework.ai.systemone.api.SystemOneClient;
+import org.springframework.ai.systemone.api.question.SystemOneRequest;
+import org.springframework.ai.systemone.api.response.SystemOneResponse;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -61,11 +61,11 @@ public class OllamaDecisionModel implements DecisionModel {
 
 	private final OllamaDecisionOptions decisionOptions;
 
-	private final TypeSafeClient systemOneClient;
+	private final SystemOneClient systemOneClient;
 
 	OllamaDecisionModel(DecisionModelObservationConvention observationConvention,
 			ModelManagementOptions modelManagementOptions, OllamaDecisionOptions decisionOptions,
-			ObservationRegistry observationRegistry, OllamaApi ollamaApi, TypeSafeClient systemOneClient) {
+			ObservationRegistry observationRegistry, OllamaApi ollamaApi, SystemOneClient systemOneClient) {
 		Assert.hasText(decisionOptions.getModel(), "options must name a model");
 		this.decisionOptions = decisionOptions;
 		this.observationConvention = observationConvention;
@@ -139,7 +139,7 @@ public class OllamaDecisionModel implements DecisionModel {
 
 		private @Nullable OllamaApi ollamaApi;
 
-		private @Nullable TypeSafeClient systemOneClient;
+		private @Nullable SystemOneClient systemOneClient;
 
 		private Builder() {
 		}
@@ -169,7 +169,7 @@ public class OllamaDecisionModel implements DecisionModel {
 			return this;
 		}
 
-		public Builder systemOneClient(TypeSafeClient systemOneClient) {
+		public Builder systemOneClient(SystemOneClient systemOneClient) {
 			this.systemOneClient = systemOneClient;
 			return this;
 		}

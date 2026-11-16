@@ -125,6 +125,14 @@ On every save the repository copies the metadata entries whose keys are configur
 
 *The `synthetic` column* is stored on its own, not only in the metadata JSON, so `excludeSynthetic` is a SQL predicate rather than an in-process scan.
 
+*Search.*
+`searchEvents` is one query over the session's message rows: one `LOWER(COALESCE(message_content, '')) LIKE LOWER(?) ESCAPE '!'` predicate per keyword, joined with `OR` or `AND`, ordered by `seq`.
+The database lower-cases both sides, so one set of rules folds the keyword and the text.
+The keyword is bound between two `%`, with `!`, `%` and `_` escaped, and `[` too on SQL Server, so it matches as text.
+A page is read from the first match on: the query is limited to the page and the pages before it, and the repository keeps the page.
+There is no text index: the search scans the rows of one session, which the `(session_id, seq)` index bounds.
+A dialect can change the predicate and the bound value with `getKeywordPredicate()` and `toKeywordParameter(keyword)`.
+
 == Auto-configuration
 
 The starter, `spring-ai-starter-model-session-jdbc`, brings the two auto-configurations with Spring Boot's JDBC starter.
@@ -177,6 +185,9 @@ Filtering and windowing are the backend's job, because their cost grows with the
 `EventFilter.apply(events)` is the reference implementation for a log held as a list; use it for what the store cannot express.
 A view read fetches the rows the newest boundary names plus the rows from the boundary on, and lets `EventFilter.apply` project, filter and window them.
 A `lastN` window keeps turns whole, as xref:api/session/event-filter.adoc#session-event-filter-turns[the filter page] describes.
+* *A search can be pushed down too.*
+`searchEvents(sessionId, query)` has a default that reads the log and runs `EventQuery.apply(events)`.
+Override it when the store can match text in its query, and agree with the reference: the whole log, message events only, never synthetic ones, oldest first.
 * *Events have one persisted shape.*
 `SessionEventCodec` encodes an event into its type, message type, text and JSON payload, and decodes it back.
 * *Compaction is an append.*

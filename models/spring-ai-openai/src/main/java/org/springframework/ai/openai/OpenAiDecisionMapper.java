@@ -30,6 +30,7 @@ import com.openai.models.decisions.DecisionChoiceOption;
 import com.openai.models.decisions.DecisionChoiceValue;
 import com.openai.models.decisions.DecisionCreateParams;
 import com.openai.models.decisions.DecisionInputImage;
+import com.openai.models.decisions.DecisionInputItem;
 import com.openai.models.decisions.DecisionInputMessage;
 import com.openai.models.decisions.DecisionInputPart;
 import com.openai.models.decisions.DecisionInputText;
@@ -123,8 +124,10 @@ final class OpenAiDecisionMapper {
 			// Unreachable while DecisionInput is sealed to the three kinds above.
 			throw new IllegalStateException("Unexpected decision input of type " + input.getClass().getName());
 		}
+		DecisionInputMessage message = DecisionInputMessage
+			.ofUser(DecisionInputMessage.User.builder().contentOfParts(parts).build());
 		return DecisionCreateParams.Input
-			.ofDecisionInputMessages(List.of(DecisionInputMessage.builder().contentOfParts(parts).build()));
+			.ofDecisionInputItems(List.of(DecisionInputItem.ofDecisionInputMessage(message)));
 	}
 
 	/**

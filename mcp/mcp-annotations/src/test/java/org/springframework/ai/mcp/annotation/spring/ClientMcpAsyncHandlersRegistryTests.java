@@ -103,6 +103,19 @@ class ClientMcpAsyncHandlersRegistryTests {
 	}
 
 	@Test
+	void formAndUrlHandlersForOneClientAreNotToldApart() {
+		var registry = new ClientMcpAsyncHandlersRegistry();
+		var beanFactory = new DefaultListableBeanFactory();
+		beanFactory.registerBeanDefinition("elicitationConfig",
+				BeanDefinitionBuilder.genericBeanDefinition(FormAndUrlElicitationHandlerConfiguration.class)
+					.getBeanDefinition());
+		assertThatThrownBy(() -> registry.postProcessBeanFactory(beanFactory))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage(
+					"Found 2 elicitation handlers for client [client-1], found in bean with names [elicitationConfig]. Only one @McpElicitation handler is allowed per client");
+	}
+
+	@Test
 	void twoHandlersSampling() {
 		var registry = new ClientMcpAsyncHandlersRegistry();
 		var beanFactory = new DefaultListableBeanFactory();
@@ -368,6 +381,20 @@ class ClientMcpAsyncHandlersRegistryTests {
 
 		@McpSampling(clients = { "client-1" })
 		public Mono<McpSchema.CreateMessageResult> samplingHandler(McpSchema.CreateMessageRequest request) {
+			return Mono.empty();
+		}
+
+	}
+
+	static class FormAndUrlElicitationHandlerConfiguration {
+
+		@McpElicitation(clients = { "client-1" })
+		public Mono<McpSchema.ElicitResult> form(McpSchema.ElicitFormRequest request) {
+			return Mono.empty();
+		}
+
+		@McpElicitation(clients = { "client-1" })
+		public Mono<McpSchema.ElicitResult> url(McpSchema.ElicitUrlRequest request) {
 			return Mono.empty();
 		}
 

@@ -3,7 +3,7 @@
 With https://ollama.com/[Ollama], you can run decision models on your own machine and use them through the xref:api/decision.adoc[Decision Models] API.
 A decision model picks one result from a known set of possible results, such as yes or no, one of a few categories, or a level on a scale, and tells you how likely each result is.
 
-`OllamaDecisionModel` uses the Ollama https://docs.ollama.com/capabilities/decision[decision] endpoint, `/v1/systemone`, through the https://github.com/spring-ai-community/spring-ai-typesafe[TypeSafe Java SDK].
+`OllamaDecisionModel` uses the Ollama https://docs.ollama.com/capabilities/decision[decision] endpoint, `/v1/systemone`, through the `SystemOneClient` of the xref:api/decision/systemone-decision.adoc[`spring-ai-systemone`] module.
 This endpoint is separate from chat, and only models with the `decision` capability can use it.
 
 == Prerequisites
@@ -56,7 +56,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-The starter includes the TypeSafe Java SDK that the decision model needs.
+The starter includes the `spring-ai-systemone` module that the decision model needs.
 If your application doesn't use the decision model, turn off its auto-configuration with `spring.ai.model.decision=none`, as described in <<decision-properties>>.
 
 === Connection Properties
@@ -70,8 +70,7 @@ The prefix `spring.ai.ollama` is the property prefix to configure the connection
 |====
 
 The decision model sends its requests to the same Ollama server as the chat and embedding models.
-Ollama needs no API key, so the auto-configuration gives the TypeSafe SDK a placeholder key.
-The `TYPESAFE_API_KEY` and `TYPESAFE_BASE_URL` environment variables of the SDK are not used.
+Ollama needs no API key, so the auto-configuration gives the `SystemOneClient` a placeholder key.
 
 The following properties configure the Ollama initialization and the <<auto-pulling-models,automatic pulling of models>>.
 
@@ -228,15 +227,15 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 The model needs two clients for the same Ollama server:
 
 * an `OllamaApi`, to pull models;
-* a `TypeSafeClient`, to send the decisions.
+* a `SystemOneClient`, to send the decisions.
 
-Ollama needs no API key, but the `TypeSafeClient` requires one, so give it any value that is not empty.
+Ollama needs no API key, but the `SystemOneClient` requires one, so give it any value that is not empty.
 
 [source,java]
 ----
 OllamaApi ollamaApi = OllamaApi.builder().build();
 
-TypeSafeClient systemOneClient = TypeSafeClient.builder()
+SystemOneClient systemOneClient = SystemOneClient.builder()
     .baseUrl("http://localhost:11434")
     .apiKey("ollama")
     .build();

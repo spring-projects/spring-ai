@@ -22,12 +22,6 @@ import java.util.Map;
 
 import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import org.junit.jupiter.api.Test;
-import org.springaicommunity.typesafe.JsonContent;
-import org.springaicommunity.typesafe.response.ChoiceAnswer;
-import org.springaicommunity.typesafe.response.NoulAnswer;
-import org.springaicommunity.typesafe.response.ScoreAnswer;
-import org.springaicommunity.typesafe.response.SystemOneResponse;
-import org.springaicommunity.typesafe.response.Usage;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -41,6 +35,12 @@ import org.springframework.ai.decision.input.DecisionInput;
 import org.springframework.ai.decision.question.ChoiceQuestion;
 import org.springframework.ai.decision.question.ScoreQuestion;
 import org.springframework.ai.decision.question.YesNoQuestion;
+import org.springframework.ai.systemone.api.JsonContent;
+import org.springframework.ai.systemone.api.response.ChoiceAnswer;
+import org.springframework.ai.systemone.api.response.NoulAnswer;
+import org.springframework.ai.systemone.api.response.ScoreAnswer;
+import org.springframework.ai.systemone.api.response.SystemOneResponse;
+import org.springframework.ai.systemone.api.response.Usage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -193,7 +193,7 @@ class SystemOneDecisionMapperTests {
 						.build())
 			.question("satisfaction", SATISFACTION)
 			.build();
-		Map<String, org.springaicommunity.typesafe.response.Answer> answers = new LinkedHashMap<>();
+		Map<String, org.springframework.ai.systemone.api.response.Answer> answers = new LinkedHashMap<>();
 		answers.put("defect", new NoulAnswer(0.95));
 		answers.put("topic", new ChoiceAnswer("product", Map.of("product", 0.75, "delivery", 0.25), 0.7));
 		answers.put("satisfaction", new ScoreAnswer(0.8, Map.of(), Map.of(0, 0.3, 1, 0.6, 2, 0.1), 0.4));

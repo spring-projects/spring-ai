@@ -23,11 +23,13 @@ import java.util.stream.Stream;
 
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.util.Assert;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpResourceListChanged;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.method.changed.resource.AsyncMcpResourceListChangedMethodCallback;
+import org.springframework.ai.mcp.annotation.method.changed.resource.AsyncModernResourceListChangedSpecification;
 import org.springframework.ai.mcp.annotation.method.changed.resource.AsyncResourceListChangedSpecification;
 
 /**
@@ -63,6 +65,8 @@ public class AsyncMcpResourceListChangedProvider {
 
 	private final List<Object> resourceListChangedConsumerObjects;
 
+	private @Nullable List<HandlerMethod> handlerMethods;
+
 	/**
 	 * Create a new AsyncMcpResourceListChangedProvider.
 	 * @param resourceListChangedConsumerObjects the objects containing methods annotated
@@ -78,31 +82,57 @@ public class AsyncMcpResourceListChangedProvider {
 	 * @return the list of resource list changed consumer specifications
 	 */
 	public List<AsyncResourceListChangedSpecification> getResourceListChangedSpecifications() {
+		return this.handlerMethods().stream().map(handlerMethod -> {
+			Function<List<McpSchema.Resource>, Mono<Void>> methodCallback = handlerMethod.callback();
+			return new AsyncResourceListChangedSpecification(handlerMethod.clients(), methodCallback);
+		}).toList();
+	}
 
-		List<AsyncResourceListChangedSpecification> resourceListChangedConsumers = this.resourceListChangedConsumerObjects
+	/**
+	 * Get the resource list changed specifications for the connections that speak the
+	 * 2026-07-28 ("modern") MCP revision. They are created from the same
+	 * {@link McpResourceListChanged} methods as
+	 * {@link #getResourceListChangedSpecifications()}, and with the same callbacks: a
+	 * method serves the connections of both protocols, whichever schema type its list
+	 * has.
+	 * @return the modern resource list changed specifications
+	 * @since 2.1.0
+	 */
+	public List<AsyncModernResourceListChangedSpecification> getModernResourceListChangedSpecifications() {
+		return this.handlerMethods()
 			.stream()
-			.map(consumerObject -> Stream.of(doGetClassMethods(consumerObject))
-				.filter(method -> method.isAnnotationPresent(McpResourceListChanged.class))
-				.filter(McpPredicates.filterNonReactiveReturnTypeMethod())
-				.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
-				.map(mcpResourceListChangedConsumerMethod -> {
-					var resourceListChangedAnnotation = mcpResourceListChangedConsumerMethod
-						.getAnnotation(McpResourceListChanged.class);
-
-					Function<List<McpSchema.Resource>, Mono<Void>> methodCallback = AsyncMcpResourceListChangedMethodCallback
-						.builder()
-						.method(mcpResourceListChangedConsumerMethod)
-						.bean(consumerObject)
-						.build();
-
-					return new AsyncResourceListChangedSpecification(resourceListChangedAnnotation.clients(),
-							methodCallback);
-				})
-				.toList())
-			.flatMap(List::stream)
+			.map(handlerMethod -> new AsyncModernResourceListChangedSpecification(handlerMethod.clients(),
+					handlerMethod.callback()::applyModern))
 			.toList();
+	}
 
-		return resourceListChangedConsumers;
+	/**
+	 * The reactive {@link McpResourceListChanged} methods with their callbacks. The
+	 * objects are scanned once, on first use, so that each method gets one callback,
+	 * which the legacy and the modern specifications share.
+	 */
+	private List<HandlerMethod> handlerMethods() {
+		List<HandlerMethod> handlerMethods = this.handlerMethods;
+		if (handlerMethods == null) {
+			handlerMethods = this.resourceListChangedConsumerObjects.stream()
+				.flatMap(consumerObject -> Stream.of(doGetClassMethods(consumerObject))
+					.filter(method -> method.isAnnotationPresent(McpResourceListChanged.class))
+					.filter(McpPredicates.filterNonReactiveReturnTypeMethod())
+					.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
+					.map(mcpResourceListChangedConsumerMethod -> {
+						var resourceListChangedAnnotation = mcpResourceListChangedConsumerMethod
+							.getAnnotation(McpResourceListChanged.class);
+						AsyncMcpResourceListChangedMethodCallback methodCallback = AsyncMcpResourceListChangedMethodCallback
+							.builder()
+							.method(mcpResourceListChangedConsumerMethod)
+							.bean(consumerObject)
+							.build();
+						return new HandlerMethod(resourceListChangedAnnotation.clients(), methodCallback);
+					}))
+				.toList();
+			this.handlerMethods = handlerMethods;
+		}
+		return handlerMethods;
 	}
 
 	/**
@@ -112,6 +142,12 @@ public class AsyncMcpResourceListChangedProvider {
 	 */
 	protected Method[] doGetClassMethods(Object bean) {
 		return bean.getClass().getDeclaredMethods();
+	}
+
+	/**
+	 * The clients an annotated method names and its callback.
+	 */
+	private record HandlerMethod(String[] clients, AsyncMcpResourceListChangedMethodCallback callback) {
 	}
 
 }

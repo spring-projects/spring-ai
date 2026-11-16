@@ -23,6 +23,8 @@ import java.util.function.Consumer;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import org.springframework.ai.mcp.annotation.McpResourceListChanged;
+import org.springframework.ai.mcp.annotation.common.ModernClientHandlerSupport;
+import org.springframework.core.ResolvableType;
 
 /**
  * Class for creating Consumer callbacks around resource list changed consumer methods.
@@ -37,8 +39,15 @@ import org.springframework.ai.mcp.annotation.McpResourceListChanged;
 public final class SyncMcpResourceListChangedMethodCallback extends AbstractMcpResourceListChangedMethodCallback
 		implements Consumer<List<McpSchema.Resource>> {
 
+	/** Whether the method takes a list of the modern schema's type. */
+	private final boolean modernElements;
+
 	private SyncMcpResourceListChangedMethodCallback(Builder builder) {
 		super(builder.method, builder.bean);
+		this.modernElements = ResolvableType.forMethodParameter(this.method, 0)
+			.asCollection()
+			.getGeneric(0)
+			.resolve() == io.modelcontextprotocol.modern.McpSchema.Resource.class;
 	}
 
 	/**
@@ -59,6 +68,38 @@ public final class SyncMcpResourceListChangedMethodCallback extends AbstractMcpR
 		try {
 			// Build arguments for the method call
 			Object[] args = this.buildArgs(this.method, null, updatedResources);
+			if (this.modernElements) {
+				args[0] = ModernClientHandlerSupport.toModernResources(updatedResources);
+			}
+
+			// Invoke the method
+			this.method.setAccessible(true);
+			this.method.invoke(this.bean, args);
+		}
+		catch (Exception e) {
+			throw new McpResourceListChangedConsumerMethodException(
+					"Error invoking resource list changed consumer method: " + this.method.getName(), e);
+		}
+	}
+
+	/**
+	 * Accept the resources of a client that speaks the 2026-07-28 ("modern") MCP
+	 * revision. The method receives them in the schema type that it declares, so one
+	 * method serves the clients of both protocols.
+	 * @param updatedResources the resources of the server, in the modern schema type
+	 * @throws McpResourceListChangedConsumerMethodException if there is an error invoking
+	 * the method
+	 * @throws IllegalArgumentException if the list is null
+	 * @since 2.1.0
+	 */
+	public void acceptModern(List<io.modelcontextprotocol.modern.McpSchema.Resource> updatedResources) {
+		if (updatedResources == null) {
+			throw new IllegalArgumentException("Updated resources list must not be null");
+		}
+
+		try {
+			Object[] args = { this.modernElements ? updatedResources
+					: ModernClientHandlerSupport.toLegacyResources(updatedResources) };
 
 			// Invoke the method
 			this.method.setAccessible(true);

@@ -30,12 +30,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springaicommunity.typesafe.TypeSafeClient;
-import org.springaicommunity.typesafe.exception.TypeSafeException;
-import org.springaicommunity.typesafe.question.SystemOneRequest;
-import org.springaicommunity.typesafe.response.NoulAnswer;
-import org.springaicommunity.typesafe.response.SystemOneResponse;
-import org.springaicommunity.typesafe.response.Usage;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.decision.DecisionOptions;
@@ -52,6 +46,12 @@ import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.decision.OllamaDecisionOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.ai.systemone.api.SystemOneClient;
+import org.springframework.ai.systemone.api.exception.SystemOneException;
+import org.springframework.ai.systemone.api.question.SystemOneRequest;
+import org.springframework.ai.systemone.api.response.NoulAnswer;
+import org.springframework.ai.systemone.api.response.SystemOneResponse;
+import org.springframework.ai.systemone.api.response.Usage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -77,7 +77,7 @@ class OllamaDecisionModelTests {
 	OllamaApi ollamaApi;
 
 	@Mock
-	TypeSafeClient systemOneClient;
+	SystemOneClient systemOneClient;
 
 	@Captor
 	ArgumentCaptor<SystemOneRequest> systemOneRequestCaptor;
@@ -256,7 +256,7 @@ class OllamaDecisionModelTests {
 	@Test
 	void propagatesClientErrorsAndRecordsThemInTheObservation() {
 		given(this.systemOneClient.systemOne(any(SystemOneRequest.class)))
-			.willThrow(new TypeSafeException("model not found"));
+			.willThrow(new SystemOneException("model not found"));
 		var observationRegistry = TestObservationRegistry.create();
 
 		var decisionModel = OllamaDecisionModel.builder()
@@ -266,7 +266,7 @@ class OllamaDecisionModelTests {
 			.observationRegistry(observationRegistry)
 			.build();
 
-		assertThatThrownBy(() -> decisionModel.call(orderPrompt(null))).isInstanceOf(TypeSafeException.class)
+		assertThatThrownBy(() -> decisionModel.call(orderPrompt(null))).isInstanceOf(SystemOneException.class)
 			.hasMessageContaining("model not found");
 		TestObservationRegistryAssert.assertThat(observationRegistry)
 			.hasObservationWithNameEqualTo(DefaultDecisionModelObservationConvention.DEFAULT_NAME)

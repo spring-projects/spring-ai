@@ -91,6 +91,30 @@ public final class AsyncMcpAnnotationProviders {
 		return new SpringAiAsyncMcpProgressProvider(progressObjects).getProgressSpecifications();
 	}
 
+	/**
+	 * The provider of the elicitation handlers of the given objects. One provider creates
+	 * the handlers for the legacy clients and those for the clients of the 2026-07-28
+	 * ("modern") MCP revision from the same callbacks.
+	 * @param elicitationObjects the objects with the {@code @McpElicitation} methods
+	 * @return the elicitation provider
+	 * @since 2.1.0
+	 */
+	public static AsyncMcpElicitationProvider elicitationProvider(List<Object> elicitationObjects) {
+		return new SpringAiAsyncMcpElicitationProvider(elicitationObjects);
+	}
+
+	/**
+	 * The provider of the progress handlers of the given objects. One provider creates
+	 * the handlers for the legacy clients and those for the clients of the 2026-07-28
+	 * ("modern") MCP revision from the same callbacks.
+	 * @param progressObjects the objects with the {@code @McpProgress} methods
+	 * @return the progress provider
+	 * @since 2.1.0
+	 */
+	public static AsyncMcpProgressProvider progressProvider(List<Object> progressObjects) {
+		return new SpringAiAsyncMcpProgressProvider(progressObjects);
+	}
+
 	// TOOL
 	public static List<AsyncToolSpecification> toolSpecifications(List<Object> toolObjects) {
 		return new SpringAiAsyncMcpToolProvider(toolObjects).getToolSpecifications();
@@ -264,10 +288,37 @@ public final class AsyncMcpAnnotationProviders {
 			.getResourceListChangedSpecifications();
 	}
 
+	/**
+	 * The provider of the resource list changed handlers of the given objects. One
+	 * provider creates the handlers for the legacy clients and those for the clients of
+	 * the 2026-07-28 ("modern") MCP revision from the same callbacks.
+	 * @param resourceListChangedObjects the objects with the
+	 * {@code @McpResourceListChanged} methods
+	 * @return the resource list changed provider
+	 * @since 2.1.0
+	 */
+	public static AsyncMcpResourceListChangedProvider resourceListChangedProvider(
+			List<Object> resourceListChangedObjects) {
+		return new SpringAiAsyncMcpResourceListChangedProvider(resourceListChangedObjects);
+	}
+
 	// TOOL LIST CHANGED
 	public static List<AsyncToolListChangedSpecification> toolListChangedSpecifications(
 			List<Object> toolListChangedObjects) {
 		return new SpringAiAsyncMcpToolListChangedProvider(toolListChangedObjects).getToolListChangedSpecifications();
+	}
+
+	/**
+	 * The provider of the tool list changed handlers of the given objects. One provider
+	 * creates the handlers for the legacy clients and those for the clients of the
+	 * 2026-07-28 ("modern") MCP revision from the same callbacks.
+	 * @param toolListChangedObjects the objects with the {@code @McpToolListChanged}
+	 * methods
+	 * @return the tool list changed provider
+	 * @since 2.1.0
+	 */
+	public static AsyncMcpToolListChangedProvider toolListChangedProvider(List<Object> toolListChangedObjects) {
+		return new SpringAiAsyncMcpToolListChangedProvider(toolListChangedObjects);
 	}
 
 	// PROMPT LIST CHANGED
@@ -275,6 +326,19 @@ public final class AsyncMcpAnnotationProviders {
 			List<Object> promptListChangedObjects) {
 		return new SpringAiAsyncMcpPromptListChangedProvider(promptListChangedObjects)
 			.getPromptListChangedSpecifications();
+	}
+
+	/**
+	 * The provider of the prompt list changed handlers of the given objects. One provider
+	 * creates the handlers for the legacy clients and those for the clients of the
+	 * 2026-07-28 ("modern") MCP revision from the same callbacks.
+	 * @param promptListChangedObjects the objects with the {@code @McpPromptListChanged}
+	 * methods
+	 * @return the prompt list changed provider
+	 * @since 2.1.0
+	 */
+	public static AsyncMcpPromptListChangedProvider promptListChangedProvider(List<Object> promptListChangedObjects) {
+		return new SpringAiAsyncMcpPromptListChangedProvider(promptListChangedObjects);
 	}
 
 	// LOGGING (CLIENT)

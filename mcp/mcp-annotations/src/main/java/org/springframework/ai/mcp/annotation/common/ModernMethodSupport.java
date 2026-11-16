@@ -31,10 +31,12 @@ import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.modern.McpException;
 import io.modelcontextprotocol.modern.McpSchema;
 import io.modelcontextprotocol.modern.McpSchema.ClientCapabilities;
+import io.modelcontextprotocol.modern.McpSchema.ElicitInputRequest;
 import io.modelcontextprotocol.modern.McpSchema.ElicitUrlRequest;
 import io.modelcontextprotocol.modern.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.modern.McpSchema.InputRequest;
 import io.modelcontextprotocol.modern.McpSchema.InputRequiredResult;
+import io.modelcontextprotocol.modern.McpSchema.UnknownInputRequest;
 import io.modelcontextprotocol.modern.server.McpAsyncNotifier;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
 import io.modelcontextprotocol.modern.server.McpSyncNotifier;
@@ -216,7 +218,7 @@ public final class ModernMethodSupport {
 		for (InputRequest request : inputRequired.inputRequests().values()) {
 			switch (request.method()) {
 				case McpSchema.METHOD_ELICITATION_CREATE -> {
-					if (isUrlElicitation(request.params())) {
+					if (isUrlElicitation(request)) {
 						if (!declared.supportsElicitationUrl()) {
 							missing.add(McpClientCapability.ELICITATION_URL);
 						}
@@ -271,16 +273,16 @@ public final class ModernMethodSupport {
 	}
 
 	/**
-	 * An elicitation is URL mode when its params say so: the SDK record, or any other
-	 * representation (a map built by hand, or one round-tripped through JSON) whose
-	 * {@code mode} field is {@code "url"}. Everything else is form mode, the default.
+	 * An elicitation is URL mode when its params say so: the SDK record, or the params of
+	 * a request that was not typed (a map built by hand) whose {@code mode} field is
+	 * {@code "url"}. Everything else is form mode, the default.
 	 */
-	private static boolean isUrlElicitation(@Nullable Object params) {
-		if (params instanceof ElicitUrlRequest) {
-			return true;
+	private static boolean isUrlElicitation(InputRequest request) {
+		if (request instanceof ElicitInputRequest elicitation) {
+			return elicitation.params() instanceof ElicitUrlRequest;
 		}
-		if (params instanceof Map<?, ?> map) {
-			return ElicitUrlRequest.MODE.equals(map.get("mode"));
+		if (request instanceof UnknownInputRequest untyped && untyped.params() != null) {
+			return ElicitUrlRequest.MODE.equals(untyped.params().get("mode"));
 		}
 		return false;
 	}

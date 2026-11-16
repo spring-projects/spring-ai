@@ -47,6 +47,7 @@ import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.session.EventFilter;
+import org.springframework.ai.session.EventQuery;
 import org.springframework.ai.session.EventType;
 import org.springframework.ai.session.Session;
 import org.springframework.ai.session.SessionAttributes;
@@ -896,6 +897,120 @@ public abstract class AbstractSessionRepositoryContractTests {
 		assertThat(this.repository.getEventVersion(session.id())).isEqualTo(101);
 	}
 
+	// --- Search ---
+
+	@Test
+	void searchFindsKeywordIgnoringCase() {
+		Session session = newSession("user-1");
+		append(session.id(), user("Where is my Invoice?"), assistant("The INVOICE was sent on Monday."),
+				user("Thanks"));
+
+		assertThat(searchTexts(session.id(), EventQuery.keyword("invoice"))).containsExactly("Where is my Invoice?",
+				"The INVOICE was sent on Monday.");
+		assertThat(searchTexts(session.id(), EventQuery.keyword("iNvOiCe"))).hasSize(2);
+		assertThat(searchTexts(session.id(), EventQuery.keyword("refund"))).isEmpty();
+	}
+
+	@Test
+	void searchCombinesKeywordsWithAnyOrAll() {
+		Session session = newSession("user-1");
+		append(session.id(), user("Where is my invoice?"), assistant("It was sent on Monday."),
+				user("I want a refund for that invoice."));
+
+		assertThat(searchTexts(session.id(), EventQuery.builder().keywords("monday", "refund").build()))
+			.containsExactly("It was sent on Monday.", "I want a refund for that invoice.");
+		assertThat(searchTexts(session.id(),
+				EventQuery.builder().keywords("invoice", "refund").matchMode(EventQuery.MatchMode.ALL).build()))
+			.containsExactly("I want a refund for that invoice.");
+		assertThat(searchTexts(session.id(),
+				EventQuery.builder().keywords("monday", "refund").matchMode(EventQuery.MatchMode.ALL).build()))
+			.isEmpty();
+	}
+
+	@Test
+	void searchTakesKeywordAsLiteralText() {
+		Session session = newSession("user-1");
+		append(session.id(), user("plain words only"), user("A 100% match_ing [text]! with a \\ and a ' quote"));
+
+		String special = "A 100% match_ing [text]! with a \\ and a ' quote";
+		// A wildcard of the store's query language is text: it finds the message that
+		// holds it and not the plain one
+		for (String keyword : List.of("%", "_", "100%", "match_", "[text]", "text]!", "a \\ and", "a ' quote")) {
+			assertThat(searchTexts(session.id(), EventQuery.keyword(keyword))).as(keyword).containsExactly(special);
+		}
+		// and it matches nothing as a wildcard
+		for (String keyword : List.of("p%s", "pl_in", "[a-z]lain", "plain%")) {
+			assertThat(searchTexts(session.id(), EventQuery.keyword(keyword))).as(keyword).isEmpty();
+		}
+	}
+
+	@Test
+	void searchReturnsMatchesOldestFirstOnePageAtTime() {
+		Session session = newSession("user-1");
+		for (int i = 0; i < 5; i++) {
+			append(session.id(), user("invoice " + i), assistant("noted"));
+		}
+
+		assertThat(searchTexts(session.id(), EventQuery.builder().keywords("invoice").pageSize(2).build()))
+			.containsExactly("invoice 0", "invoice 1");
+		assertThat(searchTexts(session.id(), EventQuery.builder().keywords("invoice").pageSize(2).page(1).build()))
+			.containsExactly("invoice 2", "invoice 3");
+		assertThat(searchTexts(session.id(), EventQuery.builder().keywords("invoice").pageSize(2).page(2).build()))
+			.containsExactly("invoice 4");
+		assertThat(searchTexts(session.id(), EventQuery.builder().keywords("invoice").pageSize(2).page(3).build()))
+			.isEmpty();
+	}
+
+	@Test
+	void searchNarrowsByMessageTypeAndTime() {
+		Session session = newSession("user-1");
+		Instant start = Instant.parse("2026-01-01T10:00:00Z");
+		this.repository.appendEvent(event(session.id(), user("invoice one"), start));
+		this.repository.appendEvent(event(session.id(), assistant("invoice two"), start.plusSeconds(60)));
+		this.repository.appendEvent(event(session.id(), user("invoice three"), start.plusSeconds(120)));
+
+		assertThat(searchTexts(session.id(),
+				EventQuery.builder().keywords("invoice").messageTypes(Set.of(MessageType.USER)).build()))
+			.containsExactly("invoice one", "invoice three");
+		assertThat(searchTexts(session.id(),
+				EventQuery.builder().keywords("invoice").since(start.plusSeconds(60)).build()))
+			.containsExactly("invoice two", "invoice three");
+		assertThat(searchTexts(session.id(),
+				EventQuery.builder().keywords("invoice").since(start.plusSeconds(121)).build()))
+			.isEmpty();
+	}
+
+	@Test
+	void searchFindsEventsCompactionCoveredAndSkipsSummaries() {
+		Session session = newSession("user-1");
+		SessionEvent question = event(session.id(), user("Where is my invoice?"));
+		SessionEvent answer = event(session.id(), assistant("It was sent on Monday."));
+		SessionEvent thanks = event(session.id(), user("Thanks"));
+		List.of(question, answer, thanks).forEach(this.repository::appendEvent);
+		compact(session.id(), List.of(), summaryTurn(session.id(), "The user asked about an invoice."),
+				List.of(thanks));
+		assertThat(texts(session.id(), EventFilter.active())).doesNotContain("Where is my invoice?");
+
+		// The covered question is found; the summary that repeats it is not
+		assertThat(searchTexts(session.id(), EventQuery.keyword("invoice"))).containsExactly("Where is my invoice?");
+	}
+
+	@Test
+	void searchReadsOnlyMessageTextOfItsSession() {
+		Session session = newSession("user-1");
+		Session other = newSession("user-2");
+		append(session.id(), user("my invoice"), toolCall("c1", "find_invoice"),
+				toolResponse("c1", "find_invoice", "invoice 42"));
+		this.repository.appendEvent(status(session.id(), "invoice"));
+		append(other.id(), user("their invoice"));
+
+		// Not the other session's message, not the status event, not the tool result's
+		// data
+		assertThat(searchTexts(session.id(), EventQuery.keyword("invoice"))).containsExactly("my invoice");
+		assertThat(searchTexts(other.id(), EventQuery.keyword("invoice"))).containsExactly("their invoice");
+		assertThat(this.repository.searchEvents("no-such-session", EventQuery.keyword("invoice"))).isEmpty();
+	}
+
 	// --- Helpers ---
 
 	/** Saves a new session with a random id for the given principal. */
@@ -933,6 +1048,15 @@ public abstract class AbstractSessionRepositoryContractTests {
 
 	protected static SessionEvent event(String sessionId, Message message) {
 		return SessionEvent.builder().sessionId(sessionId).message(message).build();
+	}
+
+	protected static SessionEvent event(String sessionId, Message message, Instant timestamp) {
+		return SessionEvent.builder().sessionId(sessionId).timestamp(timestamp).message(message).build();
+	}
+
+	/** The texts of the events the query finds, in the order returned. */
+	protected List<String> searchTexts(String sessionId, EventQuery query) {
+		return this.repository.searchEvents(sessionId, query).stream().map(e -> e.getMessage().getText()).toList();
 	}
 
 	/** A status event, the simplest event that is not a message. */

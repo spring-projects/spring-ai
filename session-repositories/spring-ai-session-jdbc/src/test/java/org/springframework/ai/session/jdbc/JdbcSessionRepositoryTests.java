@@ -17,6 +17,7 @@
 package org.springframework.ai.session.jdbc;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,6 +60,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * Tests for {@link JdbcSessionRepository} backed by an in-process H2 database.
@@ -66,6 +68,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>
  * Mirrors the contract of {@code InMemorySessionRepositoryTests} so both implementations
  * are verified against the same specification.
+ *
+ * @author Christian Tzolov
  */
 @SpringBootTest
 @TestPropertySource(properties = { "spring.datasource.url=jdbc:h2:mem:sessiontest;DB_CLOSE_DELAY=-1" })
@@ -347,9 +351,118 @@ class JdbcSessionRepositoryTests {
 			.containsExactly("u3", "a3");
 	}
 
+	@Test
+	void appendEventsChecksIdsOfBatchLargerThanOneInList() {
+		Session session = buildSession("user-batch");
+		this.repository.save(session);
+		List<SessionEvent> batch = userEvents(session.id(), 2 * JdbcSessionRepository.MAX_IN_LIST_SIZE + 500);
+
+		assertThat(this.repository.appendEvents(session.id(), batch, 0)).isTrue();
+
+		assertThat(this.repository.findEvents(session.id(), EventFilter.all())).extracting(SessionEvent::getId)
+			.containsExactlyElementsOf(batch.stream().map(SessionEvent::getId).toList());
+
+		// An id already in the log is found wherever it is in the batch
+		List<SessionEvent> replay = new ArrayList<>(userEvents(session.id(), batch.size()));
+		SessionEvent taken = batch.get(batch.size() - 1);
+		replay.set(replay.size() - 1, taken);
+		assertThatIllegalArgumentException().isThrownBy(() -> this.repository.appendEvents(session.id(), replay, 1))
+			.withMessageContaining(taken.getId());
+		assertThat(this.repository.getEventVersion(session.id())).isEqualTo(1);
+	}
+
+	@Test
+	void activeViewOfBoundaryNamingMoreIdsThanOneInListIsReadInLogOrder() {
+		Session session = buildSession("user-view");
+		this.repository.save(session);
+		int preserved = 2 * JdbcSessionRepository.MAX_IN_LIST_SIZE + 500;
+		this.repository.appendEvents(session.id(), userEvents(session.id(), preserved + 100), 0);
+		DefaultSessionService service = DefaultSessionService.builder().sessionRepository(this.repository).build();
+		service.compact(session.id(), request -> true,
+				WindowCompactionStrategy.builder().lastEvents(preserved).build());
+		this.repository.appendEvent(
+				SessionEvent.builder().sessionId(session.id()).message(new UserMessage("after compaction")).build());
+
+		List<SessionEvent> active = this.repository.findEvents(session.id(), EventFilter.active());
+
+		List<SessionEvent> log = this.repository.findEvents(session.id(), EventFilter.all());
+		assertThat(active).hasSizeGreaterThan(2 * JdbcSessionRepository.MAX_IN_LIST_SIZE)
+			.hasSizeLessThan(log.size() - 1)
+			.extracting(SessionEvent::getId)
+			.containsExactlyElementsOf(EventFilter.active().apply(log).stream().map(SessionEvent::getId).toList());
+		assertThat(active.get(active.size() - 1).getMessage().getText()).isEqualTo("after compaction");
+	}
+
+	@Test
+	void deleteExpiredSessionsDeletesOnlyExpiredSessionsWithTheirEvents() {
+		Instant now = Instant.now();
+		Session expired1 = this.repository.save(expiring("user-expired", now.minusSeconds(60)));
+		Session expired2 = this.repository.save(expiring("user-expired", now.minusSeconds(1)));
+		Session live = this.repository.save(expiring("user-live", now.plusSeconds(60)));
+		Session eternal = this.repository.save(buildSession("user-eternal"));
+		this.repository
+			.appendEvent(SessionEvent.builder().sessionId(expired1.id()).message(new UserMessage("gone")).build());
+
+		assertThat(this.repository.deleteExpiredSessions(now)).isEqualTo(2);
+
+		assertThat(this.repository.findById(expired1.id())).isNull();
+		assertThat(this.repository.findById(expired2.id())).isNull();
+		assertThat(this.repository.findById(live.id())).isNotNull();
+		assertThat(this.repository.findById(eternal.id())).isNotNull();
+		assertThat(this.jdbcTemplate.queryForObject("SELECT COUNT(*) FROM AI_SESSION_EVENT", Integer.class)).isZero();
+		assertThat(this.repository.deleteExpiredSessions(now)).isZero();
+	}
+
+	@Test
+	void deleteExpiredSessionsKeepsSessionExtendedAfterItWasFoundExpired() {
+		Instant now = Instant.now();
+		Session expired = this.repository.save(expiring("user-expired", now.minusSeconds(60)));
+		Session extended = this.repository.save(expiring("user-extended", now.minusSeconds(60)));
+		// Extends one session right after the cleanup has read the expired ids
+		JdbcTemplate extendingAfterRead = new JdbcTemplate(this.dataSource) {
+			@Override
+			public <T> List<T> queryForList(String sql, Class<T> elementType, Object... args) {
+				List<T> result = super.queryForList(sql, elementType, args);
+				if (sql.contains("expires_at <")) {
+					JdbcSessionRepositoryTests.this.repository.save(Session.builder()
+						.id(extended.id())
+						.expiresAt(now.plusSeconds(60))
+						.metadata(extended.metadata())
+						.build());
+				}
+				return result;
+			}
+		};
+		JdbcSessionRepository repository = JdbcSessionRepository.builder()
+			.jdbcTemplate(extendingAfterRead)
+			.dialect(new H2JdbcSessionRepositoryDialect())
+			.build();
+
+		assertThat(repository.deleteExpiredSessions(now)).isEqualTo(1);
+
+		assertThat(this.repository.findById(expired.id())).isNull();
+		assertThat(this.repository.findById(extended.id())).isNotNull();
+	}
+
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
+
+	private static List<SessionEvent> userEvents(String sessionId, int count) {
+		List<SessionEvent> events = new ArrayList<>(count);
+		for (int i = 0; i < count; i++) {
+			events.add(SessionEvent.builder().sessionId(sessionId).message(new UserMessage("message " + i)).build());
+		}
+		return events;
+	}
+
+	private Session expiring(String principal, Instant expiresAt) {
+		return Session.builder()
+			.id(UUID.randomUUID().toString())
+			.expiresAt(expiresAt)
+			.metadata(SessionAttributes.PRINCIPAL_NAME, principal)
+			.build();
+	}
 
 	private Session buildSession(String principal) {
 		return Session.builder()

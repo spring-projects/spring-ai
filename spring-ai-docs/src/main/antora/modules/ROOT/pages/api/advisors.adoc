@@ -389,6 +389,27 @@ For full documentation, see xref:api/advisors-recursive.adoc#_toolcallingadvisor
 * `SafeGuardAdvisor`
 +
 A simple advisor designed to prevent the model from generating harmful or inappropriate content.
++
+When it blocks a request, the reply is its failure response in place of an answer of the model.
+The reply is marked with the `GuardrailRefusal.FINISH_REASON` finish reason, and `GuardrailRefusal.isRefusal(chatResponse)` tells it from an answer.
+A guardrail advisor of your own should build its refusal with `GuardrailRefusal.generation(text)`, so that advisors such as the `StructuredOutputValidationAdvisor` leave it alone.
+The `SemanticCacheAdvisor` does not cache a refusal.
+The memory advisors store it as they store any other reply.
++
+A refusal is not the structured output that a caller of `entity(...)` asked for.
+`ChatClient.entity(...)` therefore throws a `GuardrailRefusalException`, which carries the response with the refusal.
+The refusal finishes in the `FILTERED` xref:api/chatclient.adoc#finish-reason-categories[finish reason category], and the exception is a `ContentFilteredException`, so one `catch` covers the refusal of a guardrail and the safety stop of a provider.
+`responseEntity(...)` returns the response with a `null` entity.
++
+[source,java]
+----
+try {
+    Order order = chatClient.prompt().user(message).call().entity(Order.class);
+}
+catch (GuardrailRefusalException ex) {
+    reply(ex.getRefusal()); // what the guardrail said in place of an answer
+}
+----
 
 
 === Streaming vs Non-Streaming

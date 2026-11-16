@@ -31,7 +31,7 @@ import io.modelcontextprotocol.modern.JsonRpc.JSONRPCResponse;
 import io.modelcontextprotocol.modern.McpSchema;
 import io.modelcontextprotocol.modern.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.modern.McpSchema.MetaKeys;
-import io.modelcontextprotocol.modern.server.McpParamHeaders;
+import io.modelcontextprotocol.modern.server.McpHeaders;
 import io.modelcontextprotocol.modern.server.transport.McpHeaderDecoder;
 import io.modelcontextprotocol.server.transport.HeaderAccessor;
 import org.jspecify.annotations.Nullable;
@@ -148,17 +148,14 @@ final class ModernTransportSupport {
 	}
 
 	/**
-	 * Adds the decoded {@code Mcp-Param-*} headers of a {@code tools/call} request to the
-	 * transport context, under the key the SDK tools feature validates them from. Added
-	 * after the user's extractor ran, so this entry always wins.
+	 * Adds the decoded {@code Mcp-Name} and {@code Mcp-Param-*} headers to the transport
+	 * context, under the key the SDK features read them from. Done for every request,
+	 * because extensions may mirror a parameter into {@code Mcp-Name}. Added after the
+	 * user's extractor ran, so this entry always wins.
 	 */
-	static McpTransportContext withParamHeaders(ServerRequest request, JSONRPCRequest jsonRpcRequest,
-			McpTransportContext transportContext) {
-		if (!McpSchema.METHOD_TOOLS_CALL.equals(jsonRpcRequest.method())) {
-			return transportContext;
-		}
-		return transportContext.putAll(
-				Map.of(McpParamHeaders.TRANSPORT_CONTEXT_KEY, McpHeaderDecoder.paramHeaders(headerAccessor(request))));
+	static McpTransportContext withHeaders(ServerRequest request, McpTransportContext transportContext) {
+		return transportContext
+			.putAll(Map.of(McpHeaders.TRANSPORT_CONTEXT_KEY, McpHeaderDecoder.headers(headerAccessor(request))));
 	}
 
 	static HeaderAccessor headerAccessor(ServerRequest request) {
