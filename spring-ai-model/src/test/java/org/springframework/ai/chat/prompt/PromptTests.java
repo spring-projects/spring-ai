@@ -110,6 +110,54 @@ class PromptTests {
 	}
 
 	@Test
+	void getUserMessagesWhenSingle() {
+		Prompt prompt = Prompt.builder().messages(new UserMessage("Hello")).build();
+
+		assertThat(prompt.getUserMessages()).hasSize(1);
+		assertThat(prompt.getUserMessages().get(0).getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void getUserMessagesWhenMultiple() {
+		Prompt prompt = Prompt.builder()
+			.messages(new UserMessage("Hello"), new SystemMessage("System"), new UserMessage("How are you?"))
+			.build();
+
+		assertThat(prompt.getUserMessages()).hasSize(2);
+		assertThat(prompt.getUserMessages().get(0).getText()).isEqualTo("Hello");
+		assertThat(prompt.getUserMessages().get(1).getText()).isEqualTo("How are you?");
+	}
+
+	@Test
+	void getUserMessagesWhenNone() {
+		Prompt prompt = Prompt.builder().messages(new SystemMessage("You'll be back!")).build();
+
+		assertThat(prompt.getUserMessages()).isEmpty();
+
+		prompt = Prompt.builder().messages(List.of()).build();
+
+		assertThat(prompt.getUserMessages()).isEmpty();
+	}
+
+	@Test
+	void getUserMessagesWithMixedMessageTypes() {
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("toolId", "toolName", "result")))
+			.build();
+
+		Prompt prompt = Prompt.builder()
+			.messages(new SystemMessage("System instruction"), new UserMessage("First question"),
+					new AssistantMessage("AI response"), new UserMessage("Second question"), toolResponse,
+					new UserMessage("Third question"))
+			.build();
+
+		assertThat(prompt.getUserMessages()).hasSize(3);
+		assertThat(prompt.getUserMessages().get(0).getText()).isEqualTo("First question");
+		assertThat(prompt.getUserMessages().get(1).getText()).isEqualTo("Second question");
+		assertThat(prompt.getUserMessages().get(2).getText()).isEqualTo("Third question");
+	}
+
+	@Test
 	void augmentUserMessageWhenSingle() {
 		Prompt prompt = Prompt.builder().messages(new UserMessage("Hello")).build();
 
