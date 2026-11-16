@@ -16,18 +16,25 @@
 
 package org.springframework.ai.transformers;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import org.springframework.core.io.AbstractResource;
 import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -122,6 +129,71 @@ public class ResourceCacheServiceTests {
 
 		assertThatThrownBy(() -> cache.getCachedResource((String) null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Location must not be null");
+	}
+
+	@Test
+	public void cachedResourceHasTheContentOfTheOriginal() throws Exception {
+		var cache = new ResourceCacheService(this.tempDir);
+		byte[] content = "model bytes".getBytes(StandardCharsets.UTF_8);
+
+		var cached = cache.getCachedResource(remoteResource(() -> new ByteArrayInputStream(content)));
+
+		assertThat(cached.getContentAsByteArray()).isEqualTo(content);
+	}
+
+	@Test
+	public void failedCopyLeavesNoFileAndIsRetried() throws Exception {
+		var cache = new ResourceCacheService(this.tempDir);
+		byte[] content = "model bytes".getBytes(StandardCharsets.UTF_8);
+
+		var failing = remoteResource(
+				() -> new SequenceInputStream(new ByteArrayInputStream(content, 0, 5), new InputStream() {
+					@Override
+					public int read() throws IOException {
+						throw new IOException("connection reset");
+					}
+				}));
+		assertThatThrownBy(() -> cache.getCachedResource(failing)).isInstanceOf(IllegalStateException.class);
+		try (Stream<Path> files = Files.walk(this.tempDir.toPath())) {
+			assertThat(files.filter(Files::isRegularFile)).isEmpty();
+		}
+
+		var cached = cache.getCachedResource(remoteResource(() -> new ByteArrayInputStream(content)));
+		assertThat(cached.getContentAsByteArray()).isEqualTo(content);
+	}
+
+	private static Resource remoteResource(Callable<InputStream> stream) {
+		return new AbstractResource() {
+
+			@Override
+			public String getDescription() {
+				return "remote model";
+			}
+
+			@Override
+			public String getFilename() {
+				return "model.onnx";
+			}
+
+			@Override
+			public URI getURI() {
+				return URI.create("https://example.com/models/model.onnx");
+			}
+
+			@Override
+			public InputStream getInputStream() throws IOException {
+				try {
+					return stream.call();
+				}
+				catch (IOException ex) {
+					throw ex;
+				}
+				catch (Exception ex) {
+					throw new IOException(ex);
+				}
+			}
+
+		};
 	}
 
 	@Test
