@@ -139,4 +139,12 @@ public class ParagraphPdfDocumentReaderTests {
 		assertThat(closed).isTrue();
 	}
 
+	@Test
+	void closeReleasesParsedDocument() throws Exception {
+		var reader = new ParagraphPdfDocumentReader("classpath:/sample3.pdf");
+		assertThat(reader.document.getDocument().isClosed()).isFalse();
+		reader.close();
+		assertThat(reader.document.getDocument().isClosed()).isTrue();
+	}
+
 }
