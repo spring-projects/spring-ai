@@ -240,7 +240,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 
 	private String nativeFilterExpression(SearchRequest request) {
 		Filter.Expression fe = request.getFilterExpression();
-		return (fe != null) ? " AND " + this.filterExpressionConverter.convertExpression(fe) : "";
+		return (fe != null) ? " AND (" + this.filterExpressionConverter.convertExpression(fe) + ")" : "";
 	}
 
 	private List<Document> searchByEmbedding(float[] embedding, String nativeFilterExpression, SearchRequest request) {
