@@ -408,6 +408,68 @@ public class TokenTextSplitterTest {
 		}
 	}
 
+	@Test
+	public void testCutInsideTokenKeepsTheRestOfTheToken() {
+		// ".js" is a single token, so the cut after its "." falls inside a token
+		var splitter = TokenTextSplitter.builder()
+			.withChunkSize(15)
+			.withMinChunkSizeChars(10)
+			.withMinChunkLengthToEmbed(0)
+			.build();
+
+		var chunks = splitter.apply(List.of(new Document(
+				"Our backend services run on Node.js and the frontend is built with React and served from a CDN")));
+
+		// Expect: the first chunk ends after the whole ".js" token and the next chunk
+		// starts right after it, so "js" is not lost
+		assertThat(chunks).extracting(Document::getText)
+			.containsExactly("Our backend services run on Node.js",
+					"and the frontend is built with React and served from a CDN");
+	}
+
+	@Test
+	public void testCutAfterPunctuationMarkSplitAcrossTokens() {
+		// "।" is split across two CL100K_BASE tokens
+		var splitter = TokenTextSplitter.builder()
+			.withChunkSize(60)
+			.withMinChunkSizeChars(10)
+			.withMinChunkLengthToEmbed(0)
+			.withPunctuationMarks(List.of('।', '?', '!', '\n'))
+			.build();
+
+		var chunks = splitter.apply(List.of(new Document(
+				"भारत एक विशाल देश है। यहाँ अनेक भाषाएँ बोली जाती हैं। हिंदी सबसे अधिक बोली जाने वाली भाषा है। लोग विभिन्न त्योहार मनाते हैं।")));
+
+		// Expect: each chunk ends after the whole "।", not inside it
+		assertThat(chunks).extracting(Document::getText)
+			.containsExactly("भारत एक विशाल देश है। यहाँ अनेक भाषाएँ बोली जाती हैं।",
+					"हिंदी सबसे अधिक बोली जाने वाली भाषा है।", "लोग विभिन्न त्योहार मनाते हैं।");
+	}
+
+	@Test
+	public void testChunkTextThatEncodesToFewerTokensIsNotRepeated() {
+		// "_" and "question" are two tokens of these texts, but "_question" is a single
+		// token when the second chunk is encoded on its own, with or without a cut at
+		// punctuation
+		var splitter = TokenTextSplitter.builder()
+			.withChunkSize(9)
+			.withMinChunkSizeChars(0)
+			.withMinChunkLengthToEmbed(0)
+			.build();
+
+		String notCut = "Read more about it in the next section [[_questionansweradvisor]] for the full list of options";
+		String cut = "Read more about it in the next section [[_questionansweradvisor]] for details. It covers all options";
+
+		var chunks = splitter.apply(List.of(new Document(notCut), new Document(cut)));
+
+		// Expect: each chunk starts where the one before it ended, so "list" and "." are
+		// in one chunk only
+		assertThat(chunks).extracting(Document::getText)
+			.containsExactly("Read more about it in the next section [[", "_questionansweradvisor]] for the full list",
+					"of options", "Read more about it in the next section [[", "_questionansweradvisor]] for details.",
+					"It covers all options");
+	}
+
 	private static void assertNoTextLost(String text, List<Document> chunks) {
 		int coveredUpTo = 0;
 		int searchFrom = 0;
