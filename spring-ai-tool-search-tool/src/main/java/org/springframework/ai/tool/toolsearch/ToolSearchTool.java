@@ -43,9 +43,11 @@ public class ToolSearchTool {
 			Search for tools in the tool registry to discover capabilities for completing the current task.
 			Use this when you need functionality not provided by your currently available tools.
 			The search queries against tool names, descriptions, and parameter information to find the most relevant tools.
-			Returns references to matching tools which will be expanded into full definitions you can then invoke.
+			Returns an object with "tools", the names of matching tools, and "note" when nothing is returned.
+			A note that no tool here does it means none of the tools can do this. A note that says no match means these words missed; try other words.
+			Matching names are expanded into full definitions you can then invoke.
 			""")
-	public List<String> toolSearchTool(
+	public ToolSearchToolResult toolSearchTool(
 		@ToolParam(description = "A natural language search query describing the tool capability you need. Be specific and include relevant keywords.") String query,
 		@ToolParam(description = "Maximum number of tool references to return (1-10). Default is 5.", required = false) Integer maxResults,
 		@ToolParam(description = "Optional filter to narrow search to a specific tool category.", required = false) String categoryFilter,
@@ -61,7 +63,15 @@ public class ToolSearchTool {
 		ToolSearchResponse toolSearchResponse = this.toolIndex
 			.search(new ToolSearchRequest(sessionId, query, maxResults, categoryFilter));
 
-		return toolSearchResponse.toolReferences().stream().map(tr -> tr.toolName()).toList();
+		List<String> tools = toolSearchResponse.toolReferences().stream().map(tr -> tr.toolName()).toList();
+		if (!tools.isEmpty()) {
+			return new ToolSearchToolResult(tools, null);
+		}
+		String searched = (query != null) ? query : "";
+		String note = Boolean.TRUE.equals(toolSearchResponse.noneApplies())
+				? "No tool matches '" + searched + "'. If none of your tools does it, no tool here does."
+				: "No match for '" + searched + "'; try other words.";
+		return new ToolSearchToolResult(tools, note);
 	}
 
 }

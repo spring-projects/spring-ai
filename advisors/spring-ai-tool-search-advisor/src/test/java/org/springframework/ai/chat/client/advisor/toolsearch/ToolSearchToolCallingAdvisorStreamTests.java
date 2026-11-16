@@ -126,7 +126,7 @@ class ToolSearchToolCallingAdvisorStreamTests {
 
 		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
 			.responses(List.of(new ToolResponseMessage.ToolResponse("id1", "toolSearchTool",
-					"[\"weatherTool\", \"calculatorTool\"]")))
+					"{\"tools\":[\"weatherTool\",\"calculatorTool\"]}")))
 			.build();
 
 		Prompt prompt = new Prompt(

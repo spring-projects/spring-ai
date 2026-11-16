@@ -48,12 +48,12 @@ import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.ai.tool.toolsearch.ToolIndex;
 import org.springframework.ai.tool.toolsearch.ToolReference;
 import org.springframework.ai.tool.toolsearch.ToolSearchTool;
+import org.springframework.ai.tool.toolsearch.ToolSearchToolResult;
 import org.springframework.ai.tool.toolsearch.eviction.CompositeEvictionStrategy;
 import org.springframework.ai.tool.toolsearch.eviction.LruEvictionStrategy;
 import org.springframework.ai.tool.toolsearch.eviction.ToolIndexEvictionStrategy;
 import org.springframework.ai.tool.toolsearch.eviction.TtlEvictionStrategy;
 import org.springframework.ai.util.JsonHelper;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -314,10 +314,17 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 		return selectedTurns.stream()
 			.flatMap(List::stream)
-			.map(r -> jsonHelper.fromJson(r.responseData(), new ParameterizedTypeReference<List<String>>() {
-			}))
+			.map(r -> toolNames(r.responseData()))
 			.flatMap(List::stream)
 			.toList();
+	}
+
+	private static List<String> toolNames(String responseData) {
+		ToolSearchToolResult result = jsonHelper.fromJson(responseData, ToolSearchToolResult.class);
+		if (result == null || result.tools() == null) {
+			return List.of();
+		}
+		return result.tools();
 	}
 
 	private String getSessionId(Map<String, @Nullable Object> context) {

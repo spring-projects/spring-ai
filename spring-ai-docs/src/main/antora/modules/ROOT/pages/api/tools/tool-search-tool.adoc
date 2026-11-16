@@ -237,6 +237,10 @@ For each search, it asks the model two questions in a single call:
 * Does any of the tools fit the request at all?
 
 If the model's confidence in the second answer is below the applicability threshold, the search returns no tools.
+`toolSearchTool` returns an object with `tools` and, when `tools` is empty, `note`.
+This decision sets `note` to `No tool matches '<query>'. If none of your tools does it, no tool here does.`
+A keyword or vector index with zero hits, an empty session, and a refused decision use `No match for '<query>'; try other words.`
+A search that finds tools omits `note`.
 
 [source,java]
 ----

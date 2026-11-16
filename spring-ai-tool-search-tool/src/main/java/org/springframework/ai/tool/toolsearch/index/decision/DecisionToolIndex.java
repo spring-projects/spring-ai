@@ -163,22 +163,25 @@ public final class DecisionToolIndex implements ToolIndex {
 	public ToolSearchResponse search(ToolSearchRequest toolSearchRequest) {
 		Assert.notNull(toolSearchRequest, "toolSearchRequest must not be null");
 		long start = System.currentTimeMillis();
-		List<ToolReference> matches = matches(toolSearchRequest);
-		return ToolSearchResponse.builder()
-			.toolReferences(matches)
-			.totalMatches(matches.size())
+		MatchResult matchResult = matches(toolSearchRequest);
+		ToolSearchResponse.Builder response = ToolSearchResponse.builder()
+			.toolReferences(matchResult.tools())
+			.totalMatches(matchResult.tools().size())
 			.searchMetadata(SearchMetadata.builder()
 				.searchType(getClass().getSimpleName())
 				.query(toolSearchRequest.query())
 				.searchTimeMs(System.currentTimeMillis() - start)
-				.build())
-			.build();
+				.build());
+		if (matchResult.noneApplies()) {
+			response.noneApplies(true);
+		}
+		return response.build();
 	}
 
-	private List<ToolReference> matches(ToolSearchRequest toolSearchRequest) {
+	private MatchResult matches(ToolSearchRequest toolSearchRequest) {
 		List<ToolReference> candidates = candidates(toolSearchRequest);
 		if (candidates.isEmpty()) {
-			return List.of();
+			return MatchResult.noMatch();
 		}
 		if (candidates.size() == 1) {
 			// A choice needs something to choose between, so with one candidate the only
@@ -188,10 +191,10 @@ public final class DecisionToolIndex implements ToolIndex {
 		DecisionResponse response = select(toolSearchRequest, candidates);
 		if (response.isRefused(APPLICABILITY_QUESTION) || response.isRefused(SELECTION_QUESTION)) {
 			logRefusal("pick a tool", toolSearchRequest);
-			return List.of();
+			return MatchResult.noMatch();
 		}
 		if (!applies(response.getYesNo(APPLICABILITY_QUESTION), toolSearchRequest)) {
-			return List.of();
+			return MatchResult.decidedNone();
 		}
 		ChoiceAnswer bestToolAnswer = response.getChoice(SELECTION_QUESTION);
 		Map<String, ToolReference> byName = new LinkedHashMap<>();
@@ -207,7 +210,7 @@ public final class DecisionToolIndex implements ToolIndex {
 				matches.add(scored(reference, probability(bestToolAnswer, name)));
 			}
 		}
-		return matches;
+		return MatchResult.matches(matches);
 	}
 
 	/**
@@ -269,7 +272,7 @@ public final class DecisionToolIndex implements ToolIndex {
 		return ranking;
 	}
 
-	private List<ToolReference> singleCandidate(ToolSearchRequest toolSearchRequest, ToolReference only) {
+	private MatchResult singleCandidate(ToolSearchRequest toolSearchRequest, ToolReference only) {
 		Map<String, @Nullable Object> fields = new LinkedHashMap<>();
 		fields.put(REQUEST_FIELD, toolSearchRequest.query());
 		fields.put(TOOL_FIELD, entry(only));
@@ -280,13 +283,13 @@ public final class DecisionToolIndex implements ToolIndex {
 			.build());
 		if (response.isRefused(APPLICABILITY_QUESTION)) {
 			logRefusal("judge the only tool", toolSearchRequest);
-			return List.of();
+			return MatchResult.noMatch();
 		}
 		YesNoAnswer applicability = response.getYesNo(APPLICABILITY_QUESTION);
 		if (!applies(applicability, toolSearchRequest)) {
-			return List.of();
+			return MatchResult.decidedNone();
 		}
-		return List.of(scored(only, applicability.getProbability()));
+		return MatchResult.matches(List.of(scored(only, applicability.getProbability())));
 	}
 
 	/**
@@ -392,6 +395,26 @@ public final class DecisionToolIndex implements ToolIndex {
 	 */
 	public static Builder builder(DecisionModel decisionModel) {
 		return new Builder(decisionModel);
+	}
+
+	/**
+	 * Tools selected for a search, and whether the index decided that none of them can do
+	 * the request.
+	 */
+	private record MatchResult(List<ToolReference> tools, boolean noneApplies) {
+
+		static MatchResult matches(List<ToolReference> tools) {
+			return new MatchResult(tools, false);
+		}
+
+		static MatchResult noMatch() {
+			return new MatchResult(List.of(), false);
+		}
+
+		static MatchResult decidedNone() {
+			return new MatchResult(List.of(), true);
+		}
+
 	}
 
 	/**
