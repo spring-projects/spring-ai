@@ -280,11 +280,28 @@ public final class McpToolUtils {
 			}
 			catch (Exception e) {
 				return McpSchema.CallToolResult.builder()
-					.content(List.of(McpSchema.TextContent.builder(e.getMessage()).build()))
+					.content(List.of(McpSchema.TextContent.builder(errorResultMessage(tool, e)).build()))
 					.isError(true)
 					.build();
 			}
 		});
+	}
+
+	/**
+	 * Returns the text of the error result for a tool call that threw the given
+	 * exception. The text is the exception message, or a fallback naming the tool and the
+	 * type of the cause when the message is null or blank.
+	 * @param tool the tool that was called
+	 * @param e the exception thrown by the tool call
+	 * @return the error result text
+	 */
+	private static String errorResultMessage(McpSchema.Tool tool, Exception e) {
+		String message = e.getMessage();
+		if (StringUtils.isNotBlank(message)) {
+			return message;
+		}
+		Throwable cause = (e.getCause() != null) ? e.getCause() : e;
+		return "Exception occurred in tool: " + tool.name() + " (" + cause.getClass().getSimpleName() + ")";
 	}
 
 	/**
