@@ -257,6 +257,20 @@ public class GoogleGenAiImageModel implements ImageModel {
 					.maxOutputTokens(ModelOptionsUtils.mergeOption(googleOptions.getMaxOutputTokens(),
 							this.options.getMaxOutputTokens()));
 			}
+			else {
+				builder.aspectRatio(this.options.getAspectRatio())
+					.seed(this.options.getSeed())
+					.safetyFilterLevel(this.options.getSafetyFilterLevel())
+					.personGeneration(this.options.getPersonGeneration())
+					.outputMimeType(this.options.getOutputMimeType())
+					.outputCompressionQuality(this.options.getOutputCompressionQuality())
+					.labels(this.options.getLabels())
+					.imageSize(this.options.getImageSize())
+					.temperature(this.options.getTemperature())
+					.topP(this.options.getTopP())
+					.topK(this.options.getTopK())
+					.maxOutputTokens(this.options.getMaxOutputTokens());
+			}
 
 			mergedOptions = builder.build();
 		}
