@@ -299,8 +299,19 @@ public final class JsonSchemaGenerator {
 			node.put("additionalProperties", false);
 		}
 		node.properties().forEach(entry -> {
+			String key = entry.getKey();
 			JsonNode value = entry.getValue();
-			if (value.isObject()) {
+			if (key.equals("properties") || key.equals("$defs") || key.equals("definitions")
+					|| key.equals("dependentSchemas") || key.equals("patternProperties")) {
+				if (value.isObject()) {
+					value.forEach(element -> {
+						if (element.isObject()) {
+							forbidAdditionalProperties((ObjectNode) element);
+						}
+					});
+				}
+			}
+			else if (value.isObject()) {
 				forbidAdditionalProperties((ObjectNode) value);
 			}
 			else if (value.isArray()) {
