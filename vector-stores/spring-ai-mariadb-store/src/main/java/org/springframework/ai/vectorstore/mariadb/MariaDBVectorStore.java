@@ -341,11 +341,21 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	@Override
 	public void doDelete(List<String> idList) {
-		int updateCount = 0;
-		for (String id : idList) {
-			int count = this.jdbcTemplate.update(
-					String.format("DELETE FROM %s WHERE %s = ?", getFullyQualifiedTableName(), this.idFieldName), id);
-			updateCount = updateCount + count;
+		String sql = String.format("DELETE FROM %s WHERE %s = ?", getFullyQualifiedTableName(), this.idFieldName);
+		for (int start = 0; start < idList.size(); start += this.maxDocumentBatchSize) {
+			List<String> batch = idList.subList(start, Math.min(start + this.maxDocumentBatchSize, idList.size()));
+			this.jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+
+				@Override
+				public void setValues(PreparedStatement ps, int i) throws SQLException {
+					ps.setString(1, batch.get(i));
+				}
+
+				@Override
+				public int getBatchSize() {
+					return batch.size();
+				}
+			});
 		}
 	}
 
