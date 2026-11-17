@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -102,14 +103,16 @@ public class MistralOcrApi {
 	 * Performs OCR on a document and returns the extracted information.
 	 * @param ocrRequest The OCR request containing document details and processing
 	 * options.
-	 * @return ResponseEntity containing the OCR response with markdown text and image
-	 * data.
+	 * @return ResponseEntity containing the OCR response with markdown text, image data
+	 * and the document annotation, when requested.
 	 */
 	public ResponseEntity<OCRResponse> ocr(OCRRequest ocrRequest) {
 
 		Assert.notNull(ocrRequest, "The request body can not be null.");
 		Assert.notNull(ocrRequest.model(), "The model can not be null.");
 		Assert.notNull(ocrRequest.document(), "The document can not be null.");
+		Assert.isTrue(ocrRequest.documentAnnotationPrompt() == null || ocrRequest.documentAnnotationFormat() != null,
+				"Document annotation format is required when a document annotation prompt is provided.");
 
 		return this.restClient.post().uri("/v1/ocr").body(ocrRequest).retrieve().toEntity(OCRResponse.class);
 	}
@@ -145,12 +148,22 @@ public class MistralOcrApi {
 	 * @param includeImageBase64 Whether to include image URLs in the response.
 	 * @param imageLimit Maximum number of images to extract.
 	 * @param imageMinSize Minimum height and width of image to extract.
+	 * @param documentAnnotationFormat Optional output format for a document annotation.
+	 * @param documentAnnotationPrompt Optional prompt for extracting a document
+	 * annotation. Requires a document annotation format.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record OCRRequest(@JsonProperty("model") String model, @JsonProperty("id") String id,
 			@JsonProperty("document") Document document, @JsonProperty("pages") List<Integer> pages,
 			@JsonProperty("include_image_base64") Boolean includeImageBase64,
-			@JsonProperty("image_limit") Integer imageLimit, @JsonProperty("image_min_size") Integer imageMinSize) {
+			@JsonProperty("image_limit") Integer imageLimit, @JsonProperty("image_min_size") Integer imageMinSize,
+			@JsonProperty("document_annotation_format") @Nullable ResponseFormat documentAnnotationFormat,
+			@JsonProperty("document_annotation_prompt") @Nullable String documentAnnotationPrompt) {
+
+		public OCRRequest(String model, String id, Document document, List<Integer> pages, Boolean includeImageBase64,
+				Integer imageLimit, Integer imageMinSize) {
+			this(model, id, document, pages, includeImageBase64, imageLimit, imageMinSize, null, null);
+		}
 
 		/**
 		 * Represents the document to be processed, which can be either a document URL or
@@ -214,11 +227,19 @@ public class MistralOcrApi {
 	 * @param usageInfo Usage info for the OCR request.
 	 * @param pagesProcessed Number of pages processed.
 	 * @param docSizeBytes Document size in bytes.
+	 * @param documentAnnotation The formatted annotation returned for the entire
+	 * document, when requested.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record OCRResponse(@JsonProperty("pages") List<OCRPage> pages, @JsonProperty("model") String model,
 			@JsonProperty("usage_info") OCRUsageInfo usageInfo, @JsonProperty("pages_processed") Integer pagesProcessed,
-			@JsonProperty("doc_size_bytes") Integer docSizeBytes) {
+			@JsonProperty("doc_size_bytes") Integer docSizeBytes,
+			@JsonProperty("document_annotation") @Nullable String documentAnnotation) {
+
+		public OCRResponse(List<OCRPage> pages, String model, OCRUsageInfo usageInfo, Integer pagesProcessed,
+				Integer docSizeBytes) {
+			this(pages, model, usageInfo, pagesProcessed, docSizeBytes, null);
+		}
 
 	}
 
