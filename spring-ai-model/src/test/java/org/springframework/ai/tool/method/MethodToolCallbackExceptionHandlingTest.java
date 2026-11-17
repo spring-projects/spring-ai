@@ -24,6 +24,7 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -73,11 +74,75 @@ public class MethodToolCallbackExceptionHandlingTest {
 			.hasMessageContaining("Unrecognized token");
 	}
 
+	/**
+	 * Regression test for https://github.com/spring-projects/spring-ai/issues/3884.
+	 *
+	 * When an LLM returns an empty string {@code ""} for a numeric parameter (e.g.
+	 * {@code Long}), Jackson attempts to coerce it through {@code BigDecimal}, which
+	 * throws {@code NumberFormatException}. The fix treats an empty string as absent
+	 * (i.e. {@code null}) for non-String target types, matching the semantic intent of
+	 * "the model produced no value for this argument".
+	 */
+	@Test
+	void emptyStringParameterForNumericTypeMapsToNull() {
+		NumericTools tools = new NumericTools();
+		var callback = MethodToolCallbackProvider.builder().toolObjects(tools).build().getToolCallbacks()[0];
+
+		// LLM responds with an empty string for the Long parameter — must not throw.
+		String toolInput = """
+				{
+					"id": ""
+				}
+				""";
+
+		assertThatCode(() -> callback.call(toolInput)).doesNotThrowAnyException();
+		assertThat(tools.lastId).isNull();
+	}
+
+	@Test
+	void emptyStringParameterPreservedForStringType() {
+		StringTools tools = new StringTools();
+		var callback = MethodToolCallbackProvider.builder().toolObjects(tools).build().getToolCallbacks()[0];
+
+		String toolInput = """
+				{
+					"value": ""
+				}
+				""";
+
+		assertThatCode(() -> callback.call(toolInput)).doesNotThrowAnyException();
+		assertThat(tools.lastValue).isEmpty();
+	}
+
 	public static class TestTools {
 
 		@Tool(description = "Process a list of strings")
 		public String stringList(List<String> strings) {
 			return strings.size() + " strings processed: " + strings;
+		}
+
+	}
+
+	public static class NumericTools {
+
+		Long lastId;
+
+		@Tool(description = "Look up a record by its Long ID")
+		public String findById(Long id) {
+			this.lastId = id;
+			return id == null ? "not found" : "found " + id;
+		}
+
+	}
+
+	public static class StringTools {
+
+		String lastValue;
+
+		@Tool(description = "Echo a string value")
+		public String echo(String value) {
+			this.lastValue = value;
+			return value == null ? "(null)" : value;
 		}
 
 	}
