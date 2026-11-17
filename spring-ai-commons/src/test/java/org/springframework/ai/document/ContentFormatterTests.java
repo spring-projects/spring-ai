@@ -69,6 +69,21 @@ class ContentFormatterTests {
 	}
 
 	@Test
+	void builderFromFormatterAllowsAddingExcludedKeys() {
+
+		DefaultContentFormatter baseFormatter = DefaultContentFormatter.defaultConfig();
+
+		DefaultContentFormatter derivedFormatter = DefaultContentFormatter.builder()
+			.from(baseFormatter)
+			.withExcludedEmbedMetadataKeys("newEmbedKey")
+			.withExcludedInferenceMetadataKeys("newInferenceKey")
+			.build();
+
+		assertThat(derivedFormatter.getExcludedEmbedMetadataKeys()).contains("newEmbedKey");
+		assertThat(derivedFormatter.getExcludedInferenceMetadataKeys()).contains("newInferenceKey");
+	}
+
+	@Test
 	void shouldThrowWhenIdIsNull() {
 		assertThatThrownBy(() -> new Document(null, "text", new HashMap<>()))
 			.isInstanceOf(IllegalArgumentException.class)
