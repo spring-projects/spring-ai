@@ -243,6 +243,22 @@ class DefaultToolCallingManagerDecisionsTests {
 	}
 
 	@Test
+	void promptEndingWithTheReplyHoldsItOnceInThePartialHistoryOfLimitBreach() {
+		ToolCallingManager limited = ToolCallingManager.builder().maxCallsPerTool(1).build();
+		AssistantMessage paused = message(toolCall("c1", "book_flight"), toolCall("c2", "book_flight"));
+		UserMessage question = new UserMessage("Book VX205");
+
+		Throwable thrown = catchThrowable(() -> limited.executeToolCalls(prompt(question, paused), reply(paused),
+				ToolCallDecisions.of(ToolCallDecision.allow("c1"), ToolCallDecision.allow("c2"))));
+
+		assertThat(thrown).isInstanceOf(ToolCallLimitExceededException.class);
+		ToolExecutionResult partial = ((ToolCallLimitExceededException) thrown).getPartialToolExecutionResult();
+		assertThat(partial.conversationHistory()).hasSize(3);
+		assertThat(partial.conversationHistory().get(1)).isSameAs(paused);
+		assertThat(responses(partial)).hasSize(2).first().isEqualTo("c1=\"booked\"");
+	}
+
+	@Test
 	void denyMessageIsNeverBlank() {
 		assertThatThrownBy(() -> ToolCallDecision.deny("c1", " ")).isInstanceOf(IllegalArgumentException.class);
 		assertThat(ToolCallDecision.deny("c1").denyMessage()).isEqualTo(ToolCallDecision.DEFAULT_DENY_MESSAGE);
