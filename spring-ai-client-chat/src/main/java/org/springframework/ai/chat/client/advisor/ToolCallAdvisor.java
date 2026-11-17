@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import reactor.core.scheduler.Scheduler;
+
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 
@@ -31,6 +33,13 @@ public class ToolCallAdvisor extends ToolCallingAdvisor {
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, int advisorOrder,
 			boolean conversationHistoryEnabled) {
 		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled);
+	}
+
+	protected ToolCallAdvisor(ToolCallingManager toolCallingManager,
+			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, int advisorOrder,
+			boolean conversationHistoryEnabled, Scheduler toolExecutionScheduler) {
+		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled,
+				toolExecutionScheduler);
 	}
 
 	/**
@@ -55,7 +64,7 @@ public class ToolCallAdvisor extends ToolCallingAdvisor {
 		@Override
 		public ToolCallAdvisor build() {
 			return new ToolCallAdvisor(getToolCallingManager(), getToolExecutionEligibilityChecker(), getAdvisorOrder(),
-					isConversationHistoryEnabled());
+					isConversationHistoryEnabled(), getToolExecutionScheduler());
 		}
 
 	}
