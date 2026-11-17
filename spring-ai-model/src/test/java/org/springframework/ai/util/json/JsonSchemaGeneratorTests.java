@@ -19,12 +19,14 @@ package org.springframework.ai.util.json;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -36,7 +38,13 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
@@ -55,10 +63,90 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Thomas Vitale
  * @author Christian Tzolov
+ * @author Nicolas Krier
  */
 class JsonSchemaGeneratorTests {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
+
+	private static final String PERSON_JSON_SCHEMA = """
+			{
+			  "$schema": "https://json-schema.org/draft/2020-12/schema",
+			  "type": "object",
+			  "properties": {
+			    "birthDate": {
+			      "type": "string",
+			      "format": "date"
+			    },
+			    "childrenNumber": {
+			      "type": "integer",
+			      "format": "int32",
+			      "minimum": 0
+			    },
+			    "civility": {
+			      "type": "string",
+			      "enum": [
+			        "MISTER",
+			        "MADAM"
+			      ]
+			    },
+			    "createdAt": {
+			      "type": "string",
+			      "format": "date-time"
+			    },
+			    "deathDate": {
+			      "type": "string",
+			      "format": "date"
+			    },
+			    "email": {
+			      "type": "string",
+			      "format": "email"
+			    },
+			    "firstName": {
+			      "type": "string",
+			      "minLength": 1
+			    },
+			    "id": {
+			      "type": "string",
+			      "format": "uuid"
+			    },
+			    "lastName": {
+			      "type": "string",
+			      "minLength": 1
+			    },
+			    "nationalities": {
+			      "minItems": 1,
+			      "type": "array",
+			      "items": {
+			        "type": "string",
+			        "minLength": 1
+			      }
+			    },
+			    "nickName": {
+			      "type": "string",
+			      "minLength": 1,
+			      "maxLength": 50
+			    },
+			    "updatedAt": {
+			      "type": "string",
+			      "format": "date-time"
+			    }
+			  },
+			  "required": [
+			    "birthDate",
+			    "childrenNumber",
+			    "civility",
+			    "createdAt",
+			    "email",
+			    "firstName",
+			    "id",
+			    "lastName",
+			    "nationalities",
+			    "updatedAt"
+			  ],
+			  "additionalProperties": false
+			}
+			""";
 
 	// METHODS
 
@@ -567,32 +655,7 @@ class JsonSchemaGeneratorTests {
 	@Test
 	void generateSchemaForTypeWithOpenApiAnnotation() {
 		String schema = JsonSchemaGenerator.generateForType(OpenApiPerson.class);
-		String expectedJsonSchema = """
-				{
-					"$schema": "https://json-schema.org/draft/2020-12/schema",
-				    "type": "object",
-				    "properties": {
-				        "email": {
-				            "type": "string",
-				            "description": "The email of the person"
-				        },
-				        "id": {
-				            "type": "integer",
-				            "format": "int32"
-				        },
-				        "name": {
-				            "type": "string"
-				        }
-				    },
-				    "required": [
-				        "id",
-				        "name"
-				    ],
-				    "additionalProperties": false
-				}
-				""";
-
-		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+		assertThat(schema).isEqualToIgnoringWhitespace(PERSON_JSON_SCHEMA);
 	}
 
 	@Test
@@ -772,6 +835,12 @@ class JsonSchemaGeneratorTests {
 						}
 				""";
 		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForTypeWithJakartaValidationAnnotatedFields() {
+		String schema = JsonSchemaGenerator.generateForType(JakartaValidationPerson.class);
+		assertThat(schema).isEqualToIgnoringWhitespace(PERSON_JSON_SCHEMA);
 	}
 
 	@Test
@@ -1102,16 +1171,49 @@ class JsonSchemaGeneratorTests {
 
 	}
 
-	record OpenApiPerson(@Schema(requiredMode = Schema.RequiredMode.REQUIRED) int id,
-			@Schema(requiredMode = Schema.RequiredMode.REQUIRED) String name,
-			@Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED,
-					description = "The email of the person") String email) {
+	// @formatter:off
+	record JakartaValidationPerson(
+			UUID id,
+			Instant createdAt,
+			Instant updatedAt,
+			Civility civility,
+			@NotBlank String firstName,
+			@NotBlank String lastName,
+			@Nullable @Size(min = 1, max = 50) String nickName,
+			@Email String email,
+			LocalDate birthDate,
+			@Nullable LocalDate deathDate,
+			@PositiveOrZero int childrenNumber,
+			@NotEmpty List<@NotBlank String> nationalities) {
+		enum Civility {
 
+			MISTER, MADAM
+
+		}
 	}
+	// @formatter:on
 
-	record NullablePerson(int id, String name, @Nullable String email) {
+	// @formatter:off
+	record OpenApiPerson(
+			UUID id,
+			Instant createdAt,
+			Instant updatedAt,
+			Civility civility,
+			@Schema(minLength = 1) String firstName,
+			@Schema(minLength = 1) String lastName,
+			@Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, minLength = 1, maxLength = 50) String nickName,
+			@Schema(format = "email") String email,
+			LocalDate birthDate,
+			@Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate deathDate,
+			@Schema(minimum = "0") int childrenNumber,
+			@ArraySchema(minItems = 1, schema = @Schema(minLength = 1)) List<String> nationalities) {
+		enum Civility {
 
+			MISTER, MADAM
+
+		}
 	}
+	// @formatter:on
 
 	record JSpecifyNullablePerson(int id, String name, @Nullable String email) {
 
