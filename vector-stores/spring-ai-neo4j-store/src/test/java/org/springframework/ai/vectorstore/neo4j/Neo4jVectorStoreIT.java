@@ -43,6 +43,7 @@ import org.springframework.ai.test.vectorstore.BaseVectorStoreTests;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -210,6 +211,46 @@ class Neo4jVectorStoreIT extends BaseVectorStoreTests {
 				.isThrownBy(() -> vectorStore
 					.similaritySearch(SearchRequest.from(searchRequest).filterExpression("country == NL").build()))
 				.withMessageContaining("Line: 1:17, Error: no viable alternative at input 'NL'");
+		});
+	}
+
+	@Test
+	void searchWithNegatedCompoundFilter() {
+		this.contextRunner.run(context -> {
+
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020));
+			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL", "year", 2023));
+			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023));
+
+			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			SearchRequest searchRequest = SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.build();
+
+			var b = new FilterExpressionBuilder();
+
+			// NOT (country == 'BG' AND year == 2020)
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.from(searchRequest)
+				.filterExpression(b.not(b.and(b.eq("country", "BG"), b.eq("year", 2020))).build())
+				.build());
+
+			assertThat(results).extracting(Document::getId)
+				.containsExactlyInAnyOrder(nlDocument.getId(), bgDocument2.getId());
+
+			// NOT (country == 'NL' OR year == 2020)
+			results = vectorStore.similaritySearch(SearchRequest.from(searchRequest)
+				.filterExpression(b.not(b.or(b.eq("country", "NL"), b.eq("year", 2020))).build())
+				.build());
+
+			assertThat(results).extracting(Document::getId).containsExactly(bgDocument2.getId());
 		});
 	}
 

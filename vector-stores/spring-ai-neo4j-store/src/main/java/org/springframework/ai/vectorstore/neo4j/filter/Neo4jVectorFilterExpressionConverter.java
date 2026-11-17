@@ -74,8 +74,14 @@ public class Neo4jVectorFilterExpressionConverter extends AbstractFilterExpressi
 					"Unsupported expression type %s. Only NOT is supported here".formatted(expressionType));
 		}
 
-		// explicitly prefix the embedded expression with NOT
-		context.append("NOT ").append(this.convertOperand(expression.left()));
+		// explicitly prefix the embedded expression with NOT, grouping AND/OR so that NOT
+		// applies to the whole expression and not only to its first term
+		Filter.Operand operand = expression.left();
+		if (operand instanceof Expression inner
+				&& (inner.type() == Filter.ExpressionType.AND || inner.type() == Filter.ExpressionType.OR)) {
+			operand = new Group(inner);
+		}
+		context.append("NOT ").append(this.convertOperand(operand));
 	}
 
 	@Override
