@@ -148,7 +148,8 @@ public class McpServerAutoConfiguration {
 		if (serverProperties.getCapabilities().isResource()) {
 			logger.info("Enable resources capabilities, notification: "
 					+ changeNotificationProperties.isResourceChangeNotification());
-			capabilitiesBuilder.resources(false, changeNotificationProperties.isResourceChangeNotification());
+			capabilitiesBuilder.resources(serverProperties.getCapabilities().isResourceSubscribe(),
+					changeNotificationProperties.isResourceChangeNotification());
 
 			List<SyncResourceSpecification> resourceSpecifications = resources.stream().flatMap(List::stream).toList();
 			if (!CollectionUtils.isEmpty(resourceSpecifications)) {
@@ -161,7 +162,8 @@ public class McpServerAutoConfiguration {
 		if (serverProperties.getCapabilities().isResource()) {
 			logger.info("Enable resources templates capabilities, notification: "
 					+ changeNotificationProperties.isResourceChangeNotification());
-			capabilitiesBuilder.resources(false, changeNotificationProperties.isResourceChangeNotification());
+			capabilitiesBuilder.resources(serverProperties.getCapabilities().isResourceSubscribe(),
+					changeNotificationProperties.isResourceChangeNotification());
 
 			List<SyncResourceTemplateSpecification> resourceTemplateSpecifications = resourceTemplates.stream()
 				.flatMap(List::stream)
@@ -275,7 +277,8 @@ public class McpServerAutoConfiguration {
 		if (serverProperties.getCapabilities().isResource()) {
 			logger.info("Enable resources capabilities, notification: "
 					+ changeNotificationProperties.isResourceChangeNotification());
-			capabilitiesBuilder.resources(false, changeNotificationProperties.isResourceChangeNotification());
+			capabilitiesBuilder.resources(serverProperties.getCapabilities().isResourceSubscribe(),
+					changeNotificationProperties.isResourceChangeNotification());
 
 			List<AsyncResourceSpecification> resourceSpecifications = resources.stream().flatMap(List::stream).toList();
 			if (!CollectionUtils.isEmpty(resourceSpecifications)) {
@@ -288,7 +291,8 @@ public class McpServerAutoConfiguration {
 		if (serverProperties.getCapabilities().isResource()) {
 			logger.info("Enable resources templates capabilities, notification: "
 					+ changeNotificationProperties.isResourceChangeNotification());
-			capabilitiesBuilder.resources(false, changeNotificationProperties.isResourceChangeNotification());
+			capabilitiesBuilder.resources(serverProperties.getCapabilities().isResourceSubscribe(),
+					changeNotificationProperties.isResourceChangeNotification());
 
 			List<AsyncResourceTemplateSpecification> resourceTemplateSpecifications = resourceTemplates.stream()
 				.flatMap(List::stream)
