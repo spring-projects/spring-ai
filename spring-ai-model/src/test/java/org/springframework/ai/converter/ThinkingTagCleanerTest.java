@@ -149,4 +149,28 @@ class ThinkingTagCleanerTest {
 			.hasMessageContaining("patternStrings cannot be empty");
 	}
 
+	@Test
+	void shouldApplyOnlyCustomPatternsWhenDefaultsDisabled() {
+		var cleaner = ThinkingTagCleaner.builder()
+			.withoutDefaultPatterns()
+			.addPattern("(?s)<a>.*?</a>\\s*")
+			.addPattern("(?s)<b>.*?</b>\\s*")
+			.build();
+
+		String input = "<thinking>kept</thinking><a>first</a><b>second</b>Content";
+		String result = cleaner.clean(input);
+		// Default <thinking> patterns are disabled; both custom patterns are applied.
+		assertThat(result).isEqualTo("<thinking>kept</thinking>Content");
+	}
+
+	@Test
+	void shouldThrowWhenBuildingWithoutDefaultPatternsAndNoCustomPattern() {
+		// withoutDefaultPatterns() must actually clear the defaults, so building with no
+		// custom pattern added yields no patterns at all rather than silently retaining
+		// the defaults.
+		assertThatThrownBy(() -> ThinkingTagCleaner.builder().withoutDefaultPatterns().build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("patterns cannot be empty");
+	}
+
 }
