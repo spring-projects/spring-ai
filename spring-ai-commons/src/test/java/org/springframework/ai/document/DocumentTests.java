@@ -280,6 +280,30 @@ public class DocumentTests {
 	}
 
 	@Test
+	void testMutateDoesNotShareMetadataWithOriginal() {
+		Document original = Document.builder().text("Original text").metadata("original", "value").build();
+
+		Document mutated = original.mutate().metadata("new", "metadata").build();
+
+		assertThat(mutated.getMetadata()).hasSize(2)
+			.containsEntry("original", "value")
+			.containsEntry("new", "metadata");
+		// gh-6910: metadata added through the builder must not leak into the source
+		// document
+		assertThat(original.getMetadata()).containsExactly(Map.entry("original", "value"));
+	}
+
+	@Test
+	void testMutateDoesNotReplaceOriginalMetadataEntries() {
+		Document original = Document.builder().text("Original text").metadata("shared", "originalValue").build();
+
+		Document mutated = original.mutate().metadata("shared", "mutatedValue").build();
+
+		assertThat(mutated.getMetadata()).containsEntry("shared", "mutatedValue");
+		assertThat(original.getMetadata()).containsEntry("shared", "originalValue");
+	}
+
+	@Test
 	void testDocumentEqualityWithDifferentScores() {
 		Document doc1 = Document.builder().id("sameId").text("Same text").score(0.5).build();
 
