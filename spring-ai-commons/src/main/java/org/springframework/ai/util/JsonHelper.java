@@ -25,6 +25,8 @@ import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectReader;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.core.ParameterizedTypeReference;
@@ -40,6 +42,8 @@ public class JsonHelper {
 
 	private final JsonMapper jsonMapper;
 
+	private final ObjectReader strictJsonReader;
+
 	private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
 	};
 
@@ -50,6 +54,7 @@ public class JsonHelper {
 	public JsonHelper(JsonMapper jsonMapper) {
 		Assert.notNull(jsonMapper, "jsonMapper cannot be null");
 		this.jsonMapper = jsonMapper;
+		this.strictJsonReader = this.jsonMapper.reader(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
 	}
 
 	/**
@@ -147,7 +152,7 @@ public class JsonHelper {
 	 */
 	private boolean isValidJson(String input) {
 		try {
-			this.jsonMapper.readTree(input);
+			this.strictJsonReader.readTree(input);
 			return true;
 		}
 		catch (JacksonException e) {
