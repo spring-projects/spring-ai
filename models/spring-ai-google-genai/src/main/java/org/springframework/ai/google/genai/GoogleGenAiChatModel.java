@@ -614,6 +614,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			.toList();
 
 		if (!toolCalls.isEmpty()) {
+			// Empty text must not hide tool calls from streaming aggregation.
+			messages.removeIf(message -> "".equals(message.getText()) && !isThought(message));
 			var toolCallMessage = AssistantMessage.builder()
 				.content("")
 				.properties(messageMetadata)
