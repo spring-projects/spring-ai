@@ -29,6 +29,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.chroma.ChromaImage;
+import org.springframework.ai.chroma.vectorstore.ChromaVectorStore.ChromaDistanceType;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -290,6 +291,7 @@ public class ChromaVectorStoreIT extends BaseVectorStoreTests {
 			return ChromaVectorStore.builder(chromaApi, embeddingModel)
 				.collectionName("TestCollection")
 				.initializeSchema(true)
+				.distanceType(ChromaDistanceType.COSINE)
 				.build();
 		}
 
