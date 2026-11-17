@@ -118,7 +118,7 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 |`gen_ai.request.top_p` | The top_p sampling setting for the model request.
 |`gen_ai.response.finish_reasons` | Reasons the model stopped generating tokens, corresponding to each generation received.
 |`gen_ai.response.id` | The unique identifier for the AI response.
-|`gen_ai.usage.cache_creation.input_tokens` | The number of input tokens written to a provider-managed cache.
+|`gen_ai.usage.cache_write.input_tokens` | The number of input tokens written to a provider-managed cache.
 |`gen_ai.usage.cache_read.input_tokens` | The number of input tokens served from a provider-managed cache.
 |`gen_ai.usage.input_tokens` | The number of tokens used in the model input (prompt).
 |`gen_ai.usage.output_tokens` | The number of tokens used in the model output (completion).
