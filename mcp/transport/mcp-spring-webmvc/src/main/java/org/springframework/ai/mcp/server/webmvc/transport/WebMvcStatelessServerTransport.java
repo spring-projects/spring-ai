@@ -47,13 +47,15 @@ import org.springframework.web.servlet.function.ServerResponse;
  *
  * <p>
  * This is the non-reactive version of
- * {@link io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport}
+ * {@link org.springframework.ai.mcp.server.webflux.transport.WebFluxStatelessServerTransport}
  *
  * @author Christian Tzolov
  */
 public final class WebMvcStatelessServerTransport implements McpStatelessServerTransport {
 
 	private static final Log logger = LogFactory.getLog(WebMvcStatelessServerTransport.class);
+
+	public static final String DEFAULT_MCP_ENDPOINT = "/mcp";
 
 	private final McpJsonMapper jsonMapper;
 
@@ -63,7 +65,7 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 
 	private @Nullable McpStatelessServerHandler mcpHandler;
 
-	private McpTransportContextExtractor<ServerRequest> contextExtractor;
+	private final McpTransportContextExtractor<ServerRequest> contextExtractor;
 
 	private volatile boolean isClosing = false;
 
@@ -232,7 +234,7 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 
 		private @Nullable McpJsonMapper jsonMapper;
 
-		private String mcpEndpoint = "/mcp";
+		private String mcpEndpoint = DEFAULT_MCP_ENDPOINT;
 
 		private McpTransportContextExtractor<ServerRequest> contextExtractor = serverRequest -> McpTransportContext.EMPTY;
 
