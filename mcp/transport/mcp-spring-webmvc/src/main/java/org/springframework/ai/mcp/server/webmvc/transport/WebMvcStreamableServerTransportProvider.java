@@ -67,6 +67,7 @@ import org.springframework.web.servlet.function.ServerResponse.SseBuilder;
  * @author Christian Tzolov
  * @author Dariusz Jędrzejczyk
  * @author Dimitar Proynov
+ * @author Taewoong Kim
  * @see McpStreamableServerTransportProvider
  * @see RouterFunction
  */
@@ -434,17 +435,18 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		List<MediaType> acceptHeaders = request.headers().asHttpHeaders().getAccept();
 		if (!acceptHeaders.contains(MediaType.TEXT_EVENT_STREAM)
 				|| !acceptHeaders.contains(MediaType.APPLICATION_JSON)) {
-			return ServerResponse.badRequest()
-				.body(McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
-					.message("Invalid Accept headers. Expected TEXT_EVENT_STREAM and APPLICATION_JSON")
-					.build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST, null,
+					McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
+						.message("Invalid Accept headers. Expected TEXT_EVENT_STREAM and APPLICATION_JSON")
+						.build());
 		}
 
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
 
+		McpSchema.@Nullable JSONRPCMessage message = null;
 		try {
 			String body = request.body(String.class);
-			McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, body);
+			message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, body);
 
 			// Handle initialization request
 			if (message instanceof McpSchema.JSONRPCRequest jsonrpcRequest
@@ -454,20 +456,20 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 
 			// Handle other messages that require a session
 			if (!hasMcpSessionIdHeader(request)) {
-				return ServerResponse.badRequest()
-					.body(McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
-						.message("Session ID missing")
-						.build());
+				return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST,
+						WebMvcJsonRpcErrorResponse.requestId(message),
+						McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND).message("Session ID missing").build());
 			}
 
 			String sessionId = request.headers().header(HttpHeaders.MCP_SESSION_ID).get(0);
 			McpStreamableServerSession session = this.sessions.get(sessionId);
 
 			if (session == null || sessionId == null) {
-				return ServerResponse.status(HttpStatus.NOT_FOUND)
-					.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-						.message("Session not found: " + sessionId)
-						.build());
+				return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.NOT_FOUND,
+						WebMvcJsonRpcErrorResponse.requestId(message),
+						McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+							.message("Session not found: " + sessionId)
+							.build());
 			}
 
 			touchSession(sessionId);
@@ -515,27 +517,27 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 				}, Duration.ZERO);
 			}
 			else {
-				return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
-						.message("Unknown message type")
-						.build());
+				return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.INTERNAL_SERVER_ERROR, null,
+						McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST).message("Unknown message type").build());
 			}
 		}
 		catch (IllegalArgumentException | IOException e) {
 			if (logger.isErrorEnabled()) {
 				logger.error("Failed to deserialize message: " + e.getMessage());
 			}
-			return ServerResponse.badRequest()
-				.body(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST).message("Invalid message format").build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST,
+					WebMvcJsonRpcErrorResponse.requestId(message),
+					McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST).message("Invalid message format").build());
 		}
 		catch (Exception e) {
 			if (logger.isErrorEnabled()) {
 				logger.error("Error handling message: " + e.getMessage());
 			}
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("Internal server error. Check server logs for details.")
-					.build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.INTERNAL_SERVER_ERROR,
+					WebMvcJsonRpcErrorResponse.requestId(message),
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("Internal server error. Check server logs for details.")
+						.build());
 		}
 	}
 
@@ -586,10 +588,10 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			if (logger.isErrorEnabled()) {
 				logger.error("Failed to delete session " + sessionId + ": " + e.getMessage());
 			}
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("Internal server error. Check server logs for details.")
-					.build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.INTERNAL_SERVER_ERROR, null,
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("Internal server error. Check server logs for details.")
+						.build());
 		}
 	}
 
@@ -599,22 +601,24 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 				});
 		var sf = this.sessionFactory;
 		if (sf == null) {
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("SessionFactory not configured")
-					.build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.INTERNAL_SERVER_ERROR,
+					jsonrpcRequest.id(),
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("SessionFactory not configured")
+						.build());
 		}
 		if (hasMcpSessionIdHeader) {
-			return ServerResponse.status(HttpStatus.BAD_REQUEST)
-				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("Session already initialized")
-					.build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST, jsonrpcRequest.id(),
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("Session already initialized")
+						.build());
 		}
 		if (this.sessions.size() >= this.maxSessions) {
-			return ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
-				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("Max number of sessions reached")
-					.build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.SERVICE_UNAVAILABLE,
+					jsonrpcRequest.id(),
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("Max number of sessions reached")
+						.build());
 		}
 		McpStreamableServerSession.McpStreamableServerSessionInit init = sf.startSession(initializeRequest);
 		this.sessions.put(init.session().getId(), init.session());
@@ -634,10 +638,11 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			if (logger.isErrorEnabled()) {
 				logger.error("Failed to initialize session: " + e.getMessage());
 			}
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("Internal server error. Check server logs for details.")
-					.build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.INTERNAL_SERVER_ERROR,
+					jsonrpcRequest.id(),
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("Internal server error. Check server logs for details.")
+						.build());
 		}
 	}
 
