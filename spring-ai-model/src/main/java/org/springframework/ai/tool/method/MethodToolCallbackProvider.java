@@ -67,9 +67,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 	private void assertToolAnnotatedMethodsPresent(List<Object> toolObjects) {
 
 		for (Object toolObject : toolObjects) {
-			List<Method> toolMethods = Stream
-				.of(ReflectionUtils.getDeclaredMethods(
-						AopUtils.isAopProxy(toolObject) ? AopUtils.getTargetClass(toolObject) : toolObject.getClass()))
+			List<Method> toolMethods = Stream.of(ReflectionUtils.getDeclaredMethods(getToolClass(toolObject)))
 				.filter(this::isToolAnnotatedMethod)
 				.filter(toolMethod -> !isFunctionalType(toolMethod))
 				.toList();
@@ -85,9 +83,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 	@Override
 	public ToolCallback[] getToolCallbacks() {
 		var toolCallbacks = this.toolObjects.stream()
-			.map(toolObject -> Stream
-				.of(ReflectionUtils.getDeclaredMethods(
-						AopUtils.isAopProxy(toolObject) ? AopUtils.getTargetClass(toolObject) : toolObject.getClass()))
+			.map(toolObject -> Stream.of(ReflectionUtils.getDeclaredMethods(getToolClass(toolObject)))
 				.filter(this::isToolAnnotatedMethod)
 				.filter(toolMethod -> !isFunctionalType(toolMethod))
 				.filter(ReflectionUtils.USER_DECLARED_METHODS::matches)
@@ -105,6 +101,14 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 		validateToolCallbacks(toolCallbacks);
 
 		return toolCallbacks;
+	}
+
+	private static Class<?> getToolClass(Object toolObject) {
+		Class<?> toolClass = (AopUtils.isAopProxy(toolObject) ? AopUtils.getTargetClass(toolObject)
+				: toolObject.getClass());
+		// An enhanced @Configuration class is a CGLIB subclass that does not redeclare
+		// the @Tool methods of the user class
+		return ClassUtils.getUserClass(toolClass);
 	}
 
 	private boolean isFunctionalType(Method toolMethod) {
