@@ -19,7 +19,8 @@ The `TranscriptionModel` interface provides methods for converting audio to text
 
 [source,java]
 ----
-public interface TranscriptionModel extends Model<AudioTranscriptionPrompt, AudioTranscriptionResponse> {
+public interface TranscriptionModel
+        extends Model<AudioTranscriptionPrompt, AudioTranscriptionResponse>, StreamingTranscriptionModel {
 
     /**
      * Transcribes the audio from the given prompt.
@@ -30,16 +31,16 @@ public interface TranscriptionModel extends Model<AudioTranscriptionPrompt, Audi
      * A convenience method for transcribing an audio resource.
      */
     default String transcribe(Resource resource) {
-        AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(resource);
-        return this.call(prompt).getResult().getOutput();
+        return this.transcribe(resource, null);
     }
 
     /**
      * A convenience method for transcribing an audio resource with options.
      */
-    default String transcribe(Resource resource, AudioTranscriptionOptions options) {
+    default String transcribe(Resource resource, @Nullable AudioTranscriptionOptions options) {
         AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(resource, options);
-        return this.call(prompt).getResult().getOutput();
+        AudioTranscription result = this.call(prompt).getResult();
+        return result != null ? result.getOutput() : "";
     }
 }
 ----
@@ -92,11 +93,20 @@ public class TranscriptionService {
     }
 
     public String transcribeWithOptions(Resource audioFile, AudioTranscriptionOptions options) {
-        AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(audioFile, options);
-        AudioTranscriptionResponse response = transcriptionModel.call(prompt);
-        return response.getResult().getOutput();
+        return transcriptionModel.transcribe(audioFile, options);
     }
 }
+----
+
+The `transcribe` convenience methods return only the text. Use `call()` when you also need the response metadata, such as token usage:
+
+[source,java]
+----
+AudioTranscriptionResponse response =
+        transcriptionModel.call(new AudioTranscriptionPrompt(audioFile, options));
+AudioTranscription result = response.getResult();
+String text = result != null ? result.getOutput() : "";
+Usage usage = response.getMetadata().getUsage();
 ----
 
 This service works seamlessly with OpenAI or any other transcription provider, with the actual implementation determined by your Spring Boot configuration.
