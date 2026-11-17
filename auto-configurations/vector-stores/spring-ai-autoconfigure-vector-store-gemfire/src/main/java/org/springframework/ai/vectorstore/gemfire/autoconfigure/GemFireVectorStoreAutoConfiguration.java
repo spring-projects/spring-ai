@@ -33,6 +33,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for GemFire Vector Store.
@@ -67,7 +68,7 @@ public class GemFireVectorStoreAutoConfiguration {
 	public GemFireVectorStore gemfireVectorStore(EmbeddingModel embeddingModel, GemFireVectorStoreProperties properties,
 			GemFireConnectionDetails gemFireConnectionDetails, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
-			BatchingStrategy batchingStrategy) {
+			BatchingStrategy batchingStrategy, ObjectProvider<WebClient.Builder> webClientBuilderProvider) {
 
 		Builder builder = GemFireVectorStore.builder(embeddingModel)
 			.host(gemFireConnectionDetails.getHost())
@@ -82,7 +83,8 @@ public class GemFireVectorStoreAutoConfiguration {
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
-			.batchingStrategy(batchingStrategy);
+			.batchingStrategy(batchingStrategy)
+			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder));
 		if (gemFireConnectionDetails.getUsername() != null) {
 			builder.username(gemFireConnectionDetails.getUsername());
 		}
