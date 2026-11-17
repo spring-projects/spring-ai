@@ -32,6 +32,7 @@ import org.springframework.util.Assert;
  * Request for creating cached content in Google GenAI.
  *
  * @author Dan Dobrin
+ * @author Namju Kim
  * @since 1.1.0
  */
 public final class CachedContentRequest {
@@ -143,7 +144,7 @@ public final class CachedContentRequest {
 
 		public Builder addTextContent(String text) {
 			if (text != null) {
-				this.contents.add(Content.builder().parts(Part.builder().text(text).build()).build());
+				this.contents.add(Content.builder().role("user").parts(Part.builder().text(text).build()).build());
 			}
 			return this;
 		}
