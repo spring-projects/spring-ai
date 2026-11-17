@@ -203,21 +203,26 @@ List<Document> documents = this.jsonReader.get("/store/books/0");
 
 [source,json]
 ----
-[
-  {
-    "id": 1,
-    "brand": "Trek",
-    "description": "A high-performance mountain bike for trail riding."
-  },
-  {
-    "id": 2,
-    "brand": "Cannondale",
-    "description": "An aerodynamic road bike for racing enthusiasts."
+{
+  "store": {
+    "books": [
+      {
+        "id": 1,
+        "brand": "Trek",
+        "description": "A high-performance mountain bike for trail riding."
+      },
+      {
+        "id": 2,
+        "brand": "Cannondale",
+        "description": "An aerodynamic road bike for racing enthusiasts."
+      }
+    ]
   }
-]
+}
 ----
 
-In this example, if the `JsonReader` is configured with `"description"` as the `jsonKeysToUse`, it will create `Document` objects where the content is the value of the "description" field for each bike in the array.
+In this example, the JSON Pointer "/store/books/0" selects the first object in the books array. Since the `JsonReader` is configured with `"description"` as the
+`jsonKeysToUse`, the resulting `Document` content will be the value of the "description" field from the selected object.
 
 ==== Notes
 
@@ -608,7 +613,7 @@ dependencies {
 [source,java]
 ----
 @Component
-public class MyPagePdfDocumentReader {
+public class MyParagraphPdfDocumentReader {
 
 	List<Document> getDocsFromPdfWithCatalog() {
 
@@ -618,7 +623,6 @@ public class MyPagePdfDocumentReader {
                     .withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
                         .withNumberOfTopTextLinesToDelete(0)
                         .build())
-                    .withPagesPerDocument(1)
                     .build());
 
 	    return pdfReader.read();
@@ -679,7 +683,7 @@ class MyTikaDocumentReader {
 == Transformers
 
 === TextSplitter
-The `TextSplitter` an abstract base class that helps divides documents to fit the AI model's context window.
+The `TextSplitter` is an abstract base class that helps divide documents to fit within the AI model's context window.
 
 
 === TokenTextSplitter
