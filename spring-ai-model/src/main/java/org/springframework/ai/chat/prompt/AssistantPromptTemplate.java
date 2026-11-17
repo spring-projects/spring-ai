@@ -38,8 +38,18 @@ public class AssistantPromptTemplate extends PromptTemplate {
 	}
 
 	@Override
+	public Prompt create(ChatOptions modelOptions) {
+		return new Prompt(new AssistantMessage(render()), modelOptions);
+	}
+
+	@Override
 	public Prompt create(Map<String, Object> model) {
 		return new Prompt(new AssistantMessage(render(model)));
+	}
+
+	@Override
+	public Prompt create(Map<String, Object> model, ChatOptions modelOptions) {
+		return new Prompt(new AssistantMessage(render(model)), modelOptions);
 	}
 
 	@Override
