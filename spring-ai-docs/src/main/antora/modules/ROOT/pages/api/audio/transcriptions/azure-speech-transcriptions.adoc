@@ -1,0 +1,334 @@
+= Azure AI Speech Transcriptions
+
+Spring AI supports audio transcription with https://learn.microsoft.com/azure/ai-services/speech-service/speech-to-text[Azure AI Speech] through the `AzureSpeechTranscriptionModel`, an implementation of the portable `TranscriptionModel` interface.
+
+[IMPORTANT]
+====
+Azure AI Speech is a different service from Azure OpenAI audio transcription.
+This page covers the Speech service and its `client-sdk`, which runs continuous recognition over a streamed audio session.
+For Whisper-style transcription hosted on Azure OpenAI, see xref:api/audio/transcriptions/azure-openai-transcriptions.adoc[Azure OpenAI Transcriptions] instead.
+The two have separate resources, separate keys and separate properties, and both can be configured in the same application.
+====
+
+The audio is streamed to the service rather than uploaded.
+The model reads the WAV header, confirms the payload is the 16-bit mono PCM the service documents, and serves the samples through a pull stream.
+Every final result the session produces becomes one segment: `call` joins the segment texts with a single space, while `stream` emits one response per segment as the service produces it.
+
+== Prerequisites
+
+* An https://learn.microsoft.com/azure/ai-services/speech-service/overview[Azure AI Speech] resource, and either its region or its endpoint.
+* A resource key, unless you supply your own `AzureSpeechConfigFactory` bean (see <<custom-authentication,Custom Authentication>>).
+* A platform the Azure Speech SDK supports.
+The SDK ships platform-specific native libraries, which is why this model is never auto-configured by default.
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project.
+Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+== Auto-configuration
+
+Add the starter to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-azure-speech</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-azure-speech'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Enabling and Disabling Transcription Auto-Configuration
+
+This model is strictly opt-in.
+Set `spring.ai.model.audio.transcription` to `azure-speech` to create it; it is not enabled by default, because the Azure Speech SDK ships platform-specific native libraries.
+Any other value, including `none`, leaves the model and all of its properties out of the context.
+
+[source,application.properties]
+----
+spring.ai.model.audio.transcription=azure-speech
+----
+
+An application that already defines its own `TranscriptionModel` bean keeps it: the auto-configuration then contributes neither the model nor its default configuration factory, and reads no connection properties at all.
+
+=== Connection Properties
+
+The prefix `spring.ai.azure.speech` is used to connect to the Speech resource.
+
+[cols="3,4,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.azure.speech.api-key | Azure AI Speech resource key. | -
+| spring.ai.azure.speech.region | Azure region of the Speech resource, such as `westeurope`. Exactly one of the region or the endpoint must be set. | -
+| spring.ai.azure.speech.endpoint | Azure AI Speech service endpoint. Required for custom endpoints, private links, and continuous language identification. Exactly one of the region or the endpoint must be set. | -
+|====
+
+A missing key, a missing region and endpoint, or both of them at once fails startup with a message that names the property at fault and never repeats a configured value.
+
+=== Transcription Properties
+
+The prefix `spring.ai.azure.speech.transcription` configures the defaults every request inherits.
+
+[cols="3,4,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.azure.speech.transcription.model | Recognition model to use. Mutually exclusive with the Custom Speech endpoint ID. | -
+| spring.ai.azure.speech.transcription.endpoint-id | Custom Speech endpoint ID of a deployed custom model. | -
+| spring.ai.azure.speech.transcription.language | BCP-47 recognition language, such as `en-US`. Mutually exclusive with the candidate languages. | -
+| spring.ai.azure.speech.transcription.candidate-languages | BCP-47 languages automatic language identification chooses between. At most 4 at the start of the audio, or 10 continuously. | -
+| spring.ai.azure.speech.transcription.language-id-mode | How automatic language identification runs over the audio: `AT_START` or `CONTINUOUS`. Requires the candidate languages. `CONTINUOUS` additionally requires an endpoint-based connection. | -
+| spring.ai.azure.speech.transcription.profanity | How profanity is handled in the recognized text: `MASKED`, `REMOVED` or `RAW`. | -
+| spring.ai.azure.speech.transcription.output-format | Whether the service returns `SIMPLE` or `DETAILED` results. Only `DETAILED` keeps the raw result JSON on each segment. | -
+| spring.ai.azure.speech.transcription.word-level-timestamps | Whether word-level timestamps are requested. | -
+| spring.ai.azure.speech.transcription.phrases | Phrases that bias recognition towards domain vocabulary. | -
+| spring.ai.azure.speech.transcription.timeout | Overall deadline for one transcription operation. | 10m
+| spring.ai.azure.speech.transcription.max-audio-size | Guard on the PCM payload served to the SDK. | 100MB
+|====
+
+A request may replace any of these defaults with a value of its own, but it cannot clear one.
+Combinations are validated per request, before any SDK object is created, so defaults that cannot be honored together — a recognition model alongside a Custom Speech endpoint ID, for instance — are rejected on every request rather than at startup.
+
+== Audio Format
+
+The service documents 16-bit mono PCM for streamed audio, and this model accepts exactly that: a WAV resource whose `fmt ` chunk declares 16-bit, single-channel PCM at 8 kHz or 16 kHz, including the extensible form whose subformat is PCM.
+The sample rate is read from the header and passed on to the service.
+Anything else — stereo, 8-bit or 24-bit samples, another sample rate, a compressed codec, a container that is not WAV — is rejected with an `AzureSpeechAudioFormatException` before any connection is attempted, so resample or convert such input before calling the model.
+
+The payload is never buffered in memory: the model pulls from the resource's stream as the SDK asks for samples, and stops with an `AzureSpeechTranscriptionException` once `max-audio-size` PCM bytes have been served.
+A header that declares a longer payload than the limit fails the operation up front, before any SDK object is created, with that same `AzureSpeechTranscriptionException` rather than with the format exception above.
+
+== Finite Resources and Timeouts
+
+One transcription operation acquires the `InputStream` your application supplied, a `SpeechConfig`, an audio stream format, a pull stream, an audio configuration, and a recognizer — native handles whose number and lifetime the application has to care about, unlike an HTTP-based model.
+Language identification adds an `AutoDetectSourceLanguageConfig`, and a phrase list adds a `PhraseListGrammar`, when those options are used.
+Two guarantees keep the set bounded:
+
+* *Each resource is closed at most once, and ordinary publication accounts for every resource.*
+Close is attempted once, where attempting it is safe, and the resource settles as either closed or failed once that attempt concludes — which, on the forced paths in the second guarantee, can be after the caller has already seen its outcome, or not at all.
+Released exactly once is what you get when those attempts succeed, which is the normal case, but it is not promised unconditionally: an attempted close can fail, and in one case no close is attempted at all.
+A `close()` that throws is recorded as failed rather than retried, so a native handle can stay unreleased behind a transcript that was published successfully.
+A failure known before the outcome is published is attached to a failing outcome as a suppressed exception, and logged when the outcome is a success; a failure that arrives after publication, which the forced paths below can leave behind, is only logged.
+The recognizer, in addition, is deliberately not closed when the SDK has accepted a start or a stop whose completion no thread can observe — which takes a saturated cleanup executor *and* a failure to create a fallback thread.
+Closing then could be rejected by the SDK and might dispose a recognizer with work still running on it, so the model settles that recognizer as failed, saying the completion of a submitted SDK action is unobservable, without attempting a close.
+* *The timeout always bounds what the caller sees, and only ordinary publication waits for release.*
+Each operation runs its acquisition sequence on its own worker, so the calling thread never waits on a native call.
+An operation that reaches its own end publishes only once nothing is still being acquired and every resource has settled, so a result published that way has no close attempt outstanding behind it.
+Publication forced by the deadline, by an interrupt, or by a subscriber's cancellation does not wait for that: the outcome already decided — which may be a success the SDK supplied just before, as well as a timeout or an interruption — is published at once, and any close attempt still running, together with the native call it is waiting on, continues behind it on the model's cleanup executor.
+A native call that never returns therefore leaves its resource pending indefinitely, by design, rather than disposing a handle the SDK is still using.
+
+The practical consequences are worth planning for:
+
+* Concurrent transcriptions each hold their own native session, so cap the concurrency you allow rather than relying on the service to push back.
+* `timeout` bounds the whole operation, including the service connection, not just recognition, and should be set from the longest audio you accept.
+* `stream` republishes segments on Reactor's shared `boundedElastic` scheduler, so a subscriber that blocks in the stream delays other users of that scheduler too.
+* The SDK extracts its native libraries from the artifact into a temporary directory and loads them when `SpeechConfig` is first touched, before any recognizer exists, and it can be asked to write its own native log file.
+A restricted or read-only filesystem, or a container without a writable temporary directory, prevents either; see the note under <<error-reporting,Error Reporting>> for how that surfaces, because it does not arrive as one of the exception types listed there.
+
+[[error-reporting]]
+== Error Reporting
+
+Caller mistakes and service failures are reported as different kinds of exception, so catching one does not catch the other.
+
+[cols="2,3,4", stripes=even]
+|====
+| Thrown | Type | When
+
+| `AzureSpeechAudioFormatException`
+| an `IllegalArgumentException`
+| The resource is not a WAV of 16-bit mono PCM at 8 kHz or 16 kHz. Thrown before any connection is attempted.
+
+| `IllegalArgumentException`
+| —
+| The merged options are individually or jointly invalid — a negative timeout, a blank or duplicated candidate language, a fixed language alongside candidate languages, a recognition model alongside a Custom Speech endpoint ID — or the configured connection is invalid, such as a key with neither a region nor an endpoint. Options are validated per request, before any SDK object is created. A blank `language` is ignored rather than rejected; an empty `candidateLanguages` list is rejected, since leaving it unset is how language identification is disabled.
+
+| `AzureSpeechConfigurationException`
+| an `IllegalStateException`
+| Continuous language identification was requested over a `SpeechConfig` that was not created from an endpoint, which the SDK cannot run. Thrown after the `SpeechConfig` is created and before any recognizer exists.
+
+| `AzureSpeechTranscriptionException`
+| a `RuntimeException`
+| Everything else the operation can report: the service canceled recognition, the `AzureSpeechConfigFactory` failed or returned `null`, the audio stream could not be opened or read, the header declared more payload than `max-audio-size` or the payload exceeded it while being served, or the operation hit its deadline or was interrupted.
+
+| `AzureSpeechResourceException`, `AzureSpeechCleanupException`
+| both `RuntimeException`
+| A resource could not be released. Attached to a failing outcome as a suppressed exception when the failure is known before the outcome is published, and only logged when it arrives after publication; never the sole reason a successful transcript is withheld.
+|====
+
+A caller that wants one `catch` for everything this model reports should catch `RuntimeException`; everything in the table is unchecked.
+
+Splitting "my request was wrong" from "the call failed" takes three catches rather than two, because the two input errors do not share a supertype below `RuntimeException`:
+
+* `IllegalArgumentException`, which covers `AzureSpeechAudioFormatException` and every rejected option combination;
+* `AzureSpeechConfigurationException`, an `IllegalStateException`, for the one request shape the SDK itself cannot run;
+* `AzureSpeechTranscriptionException` for the call, including a declared payload over `max-audio-size`, which is reported as a failed operation rather than as a rejected argument.
+
+A caller that catches only the first two therefore still has to handle `AzureSpeechTranscriptionException` for input it could have checked itself.
+
+One failure is deliberately outside this table.
+The SDK loads its native libraries from a static initializer, so a host that cannot extract or load them raises an `Error`, not an exception, on the worker that was acquiring the `SpeechConfig`.
+The model converts exceptions, not errors, so the operation stays undecided and the caller sees its configured `timeout` elapse; the `Error` itself reaches the worker thread's uncaught-exception handler, which is where to look when every transcription on a host times out without one of the exceptions above.
+
+`AzureSpeechTranscriptionException` carries the SDK's `CancellationReason` and `CancellationErrorCode` enumeration names through `getCancellationReason()` and `getErrorCode()`, plus fixed guidance chosen by the error code.
+The service's free-text error details are deliberately not included, because they can repeat a key, a token, a credential-bearing URL or a path.
+The same applies to `toString()` on the connection properties and to startup validation messages, which never repeat a configured key or endpoint.
+Use the error code to decide whether to retry; the model itself never retries.
+
+== Runtime Options
+
+`AzureSpeechAudioTranscriptionOptions` carries the same options as the properties above and overrides them per request:
+
+[source,java]
+----
+AzureSpeechAudioTranscriptionOptions options = AzureSpeechAudioTranscriptionOptions.builder()
+    .language("en-US")
+    .outputFormat(AzureSpeechAudioTranscriptionOptions.OutputFormat.DETAILED)
+    .wordLevelTimestamps(true)
+    .phrases(List.of("Spring AI", "Azure AI Speech"))
+    .timeout(Duration.ofMinutes(5))
+    .build();
+
+AudioTranscriptionResponse response = transcriptionModel
+    .call(new AudioTranscriptionPrompt(audioFile, options));
+----
+
+== Segments and Metadata
+
+`AudioTranscription.getMetadata()` returns an `AzureSpeechAudioTranscriptionMetadata` whose `getSegments()` lists the final results in recognition order.
+Each `AzureSpeechSegment` carries the text exactly as the service returned it, its offset and duration, the detected language when language identification ran, the word timings when word-level timestamps were requested, and the raw result JSON when `DETAILED` output was requested.
+
+The response metadata additionally carries the provider, the resolved model label, the segment count, the `NoMatch` count, the first segment's offset, the span the segments cover, the Custom Speech endpoint ID when one was configured, and the distinct detected languages when language identification ran.
+
+== Streaming
+
+[source,java]
+----
+Flux<AudioTranscriptionResponse> responses = transcriptionModel
+    .stream(new AudioTranscriptionPrompt(audioFile));
+----
+
+Each element carries exactly the text the service recognized for one segment, with that segment's own metadata; interim hypotheses are never emitted.
+Concatenating the emitted texts is not guaranteed to reproduce what `call` returns, because `call` joins segment texts with a single space, which suits neither every script nor every punctuation style.
+Callers who need another aggregation have the verbatim segments in the metadata.
+
+Cancelling the subscription starts releasing what the operation acquired, under the same at-most-one-attempt guarantee as above, and asks the recognizer to stop if one exists and the SDK has not already reported the session ending; nothing is emitted or signaled to that subscriber afterwards.
+Because a cancellation does not wait for a native call that has not returned, release can still be outstanding — in principle indefinitely — after the subscriber has stopped hearing from the stream.
+
+== Sample Controller
+
+Create a new Spring Boot project, add the `spring-ai-starter-model-azure-speech` dependency, and add an `application.properties` file under `src/main/resources`:
+
+[source,application.properties]
+----
+spring.ai.model.audio.transcription=azure-speech
+spring.ai.azure.speech.api-key=${AZURE_SPEECH_KEY}
+spring.ai.azure.speech.region=${AZURE_SPEECH_REGION}
+spring.ai.azure.speech.transcription.language=en-US
+spring.ai.azure.speech.transcription.output-format=DETAILED
+----
+
+[source,java]
+----
+@RestController
+public class TranscriptionController {
+
+    private final TranscriptionModel transcriptionModel;
+
+    @Value("classpath:/speech/meeting-16k-mono.wav")
+    private Resource audioFile;
+
+    TranscriptionController(TranscriptionModel transcriptionModel) {
+        this.transcriptionModel = transcriptionModel;
+    }
+
+    @GetMapping("/ai/transcription")
+    public String transcribe() {
+        AudioTranscriptionResponse response = this.transcriptionModel
+            .call(new AudioTranscriptionPrompt(this.audioFile));
+        return response.getResult().getOutput();
+    }
+}
+----
+
+== Manual Configuration
+
+Add the model dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-azure-speech</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-azure-speech'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Then create the model:
+
+[source,java]
+----
+var connectionDetails = AzureSpeechConnectionDetails.builder()
+    .apiKey(System.getenv("AZURE_SPEECH_KEY"))
+    .region(System.getenv("AZURE_SPEECH_REGION"))
+    .build();
+
+var transcriptionModel = AzureSpeechTranscriptionModel.builder()
+    .speechConfigFactory(new DefaultAzureSpeechConfigFactory(connectionDetails))
+    .defaultOptions(AzureSpeechAudioTranscriptionOptions.builder().language("en-US").build())
+    .build();
+
+var audioFile = new FileSystemResource("/path/to/audio-16k-mono.wav");
+AudioTranscriptionResponse response = transcriptionModel
+    .call(new AudioTranscriptionPrompt(audioFile));
+System.out.println(response.getResult().getOutput());
+----
+
+[[custom-authentication]]
+== Custom Authentication
+
+`DefaultAzureSpeechConfigFactory` covers the key-based authentication supported out of the box: a key with either a region or an endpoint, so endpoint-addressed deployments — private links, sovereign clouds, container hosts — need no custom code as long as a key authenticates them.
+Anything else — Microsoft Entra ID, authorization tokens, or any `SpeechConfig` setting this model does not expose — is expressed by supplying your own `AzureSpeechConfigFactory` bean, which hands the model one `SpeechConfig` per operation and transfers its ownership:
+
+[source,java]
+----
+@Bean
+AzureSpeechConfigFactory azureSpeechConfigFactory() {
+    return () -> SpeechConfig.fromAuthorizationToken(tokenProvider.get(), region);
+}
+----
+
+With that bean present the auto-configuration contributes no default factory and reads none of the `spring.ai.azure.speech` connection properties.
+The model never caches or reuses the `SpeechConfig` the factory returns, so a factory that mints a short-lived token per call keeps successive calls authenticated.
+That covers the gap between calls but not the inside of one: refreshing a token for recognition that is already running means calling `setAuthorizationToken` on the recognizer, and the model owns the recognizer and does not expose it.
+Keep `timeout` comfortably below your token's lifetime, or authenticate with a key instead.
+Which lifetime that is depends on the token: an authorization token issued from a Speech resource key lasts ten minutes, the same as this model's default timeout, so the default leaves no margin at all; a Microsoft Entra access token lasts longer, is configurable per tenant, and is not something to assume from the Speech documentation.
+
+== Observability
+
+The model records the portable `TranscriptionModelObservationContext`, with `azure_speech` as the provider, under the standard transcription observation name.
+Streaming operations are recorded as one observation per subscription, stopped before the terminal signal reaches the subscriber, whose recorded response carries the whole transcript rather than one segment.

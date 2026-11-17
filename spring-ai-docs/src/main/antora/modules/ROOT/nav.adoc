@@ -61,6 +61,7 @@
 *** xref:api/audio.adoc[Audio Models]
 **** xref:api/audio/transcriptions.adoc[]
 ***** xref:api/audio/transcriptions/azure-openai-transcriptions.adoc[Azure OpenAI]
+***** xref:api/audio/transcriptions/azure-speech-transcriptions.adoc[Azure AI Speech]
 ***** xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI]
 ***** xref:api/audio/transcriptions/google-genai-transcriptions.adoc[Google GenAI Transcription]
 **** xref:api/audio/speech.adoc[]
