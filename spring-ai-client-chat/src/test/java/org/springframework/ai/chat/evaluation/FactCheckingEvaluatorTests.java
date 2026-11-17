@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.evaluation;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,8 +40,10 @@ import org.springframework.ai.evaluation.EvaluationResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link FactCheckingEvaluator}.
@@ -90,6 +93,8 @@ class FactCheckingEvaluatorTests {
 		EvaluationResponse result = evaluator.evaluate(new EvaluationRequest("query", List.of(), "response content"));
 
 		assertThat(result.isPass()).isTrue();
+		assertThat(result.getFeedback()).isEqualTo(response);
+		assertThat(result.getMetadata()).containsEntry(FactCheckingEvaluator.LLM_RAW_RESPONSE_METADATA_KEY, response);
 	}
 
 	@ParameterizedTest
@@ -103,6 +108,30 @@ class FactCheckingEvaluatorTests {
 		EvaluationResponse result = evaluator.evaluate(new EvaluationRequest("query", List.of(), "response content"));
 
 		assertThat(result.isPass()).isFalse();
+		assertThat(result.getFeedback()).isEqualTo(response);
+		assertThat(result.getMetadata()).containsEntry(FactCheckingEvaluator.LLM_RAW_RESPONSE_METADATA_KEY, response);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	void whenLlmReturnsNullThenPassIsFalseAndFeedbackIsEmpty() {
+		ChatClient.Builder builder = mock(ChatClient.Builder.class);
+		ChatClient chatClient = mock(ChatClient.class);
+		ChatClient.ChatClientRequestSpec requestSpec = mock(ChatClient.ChatClientRequestSpec.class);
+		ChatClient.CallResponseSpec callResponseSpec = mock(ChatClient.CallResponseSpec.class);
+
+		when(builder.build()).thenReturn(chatClient);
+		when(chatClient.prompt()).thenReturn(requestSpec);
+		when(requestSpec.user(any(Consumer.class))).thenReturn(requestSpec);
+		when(requestSpec.call()).thenReturn(callResponseSpec);
+		when(callResponseSpec.content()).thenReturn(null);
+
+		EvaluationResponse result = FactCheckingEvaluator.builder(builder)
+			.build()
+			.evaluate(new EvaluationRequest("Is Spring a framework?", "Spring is a Java framework."));
+
+		assertThat(result.isPass()).isFalse();
+		assertThat(result.getFeedback()).isEmpty();
 	}
 
 }
