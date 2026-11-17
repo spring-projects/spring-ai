@@ -19,14 +19,25 @@ package org.springframework.ai.model.mistralai.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiAudioApi.TimestampGranularity;
+import org.springframework.ai.mistralai.transcription.MistralAiTranscriptionModel;
+import org.springframework.ai.mistralai.transcription.MistralAiTranscriptionOptions;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 /**
  * Unit Tests for {@link MistralAiCommonProperties}, {@link MistralAiEmbeddingProperties}.
@@ -167,6 +178,78 @@ public class MistralAiPropertiesTests {
 				assertThat(moderationProperties.getModel()).isEqualTo("MODERATION_MODEL");
 				assertThat(moderationProperties.toOptions().getModel()).isEqualTo("MODERATION_MODEL");
 			});
+	}
+
+	@Test
+	public void transcriptionOptionsTest() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.mistralai.base-url=TEST_BASE_URL", "spring.ai.mistralai.api-key=abc123",
+					"spring.ai.mistralai.audio.transcription.model=TRANSCRIPTION_MODEL",
+					"spring.ai.mistralai.audio.transcription.language=fr",
+					"spring.ai.mistralai.audio.transcription.temperature=0.3",
+					"spring.ai.mistralai.audio.transcription.diarize=true",
+					"spring.ai.mistralai.audio.transcription.context-bias=Northwind,Quillara",
+					"spring.ai.mistralai.audio.transcription.timestamp-granularities=segment")
+			.withConfiguration(AutoConfigurations.of(MistralAiTranscriptionAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+					WebClientAutoConfiguration.class))
+			.run(context -> {
+				var transcriptionProperties = context.getBean(MistralAiTranscriptionProperties.class);
+				var commonProperties = context.getBean(MistralAiCommonProperties.class);
+
+				assertThat(commonProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(commonProperties.getApiKey()).isEqualTo("abc123");
+				// Left unset, so that the common connection properties apply.
+				assertThat(transcriptionProperties.getBaseUrl()).isNull();
+				assertThat(transcriptionProperties.getApiKey()).isNull();
+
+				var options = transcriptionProperties.toOptions();
+				assertThat(options.getModel()).isEqualTo("TRANSCRIPTION_MODEL");
+				assertThat(options.getLanguage()).isEqualTo("fr");
+				assertThat(options.getTemperature()).isEqualTo(0.3);
+				assertThat(options.getDiarize()).isTrue();
+				assertThat(options.getContextBias()).containsExactly("Northwind", "Quillara");
+				assertThat(options.getTimestampGranularities()).containsExactly(TimestampGranularity.SEGMENT);
+
+				var transcriptionModel = context.getBean(MistralAiTranscriptionModel.class);
+				assertThat(transcriptionModel.getOptions()).isEqualTo(options);
+			});
+	}
+
+	@Test
+	public void transcriptionUsesCommonConnectionProperties() {
+		RestClient.Builder restClientBuilder = RestClient.builder();
+		MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+		server.expect(requestTo("https://proxy.example.com/v1/audio/transcriptions"))
+			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer abc123"))
+			.andRespond(withSuccess("""
+					{"model": "voxtral-mini-latest", "text": "Hello.", "language": null, "segments": [],
+					"usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}}
+					""", MediaType.APPLICATION_JSON));
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.mistralai.base-url=https://proxy.example.com",
+					"spring.ai.mistralai.api-key=abc123")
+			.withBean(RestClient.Builder.class, () -> restClientBuilder)
+			.withConfiguration(AutoConfigurations.of(MistralAiTranscriptionAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class))
+			.run(context -> {
+				var transcriptionModel = context.getBean(MistralAiTranscriptionModel.class);
+
+				assertThat(transcriptionModel.transcribe(new ByteArrayResource("audio".getBytes())))
+					.isEqualTo("Hello.");
+				server.verify();
+			});
+	}
+
+	@Test
+	public void transcriptionDefaultModel() {
+		new ApplicationContextRunner().withPropertyValues("spring.ai.mistralai.api-key=abc123")
+			.withConfiguration(AutoConfigurations.of(MistralAiTranscriptionAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+					WebClientAutoConfiguration.class))
+			.run(context -> assertThat(context.getBean(MistralAiTranscriptionModel.class).getOptions().getModel())
+				.isEqualTo(MistralAiTranscriptionOptions.DEFAULT_MODEL));
 	}
 
 }

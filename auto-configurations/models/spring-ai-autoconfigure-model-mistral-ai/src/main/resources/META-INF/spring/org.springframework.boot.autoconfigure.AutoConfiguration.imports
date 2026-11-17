@@ -2,3 +2,4 @@ org.springframework.ai.model.mistralai.autoconfigure.MistralAiChatAutoConfigurat
 org.springframework.ai.model.mistralai.autoconfigure.MistralAiEmbeddingAutoConfiguration
 org.springframework.ai.model.mistralai.autoconfigure.MistralAiModerationAutoConfiguration
 org.springframework.ai.model.mistralai.autoconfigure.MistralAiOcrAutoConfiguration
+org.springframework.ai.model.mistralai.autoconfigure.MistralAiTranscriptionAutoConfiguration
