@@ -36,6 +36,7 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
  * @author Christian Tzolov
  * @author Hyunsang Han
  * @author Sebastien Deleuze
+ * @author hyeonZIP
  * @since 1.1.0
  */
 @ConfigurationProperties(GoogleGenAiChatProperties.CONFIG_PREFIX)
@@ -92,6 +93,8 @@ public class GoogleGenAiChatProperties {
 	private @Nullable Map<String, String> labels;
 
 	private @Nullable GoogleGenAiServiceTier serviceTier;
+
+	private @Nullable Double videoFps;
 
 	public @Nullable List<String> getStopSequences() {
 		return this.stopSequences;
@@ -299,6 +302,20 @@ public class GoogleGenAiChatProperties {
 		this.serviceTier = serviceTier;
 	}
 
+	/**
+	 * @since 2.1.0
+	 */
+	public @Nullable Double getVideoFps() {
+		return this.videoFps;
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public void setVideoFps(@Nullable Double videoFps) {
+		this.videoFps = videoFps;
+	}
+
 	public GoogleGenAiChatOptions toOptions() {
 		return GoogleGenAiChatOptions.builder()
 			.model(this.model)
@@ -329,6 +346,7 @@ public class GoogleGenAiChatProperties {
 			.safetySettings(this.safetySettings)
 			.labels(this.labels)
 			.serviceTier(this.serviceTier)
+			.videoFps(this.videoFps)
 			.build();
 	}
 
