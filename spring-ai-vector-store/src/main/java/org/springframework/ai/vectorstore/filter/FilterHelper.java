@@ -63,6 +63,11 @@ public final class FilterHelper {
 	 * 	NOT(a IN [...]) = a NIN [...]
 	 * 	NOT(a NIN [...]) = a IN [...]
 	 * </pre>
+	 *
+	 * The returned operand is the negation of {@code operand} itself, so callers holding
+	 * a {@link Filter.ExpressionType#NOT} node must pass that node's
+	 * {@link Filter.Expression#left() operand} rather than the node, otherwise the
+	 * negation is applied one time too many.
 	 * @param operand Filter expression to negate.
 	 * @return Returns a negation of the input expression.
 	 */
@@ -79,7 +84,7 @@ public final class FilterHelper {
 		else if (operand instanceof Filter.Expression exp) {
 			switch (exp.type()) {
 				case NOT: // NOT(NOT(a)) = a
-					return negate(exp.left());
+					return exp.left();
 				case AND: // NOT(a AND b) = NOT(a) OR NOT(b)
 				case OR: // NOT(a OR b) = NOT(a) AND NOT(b)
 					return new Filter.Expression(TYPE_NEGATION_MAP.get(exp.type()), negate(exp.left()),

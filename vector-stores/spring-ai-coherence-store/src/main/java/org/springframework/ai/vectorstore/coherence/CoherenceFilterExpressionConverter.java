@@ -54,7 +54,7 @@ public class CoherenceFilterExpressionConverter {
 
 	private Filter<?> convert(Expression expression) {
 		if (expression.type() == ExpressionType.NOT) {
-			return convert(FilterHelper.negate(expression));
+			return convert(FilterHelper.negate(expression.left()));
 		}
 		Assert.state(expression.right() != null, "expression is expected to have a right operand");
 		return switch (expression.type()) {
