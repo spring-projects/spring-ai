@@ -18,6 +18,7 @@ package org.springframework.ai.transformers;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -119,7 +120,9 @@ public class ResourceCacheService {
 
 			File cachedFile = getCachedFile(originalResource);
 			if (!cachedFile.exists()) {
-				FileCopyUtils.copy(StreamUtils.copyToByteArray(originalResource.getInputStream()), cachedFile);
+				try (InputStream inputStream = originalResource.getInputStream()) {
+					FileCopyUtils.copy(StreamUtils.copyToByteArray(inputStream), cachedFile);
+				}
 				logger.info("Caching the " + originalResource.toString() + " resource to: " + cachedFile);
 			}
 			return new FileUrlResource(cachedFile.getAbsolutePath());
