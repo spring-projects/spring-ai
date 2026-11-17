@@ -38,6 +38,7 @@ import org.springframework.util.Assert;
  *
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Sun Yuhan
  * @since 1.0.0
  * @deprecated since 2.1.0, for removal in 3.0.0, in favor of session memory,
  * {@code org.springframework.ai.session.SessionService} in {@code spring-ai-session}; a
@@ -81,6 +82,11 @@ public final class MessageWindowChatMemory implements ChatMemory {
 	public void clear(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		this.chatMemoryRepository.deleteByConversationId(conversationId);
+	}
+
+	@Override
+	public List<String> getConversations() {
+		return this.chatMemoryRepository.findConversationIds();
 	}
 
 	private List<Message> process(List<Message> memoryMessages, List<Message> newMessages) {
