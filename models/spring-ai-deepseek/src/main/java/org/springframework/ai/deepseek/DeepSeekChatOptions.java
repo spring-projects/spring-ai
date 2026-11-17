@@ -143,6 +143,16 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	private final @Nullable ReasoningEffort reasoningEffort;
 
 	/**
+	 * Echo back the prompt in addition to the completion.
+	 */
+	private final @Nullable Boolean echo;
+
+	/**
+	 * The suffix that comes after a completion of inserted text.
+	 */
+	private final @Nullable String suffix;
+
+	/**
 	 * Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the toolCallbacks are automatically enabled for the duration of the prompt execution.
 	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
@@ -158,7 +168,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			@Nullable List<String> stop, @Nullable Double temperature, @Nullable Double topP,
 			@Nullable Boolean logprobs, @Nullable Integer topLogprobs, @Nullable List<DeepSeekApi.FunctionTool> tools,
 			@Nullable Object toolChoice, @Nullable Thinking thinking, @Nullable ReasoningEffort reasoningEffort,
-			@Nullable List<ToolCallback> toolCallbacks, @Nullable Map<String, Object> toolContext) {
+			@Nullable Boolean echo, @Nullable String suffix, @Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Map<String, Object> toolContext) {
 		this.model = model != null ? model : DeepSeekApi.DEFAULT_CHAT_MODEL.getValue();
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
@@ -173,6 +184,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.toolChoice = toolChoice;
 		this.thinking = thinking;
 		this.reasoningEffort = reasoningEffort;
+		this.echo = echo;
+		this.suffix = suffix;
 		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
 		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
 	}
@@ -253,6 +266,14 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return this.topLogprobs;
 	}
 
+	public @Nullable Boolean getEcho() {
+		return this.echo;
+	}
+
+	public @Nullable String getSuffix() {
+		return this.suffix;
+	}
+
 	@Override
 	public @Nullable Integer getTopK() {
 		return null;
@@ -285,14 +306,17 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			.tools(this.tools)
 			.toolChoice(this.toolChoice)
 			.thinking(this.thinking)
-			.reasoningEffort(this.reasoningEffort);
+			.reasoningEffort(this.reasoningEffort)
+			.echo(this.echo)
+			.suffix(this.suffix);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.logprobs, this.topLogprobs, this.maxTokens,
 				this.presencePenalty, this.responseFormat, this.stop, this.temperature, this.topP, this.tools,
-				this.toolChoice, this.thinking, this.reasoningEffort, this.toolCallbacks, this.toolContext);
+				this.toolChoice, this.thinking, this.reasoningEffort, this.echo, this.suffix, this.toolCallbacks,
+				this.toolContext);
 	}
 
 	@Override
@@ -312,8 +336,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.temperature, other.temperature) && Objects.equals(this.topP, other.topP)
 				&& Objects.equals(this.tools, other.tools) && Objects.equals(this.toolChoice, other.toolChoice)
 				&& Objects.equals(this.thinking, other.thinking)
-				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
-				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
+				&& Objects.equals(this.reasoningEffort, other.reasoningEffort) && Objects.equals(this.echo, other.echo)
+				&& Objects.equals(this.suffix, other.suffix) && Objects.equals(this.toolCallbacks, other.toolCallbacks)
 				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
@@ -346,6 +370,10 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		protected @Nullable Thinking thinking;
 
 		protected @Nullable ReasoningEffort reasoningEffort;
+
+		protected @Nullable Boolean echo;
+
+		protected @Nullable String suffix;
 
 		public B model(DeepSeekApi.@Nullable ChatModel deepseekAiChatModel) {
 			if (deepseekAiChatModel == null) {
@@ -416,6 +444,16 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			return self();
 		}
 
+		public B echo(@Nullable Boolean echo) {
+			this.echo = echo;
+			return self();
+		}
+
+		public B suffix(@Nullable String suffix) {
+			this.suffix = suffix;
+			return self();
+		}
+
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
 			if (other instanceof AbstractBuilder<?> that) {
@@ -447,6 +485,12 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				if (that.reasoningEffort != null) {
 					this.reasoningEffort = that.reasoningEffort;
 				}
+				if (that.echo != null) {
+					this.echo = that.echo;
+				}
+				if (that.suffix != null) {
+					this.suffix = that.suffix;
+				}
 			}
 			return self();
 		}
@@ -455,8 +499,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		public DeepSeekChatOptions build() {
 			return new DeepSeekChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 					this.responseFormat, this.stopSequences, this.temperature, this.topP, this.logprobs,
-					this.topLogprobs, this.tools, this.toolChoice, this.thinking, this.reasoningEffort,
-					this.toolCallbacks, this.toolContext);
+					this.topLogprobs, this.tools, this.toolChoice, this.thinking, this.reasoningEffort, this.echo,
+					this.suffix, this.toolCallbacks, this.toolContext);
 		}
 
 	}
