@@ -131,13 +131,13 @@ The 'claim' and 'document' are presented to the AI model for evaluation. Smaller
 
 
 === Usage
-The FactCheckingEvaluator constructor takes a ChatClient.Builder as a parameter:
+An instance of `FactCheckingEvaluator` can be constructed using its `builder()` method, which takes `ChatClient.Builder` as an argument.
+
 [source,java]
 ----
-public FactCheckingEvaluator(ChatClient.Builder chatClientBuilder) {
-  this.chatClientBuilder = chatClientBuilder;
-}
+FactCheckingEvaluator factCheckingEvaluator = FactCheckingEvaluator.builder(ChatClient.builder(chatModel)).build();
 ----
+
 The evaluator uses the following prompt template for fact-checking:
 [source,text]
 ----
@@ -147,28 +147,38 @@ Claim: {claim}
 Where `+{document}+` is the context information, and `+{claim}+` is the AI model's response to be evaluated.
 
 === Example
-Here's an example of how to use the FactCheckingEvaluator with an Ollama-based ChatModel, specifically the Bespoke-Minicheck model:
+Here's an example of how to use the FactCheckingEvaluator with an Ollama-based ChatModel:
 
 [source,java]
 ----
 @Test
 void testFactChecking() {
+  String modelName = "your-model-name"; // for example gemma3:latest or bespoke-minicheck:latest
   // Set up the Ollama API
-  OllamaApi ollamaApi = new OllamaApi("http://localhost:11434");
+  OllamaApi ollamaApi = OllamaApi.builder()
+                .baseUrl("http://localhost:11434")
+                .build();
 
-  ChatModel chatModel = new OllamaChatModel(ollamaApi,
-				OllamaChatOptions.builder().model(BESPOKE_MINICHECK).numPredict(2).temperature(0.0d).build())
-
+  // Create a chatmodel object
+  ChatModel chatModel = OllamaChatModel.builder()
+                .ollamaApi(ollamaApi)
+                .options(OllamaChatOptions.builder()
+					.model(modelName)
+					.numPredict(2)
+					.temperature(0.0d)
+					.build())
+                .build();
 
   // Create the FactCheckingEvaluator
-  var factCheckingEvaluator = new FactCheckingEvaluator(ChatClient.builder(chatModel));
+  FactCheckingEvaluator factCheckingEvaluator = FactCheckingEvaluator.builder(
+		ChatClient.builder(chatModel)).build();
 
   // Example context and claim
   String context = "The Earth is the third planet from the Sun and the only astronomical object known to harbor life.";
   String claim = "The Earth is the fourth planet from the Sun.";
 
   // Create an EvaluationRequest
-  EvaluationRequest evaluationRequest = new EvaluationRequest(context, Collections.emptyList(), claim);
+  EvaluationRequest evaluationRequest = new EvaluationRequest(context, claim);
 
   // Perform the evaluation
   EvaluationResponse evaluationResponse = factCheckingEvaluator.evaluate(evaluationRequest);
