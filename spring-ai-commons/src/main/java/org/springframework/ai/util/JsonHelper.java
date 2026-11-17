@@ -191,6 +191,14 @@ public class JsonHelper {
 		Assert.notNull(value, "value cannot be null");
 		Assert.notNull(type, "type cannot be null");
 
+		if (value instanceof String stringValue && stringValue.isBlank() && !type.isInstance(value)) {
+			// An empty (or whitespace-only) String carries no value, e.g. an LLM
+			// returning "" for a numeric tool argument. Treat it as null instead of
+			// failing the conversion.
+			// See https://github.com/spring-projects/spring-ai/issues/3884
+			return null;
+		}
+
 		Object result = null;
 		if (value instanceof String jsonString) {
 			try {
