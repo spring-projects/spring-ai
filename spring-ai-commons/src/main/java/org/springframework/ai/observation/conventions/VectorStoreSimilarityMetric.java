@@ -24,8 +24,8 @@ package org.springframework.ai.observation.conventions;
  * @author Thomas Vitale
  * @since 1.0.0
  * @see <a href=
- * "https://github.com/open-telemetry/semantic-conventions/tree/main/docs/database">DB
- * Semantic Conventions</a>.
+ * "https://github.com/open-telemetry/semantic-conventions/tree/main/docs/db">DB Semantic
+ * Conventions</a>.
  */
 public enum VectorStoreSimilarityMetric {
 
