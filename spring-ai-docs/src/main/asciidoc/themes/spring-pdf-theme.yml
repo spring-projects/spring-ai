@@ -1,0 +1,208 @@
+extends: default
+
+# ============================================================
+# Spring AI PDF Theme
+# Based on the Spring Framework branding
+# ============================================================
+
+font:
+  catalog:
+    Roboto:
+      normal: GEM_FONTS_DIR/roboto/Roboto-Regular.ttf
+      bold: GEM_FONTS_DIR/roboto/Roboto-Bold.ttf
+      italic: GEM_FONTS_DIR/roboto/Roboto-Italic.ttf
+      bold_italic: GEM_FONTS_DIR/roboto/Roboto-BoldItalic.ttf
+    RobotoMono:
+      normal: GEM_FONTS_DIR/roboto-mono/RobotoMono-Regular.ttf
+      bold: GEM_FONTS_DIR/roboto-mono/RobotoMono-Bold.ttf
+      italic: GEM_FONTS_DIR/roboto-mono/RobotoMono-Italic.ttf
+      bold_italic: GEM_FONTS_DIR/roboto-mono/RobotoMono-BoldItalic.ttf
+
+page:
+  layout: portrait
+  margin: [20mm, 20mm, 25mm, 20mm]
+  size: A4
+
+base:
+  font_family: Roboto
+  font_color: '#333333'
+  font_size: 10
+  line_height_length: 15
+  line_height: $base_line_height_length / $base_font_size
+
+# ---------------------------------------------------------------
+# Cover / Title page
+# ---------------------------------------------------------------
+title_page:
+  align: center
+  title:
+    font_size: 32
+    font_style: bold
+    font_color: '#6db33f'
+    line_height: 1.2
+    top: 35%
+  subtitle:
+    font_size: 18
+    font_style: normal
+    font_color: '#555555'
+    margin_top: 8
+  authors:
+    font_size: 12
+    font_style: italic
+    font_color: '#6db33f'
+    margin_top: 8
+  revision:
+    font_size: 10
+    font_color: '#888888'
+    margin_top: 4
+
+# ---------------------------------------------------------------
+# Headings
+# ---------------------------------------------------------------
+heading:
+  font_family: Roboto
+  font_style: bold
+  font_color: '#34302d'
+  line_height: 1.2
+  margin_bottom: 8
+
+h1:
+  font_size: 26
+  font_color: '#6db33f'
+  border_bottom_width: 1
+  border_bottom_color: '#6db33f'
+  border_bottom_style: solid
+  margin_bottom: 12
+
+h2:
+  font_size: 20
+  font_color: '#34302d'
+
+h3:
+  font_size: 16
+  font_color: '#34302d'
+
+h4:
+  font_size: 13
+  font_color: '#555555'
+
+h5:
+  font_size: 11
+  font_style: italic
+
+h6:
+  font_size: 10
+  font_style: italic
+
+# ---------------------------------------------------------------
+# Code blocks
+# ---------------------------------------------------------------
+code:
+  font_family: RobotoMono
+  font_size: 8.5
+  font_color: '#333333'
+  background_color: '#f5f5f5'
+  border_radius: 3
+  border_width: 0.5
+  border_color: '#dddddd'
+  padding: [3, 5, 3, 5]
+  line_height: 1.4
+
+codespan:
+  font_family: RobotoMono
+  font_size: 0.9em
+  font_color: '#c0392b'
+  background_color: '#f9f2f4'
+
+# ---------------------------------------------------------------
+# Sidebar / Admonitions
+# ---------------------------------------------------------------
+admonition:
+  label:
+    font_style: bold
+  column_rule_color: '#6db33f'
+  column_rule_width: 1
+
+note:
+  label:
+    font_color: '#6db33f'
+
+tip:
+  label:
+    font_color: '#2ecc71'
+
+warning:
+  label:
+    font_color: '#e67e22'
+
+caution:
+  label:
+    font_color: '#e74c3c'
+
+important:
+  label:
+    font_color: '#9b59b6'
+
+# ---------------------------------------------------------------
+# Table of Contents
+# ---------------------------------------------------------------
+toc:
+  indent: 20
+  line_height: 1.5
+  dot_leader:
+    font_color: '#aaaaaa'
+  h2_font_size: 11
+  h3_font_size: 10
+  h4_font_size: 9.5
+  h2_font_style: bold
+  h2_font_color: '#34302d'
+
+# ---------------------------------------------------------------
+# Header / Footer
+# ---------------------------------------------------------------
+header:
+  height: 14mm
+  border_bottom_width: 0.25
+  border_bottom_color: '#6db33f'
+  font_size: 9
+  font_color: '#888888'
+  recto:
+    right:
+      content: 'Spring AI Reference'
+  verso:
+    left:
+      content: 'Spring AI Reference'
+
+footer:
+  height: 14mm
+  border_top_width: 0.25
+  border_top_color: '#6db33f'
+  font_size: 9
+  font_color: '#888888'
+  recto:
+    right:
+      content: '{page-number}'
+  verso:
+    left:
+      content: '{page-number}'
+
+# ---------------------------------------------------------------
+# Links
+# ---------------------------------------------------------------
+link:
+  font_color: '#6db33f'
+
+# ---------------------------------------------------------------
+# Tables
+# ---------------------------------------------------------------
+table:
+  border_color: '#dddddd'
+  border_width: 0.5
+  head:
+    background_color: '#6db33f'
+    font_style: bold
+    font_color: '#ffffff'
+  body:
+    stripe_background_color: '#f9f9f9'
+  cell:
+    padding: [4, 8, 4, 8]
