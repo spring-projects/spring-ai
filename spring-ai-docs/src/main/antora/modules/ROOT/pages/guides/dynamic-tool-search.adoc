@@ -58,7 +58,7 @@ With the starter, enable the advisor in `application.properties` — no Java con
 spring.ai.chat.client.tool-search-advisor.enabled=true
 ----
 
-See xref:api/tools.adoc#tool-search-tool[Tool Search Tool auto-configuration] for the full list of configuration properties and ToolIndex selection options.
+See xref:api/tools/tool-search-tool.adoc#spring-boot-auto-configuration[Tool Search Tool auto-configuration] for the full list of configuration properties and ToolIndex selection options.
 
 Alternatively, add only the library for manual `@Bean` configuration:
 
@@ -170,7 +170,7 @@ The `ToolIndex` interface supports multiple search implementations:
 |Tool name patterns (`get_*_data`)
 |===
 
-See xref:api/tools.adoc#tool-search-tool[Tool Search Tool] for all available implementations and configuration options.
+See xref:api/tools/tool-search-tool.adoc#search-strategies[Tool Search Tool] for all available implementations and configuration options.
 
 == Performance
 
