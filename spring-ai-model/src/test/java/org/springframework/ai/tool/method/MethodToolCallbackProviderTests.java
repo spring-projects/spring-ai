@@ -22,10 +22,12 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Type;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.tool.ToolCallback;
@@ -43,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
  * Unit tests for {@link MethodToolCallbackProvider}.
  *
  * @author Christian Tzolov
+ * @author Jewoo Shin
  */
 class MethodToolCallbackProviderTests {
 
@@ -118,6 +121,41 @@ class MethodToolCallbackProviderTests {
 
 		assertThat(provider.getToolCallbacks()).hasSize(1);
 		assertThat(provider.getToolCallbacks()[0].getToolDefinition().name()).isEqualTo("validTool");
+	}
+
+	@Test
+	void whenBuilderConverterNotSetAndToolUsesDefaultThenDefaultConverterApplied() {
+		MethodToolCallbackProvider provider = MethodToolCallbackProvider.builder()
+			.toolObjects(new ValidToolObject())
+			.build();
+
+		ToolCallback[] callbacks = provider.getToolCallbacks();
+		assertThat(callbacks).hasSize(1);
+		assertThat(callbacks[0].call("{}")).isEqualTo("\"Valid tool result\"");
+	}
+
+	@Test
+	void whenBuilderConverterSetAndToolUsesDefaultThenBuilderConverterApplied() {
+		MethodToolCallbackProvider provider = MethodToolCallbackProvider.builder()
+			.toolObjects(new ValidToolObject())
+			.toolCallResultConverter(new MarkerConverter())
+			.build();
+
+		ToolCallback[] callbacks = provider.getToolCallbacks();
+		assertThat(callbacks).hasSize(1);
+		assertThat(callbacks[0].call("{}")).isEqualTo("MARKER:Valid tool result");
+	}
+
+	@Test
+	void whenBuilderConverterSetAndToolHasExplicitConverterThenAnnotationWins() {
+		MethodToolCallbackProvider provider = MethodToolCallbackProvider.builder()
+			.toolObjects(new ExplicitConverterToolObject())
+			.toolCallResultConverter(new MarkerConverter())
+			.build();
+
+		ToolCallback[] callbacks = provider.getToolCallbacks();
+		assertThat(callbacks).hasSize(1);
+		assertThat(callbacks[0].call("{}")).isEqualTo("EXPLICIT:Explicit tool result");
 	}
 
 	@Test
@@ -210,6 +248,33 @@ class MethodToolCallbackProviderTests {
 		@Tool
 		public Object objectTool() {
 			return "Object tool result";
+		}
+
+	}
+
+	static class ExplicitConverterToolObject {
+
+		@Tool(resultConverter = ExplicitConverter.class)
+		public String explicitTool() {
+			return "Explicit tool result";
+		}
+
+	}
+
+	public static class MarkerConverter implements ToolCallResultConverter {
+
+		@Override
+		public String convert(@Nullable Object result, @Nullable Type returnType) {
+			return "MARKER:" + result;
+		}
+
+	}
+
+	public static class ExplicitConverter implements ToolCallResultConverter {
+
+		@Override
+		public String convert(@Nullable Object result, @Nullable Type returnType) {
+			return "EXPLICIT:" + result;
 		}
 
 	}
