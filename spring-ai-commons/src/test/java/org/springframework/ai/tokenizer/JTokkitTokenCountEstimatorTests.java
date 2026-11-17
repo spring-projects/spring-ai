@@ -16,6 +16,7 @@
 
 package org.springframework.ai.tokenizer;
 
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.springframework.ai.content.Media;
 import org.springframework.ai.content.MediaContent;
@@ -86,6 +88,21 @@ class JTokkitTokenCountEstimatorTests {
 
 		assertThat(this.estimator.estimate(new TestMediaContent(null, List.of(media))))
 			.isEqualTo(this.estimator.estimate("image/png") + this.estimator.estimate("AAECA/8="));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "https://example.com/image.png", "http://example.com/image%20name.png?size=large#preview",
+			"file:/images/image.png" })
+	void urlMediaCountsMimeTypeAndAddress(String address) throws MalformedURLException {
+		URI uri = URI.create(address);
+		var url = uri.toURL();
+		Media urlMedia = Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(url).build();
+		Media uriMedia = Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(uri).build();
+
+		assertThat(this.estimator.estimate(new TestMediaContent(null, List.of(urlMedia))))
+			.isEqualTo(this.estimator.estimate("image/png") + this.estimator.estimate(address))
+			.isEqualTo(this.estimator.estimate(new TestMediaContent(null, List.of(uriMedia))));
+		assertThat(urlMedia.getData()).isSameAs(url);
 	}
 
 	@Test
