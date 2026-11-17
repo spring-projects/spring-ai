@@ -67,6 +67,7 @@ import org.springframework.web.servlet.function.ServerResponse.SseBuilder;
  * @author Christian Tzolov
  * @author Dariusz Jędrzejczyk
  * @author Dimitar Proynov
+ * @author lejuho
  * @see McpStreamableServerTransportProvider
  * @see RouterFunction
  */
@@ -194,8 +195,18 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		}
 
 		if (sessionIdleTimeout != null) {
-			this.idleSessionScheduler = Flux.interval(sessionIdleTimeout, sessionIdleTimeout)
-				.subscribe(tick -> this.evictIdleSessions());
+			this.idleSessionScheduler = Flux.interval(sessionIdleTimeout, sessionIdleTimeout).subscribe(tick -> {
+				try {
+					this.evictIdleSessions();
+				}
+				catch (Exception e) {
+					// Keep the interval alive: a single failed tick must not cancel
+					// idle eviction for the life of the process (see #7133).
+					if (logger.isErrorEnabled()) {
+						logger.error("Failed to evict idle sessions: " + e.getMessage(), e);
+					}
+				}
+			});
 		}
 	}
 
@@ -667,7 +678,12 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		for (var entry : this.sessionLastAccessTimes.entrySet()) {
 			if (Duration.between(entry.getValue(), now).compareTo(this.sessionIdleTimeout) > 0) {
 				String sessionId = entry.getKey();
+				// A concurrent DELETE may already have removed the session while this
+				// sweep still holds a stale last-access entry. Skip when gone.
 				McpStreamableServerSession session = removeSession(sessionId);
+				if (session == null) {
+					continue;
+				}
 				if (logger.isDebugEnabled()) {
 					logger.debug("Evicting idle session: " + sessionId);
 				}
@@ -685,7 +701,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		return !request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty();
 	}
 
-	private McpStreamableServerSession removeSession(String sessionId) {
+	private @Nullable McpStreamableServerSession removeSession(String sessionId) {
 		this.sessionLastAccessTimes.remove(sessionId);
 		return this.sessions.remove(sessionId);
 	}
