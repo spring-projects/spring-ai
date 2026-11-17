@@ -25,6 +25,7 @@ import com.knuddels.jtokkit.api.EncodingType;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 
@@ -37,6 +38,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Soby Chacko
  */
 public class TokenCountBatchingStrategyTests {
+
+	private static final String SUMMARY_METADATA_VALUE = "This chunk was extracted from the quarterly financial "
+			+ "report and covers revenue, margin and outlook for the reporting period.";
 
 	@Test
 	void batchEmbeddingHappyPath() {
@@ -91,6 +95,39 @@ public class TokenCountBatchingStrategyTests {
 		int totalDocs = batches.stream().mapToInt(List::size).sum();
 		assertThat(totalDocs).isEqualTo(2);
 		assertThat(batches.get(0)).containsExactly(first, second);
+	}
+
+	@Test
+	void batchRejectsDocumentWhoseMetadataPushesItOverTheLimit() {
+		TokenCountBatchingStrategy strategy = new TokenCountBatchingStrategy(EncodingType.CL100K_BASE, 10, 0.0);
+		Document document = new Document("Hello world", Map.of("summary", SUMMARY_METADATA_VALUE));
+
+		assertThatThrownBy(() -> strategy.batch(List.of(document))).isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void batchWithExplicitMetadataModeNoneIgnoresMetadata() {
+		TokenCountBatchingStrategy strategy = new TokenCountBatchingStrategy(EncodingType.CL100K_BASE, 10, 0.0,
+				Document.DEFAULT_CONTENT_FORMATTER, MetadataMode.NONE);
+		Document document = new Document("Hello world", Map.of("summary", SUMMARY_METADATA_VALUE));
+
+		List<List<Document>> batches = strategy.batch(List.of(document));
+
+		assertThat(batches).hasSize(1);
+		assertThat(batches.get(0)).containsExactly(document);
+	}
+
+	@Test
+	void batchSplitsOnTheTokenCountIncludingMetadata() {
+		TokenCountBatchingStrategy strategy = new TokenCountBatchingStrategy(EncodingType.CL100K_BASE, 50, 0.0);
+		List<Document> documents = List.of(new Document("first chunk", Map.of("summary", SUMMARY_METADATA_VALUE)),
+				new Document("second chunk", Map.of("summary", SUMMARY_METADATA_VALUE)),
+				new Document("third chunk", Map.of("summary", SUMMARY_METADATA_VALUE)));
+
+		List<List<Document>> batches = strategy.batch(documents);
+
+		assertThat(batches.stream().mapToInt(List::size).sum()).isEqualTo(3);
+		assertThat(batches).hasSizeGreaterThan(1);
 	}
 
 	@Test
