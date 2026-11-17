@@ -35,6 +35,7 @@ import org.springframework.util.MimeTypeUtils;
  * <li>image/gif
  * <li>image/png
  * <li>image/jpeg
+ * <li>image/webp
  * <li>video/mov
  * <li>video/mpeg
  * <li>video/mp4
@@ -109,6 +110,7 @@ public abstract class MimeTypeDetector {
 		GEMINI_MIME_TYPES.put("jpeg", MimeTypeUtils.IMAGE_JPEG);
 		GEMINI_MIME_TYPES.put("jpg", MimeTypeUtils.IMAGE_JPEG);
 		GEMINI_MIME_TYPES.put("gif", MimeTypeUtils.IMAGE_GIF);
+		GEMINI_MIME_TYPES.put("webp", MimeTypeUtils.parseMimeType("image/webp"));
 		GEMINI_MIME_TYPES.put("mov", new MimeType("video", "mov"));
 		GEMINI_MIME_TYPES.put("mp4", new MimeType("video", "mp4"));
 		GEMINI_MIME_TYPES.put("mpg", new MimeType("video", "mpg"));
