@@ -71,6 +71,13 @@ public enum GoogleGenAiThinkingLevel {
 	 * High thinking level. Extensive reasoning tokens are generated. Use for complex
 	 * problems requiring deep analysis and step-by-step reasoning.
 	 */
-	HIGH
+	HIGH,
+
+	/**
+	 * Extra-high thinking level. Maximum reasoning depth for highly complex problems,
+	 * mathematical proofs, and multi-file engineering tasks (supported on models such as
+	 * {@code gemini-4-hydrogen}).
+	 */
+	XHIGH
 
 }

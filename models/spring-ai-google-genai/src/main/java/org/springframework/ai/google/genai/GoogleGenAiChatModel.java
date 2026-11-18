@@ -1127,6 +1127,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			case LOW -> new ThinkingLevel(ThinkingLevel.Known.LOW);
 			case MEDIUM -> new ThinkingLevel(ThinkingLevel.Known.MEDIUM);
 			case HIGH -> new ThinkingLevel(ThinkingLevel.Known.HIGH);
+			case XHIGH -> new ThinkingLevel(ThinkingLevel.Known.XHIGH);
 		};
 	}
 
@@ -1169,7 +1170,15 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					EnumSet.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.LOW,
 							GoogleGenAiThinkingLevel.MEDIUM, GoogleGenAiThinkingLevel.HIGH)),
 			Map.entry(ChatModel.GEMINI_3_1_FLASH_LITE_IMAGE.getValue(),
-					EnumSet.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.HIGH)));
+					EnumSet.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_4_HYDROGEN.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.LOW, GoogleGenAiThinkingLevel.MEDIUM,
+							GoogleGenAiThinkingLevel.HIGH, GoogleGenAiThinkingLevel.XHIGH)),
+			Map.entry(ChatModel.GEMINI_4_CARBON.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.LOW, GoogleGenAiThinkingLevel.MEDIUM,
+							GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_4_ARGON.getValue(), EnumSet.of(GoogleGenAiThinkingLevel.LOW,
+					GoogleGenAiThinkingLevel.MEDIUM, GoogleGenAiThinkingLevel.HIGH)));
 
 	/**
 	 * Validates that the requested {@code thinkingLevel} is supported by the target
@@ -1495,7 +1504,13 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		GEMINI_3_5_FLASH_LITE("gemini-3.5-flash-lite"),
 
-		GEMINI_3_6_FLASH("gemini-3.6-flash");
+		GEMINI_3_6_FLASH("gemini-3.6-flash"),
+
+		GEMINI_4_HYDROGEN("gemini-4-hydrogen"),
+
+		GEMINI_4_CARBON("gemini-4-carbon"),
+
+		GEMINI_4_ARGON("gemini-4-argon");
 
 		public final String value;
 
