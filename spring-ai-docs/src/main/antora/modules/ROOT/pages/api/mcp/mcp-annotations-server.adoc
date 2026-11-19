@@ -25,6 +25,11 @@ public class CalculatorTools {
 }
 ----
 
+==== Kotlin Data Class Parameters
+
+To use a Kotlin data class as an MCP tool argument, add `tools.jackson.module:jackson-module-kotlin` to the server application's runtime classpath.
+Spring AI discovers the module when it configures the Jackson mapper that converts tool arguments.
+
 ==== Annotation Attributes
 
 The `@McpTool` annotation supports the following attributes:
