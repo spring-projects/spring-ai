@@ -1,0 +1,45 @@
+= Reckoning Chat
+
+https://github.com/edwardcapriolo/reckoning[Reckoning] is a remotely hosted inference service with an OpenAI-compatible chat API.
+
+== Getting Started
+
+Add the Reckoning starter to your Spring Boot application:
+
+[tabs]
+====
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-reckoning</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+    implementation 'org.springframework.ai:spring-ai-starter-model-reckoning'
+}
+----
+====
+
+Configure the Reckoning endpoint and model:
+
+[source,yaml]
+----
+  ai:
+    reckoning:
+      base-url: http://localhost:8080
+      chat:
+        model: your-model
+----
+
+The `spring.ai.model.chat` property can be set to `reckoning` when multiple chat model providers are present.
+
+== Low-Level API
+
+The `spring-ai-reckoning` module provides `ReckoningApi` for chat completions, streaming completions, model listing, and the available fetch and serve model operations.
