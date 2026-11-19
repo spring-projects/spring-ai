@@ -78,22 +78,25 @@ final class DefaultChatClientUtils {
 			processedMessages.addAll(inputRequest.getMessages());
 		}
 
-		// User Text => Last in the list
+		// User Message => Last in the list
 		String processedUserText = inputRequest.getUserText();
-		if (StringUtils.hasText(processedUserText)) {
-			if (!CollectionUtils.isEmpty(inputRequest.getUserParams())) {
-				processedUserText = PromptTemplate.builder()
-					.template(processedUserText)
-					.variables(inputRequest.getUserParams())
-					.renderer(inputRequest.getTemplateRenderer())
-					.build()
-					.render();
+		var userMedia = inputRequest.getMedia();
+		if (StringUtils.hasText(processedUserText) || !userMedia.isEmpty()) {
+			UserMessage.Builder userMessage = UserMessage.builder()
+				.media(userMedia)
+				.metadata(inputRequest.getUserMetadata());
+			if (StringUtils.hasText(processedUserText)) {
+				if (!CollectionUtils.isEmpty(inputRequest.getUserParams())) {
+					processedUserText = PromptTemplate.builder()
+						.template(processedUserText)
+						.variables(inputRequest.getUserParams())
+						.renderer(inputRequest.getTemplateRenderer())
+						.build()
+						.render();
+				}
+				userMessage.text(processedUserText);
 			}
-			processedMessages.add(UserMessage.builder()
-				.text(processedUserText)
-				.media(inputRequest.getMedia())
-				.metadata(inputRequest.getUserMetadata())
-				.build());
+			processedMessages.add(userMessage.build());
 		}
 
 		/*

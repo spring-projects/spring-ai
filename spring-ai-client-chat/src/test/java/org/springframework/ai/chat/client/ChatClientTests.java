@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -45,6 +47,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.MimeTypeUtils;
 
@@ -72,6 +75,35 @@ public class ChatClientTests {
 
 	private String join(Flux<String> fluxContent) {
 		return fluxContent.collectList().block().stream().collect(Collectors.joining());
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void preservesMediaOnlyUserMessage(boolean mutate) {
+		when(this.chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		var request = ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.system("Describe the images")
+			.user(user -> user.media(MimeTypeUtils.IMAGE_JPEG, new ByteArrayResource(new byte[] { 1 }))
+				.media(MimeTypeUtils.IMAGE_JPEG, new ByteArrayResource(new byte[] { 2 }))
+				.media(MimeTypeUtils.IMAGE_JPEG, new ByteArrayResource(new byte[] { 3 })));
+
+		if (mutate) {
+			request = request.mutate().build().prompt();
+		}
+
+		assertThat(request.call().content()).isEqualTo("response");
+
+		var messages = this.promptCaptor.getValue().getInstructions();
+		assertThat(messages).extracting(Message::getMessageType).containsExactly(MessageType.SYSTEM, USER);
+		var userMessage = (UserMessage) messages.get(1);
+		assertThat(userMessage.getText()).isEmpty();
+		assertThat(userMessage.getMedia()).extracting(media -> media.getDataAsByteArray()[0])
+			.containsExactly((byte) 1, (byte) 2, (byte) 3);
 	}
 
 	// ChatClient Builder Tests

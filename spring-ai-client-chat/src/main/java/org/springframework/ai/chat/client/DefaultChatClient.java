@@ -997,12 +997,14 @@ public class DefaultChatClient implements ChatClient {
 				builder.defaultAdvisors(a -> a.advisors(this.advisors).params(this.advisorParams));
 			}
 
-			if (StringUtils.hasText(this.userText)) {
+			if (StringUtils.hasText(this.userText) || !this.media.isEmpty()) {
 				String text = this.userText;
-				builder.defaultUser(u -> u.text(text)
-					.params(this.userParams)
-					.media(this.media.toArray(new Media[0]))
-					.metadata(this.userMetadata));
+				builder.defaultUser(u -> {
+					if (StringUtils.hasText(text)) {
+						u.text(text);
+					}
+					u.params(this.userParams).media(this.media.toArray(new Media[0])).metadata(this.userMetadata);
+				});
 			}
 
 			if (StringUtils.hasText(this.systemText)) {
