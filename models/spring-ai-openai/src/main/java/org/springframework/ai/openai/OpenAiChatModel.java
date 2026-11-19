@@ -1756,7 +1756,7 @@ public final class OpenAiChatModel implements ChatModel {
 		static ChatCompletionChunk mergeChunks(List<ChatCompletionChunk> chunks) {
 			ChatCompletionChunk.Builder builder = chunks.get(0).toBuilder();
 			Map<Long, Choice> choices = new LinkedHashMap<>();
-			chunks.get(0).choices().forEach(choice -> choices.put(choice.index(), choice));
+			chunks.get(0).choices().forEach(choice -> choices.put(choice.index(), normalizeChoiceToolCalls(choice)));
 
 			for (int i = 1; i < chunks.size(); i++) {
 				ChatCompletionChunk chunk = chunks.get(i);
@@ -1764,9 +1764,19 @@ public final class OpenAiChatModel implements ChatModel {
 				chunk.serviceTier().ifPresent(builder::serviceTier);
 				chunk.choices()
 					.forEach(choice -> choices.compute(choice.index(),
-							(ix, c) -> c == null ? choice : mergeChoices(c, choice)));
+							(ix, c) -> c == null ? normalizeChoiceToolCalls(choice) : mergeChoices(c, choice)));
 			}
 			return builder.choices(new ArrayList<>(choices.values())).build();
+		}
+
+		private static Choice normalizeChoiceToolCalls(Choice choice) {
+			Optional<List<ToolCall>> toolCalls = choice.delta().toolCalls();
+			if (toolCalls.isEmpty() || toolCalls.get().size() <= 1) {
+				return choice;
+			}
+			return choice.toBuilder()
+				.delta(choice.delta().toBuilder().toolCalls(mergeToolCallLists(List.of(toolCalls.get()))).build())
+				.build();
 		}
 
 		private static Choice mergeChoices(Choice c1, Choice c2) {
@@ -1781,17 +1791,14 @@ public final class OpenAiChatModel implements ChatModel {
 		private static Delta mergeDeltas(Delta left, Delta right) {
 			// Deltas of the same logical tool call share the required 'index' field.
 			// Some OpenAI-compatible providers (e.g. DeepSeek) send an empty-string id
-			// on continuation deltas instead of omitting it, so id presence cannot be
+			// on continuation deltas instead of omitting it, and some send multiple
+			// deltas for the same index within a single chunk, so id presence cannot be
 			// used to detect the start of a new tool call.
-			var tcs = Stream.of(left.toolCalls(), right.toolCalls()).flatMap(Optional::stream).reduce((tcs1, tcs2) -> {
-				if (tcs2.isEmpty()) {
-					return tcs1;
-				}
-				Map<Long, ToolCall> mergedByIndex = new LinkedHashMap<>();
-				tcs1.forEach(tc -> mergedByIndex.merge(tc.index(), tc, ChunkMerger::mergeToolCalls));
-				tcs2.forEach(tc -> mergedByIndex.merge(tc.index(), tc, ChunkMerger::mergeToolCalls));
-				return List.copyOf(mergedByIndex.values());
-			}).orElse(List.of());
+			List<List<ToolCall>> toolCallLists = Stream.of(left.toolCalls(), right.toolCalls())
+				.flatMap(Optional::stream)
+				.filter(list -> !list.isEmpty())
+				.toList();
+			var tcs = toolCallLists.isEmpty() ? List.<ToolCall>of() : mergeToolCallLists(toolCallLists);
 
 			Delta.Builder deltaBuilder = left.toBuilder().toolCalls(tcs);
 			// Concatenate text fragments too: some servers stream text next to or after
@@ -1808,6 +1815,18 @@ public final class OpenAiChatModel implements ChatModel {
 							JsonValue.from(stringProperty(left, reasoningKey).orElse("") + rightFragment)));
 			}
 			return deltaBuilder.build();
+		}
+
+		private static List<ToolCall> mergeToolCallLists(List<List<ToolCall>> toolCallLists) {
+			Map<Long, ToolCall> mergedByIndex = new LinkedHashMap<>();
+			long unindexedFallbackKey = -1L;
+			for (List<ToolCall> toolCalls : toolCallLists) {
+				for (ToolCall tc : toolCalls) {
+					long key = tc._index().asKnown().orElse(unindexedFallbackKey--);
+					mergedByIndex.merge(key, tc, ChunkMerger::mergeToolCalls);
+				}
+			}
+			return List.copyOf(mergedByIndex.values());
 		}
 
 		private static Optional<String> stringProperty(Delta delta, String key) {

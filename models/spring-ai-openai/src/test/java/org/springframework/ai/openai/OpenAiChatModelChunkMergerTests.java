@@ -16,6 +16,9 @@
 
 package org.springframework.ai.openai;
 
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 
 import com.openai.models.chat.completions.ChatCompletion;
@@ -26,8 +29,12 @@ import com.openai.models.chat.completions.ChatCompletionChunk.Choice.Delta.ToolC
 import com.openai.models.chat.completions.ChatCompletionChunk.Choice.Delta.ToolCall.Function;
 import com.openai.models.chat.completions.ChatCompletionChunk.Choice.FinishReason;
 import com.openai.models.chat.completions.ChatCompletionMessageFunctionToolCall;
+import com.sun.net.httpserver.HttpServer;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
@@ -113,6 +120,107 @@ class OpenAiChatModelChunkMergerTests {
 		assertThat(toolCalls.get(0).function().orElseThrow().arguments()).contains("{\"a\": 1}");
 		assertThat(toolCalls.get(1).function().orElseThrow().name()).contains("tool_b");
 		assertThat(toolCalls.get(1).function().orElseThrow().arguments()).contains("{\"b\": 2}");
+
+	}
+
+	@Test // gh-7422
+	void mergeDuplicateIndexToolCallDeltasWithinSingleChunk() {
+		ChatCompletionChunk merged = OpenAiChatModel.ChunkMerger.mergeChunks(List.of(
+				chunk(null, toolCallDelta(0, "a", "lookup", ""), toolCallDelta(0, null, null, "{\"x\":1}"),
+						toolCallDelta(1, "b", "lookup", ""), toolCallDelta(1, null, null, "{\"x\":2}")),
+				finishChunk()));
+
+		List<ToolCall> toolCalls = merged.choices().get(0).delta().toolCalls().orElseThrow();
+		assertThat(toolCalls).hasSize(2);
+		assertThat(toolCalls.get(0).id()).contains("a");
+		assertThat(toolCalls.get(0).function().orElseThrow().name()).contains("lookup");
+		assertThat(toolCalls.get(0).function().orElseThrow().arguments()).contains("{\"x\":1}");
+		assertThat(toolCalls.get(1).id()).contains("b");
+		assertThat(toolCalls.get(1).function().orElseThrow().name()).contains("lookup");
+		assertThat(toolCalls.get(1).function().orElseThrow().arguments()).contains("{\"x\":2}");
+
+		ChatCompletion completion = OpenAiChatModel.ChunkMerger.chunkToChatCompletion(merged);
+		List<ChatCompletionMessageFunctionToolCall> functionToolCalls = completion.choices()
+			.get(0)
+			.message()
+			.toolCalls()
+			.orElseThrow()
+			.stream()
+			.map(tc -> tc.function().orElseThrow())
+			.toList();
+		assertThat(functionToolCalls).hasSize(2);
+		assertThat(functionToolCalls.get(0).id()).isEqualTo("a");
+		assertThat(functionToolCalls.get(0).function().arguments()).isEqualTo("{\"x\":1}");
+		assertThat(functionToolCalls.get(1).id()).isEqualTo("b");
+		assertThat(functionToolCalls.get(1).function().arguments()).isEqualTo("{\"x\":2}");
+	}
+
+	@Test // gh-7422
+	void mergeDuplicateIndexToolCallDeltasInSingleFinishChunk() {
+		ChatCompletionChunk merged = OpenAiChatModel.ChunkMerger.mergeChunks(List.of(chunk(FinishReason.TOOL_CALLS,
+				toolCallDelta(0, "a", "lookup", ""), toolCallDelta(0, null, null, "{\"x\":1}"))));
+
+		ChatCompletion completion = OpenAiChatModel.ChunkMerger.chunkToChatCompletion(merged);
+		ChatCompletionMessageFunctionToolCall functionToolCall = completion.choices()
+			.get(0)
+			.message()
+			.toolCalls()
+			.orElseThrow()
+			.get(0)
+			.function()
+			.orElseThrow();
+		assertThat(functionToolCall.id()).isEqualTo("a");
+		assertThat(functionToolCall.function().name()).isEqualTo("lookup");
+		assertThat(functionToolCall.function().arguments()).isEqualTo("{\"x\":1}");
+	}
+
+	@Test // gh-7422
+	void streamMergesMultipleToolCallDeltasWithSameIndexInSingleChunk() throws Exception {
+		var fragments = List.of(
+				"{\"index\":0,\"type\":\"function\",\"id\":\"a\",\"function\":{\"name\":\"lookup\",\"arguments\":\"\"}}",
+				"{\"index\":0,\"function\":{\"arguments\":\"{\\\"x\\\":1}\"}}",
+				"{\"index\":1,\"type\":\"function\",\"id\":\"b\",\"function\":{\"name\":\"lookup\",\"arguments\":\"\"}}",
+				"{\"index\":1,\"function\":{\"arguments\":\"{\\\"x\\\":2}\"}}");
+		var sse = new StringBuilder();
+		sse.append(
+				"data: {\"id\":\"x\",\"created\":1,\"object\":\"chat.completion.chunk\",\"model\":\"fixture\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":["
+						+ String.join(",", fragments) + "]},\"finish_reason\":null}]}\n\n");
+		sse.append(
+				"data: {\"id\":\"x\",\"created\":1,\"object\":\"chat.completion.chunk\",\"model\":\"fixture\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\n");
+		sse.append("data: [DONE]\n\n");
+
+		var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+		server.createContext("/", ex -> {
+			ex.getRequestBody().readAllBytes();
+			byte[] bytes = sse.toString().getBytes(StandardCharsets.UTF_8);
+			ex.getResponseHeaders().set("Content-Type", "text/event-stream");
+			ex.sendResponseHeaders(200, bytes.length);
+			try (var out = ex.getResponseBody()) {
+				out.write(bytes);
+			}
+		});
+		server.start();
+		try {
+			var model = OpenAiChatModel.builder()
+				.options(OpenAiChatOptions.builder()
+					.apiKey("fixture")
+					.baseUrl("http://127.0.0.1:" + server.getAddress().getPort())
+					.model("fixture")
+					.maxRetries(0)
+					.build())
+				.build();
+			var calls = model.stream(new Prompt("fixture"))
+				.blockLast(Duration.ofSeconds(10))
+				.getResult()
+				.getOutput()
+				.getToolCalls();
+			assertThat(calls).extracting(AssistantMessage.ToolCall::id).containsExactly("a", "b");
+			assertThat(calls).extracting(AssistantMessage.ToolCall::arguments)
+				.containsExactly("{\"x\":1}", "{\"x\":2}");
+		}
+		finally {
+			server.stop(0);
+		}
 	}
 
 	@Test
