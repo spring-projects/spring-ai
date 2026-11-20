@@ -36,17 +36,25 @@ import org.springframework.util.Assert;
  * @param model the model name or alias, for example {@code jev-latest}; {@code null} to
  * let {@code SystemOneClient} supply its default. A request is never sent without one.
  * @param questions the questions, keyed by the name their answers will carry
+ * @param chatTemplateKwargs optional chat template keyword arguments passed to the server
  * @author Christian Tzolov
  * @since 2.1.0
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record SystemOneRequest(@JsonProperty("state") JsonContent state, @JsonProperty("model") @Nullable String model,
-		@JsonProperty("questions") Map<String, Question> questions) {
+		@JsonProperty("questions") Map<String, Question> questions,
+		@JsonProperty("chat_template_kwargs") @Nullable Map<String, Object> chatTemplateKwargs) {
 
 	public SystemOneRequest {
 		Assert.notNull(state, "state must not be null");
 		Assert.notEmpty(questions, "questions must declare at least one question");
 		questions = Collections.unmodifiableMap(new LinkedHashMap<>(questions));
+		chatTemplateKwargs = chatTemplateKwargs != null
+				? Collections.unmodifiableMap(new LinkedHashMap<>(chatTemplateKwargs)) : null;
+	}
+
+	public SystemOneRequest(JsonContent state, @Nullable String model, Map<String, Question> questions) {
+		this(state, model, questions, null);
 	}
 
 	/**
@@ -63,7 +71,7 @@ public record SystemOneRequest(@JsonProperty("state") JsonContent state, @JsonPr
 	 * @return a new request
 	 */
 	public SystemOneRequest withModel(String model) {
-		return new SystemOneRequest(this.state, model, this.questions);
+		return new SystemOneRequest(this.state, model, this.questions, this.chatTemplateKwargs);
 	}
 
 	/**
@@ -76,6 +84,8 @@ public record SystemOneRequest(@JsonProperty("state") JsonContent state, @JsonPr
 		private @Nullable String model;
 
 		private final Map<String, Question> questions = new LinkedHashMap<>();
+
+		private @Nullable Map<String, Object> chatTemplateKwargs;
 
 		private Builder() {
 		}
@@ -141,10 +151,16 @@ public record SystemOneRequest(@JsonProperty("state") JsonContent state, @JsonPr
 			return this;
 		}
 
+		public Builder chatTemplateKwargs(@Nullable Map<String, Object> chatTemplateKwargs) {
+			this.chatTemplateKwargs = chatTemplateKwargs != null ? new LinkedHashMap<>(chatTemplateKwargs) : null;
+			return this;
+		}
+
 		public SystemOneRequest build() {
 			Assert.notNull(this.state, "state must be set");
-			return new SystemOneRequest(this.state, this.model, this.questions);
+			return new SystemOneRequest(this.state, this.model, this.questions, this.chatTemplateKwargs);
 		}
 
 	}
+
 }
