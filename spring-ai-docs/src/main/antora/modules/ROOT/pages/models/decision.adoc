@@ -88,6 +88,11 @@ The prompt asks three named questions about the customer message, one of each ki
 The response has one answer for each question.
 The rest of this page explains each part, and the provider pages use the same example.
 
+The following diagram shows the example as a whole: the prompt with its input and three questions, the answers with the probability that the model reports for each possible result, and what the code reads from each answer.
+The probabilities, and what the code does with the results, are examples.
+
+image::decision/decision-triage-example.svg["The support triage example: one input, three questions, one call of the decision model, three answers with their probabilities, and what the code reads from them",780,opts=inline]
+
 == Asking Questions
 
 A `DecisionPrompt` holds the input, the questions to ask about it and, optionally, the settings of the call.
