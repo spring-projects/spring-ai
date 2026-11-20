@@ -18,10 +18,13 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
@@ -33,11 +36,18 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.annotation.Tool;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link MessageChatMemoryAdvisor}.
@@ -282,6 +292,55 @@ public class MessageChatMemoryAdvisorTests {
 		assertThat(processedMessages.get(0)).isInstanceOf(SystemMessage.class);
 		assertThat(processedMessages.get(0).getText()).isEqualTo("You are a helpful assistant");
 		assertThat(processedMessages.get(1)).isInstanceOf(UserMessage.class);
+	}
+
+	@Test
+	void whenStreamingWithMultiGenerationToolCallResponseThenExecutesToolAndPreservesConversationId() {
+		AtomicInteger modelCalls = new AtomicInteger();
+		AtomicInteger toolCalls = new AtomicInteger();
+		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getOptions()).thenReturn(ToolCallingChatOptions.builder().build());
+		when(chatModel.stream(any(Prompt.class))).thenAnswer(invocation -> {
+			if (modelCalls.incrementAndGet() == 1) {
+				Generation emptyText = new Generation(
+						AssistantMessage.builder().content("").properties(Map.of("isThought", false)).build());
+				Generation toolCall = new Generation(AssistantMessage.builder()
+					.content("")
+					.toolCalls(List.of(new AssistantMessage.ToolCall("call-1", "function", "exampleTool", "{}")))
+					.build());
+				return Flux.just(new ChatResponse(List.of(emptyText, toolCall)));
+			}
+			return Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("done")))));
+		});
+
+		class ExampleTools {
+
+			@Tool(description = "A simple test tool")
+			public String exampleTool() {
+				toolCalls.incrementAndGet();
+				return "tool result";
+			}
+
+		}
+
+		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+		ChatClient client = ChatClient.builder(chatModel)
+			.defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+			.defaultTools(new ExampleTools())
+			.build();
+
+		String answer = client.prompt()
+			.user("Call the tool")
+			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "conversation-1"))
+			.stream()
+			.content()
+			.collectList()
+			.map(parts -> String.join("", parts))
+			.block();
+
+		assertThat(answer).isEqualTo("done");
+		assertThat(toolCalls.get()).isEqualTo(1);
+		assertThat(modelCalls.get()).isEqualTo(2);
 	}
 
 }

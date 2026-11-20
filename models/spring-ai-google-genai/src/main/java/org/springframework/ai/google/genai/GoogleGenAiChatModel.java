@@ -614,6 +614,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			.toList();
 
 		if (!toolCalls.isEmpty()) {
+			messages.removeIf(message -> !StringUtils.hasLength(message.getText()) && !isThought(message));
 			var toolCallMessage = AssistantMessage.builder()
 				.content("")
 				.properties(messageMetadata)
