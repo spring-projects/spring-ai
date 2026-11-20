@@ -32,6 +32,7 @@ import org.springframework.ai.chat.observation.ChatModelCompletionObservationHan
 import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelPromptContentObservationHandler;
+import org.springframework.ai.chat.observation.ChatModelToolDefinitionsObservationFilter;
 import org.springframework.ai.model.observation.ErrorLoggingObservationHandler;
 import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -85,6 +86,48 @@ class ChatObservationAutoConfigurationTests {
 				.doesNotHaveBean(ChatModelCompletionObservationHandler.class)
 				.doesNotHaveBean(TracingAwareLoggingObservationHandler.class)
 				.doesNotHaveBean(ErrorLoggingObservationHandler.class));
+	}
+
+	@Test
+	void toolDefinitionsFilterDisabledByDefault() {
+		this.contextRunner
+			.run(context -> assertThat(context).doesNotHaveBean(ChatModelToolDefinitionsObservationFilter.class));
+	}
+
+	@Test
+	void toolDefinitionsFilterEnabled() {
+		this.contextRunner.withPropertyValues("spring.ai.chat.observations.include-tool-definitions=true")
+			.run(context -> assertThat(context).hasSingleBean(ChatModelToolDefinitionsObservationFilter.class));
+	}
+
+	@Test
+	void toolDefinitionsFilterOptionalPropertiesDisabledByDefault() {
+		this.contextRunner.withPropertyValues("spring.ai.chat.observations.include-tool-definitions=true")
+			.run(context -> {
+				ChatObservationProperties properties = context.getBean(ChatObservationProperties.class);
+				assertThat(properties.isIncludeToolDefinitionDescriptions()).isFalse();
+				assertThat(properties.isIncludeToolDefinitionParameters()).isFalse();
+			});
+	}
+
+	@Test
+	void toolDefinitionsFilterOptionalPropertiesEnabled() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.observations.include-tool-definitions=true",
+					"spring.ai.chat.observations.include-tool-definition-descriptions=true",
+					"spring.ai.chat.observations.include-tool-definition-parameters=true")
+			.run(context -> {
+				assertThat(context).hasSingleBean(ChatModelToolDefinitionsObservationFilter.class);
+				ChatObservationProperties properties = context.getBean(ChatObservationProperties.class);
+				assertThat(properties.isIncludeToolDefinitionDescriptions()).isTrue();
+				assertThat(properties.isIncludeToolDefinitionParameters()).isTrue();
+			});
+	}
+
+	@Test
+	void toolDefinitionsFilterDisabled() {
+		this.contextRunner.withPropertyValues("spring.ai.chat.observations.include-tool-definitions=false")
+			.run(context -> assertThat(context).doesNotHaveBean(ChatModelToolDefinitionsObservationFilter.class));
 	}
 
 	@Test
