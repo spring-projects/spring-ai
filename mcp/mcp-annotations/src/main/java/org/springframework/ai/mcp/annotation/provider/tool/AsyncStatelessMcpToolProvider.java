@@ -104,7 +104,7 @@ public class AsyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 					if (toolJavaAnnotation.annotations() != null) {
 						var toolAnnotations = toolJavaAnnotation.annotations();
 						toolBuilder.annotations(McpSchema.ToolAnnotations.builder()
-							.title(toolAnnotations.title())
+							.title(Utils.hasText(toolAnnotations.title()) ? toolAnnotations.title() : null)
 							.readOnlyHint(toolAnnotations.readOnlyHint())
 							.destructiveHint(toolAnnotations.destructiveHint())
 							.idempotentHint(toolAnnotations.idempotentHint())
