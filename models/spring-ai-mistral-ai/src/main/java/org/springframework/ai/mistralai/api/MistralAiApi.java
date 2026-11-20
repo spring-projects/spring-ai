@@ -228,7 +228,7 @@ public class MistralAiApi {
 				Mono<ChatCompletionChunk> mono1 = window.reduce(this.chunkMerger::merge);
 				return List.of(mono1);
 			})
-			.flatMap(mono -> mono);
+			.concatMap(mono -> mono);
 	}
 
 	/**
