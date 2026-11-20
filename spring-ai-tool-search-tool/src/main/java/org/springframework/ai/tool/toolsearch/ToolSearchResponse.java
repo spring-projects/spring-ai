@@ -27,6 +27,10 @@ import org.jspecify.annotations.Nullable;
 /**
  * Response containing a list of ToolReferences matching the search criteria, total
  * matches, and search metadata.
+ * <p>
+ * {@code noneApplies} is {@code true} only when the index decided that no listed tool can
+ * do the request. A keyword or vector miss, an empty session, and a refused decision
+ * leave it {@code null}.
  *
  * @author Christian Tzolov
  * @since 2.0.0
@@ -34,7 +38,7 @@ import org.jspecify.annotations.Nullable;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ToolSearchResponse(List<ToolReference> toolReferences, @Nullable Integer totalMatches,
-		@Nullable SearchMetadata searchMetadata) {
+		@Nullable SearchMetadata searchMetadata, @Nullable Boolean noneApplies) {
 
 	public static Builder builder() {
 		return new Builder();
@@ -47,6 +51,8 @@ public record ToolSearchResponse(List<ToolReference> toolReferences, @Nullable I
 		@Nullable private Integer totalMatches;
 
 		@Nullable private SearchMetadata searchMetadata;
+
+		@Nullable private Boolean noneApplies;
 
 		public Builder toolReferences(List<ToolReference> toolReferences) {
 			this.toolReferences = toolReferences;
@@ -68,9 +74,14 @@ public record ToolSearchResponse(List<ToolReference> toolReferences, @Nullable I
 			return this;
 		}
 
+		public Builder noneApplies(@Nullable Boolean noneApplies) {
+			this.noneApplies = noneApplies;
+			return this;
+		}
+
 		public ToolSearchResponse build() {
 			return new ToolSearchResponse(Objects.requireNonNull(this.toolReferences), this.totalMatches,
-					this.searchMetadata);
+					this.searchMetadata, this.noneApplies);
 		}
 
 	}

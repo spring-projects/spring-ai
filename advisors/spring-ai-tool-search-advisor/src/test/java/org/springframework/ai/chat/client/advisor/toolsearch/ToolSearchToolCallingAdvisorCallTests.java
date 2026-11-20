@@ -422,7 +422,7 @@ public class ToolSearchToolCallingAdvisorCallTests {
 
 		// Create a request with tool response messages containing tool references
 		ToolResponseMessage.ToolResponse toolSearchResponse = new ToolResponseMessage.ToolResponse("id1",
-				"toolSearchTool", "[\"weatherTool\", \"calculatorTool\"]");
+				"toolSearchTool", "{\"tools\":[\"weatherTool\",\"calculatorTool\"]}");
 		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
 			.responses(List.of(toolSearchResponse))
 			.build();
@@ -555,7 +555,7 @@ public class ToolSearchToolCallingAdvisorCallTests {
 
 		// Create a request with tool response message referencing the weatherTool
 		ToolResponseMessage.ToolResponse toolSearchResponse = new ToolResponseMessage.ToolResponse("id1",
-				"toolSearchTool", "[\"weatherTool\"]");
+				"toolSearchTool", "{\"tools\":[\"weatherTool\"]}");
 		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
 			.responses(List.of(toolSearchResponse))
 			.build();
@@ -615,7 +615,7 @@ public class ToolSearchToolCallingAdvisorCallTests {
 			.build();
 
 		when(this.toolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of());
-		when(this.toolIndex.search(any())).thenReturn(new ToolSearchResponse(List.of(), null, null));
+		when(this.toolIndex.search(any())).thenReturn(new ToolSearchResponse(List.of(), null, null, null));
 
 		ToolCallingChatOptions opts = captureToolOptions(advisor);
 		invokeToolSearchTool(opts, "weather", 7);
@@ -634,7 +634,7 @@ public class ToolSearchToolCallingAdvisorCallTests {
 			.build();
 
 		when(this.toolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of());
-		when(this.toolIndex.search(any())).thenReturn(new ToolSearchResponse(List.of(), null, null));
+		when(this.toolIndex.search(any())).thenReturn(new ToolSearchResponse(List.of(), null, null, null));
 
 		ToolCallingChatOptions opts = captureToolOptions(advisor);
 		invokeToolSearchTool(opts, "weather", null);
@@ -692,10 +692,10 @@ public class ToolSearchToolCallingAdvisorCallTests {
 		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
 			.responses(List.of(
 					new ToolResponseMessage.ToolResponse("id1", "toolSearchTool",
-							"[\"currentTime\",\"weather\",\"clothing\"]"),
+							"{\"tools\":[\"currentTime\",\"weather\",\"clothing\"]}"),
 					new ToolResponseMessage.ToolResponse("id2", "toolSearchTool",
-							"[\"weather\",\"currentTime\",\"clothing\"]"),
-					new ToolResponseMessage.ToolResponse("id3", "toolSearchTool", "[\"clothing\"]")))
+							"{\"tools\":[\"weather\",\"currentTime\",\"clothing\"],\"note\":\"ignored when tools are present\"}"),
+					new ToolResponseMessage.ToolResponse("id3", "toolSearchTool", "{\"tools\":[\"clothing\"]}")))
 			.build();
 
 		ToolCallingChatOptions captured = captureToolOptionsForPrompt(advisor,
@@ -725,10 +725,12 @@ public class ToolSearchToolCallingAdvisorCallTests {
 		toolOptions.setToolCallbacks(List.of(mockCallback("weather"), mockCallback("clothing")));
 
 		ToolResponseMessage turn1 = ToolResponseMessage.builder()
-			.responses(List.of(new ToolResponseMessage.ToolResponse("id1", "toolSearchTool", "[\"weather\"]")))
+			.responses(
+					List.of(new ToolResponseMessage.ToolResponse("id1", "toolSearchTool", "{\"tools\":[\"weather\"]}")))
 			.build();
 		ToolResponseMessage turn2 = ToolResponseMessage.builder()
-			.responses(List.of(new ToolResponseMessage.ToolResponse("id2", "toolSearchTool", "[\"clothing\"]")))
+			.responses(List
+				.of(new ToolResponseMessage.ToolResponse("id2", "toolSearchTool", "{\"tools\":[\"clothing\"]}")))
 			.build();
 
 		ToolCallingChatOptions captured = captureToolOptionsForPrompt(advisor,
@@ -756,10 +758,12 @@ public class ToolSearchToolCallingAdvisorCallTests {
 		toolOptions.setToolCallbacks(List.of(mockCallback("weather"), mockCallback("clothing")));
 
 		ToolResponseMessage turn1 = ToolResponseMessage.builder()
-			.responses(List.of(new ToolResponseMessage.ToolResponse("id1", "toolSearchTool", "[\"weather\"]")))
+			.responses(
+					List.of(new ToolResponseMessage.ToolResponse("id1", "toolSearchTool", "{\"tools\":[\"weather\"]}")))
 			.build();
 		ToolResponseMessage turn2 = ToolResponseMessage.builder()
-			.responses(List.of(new ToolResponseMessage.ToolResponse("id2", "toolSearchTool", "[\"clothing\"]")))
+			.responses(List
+				.of(new ToolResponseMessage.ToolResponse("id2", "toolSearchTool", "{\"tools\":[\"clothing\"]}")))
 			.build();
 
 		ToolCallingChatOptions captured = captureToolOptionsForPrompt(advisor,

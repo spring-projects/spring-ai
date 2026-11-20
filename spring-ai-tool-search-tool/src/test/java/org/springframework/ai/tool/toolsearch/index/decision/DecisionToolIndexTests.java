@@ -125,6 +125,7 @@ class DecisionToolIndexTests {
 
 		assertThat(response.toolReferences()).isEmpty();
 		assertThat(response.totalMatches()).isZero();
+		assertThat(response.noneApplies()).isTrue();
 	}
 
 	@Test
@@ -166,6 +167,7 @@ class DecisionToolIndexTests {
 		ToolSearchResponse response = picky.search(new ToolSearchRequest(SESSION, "do something", null, null));
 
 		assertThat(response.toolReferences()).isEmpty();
+		assertThat(response.noneApplies()).isNull();
 	}
 
 	@Test
@@ -279,7 +281,10 @@ class DecisionToolIndexTests {
 			.build();
 		single.indexTool("solo", tool("currentWeather", "Returns the current weather for a place"));
 
-		assertThat(single.search(new ToolSearchRequest("solo", "send a mail", null, null)).toolReferences()).isEmpty();
+		ToolSearchResponse response = single.search(new ToolSearchRequest("solo", "send a mail", null, null));
+
+		assertThat(response.toolReferences()).isEmpty();
+		assertThat(response.noneApplies()).isTrue();
 	}
 
 	@Test
@@ -349,6 +354,7 @@ class DecisionToolIndexTests {
 
 		assertThat(response.toolReferences()).isEmpty();
 		assertThat(response.totalMatches()).isZero();
+		assertThat(response.noneApplies()).isNull();
 	}
 
 	@Test
