@@ -36,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.github.victools.jsonschema.generator.Module;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -500,6 +501,25 @@ class JsonSchemaGeneratorTests {
 
 		JsonNode jsonNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
 		assertThat(jsonNode.has("additionalProperties")).isFalse();
+	}
+
+	@Test
+	void generateSchemaForTypeWithAdditionalModules() {
+		Module minLengthModule = configBuilder -> configBuilder.forFields()
+			.withStringMinLengthResolver(field -> 3);
+
+		String schema = JsonSchemaGenerator.generateForType(Person.class, List.of(minLengthModule));
+
+		JsonNode jsonNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
+		assertThat(jsonNode.at("/properties/name/minLength").asInt()).isEqualTo(3);
+		assertThat(jsonNode.at("/properties/email/minLength").asInt()).isEqualTo(3);
+	}
+
+	@Test
+	void generateSchemaForTypeWithoutAdditionalModulesHasNoMinLength() {
+		String schema = JsonSchemaGenerator.generateForType(Person.class);
+
+		assertThat(schema).doesNotContain("minLength");
 	}
 
 	@Test
