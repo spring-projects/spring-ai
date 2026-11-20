@@ -347,4 +347,34 @@ class AsyncMcpToolCallbackTest {
 		assertThat(result).contains("Part 2");
 	}
 
+	@Test
+	void getToolAnnotationsShouldReturnServerDeclaredAnnotations() {
+		McpSchema.ToolAnnotations annotations = McpSchema.ToolAnnotations.builder()
+			.readOnlyHint(true)
+			.destructiveHint(false)
+			.build();
+		when(this.tool.annotations()).thenReturn(annotations);
+
+		AsyncMcpToolCallback callback = AsyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testTool")
+			.build();
+
+		assertThat(callback.getToolAnnotations()).isSameAs(annotations);
+	}
+
+	@Test
+	void getToolAnnotationsShouldReturnNullWhenServerDeclaredNone() {
+		when(this.tool.annotations()).thenReturn(null);
+
+		AsyncMcpToolCallback callback = AsyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testTool")
+			.build();
+
+		assertThat(callback.getToolAnnotations()).isNull();
+	}
+
 }

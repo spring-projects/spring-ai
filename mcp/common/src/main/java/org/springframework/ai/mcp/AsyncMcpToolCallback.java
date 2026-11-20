@@ -23,6 +23,7 @@ import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import io.modelcontextprotocol.spec.McpSchema.ToolAnnotations;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
@@ -46,6 +47,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author YunKui Lu
  * @author Ilayaperumal Gopinathan
+ * @author Samuel Komane
  */
 public class AsyncMcpToolCallback implements ToolCallback {
 
@@ -100,6 +102,16 @@ public class AsyncMcpToolCallback implements ToolCallback {
 
 	public String getOriginalToolName() {
 		return this.tool.name();
+	}
+
+	/**
+	 * Returns the annotations the MCP server declared for this tool, such as
+	 * {@code readOnlyHint} or {@code destructiveHint}.
+	 * @return the tool annotations, or {@code null} if the server declared none
+	 * @since 2.1.0
+	 */
+	public @Nullable ToolAnnotations getToolAnnotations() {
+		return this.tool.annotations();
 	}
 
 	@Override
