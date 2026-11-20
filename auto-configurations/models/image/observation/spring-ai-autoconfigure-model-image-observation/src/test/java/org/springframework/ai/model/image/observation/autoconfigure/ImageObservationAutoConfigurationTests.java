@@ -60,6 +60,18 @@ class ImageObservationAutoConfigurationTests {
 	}
 
 	@Test
+	void meterObservationHandlerBacksOff() {
+		var customHandler = new ImageModelMeterObservationHandler(new CompositeMeterRegistry());
+		this.contextRunner.withBean(CompositeMeterRegistry.class)
+			.withBean("customImageModelMeterObservationHandler", ImageModelMeterObservationHandler.class,
+					() -> customHandler)
+			.run(context -> {
+				assertThat(context).hasSingleBean(ImageModelMeterObservationHandler.class);
+				assertThat(context.getBean(ImageModelMeterObservationHandler.class)).isSameAs(customHandler);
+			});
+	}
+
+	@Test
 	void imageModelPromptContentHandlerNoTracer() {
 		this.contextRunner.withClassLoader(new FilteredClassLoader(Tracer.class))
 			.run(context -> assertThat(context).doesNotHaveBean(ImageModelPromptContentObservationHandler.class)
