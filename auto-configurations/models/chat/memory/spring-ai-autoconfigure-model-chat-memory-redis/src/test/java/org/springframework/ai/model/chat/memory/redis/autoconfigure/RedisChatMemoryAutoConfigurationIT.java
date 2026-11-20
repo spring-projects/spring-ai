@@ -18,6 +18,8 @@ package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
 import com.redis.testcontainers.RedisStackContainer;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -37,7 +39,9 @@ class RedisChatMemoryAutoConfigurationIT {
 	@Container
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG))
-		.withExposedPorts(6379);
+		.withExposedPorts(6379)
+		.waitingFor(new WaitAllStrategy().withStrategy(Wait.forLogMessage(".*Ready to accept connections.*\\s", 1))
+			.withStrategy(Wait.forListeningPort()));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(RedisChatMemoryAutoConfiguration.class,
