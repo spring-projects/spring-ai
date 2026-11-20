@@ -54,6 +54,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoSink;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
@@ -353,13 +354,6 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 					.ifPresent(id -> httpHeaders.add(HttpHeaders.MCP_SESSION_ID, id)))
 				.bodyValue(jsonText)
 				.exchangeToFlux(response -> {
-					if (transportSession
-						.markInitialized(response.headers().asHttpHeaders().getFirst(HttpHeaders.MCP_SESSION_ID))) {
-						// Once we have a session, we try to open an async stream for
-						// the server to send notifications and requests out-of-band.
-						reconnect((McpTransportStream<Disposable>) null).contextWrite(sink.contextView()).subscribe();
-					}
-
 					String sessionRepresentation = sessionIdOrPlaceholder(transportSession);
 
 					// The spec mentions only ACCEPTED, but the existing SDKs can return
@@ -371,6 +365,8 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 						// content type
 						if (contentType.isEmpty() || contentLength == 0
 								|| response.statusCode().equals(HttpStatus.ACCEPTED)) {
+							this.markInitialized(transportSession, response, sink);
+							sessionRepresentation = sessionIdOrPlaceholder(transportSession);
 							if (logger.isTraceEnabled()) {
 								logger.trace(
 										"Message was successfully sent via POST for session " + sessionRepresentation);
@@ -384,6 +380,8 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 						else {
 							MediaType mediaType = contentType.get();
 							if (mediaType.isCompatibleWith(MediaType.TEXT_EVENT_STREAM)) {
+								this.markInitialized(transportSession, response, sink);
+								sessionRepresentation = sessionIdOrPlaceholder(transportSession);
 								logger.debug("Established SSE stream via POST");
 								// communicate to caller that the message was delivered
 								sink.success();
@@ -394,9 +392,14 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 								if (logger.isTraceEnabled()) {
 									logger.trace("Received response to POST for session " + sessionRepresentation);
 								}
-								// communicate to caller the message was delivered
-								sink.success();
-								return directResponseFlux(message, response);
+								return directResponseFlux(message, response).switchOnFirst((first, directResponse) -> {
+									if (first.isOnError()) {
+										return directResponse;
+									}
+									this.markInitialized(transportSession, response, sink);
+									sink.success();
+									return directResponse;
+								});
 							}
 							else {
 								if (logger.isWarnEnabled()) {
@@ -435,6 +438,15 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 			disposableRef.set(connection);
 			transportSession.addConnection(connection);
 		});
+	}
+
+	private void markInitialized(McpTransportSession<Disposable> transportSession, ClientResponse response,
+			MonoSink<Void> sink) {
+		if (transportSession.markInitialized(response.headers().asHttpHeaders().getFirst(HttpHeaders.MCP_SESSION_ID))) {
+			// Once we have a session, we try to open an async stream for the server to
+			// send notifications and requests out-of-band.
+			reconnect((McpTransportStream<Disposable>) null).contextWrite(sink.contextView()).subscribe();
+		}
 	}
 
 	private static Flux<McpSchema.JSONRPCMessage> mcpSessionNotFoundError(String sessionRepresentation) {
