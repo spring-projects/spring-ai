@@ -1,0 +1,42 @@
+[[groq]]
+= Groq Chat
+:page-aliases: api/chat/groq-chat.adoc
+
+https://groq.com/[Groq] runs open models on its own inference hardware, and offers them through an OpenAI-compatible API.
+Spring AI uses Groq through the xref:integrations/models/openai/chat.adoc[OpenAI chat model]: you point the OpenAI module at Groq's endpoint and choose a Groq model.
+
+== Configuration
+
+Add the OpenAI starter:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+Create an API key in the https://console.groq.com/keys[Groq console], then set the base URL, the key and a model from the https://console.groq.com/docs/models[Groq model list]:
+
+[source,properties]
+----
+spring.ai.openai.base-url=https://api.groq.com/openai/v1
+spring.ai.openai.api-key=${GROQ_API_KEY}
+spring.ai.openai.chat.model=llama-3.1-8b-instant
+----
+
+The OpenAI module passes the base URL to the OpenAI SDK as it is, so it must include the `/v1` path.
+
+All other properties and options are those of the OpenAI chat model, see xref:integrations/models/openai/chat.adoc[OpenAI Chat].
+
+== Differences from OpenAI
+
+Groq supports chat, streaming and tool calling through this API, but not every OpenAI feature.
+See Groq's https://console.groq.com/docs/openai[OpenAI compatibility notes] for the parameters it does not support.
+
+To send a parameter that `OpenAiChatOptions` does not have, use `extraBody`, see xref:integrations/models/openai-compatible/index.adoc[OpenAI-Compatible Endpoints].
+
+== Example
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/GroqWithOpenAiChatModelIT.java[GroqWithOpenAiChatModelIT] test shows chat, streaming, tool calling and structured output with Groq.

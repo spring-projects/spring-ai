@@ -1,0 +1,620 @@
+[[modules]]
+= Modules and Starters
+
+This page lists the modules published by Spring AI, all under the `org.springframework.ai` group.
+Import the `spring-ai-bom` to manage their versions, as described in xref:get-started/project-setup.adoc#dependency-management[Dependency Management].
+
+== Core Modules
+
+[cols="2,3", options="header"]
+|===
+| Artifact | Description
+
+| `spring-ai-bom`
+| Bill of Materials POM (BOM) for the Spring AI modules
+
+| `spring-ai-client-chat`
+| Spring AI Chat Client AI programming
+
+| `spring-ai-commons`
+| Common classes used across Spring AI
+
+| `spring-ai-model`
+| Core model interfaces and classes for Spring AI
+
+| `spring-ai-rag`
+| Retrieval Augmented Generation (RAG) support for Spring AI
+
+| `spring-ai-retry`
+| Spring AI utility project helping with remote call retry
+
+| `spring-ai-session`
+| Spring AI session memory: an append-only conversation log with compaction
+
+| `spring-ai-spring-boot-docker-compose`
+| Spring AI Docker Compose
+
+| `spring-ai-spring-boot-testcontainers`
+| Spring AI Testcontainers
+
+| `spring-ai-template-st`
+| StringTemplate implementation for Spring AI templating
+
+| `spring-ai-test`
+| Test support for AI programming
+
+| `spring-ai-tool-search-tool`
+| API types for the Tool Search Tool: ToolIndex interface and related model classes
+
+| `spring-ai-vector-store`
+| Common vector store functionality for Spring AI
+
+|===
+
+== Model Modules
+
+[cols="2,3", options="header"]
+|===
+| Artifact | Description
+
+| `spring-ai-anthropic`
+| Anthropic models support
+
+| `spring-ai-bedrock`
+| Amazon Bedrock models support
+
+| `spring-ai-bedrock-converse`
+| Amazon Bedrock models support using the Converse API
+
+| `spring-ai-deepseek`
+| DeepSeek support
+
+| `spring-ai-elevenlabs`
+| ElevenLabs Text-to-Speech model support
+
+| `spring-ai-google-genai`
+| Google GenAI Gemini models support
+
+| `spring-ai-google-genai-embedding`
+| Google GenAI Gemini embedding models support
+
+| `spring-ai-google-genai-image`
+| Google GenAI image generation models support
+
+| `spring-ai-google-genai-transcription`
+| Google GenAI transcription models support
+
+| `spring-ai-google-genai-tts`
+| Google GenAI (Gemini-TTS) text-to-speech model support
+
+| `spring-ai-mistral-ai`
+| Mistral AI models support
+
+| `spring-ai-ollama`
+| Ollama models support
+
+| `spring-ai-openai`
+| OpenAI models support
+
+| `spring-ai-postgresml`
+| PostgresML models support
+
+| `spring-ai-stability-ai`
+| Stability AI models support
+
+| `spring-ai-systemone`
+| System One decision model support and the client of the /v1/systemone protocol
+
+| `spring-ai-transformers`
+| ONNX Transformers model support
+
+| `spring-ai-vertex-ai-embedding`
+| Vertex AI Embedding models support
+
+|===
+
+== Vector Store Modules
+
+[cols="2,3", options="header"]
+|===
+| Artifact | Description
+
+| `spring-ai-azure-store`
+| Spring AI Vector Store - Azure AI Search
+
+| `spring-ai-bedrock-knowledgebase-store`
+| Spring AI Amazon Bedrock Knowledge Base Vector Store
+
+| `spring-ai-cassandra-store`
+| Spring AI Vector Store for Apache Cassandra
+
+| `spring-ai-chroma-store`
+| Spring AI Chroma Vector Store
+
+| `spring-ai-coherence-store`
+| AI Vector Search from Oracle Coherence 24.09+ as a Spring AI Vector Store
+
+| `spring-ai-couchbase-store`
+| Spring AI Couchbase Vector Store
+
+| `spring-ai-elasticsearch-store`
+| Spring AI Elasticsearch Vector Store
+
+| `spring-ai-gemfire-store`
+| Spring AI GemFire Vector Store
+
+| `spring-ai-mariadb-store`
+| Spring AI MariaDB Vector Store
+
+| `spring-ai-milvus-store`
+| Spring AI Vector Store - Milvus
+
+| `spring-ai-mongodb-atlas-store`
+| Spring AI Vector Store - MongoDB Atlas
+
+| `spring-ai-neo4j-store`
+| Spring AI Neo4j Vector Store
+
+| `spring-ai-opensearch-store`
+| Spring AI OpenSearch Vector Store
+
+| `spring-ai-oracle-store`
+| AI Vector Search from Oracle Database 23ai+ as a Spring AI Vector Store
+
+| `spring-ai-pgvector-store`
+| Spring AI PGVector Vector Store
+
+| `spring-ai-pinecone-store`
+| Spring AI Vector Store - Pinecone
+
+| `spring-ai-qdrant-store`
+| Spring AI Vector Store - Qdrant
+
+| `spring-ai-redis-semantic-cache`
+| Redis-based semantic caching for Spring AI chat responses
+
+| `spring-ai-redis-store`
+| Spring AI Vector Store - Redis
+
+| `spring-ai-s3-vector-store`
+| Spring AI Vector Store - AWS S3
+
+| `spring-ai-typesense-store`
+| Spring AI Typesense Vector Store
+
+| `spring-ai-weaviate-store`
+| Spring AI Vector Store - Weaviate
+
+|===
+
+== Advisor Modules
+
+[cols="2,3", options="header"]
+|===
+| Artifact | Description
+
+| `spring-ai-session-advisor`
+| Chat client advisors that keep a conversation in a Spring AI session
+
+| `spring-ai-tool-search-advisor`
+| Chat client Tool Search advisor for Spring AI
+
+| `spring-ai-vector-store-advisor`
+| Chat client advisors for Spring AI
+
+|===
+
+== Session and Chat Memory Repositories
+
+[cols="2,3", options="header"]
+|===
+| Artifact | Description
+
+| `spring-ai-model-chat-memory-repository-cassandra`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI Apache Cassandra Chat Memory Repository implementation
+
+| `spring-ai-model-chat-memory-repository-jdbc`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI JDBC Chat Memory implementation
+
+| `spring-ai-model-chat-memory-repository-mongodb`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI MongoDB Chat Memory implementation
+
+| `spring-ai-model-chat-memory-repository-neo4j`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI Neo4j Chat Memory Repository implementation
+
+| `spring-ai-model-chat-memory-repository-redis`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Redis-based persistent implementation of the Spring AI ChatMemoryRepository interface
+
+| `spring-ai-session-jdbc`
+| Spring AI JDBC session repository
+
+|===
+
+== Document Reader Modules
+
+[cols="2,3", options="header"]
+|===
+| Artifact | Description
+
+| `spring-ai-jsoup-document-reader`
+| Spring AI HTML document reader
+
+| `spring-ai-markdown-document-reader`
+| Spring AI Markdown document reader
+
+| `spring-ai-pdf-document-reader`
+| Spring AI PDF document reader
+
+| `spring-ai-tika-document-reader`
+| Spring AI Tika document reader
+
+|===
+
+== MCP Modules
+
+[cols="2,3", options="header"]
+|===
+| Artifact | Description
+
+| `mcp-spring-webflux`
+| WebFlux implementation for the SSE and Streamable Http Client and Server transports
+
+| `mcp-spring-webmvc`
+| Web MVC implementation for the SSE and Streamable Http Server transports
+
+| `spring-ai-mcp`
+| Spring Framework integration for Model Context Protocol (MCP), providing Spring AI function calling capabilities and Spring-friendly abstractions for MCP clients and MCP servers
+
+| `spring-ai-mcp-annotations`
+| Annotations (`@McpTool`, `@McpResource`, `@McpPrompt` and others) for MCP server and client handlers
+
+|===
+
+== Spring Boot Starters
+
+[cols="2,3", options="header"]
+|===
+| Artifact | Description
+
+| `spring-ai-starter-mcp-client`
+| Spring AI MCP Client Spring Boot Starter
+
+| `spring-ai-starter-mcp-client-webflux`
+| Spring AI MCP Client WebFlux Spring Boot Starter
+
+| `spring-ai-starter-mcp-server`
+| Spring AI MCP Server Spring Boot Starter
+
+| `spring-ai-starter-mcp-server-webflux`
+| Spring AI MCP Server WebFlux Spring Boot Starter
+
+| `spring-ai-starter-mcp-server-webmvc`
+| Spring AI MCP Server WebMvc Spring Boot Starter
+
+| `spring-ai-starter-model-anthropic`
+| Spring AI Anthropic Spring Boot Starter
+
+| `spring-ai-starter-model-bedrock`
+| Spring AI Bedrock AI Spring Boot Starter
+
+| `spring-ai-starter-model-bedrock-converse`
+| Spring AI Bedrock Converse API Spring Boot Starter
+
+| `spring-ai-starter-model-chat-memory`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI Chat Memory Starter with In-memory chat memory repository
+
+| `spring-ai-starter-model-chat-memory-repository-cassandra`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI Cassandra Chat Memory Repository Starter
+
+| `spring-ai-starter-model-chat-memory-repository-jdbc`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI JDBC Chat Memory Repository Starter
+
+| `spring-ai-starter-model-chat-memory-repository-mongodb`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI MongoDB Chat Memory Starter
+
+| `spring-ai-starter-model-chat-memory-repository-neo4j`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI Neo4j Chat Memory Repository Starter
+
+| `spring-ai-starter-model-chat-memory-repository-redis`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI Redis Chat Memory Repository Starter
+
+| `spring-ai-starter-model-deepseek`
+| Spring AI DeepSeek Spring Boot Starter
+
+| `spring-ai-starter-model-elevenlabs`
+| Spring AI ElevenLabs Auto Configuration
+
+| `spring-ai-starter-model-google-genai`
+| Spring AI Google Genai Spring Boot Starter
+
+| `spring-ai-starter-model-google-genai-embedding`
+| Spring AI Google Genai Embedding Spring Boot Starter
+
+| `spring-ai-starter-model-google-genai-image`
+| Spring AI Google Genai Image Spring Boot Starter
+
+| `spring-ai-starter-model-google-genai-transcription`
+| Spring AI Google Genai Transcription Spring Boot Starter
+
+| `spring-ai-starter-model-google-genai-tts`
+| Spring AI Google Genai Text-to-Speech Spring Boot Starter
+
+| `spring-ai-starter-model-mistral-ai`
+| Spring AI MistralAI Spring Boot Starter
+
+| `spring-ai-starter-model-ollama`
+| Spring AI Ollama Spring Boot Starter
+
+| `spring-ai-starter-model-openai`
+| Spring AI Open AI Spring Boot Starter
+
+| `spring-ai-starter-model-postgresml-embedding`
+| Spring PostgresML Embedding Spring Boot Starter
+
+| `spring-ai-starter-model-session-jdbc`
+| Spring AI JDBC Session Starter
+
+| `spring-ai-starter-model-stability-ai`
+| Spring AI Stability Spring Boot Starter
+
+| `spring-ai-starter-model-systemone`
+| Spring AI System One Spring Boot Starter
+
+| `spring-ai-starter-model-transformers`
+| Spring AI Transformers Embedding Spring Boot Starter
+
+| `spring-ai-starter-model-vertex-ai-embedding`
+| Spring AI Vertex Embedding AI Spring Boot Starter
+
+| `spring-ai-starter-tool-search-advisor`
+| Spring AI Starter for the Tool Search Advisor, enabling dynamic tool discovery via a search index
+
+| `spring-ai-starter-vector-store-aws-opensearch`
+| Spring AI AWS OpenSearch Vector Store Starter
+
+| `spring-ai-starter-vector-store-azure`
+| Spring AI Azure Vector Store Starter
+
+| `spring-ai-starter-vector-store-bedrock-knowledgebase`
+| Spring AI Amazon Bedrock Knowledge Base Vector Store Starter
+
+| `spring-ai-starter-vector-store-cassandra`
+| Spring AI Apache Cassandra Vector Store Starter
+
+| `spring-ai-starter-vector-store-chroma`
+| Spring AI Chroma Vector Store Starter
+
+| `spring-ai-starter-vector-store-couchbase`
+| Spring AI Couchbase Store Auto Configuration
+
+| `spring-ai-starter-vector-store-elasticsearch`
+| Spring AI Elasticsearch Store Starter
+
+| `spring-ai-starter-vector-store-gemfire`
+| Spring AI GemFire Vector Store Starter
+
+| `spring-ai-starter-vector-store-mariadb`
+| Spring AI MariaDB Vector Store Starter
+
+| `spring-ai-starter-vector-store-milvus`
+| Spring AI Milvus Vector Store Auto Configuration
+
+| `spring-ai-starter-vector-store-mongodb-atlas`
+| Spring AI MongoDB Atlas Store Starter
+
+| `spring-ai-starter-vector-store-neo4j`
+| Spring AI Neo4j Vector Store Starter
+
+| `spring-ai-starter-vector-store-opensearch`
+| Spring AI OpenSearch Store Auto Configuration
+
+| `spring-ai-starter-vector-store-oracle`
+| Spring AI Oracle Vector Store Auto Configuration
+
+| `spring-ai-starter-vector-store-pgvector`
+| Spring AI PGVector Vector Store Starter
+
+| `spring-ai-starter-vector-store-pinecone`
+| Spring AI Pinecone Vector Store Auto Configuration
+
+| `spring-ai-starter-vector-store-qdrant`
+| Spring AI Qdrant Vector Store Auto Configuration
+
+| `spring-ai-starter-vector-store-redis`
+| Spring AI Redis Vector Store Starter
+
+| `spring-ai-starter-vector-store-s3`
+| Spring AI S3 Vector Store Starter
+
+| `spring-ai-starter-vector-store-typesense`
+| Spring AI Typesense Auto Configuration
+
+| `spring-ai-starter-vector-store-weaviate`
+| Spring AI Weaviate Vector Store Auto Configuration
+
+|===
+
+== Spring Boot Auto-Configuration Modules
+
+[cols="2,3", options="header"]
+|===
+| Artifact | Description
+
+| `spring-ai-autoconfigure-mcp-client-common`
+| Spring AI MCP Client Common Auto Configuration
+
+| `spring-ai-autoconfigure-mcp-client-httpclient`
+| Spring AI MCP Client (HttpClient) Auto Configuration
+
+| `spring-ai-autoconfigure-mcp-client-webflux`
+| Spring AI MCP WebFlux Client Auto Configuration
+
+| `spring-ai-autoconfigure-mcp-server-common`
+| Spring AI MCP Server Common Auto Configuration for STDIO, SSE and Streamable-HTTP
+
+| `spring-ai-autoconfigure-mcp-server-webflux`
+| Spring AI MCP Server WebFlux Auto Configuration
+
+| `spring-ai-autoconfigure-mcp-server-webmvc`
+| Spring AI MCP Server WebMVC Auto Configuration
+
+| `spring-ai-autoconfigure-model-anthropic`
+| Spring AI Anthropic Auto Configuration
+
+| `spring-ai-autoconfigure-model-audio-observation`
+| Spring AI Audio Observation Auto Configuration
+
+| `spring-ai-autoconfigure-model-bedrock-ai`
+| Spring AI Bedrock Auto Configuration
+
+| `spring-ai-autoconfigure-model-chat-client`
+| Spring AI Chat Client Auto Configuration
+
+| `spring-ai-autoconfigure-model-chat-memory`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI Chat Memory Auto Configuration
+
+| `spring-ai-autoconfigure-model-chat-memory-redis`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. The artifactId is deprecated and will be removed in a future release. Please use spring-ai-autoconfigure-model-chat-memory-repository-redis instead.
+
+| `spring-ai-autoconfigure-model-chat-memory-repository-cassandra`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI Apache Cassandra Chat Memory Repository Auto Configuration
+
+| `spring-ai-autoconfigure-model-chat-memory-repository-jdbc`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring JDBC AI Chat Memory Repository Auto Configuration
+
+| `spring-ai-autoconfigure-model-chat-memory-repository-mongodb`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI MongoDB Chat Memory Auto Configuration
+
+| `spring-ai-autoconfigure-model-chat-memory-repository-neo4j`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring Neo4j AI Chat Memory Repository Auto Configuration
+
+| `spring-ai-autoconfigure-model-chat-memory-repository-redis`
+| Legacy, deprecated since 2.1.0: use xref:memory/session/index.adoc[Session Memory]. Spring AI Redis Chat Memory Repository Auto Configuration
+
+| `spring-ai-autoconfigure-model-chat-observation`
+| Spring AI Chat Observation Auto Configuration
+
+| `spring-ai-autoconfigure-model-decision-observation`
+| Spring AI Decision Observation Auto Configuration
+
+| `spring-ai-autoconfigure-model-deepseek`
+| Spring AI DeepSeek Auto Configuration
+
+| `spring-ai-autoconfigure-model-elevenlabs`
+| Spring AI ElevenLabs Auto Configuration
+
+| `spring-ai-autoconfigure-model-embedding-observation`
+| Spring AI Embedding Observation Auto Configuration
+
+| `spring-ai-autoconfigure-model-google-genai`
+| Spring AI Google GenAI Auto Configuration
+
+| `spring-ai-autoconfigure-model-image-observation`
+| Spring AI Image Observation Auto Configuration
+
+| `spring-ai-autoconfigure-model-mistral-ai`
+| Spring AI Mistral Auto Configuration
+
+| `spring-ai-autoconfigure-model-ollama`
+| Spring AI Ollama Auto Configuration
+
+| `spring-ai-autoconfigure-model-openai`
+| Spring AI OpenAI Auto Configuration
+
+| `spring-ai-autoconfigure-model-postgresml-embedding`
+| Spring AI PostgresML Auto Configuration
+
+| `spring-ai-autoconfigure-model-session`
+| Spring AI Auto Configuration for the Session service
+
+| `spring-ai-autoconfigure-model-session-jdbc`
+| Spring AI Auto Configuration for the JDBC Session repository
+
+| `spring-ai-autoconfigure-model-stability-ai`
+| Spring AI Stability AI Auto Configuration
+
+| `spring-ai-autoconfigure-model-systemone`
+| Spring AI System One Auto Configuration
+
+| `spring-ai-autoconfigure-model-tool`
+| Spring AI Tool Calling Auto Configuration
+
+| `spring-ai-autoconfigure-model-transformers`
+| Spring AI ONNX Transformers Auto Configuration
+
+| `spring-ai-autoconfigure-model-vertex-ai`
+| Spring AI Vertex AI Auto Configuration
+
+| `spring-ai-autoconfigure-retry`
+| Spring AI Retry Auto Configuration
+
+| `spring-ai-autoconfigure-tool-search-advisor`
+| Spring AI Tool Search Advisor Auto Configuration
+
+| `spring-ai-autoconfigure-vector-store-azure`
+| Spring AI Auto Configuration for Azure vector store
+
+| `spring-ai-autoconfigure-vector-store-bedrock-knowledgebase`
+| Spring AI Auto Configuration for Amazon Bedrock Knowledge Base vector store
+
+| `spring-ai-autoconfigure-vector-store-cassandra`
+| Spring AI Auto Configuration for Apache Cassandra vector store
+
+| `spring-ai-autoconfigure-vector-store-chroma`
+| Spring AI Auto Configuration for Chroma vector store
+
+| `spring-ai-autoconfigure-vector-store-couchbase`
+| Spring AI Auto Configuration for Couchbase vector store
+
+| `spring-ai-autoconfigure-vector-store-elasticsearch`
+| Spring AI Auto Configuration for Elasticsearch vector store
+
+| `spring-ai-autoconfigure-vector-store-gemfire`
+| Spring AI Auto Configuration for Gemfire vector store
+
+| `spring-ai-autoconfigure-vector-store-mariadb`
+| Spring AI Auto Configuration for MariaDB vector store
+
+| `spring-ai-autoconfigure-vector-store-milvus`
+| Spring AI Auto Configuration for Milvus vector store
+
+| `spring-ai-autoconfigure-vector-store-mongodb-atlas`
+| Spring AI Auto Configuration for MongoDB Atlas vector store
+
+| `spring-ai-autoconfigure-vector-store-neo4j`
+| Spring AI Auto Configuration for Neo4j vector store
+
+| `spring-ai-autoconfigure-vector-store-observation`
+| Spring AI Auto Configuration for vector store observation
+
+| `spring-ai-autoconfigure-vector-store-opensearch`
+| Spring AI Auto Configuration for Opensearch vector store
+
+| `spring-ai-autoconfigure-vector-store-oracle`
+| Spring AI Auto Configuration for Oracle vector store
+
+| `spring-ai-autoconfigure-vector-store-pgvector`
+| Spring AI Auto Configuration for Postgres vector store
+
+| `spring-ai-autoconfigure-vector-store-pinecone`
+| Spring AI Auto Configuration for Pinecone vector store
+
+| `spring-ai-autoconfigure-vector-store-qdrant`
+| Spring AI Auto Configuration for Qdrant vector store
+
+| `spring-ai-autoconfigure-vector-store-redis`
+| Spring AI Auto Configuration for Redis vector store
+
+| `spring-ai-autoconfigure-vector-store-redis-semantic-cache`
+| Spring AI Redis Semantic Cache Auto Configuration
+
+| `spring-ai-autoconfigure-vector-store-s3`
+| Spring AI Auto Configuration for S3 vector store
+
+| `spring-ai-autoconfigure-vector-store-typesense`
+| Spring AI Auto Configuration for Typesense vector store
+
+| `spring-ai-autoconfigure-vector-store-weaviate`
+| Spring AI Auto Configuration for Weaviate vector store
+
+|===

@@ -1,0 +1,196 @@
+= Working with Multiple Chat Models
+
+There are several scenarios where you might need to work with multiple chat models in a single application:
+
+* Using different models for different types of tasks (e.g., a powerful model for complex reasoning and a faster, cheaper model for simpler tasks)
+* Implementing fallback mechanisms when one model service is unavailable
+* A/B testing different models or configurations
+* Providing users with a choice of models based on their preferences
+* Combining specialized models (one for code generation, another for creative content, etc.)
+
+By default, Spring AI autoconfigures a single `ChatClient.Builder` bean.
+However, you may need to work with multiple chat models in your application.
+Here's how to handle this scenario:
+
+== Multiple ChatClients with a Single Model Type
+
+This section covers a common use case where you need to create multiple ChatClient instances that all use the same underlying model type but with different configurations.
+You can use the auto-configured `ChatClient.Builder` as it is prototype-scoped, meaning a new instance is created for each injection point:
+
+[source,java]
+----
+@Configuration
+class ChatClientConfig {
+
+    @Bean
+    ChatClient defaultChatClient(ChatClient.Builder builder) {
+        return builder.build();
+    }
+
+    @Bean
+    ChatClient customChatClient(ChatClient.Builder builder) {
+        return builder.defaultSystem("You are a helpful assistant.").build();
+    }
+}
+----
+
+== ChatClients for Different Model Types
+
+When working with multiple AI models, you might be tempted to define separate `ChatClient` beans by using `ChatClient.create(chatModel)` or `ChatClient.builder(chatModel)`.
+However, doing so bypasses the auto-configured `ChatClient.Builder`, which means observability and `ChatClientBuilderCustomizer` beans are ignored.
+
+To retain observability and customizers, you should inject `ChatClientBuilderConfigurer` to create custom builders.
+The `ChatClientBuilderConfigurer` applies all registered `ChatClientBuilderCustomizer` beans and wires up observability, mirroring what the auto-configuration does internally.
+
+When multiple `ChatModel` beans are present in the application context, Spring cannot resolve the `ChatModel` dependency of the auto-configured `ChatClient.Builder` bean without ambiguity.
+To resolve this, you can mark one of your `ChatClient` beans as `@Primary`.
+You may also need to mark one of your `ChatModel` beans as `@Primary` if you are defining them manually, or alternatively, define your own `ChatClient.Builder` bean to override the auto-configured one.
+
+[source,java]
+----
+import io.micrometer.observation.ObservationRegistry;
+import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
+import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.model.chat.client.autoconfigure.ChatClientBuilderConfigurer;
+import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+
+@Configuration
+public class ChatClientConfig {
+
+    @Bean
+    @Primary
+    public ChatClient openAiChatClient(OpenAiChatModel chatModel, ChatClientBuilderConfigurer configurer,
+            ObjectProvider<ObservationRegistry> observationRegistry,
+            ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
+            ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
+            ObjectProvider<ToolCallingAdvisor.Builder<?>> toolCallingAdvisorBuilder) {
+        return buildChatClient(chatModel, configurer, observationRegistry,
+                chatClientObservationConvention, advisorObservationConvention, toolCallingAdvisorBuilder);
+    }
+
+    @Bean
+    public ChatClient anthropicChatClient(AnthropicChatModel chatModel, ChatClientBuilderConfigurer configurer,
+            ObjectProvider<ObservationRegistry> observationRegistry,
+            ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
+            ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
+            ObjectProvider<ToolCallingAdvisor.Builder<?>> toolCallingAdvisorBuilder) {
+        return buildChatClient(chatModel, configurer, observationRegistry,
+                chatClientObservationConvention, advisorObservationConvention, toolCallingAdvisorBuilder);
+    }
+
+    private ChatClient buildChatClient(ChatModel chatModel, ChatClientBuilderConfigurer configurer,
+            ObjectProvider<ObservationRegistry> observationRegistry,
+            ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
+            ObjectProvider<AdvisorObservationConvention> advisorObservationConvention,
+            ObjectProvider<ToolCallingAdvisor.Builder<?>> toolCallingAdvisorBuilder) {
+        ChatClient.Builder builder = ChatClient.builder(chatModel,
+                observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+                chatClientObservationConvention.getIfUnique(),
+                advisorObservationConvention.getIfUnique(),
+                toolCallingAdvisorBuilder.getIfAvailable());
+        return configurer.configure(builder).build();
+    }
+}
+----
+
+You can then inject these beans into your application components using the `@Qualifier` annotation:
+
+[source,java]
+----
+
+@Configuration
+public class ChatClientExample {
+    
+    @Bean
+    CommandLineRunner cli(
+            @Qualifier("openAiChatClient") ChatClient openAiChatClient,
+            @Qualifier("anthropicChatClient") ChatClient anthropicChatClient) {
+        
+        return args -> {
+            var scanner = new Scanner(System.in);
+            ChatClient chat;
+            
+            // Model selection
+            System.out.println("\nSelect your AI model:");
+            System.out.println("1. OpenAI");
+            System.out.println("2. Anthropic");
+            System.out.print("Enter your choice (1 or 2): ");
+            
+            String choice = scanner.nextLine().trim();
+            
+            if (choice.equals("1")) {
+                chat = openAiChatClient;
+                System.out.println("Using OpenAI model");
+            } else {
+                chat = anthropicChatClient;
+                System.out.println("Using Anthropic model");
+            }
+            
+            // Use the selected chat client
+            System.out.print("\nEnter your question: ");
+            String input = scanner.nextLine();
+            String response = chat.prompt(input).call().content();
+            System.out.println("ASSISTANT: " + response);
+            
+            scanner.close();
+        };
+    }
+}
+----
+
+== Multiple OpenAI-Compatible API Endpoints
+
+You can create multiple `OpenAiChatModel` instances using their builders to connect to different OpenAI-compatible APIs.
+This is particularly useful when you need to work with multiple providers.
+
+[source,java]
+----
+
+@Service
+public class MultiModelService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(MultiModelService.class);
+    
+    public void multiClientFlow() {
+        try {
+            // An OpenAiChatModel for Groq
+            OpenAiChatModel groqModel = OpenAiChatModel.builder()
+                .options(OpenAiChatOptions.builder()
+                    .baseUrl("https://api.groq.com/openai/v1")
+                    .apiKey(System.getenv("GROQ_API_KEY"))
+                    .model("openai/gpt-oss-120b")
+                    .build())
+                .build();
+            
+            // An OpenAiChatModel for OpenAI
+            OpenAiChatModel openAiModel = OpenAiChatModel.builder()
+                .options(OpenAiChatOptions.builder()
+                    .baseUrl("https://api.openai.com/v1")
+                    .apiKey(System.getenv("OPENAI_API_KEY"))
+                    .model("gpt-5.4-mini")
+                    .build())
+                .build();
+            
+            // Simple prompt for both models
+            String prompt = "What is the capital of France?";
+            
+            String groqResponse = ChatClient.builder(groqModel).build().prompt(prompt).call().content();
+            String openAiResponse = ChatClient.builder(openAiModel).build().prompt(prompt).call().content();
+            
+            logger.info("Groq response: {}", groqResponse);
+            logger.info("OpenAI response: {}", openAiResponse);
+        }
+        catch (Exception e) {
+            logger.error("Error in multi-client flow", e);
+        }
+    }
+}
+----

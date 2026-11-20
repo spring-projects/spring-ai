@@ -1,5 +1,0 @@
-= Azure OpenAI Embeddings
-
-As of Spring AI `2.0.0-M5`, xref:api/embeddings/openai-embeddings.adoc[OpenAI Embeddings] should be use to access OpenAI models deployed on Azure / Microsoft Foundry.
-
-

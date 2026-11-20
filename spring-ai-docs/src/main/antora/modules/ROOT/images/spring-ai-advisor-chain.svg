@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 494" width="900" role="img" aria-labelledby="advisor-chain-title advisor-chain-desc" font-family="'Open Sans', 'Helvetica Neue', Arial, sans-serif" fill="currentColor">
+<defs><marker id="advisor-chain-ext" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto"><path d="M1 1 L11 6 L1 11 z" fill="var(--body-background-color, #fff)" stroke="currentColor" stroke-opacity="0.7"/></marker><marker id="advisor-chain-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor" fill-opacity="0.6"/></marker><marker id="advisor-chain-has" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="9" orient="auto"><path d="M1 5 L7 1 L13 5 L7 9 z" fill="currentColor" fill-opacity="0.7"/></marker></defs>
+<title id="advisor-chain-title">The advisor chain of a ChatClient call</title>
+<desc id="advisor-chain-desc">A ChatClient call runs an advisor chain sorted by order. With session memory, RAG and schema validation, the chain is: SessionTurnAdvisor (HP + 200), the auto-registered ToolCallingAdvisor (HP + 300), SessionMemoryAdvisor (HP + 1000), advisors with order 0 such as QuestionAnswerAdvisor and SafeGuardAdvisor, StructuredOutputValidationAdvisor (LP - 2000), and ChatModelCallAdvisor or ChatModelStreamAdvisor (LP), which call the chat model. The request passes down the chain and the response passes back up. For each tool round, ToolCallingAdvisor runs the rest of the chain again.</desc>
+<rect x="200" y="10" width="470" height="40" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.2"/><text x="435.0" y="34.5" text-anchor="middle" font-size="13">chatClient.prompt()...call() or .stream()</text>
+<text x="110.0" y="60.0" text-anchor="middle" font-size="12" font-weight="700" fill-opacity="0.8">order</text>
+<rect x="200" y="70" width="470" height="48" rx="8" fill="#6DB33F" fill-opacity="0.14" stroke="#6DB33F" stroke-width="1.2"/><text x="435.0" y="91.0" text-anchor="middle" font-size="13" font-weight="600">SessionTurnAdvisor</text><text x="435.0" y="108.0" text-anchor="middle" font-size="11" fill-opacity="0.75">records the turn, once per call</text>
+<text x="110.0" y="98.0" text-anchor="middle" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">HP + 200</text>
+<rect x="200" y="132" width="470" height="48" rx="8" fill="#6DB33F"/><text x="435.0" y="153.0" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">ToolCallingAdvisor</text><text x="435.0" y="170.0" text-anchor="middle" font-size="11" fill="#fff">added by ChatClient; runs the tool loop</text>
+<text x="110.0" y="160.0" text-anchor="middle" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">HP + 300</text>
+<rect x="200" y="194" width="470" height="48" rx="8" fill="#6DB33F" fill-opacity="0.14" stroke="#6DB33F" stroke-width="1.2"/><text x="435.0" y="215.0" text-anchor="middle" font-size="13" font-weight="600">SessionMemoryAdvisor</text><text x="435.0" y="232.0" text-anchor="middle" font-size="11" fill-opacity="0.75">adds the history, on every round</text>
+<text x="110.0" y="222.0" text-anchor="middle" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">HP + 1000</text>
+<rect x="200" y="256" width="470" height="48" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.2"/><text x="435.0" y="277.0" text-anchor="middle" font-size="13" font-weight="600">Your advisors, QuestionAnswerAdvisor, SafeGuardAdvisor</text><text x="435.0" y="294.0" text-anchor="middle" font-size="11" fill-opacity="0.75">default order 0</text>
+<text x="110.0" y="284.0" text-anchor="middle" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">0</text>
+<rect x="200" y="318" width="470" height="48" rx="8" fill="#6DB33F" fill-opacity="0.14" stroke="#6DB33F" stroke-width="1.2"/><text x="435.0" y="339.0" text-anchor="middle" font-size="13" font-weight="600">StructuredOutputValidationAdvisor</text><text x="435.0" y="356.0" text-anchor="middle" font-size="11" fill-opacity="0.75">validates .entity(...) output</text>
+<text x="110.0" y="346.0" text-anchor="middle" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">LP - 2000</text>
+<rect x="200" y="380" width="470" height="48" rx="8" fill="#6DB33F"/><text x="435.0" y="401.0" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">ChatModelCallAdvisor / ChatModelStreamAdvisor</text><text x="435.0" y="418.0" text-anchor="middle" font-size="11" fill="#fff">added by ChatClient; adds format instructions, calls the model</text>
+<text x="110.0" y="408.0" text-anchor="middle" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">LP</text>
+<rect x="310" y="442" width="250" height="42" rx="8" fill="#6DB33F" fill-opacity="0.14" stroke="#6DB33F" stroke-width="1.2"/><text x="435.0" y="467.5" text-anchor="middle" font-size="14">ChatModel</text>
+<path d="M350.0 51.0 L350.0 68.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<path d="M520.0 68.0 L520.0 51.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<path d="M350.0 119.0 L350.0 130.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<path d="M520.0 130.0 L520.0 119.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<path d="M350.0 181.0 L350.0 192.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<path d="M520.0 192.0 L520.0 181.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<path d="M350.0 243.0 L350.0 254.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<path d="M520.0 254.0 L520.0 243.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<path d="M350.0 305.0 L350.0 316.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<path d="M520.0 316.0 L520.0 305.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<path d="M350.0 367.0 L350.0 378.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<path d="M520.0 378.0 L520.0 367.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<path d="M350.0 428.0 L350.0 440.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<path d="M520.0 442.0 L520.0 430.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-chain-arrow)"/>
+<text x="340.0" y="64.0" text-anchor="end" font-size="11" fill-opacity="0.75" font-style="italic">ChatClientRequest</text>
+<text x="530.0" y="64.0" text-anchor="start" font-size="11" fill-opacity="0.75" font-style="italic">ChatClientResponse</text>
+<path d="M676 156.0 H710 V463.0 H676" fill="none" stroke="#6DB33F" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="718.0" y="301.5" text-anchor="start" font-size="12" font-weight="600" fill="#6DB33F">for each tool round,</text>
+<text x="718.0" y="317.5" text-anchor="start" font-size="12" font-weight="600" fill="#6DB33F">the rest of the chain</text>
+<text x="718.0" y="333.5" text-anchor="start" font-size="12" font-weight="600" fill="#6DB33F">runs again (chain.copy)</text>
+</svg>

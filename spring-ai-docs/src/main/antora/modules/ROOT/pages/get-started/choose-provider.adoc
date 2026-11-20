@@ -1,0 +1,34 @@
+[[choose-provider]]
+= Choosing a Model Provider
+
+Spring AI code is written against portable interfaces, so the provider is a deployment choice more than a design choice.
+This page helps you pick one to start with.
+
+== Hosted or Local
+
+* *Hosted providers* such as xref:integrations/models/openai/index.adoc[OpenAI], xref:integrations/models/anthropic/index.adoc[Anthropic], xref:integrations/models/google-genai/index.adoc[Google GenAI], xref:integrations/models/mistral-ai/index.adoc[Mistral AI] and xref:integrations/models/bedrock/index.adoc[Amazon Bedrock] need an account and credentials, and nothing else to install.
+* *Local models* run on your own machine.
+xref:integrations/models/ollama/index.adoc[Ollama] serves models over a local HTTP API, and xref:integrations/models/transformers.adoc[Transformers (ONNX)] computes embeddings inside the JVM.
+The community-maintained xref:integrations/models/jinfer/index.adoc[Qxotic jinfer] runs chat, embedding and audio models inside the JVM.
+None of them needs an API key.
+
+== What Each Provider Supports
+
+Providers differ in which model types they offer and in which features their chat models support.
+
+* xref:integrations/models/index.adoc[Model Providers] lists which provider offers chat, embedding, image, audio, moderation and decision models.
+* xref:integrations/models/comparison.adoc[Chat Model Comparison] compares the chat models on multimodality, tool calling, streaming, structured output and more.
+
+== OpenAI-Compatible Servers
+
+Many services and local servers expose an API that is compatible with OpenAI's.
+You reach them with the OpenAI module by changing the base URL and the model name.
+See xref:integrations/models/openai-compatible/index.adoc[OpenAI-Compatible Endpoints].
+
+== Switching Later
+
+To change provider, replace the starter dependency and the `spring.ai.<provider>.*` properties.
+Code that uses `ChatClient`, `ChatModel` or `EmbeddingModel` does not change, unless it uses provider-specific options.
+
+An application can also use several models at once.
+See xref:chatclient/multiple-models.adoc[Working with Multiple Chat Models].

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 402" width="900" role="img" aria-labelledby="mt-title mt-desc" font-family="'Open Sans', 'Helvetica Neue', Arial, sans-serif" fill="currentColor">
+<title id="mt-title">The model types of Spring AI, with their input and output</title>
+<desc id="mt-desc">Chat models take text, plus images, audio or documents and return text, reasoning, tool calls. Embedding models take text, or images and return a vector of numbers. Image models take text and return images. Text to speech models take text and return audio. Transcription models take audio and return text. Moderation models take text and return flagged categories, with scores. Decision models take a question, its outcomes, an input and return the chosen outcome, with likelihoods.</desc>
+<text x="165.0" y="22" text-anchor="middle" font-size="14" font-weight="700">Input</text>
+<text x="450.0" y="22" text-anchor="middle" font-size="14" font-weight="700">Model type</text>
+<text x="735.0" y="22" text-anchor="middle" font-size="14" font-weight="700">Output</text>
+<rect x="1" y="46" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="165.0" y="70" text-anchor="middle" font-size="13">Text, plus images, audio or documents</text>
+<path d="M334 65 H360" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M366 65 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="370" y="46" width="160" height="38" rx="8" fill="#6DB33F"/><text x="450.0" y="70" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Chat</text>
+<path d="M534 65 H560" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M566 65 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="571" y="46" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="735.0" y="70" text-anchor="middle" font-size="13">Text, reasoning, tool calls</text>
+<rect x="1" y="96" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="165.0" y="120" text-anchor="middle" font-size="13">Text, or images</text>
+<path d="M334 115 H360" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M366 115 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="370" y="96" width="160" height="38" rx="8" fill="#6DB33F"/><text x="450.0" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Embedding</text>
+<path d="M534 115 H560" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M566 115 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="571" y="96" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="735.0" y="120" text-anchor="middle" font-size="13">A vector of numbers</text>
+<rect x="1" y="146" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="165.0" y="170" text-anchor="middle" font-size="13">Text</text>
+<path d="M334 165 H360" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M366 165 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="370" y="146" width="160" height="38" rx="8" fill="#6DB33F"/><text x="450.0" y="170" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Image</text>
+<path d="M534 165 H560" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M566 165 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="571" y="146" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="735.0" y="170" text-anchor="middle" font-size="13">Images</text>
+<rect x="1" y="196" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="165.0" y="220" text-anchor="middle" font-size="13">Text</text>
+<path d="M334 215 H360" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M366 215 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="370" y="196" width="160" height="38" rx="8" fill="#6DB33F"/><text x="450.0" y="220" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Text to speech</text>
+<path d="M534 215 H560" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M566 215 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="571" y="196" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="735.0" y="220" text-anchor="middle" font-size="13">Audio</text>
+<rect x="1" y="246" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="165.0" y="270" text-anchor="middle" font-size="13">Audio</text>
+<path d="M334 265 H360" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M366 265 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="370" y="246" width="160" height="38" rx="8" fill="#6DB33F"/><text x="450.0" y="270" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Transcription</text>
+<path d="M534 265 H560" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M566 265 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="571" y="246" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="735.0" y="270" text-anchor="middle" font-size="13">Text</text>
+<rect x="1" y="296" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="165.0" y="320" text-anchor="middle" font-size="13">Text</text>
+<path d="M334 315 H360" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M366 315 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="370" y="296" width="160" height="38" rx="8" fill="#6DB33F"/><text x="450.0" y="320" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Moderation</text>
+<path d="M534 315 H560" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M566 315 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="571" y="296" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="735.0" y="320" text-anchor="middle" font-size="13">Flagged categories, with scores</text>
+<rect x="1" y="346" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="165.0" y="370" text-anchor="middle" font-size="13">A question, its outcomes, an input</text>
+<path d="M334 365 H360" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M366 365 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="370" y="346" width="160" height="38" rx="8" fill="#6DB33F"/><text x="450.0" y="370" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Decision</text>
+<path d="M534 365 H560" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.6"/><path d="M566 365 l-8 -5 v10 z" fill="currentColor" fill-opacity="0.5"/>
+<rect x="571" y="346" width="328" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2"/><text x="735.0" y="370" text-anchor="middle" font-size="13">The chosen outcome, with likelihoods</text>
+</svg>

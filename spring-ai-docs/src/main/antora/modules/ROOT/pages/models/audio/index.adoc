@@ -1,0 +1,24 @@
+[[audio-models]]
+= Audio Models
+:page-aliases: api/audio.adoc
+
+Spring AI has two audio model types: transcription turns speech into text, and text-to-speech turns text into speech.
+Both can stream.
+
+[cols="1,2,2", options="header"]
+|===
+| Model type | Interface and main methods | Implementations
+
+| xref:models/audio/transcription.adoc[Transcription]
+| `TranscriptionModel`: `transcribe(Resource)` returns a `String`; `streamTranscribe(Resource)` returns a `Flux<String>`.
+| xref:integrations/models/openai/transcription.adoc[OpenAI], xref:integrations/models/google-genai/transcription.adoc[Google GenAI], xref:integrations/models/jinfer/transcription.adoc[Qxotic jinfer] (Community)
+
+| xref:models/audio/speech.adoc[Text to speech]
+| `TextToSpeechModel`: `call(String)` returns the audio as a `byte[]`; `stream(String)` returns a `Flux<byte[]>`.
+| xref:integrations/models/openai/speech.adoc[OpenAI], xref:integrations/models/elevenlabs.adoc[ElevenLabs], xref:integrations/models/google-genai/speech.adoc[Google GenAI], xref:integrations/models/jinfer/speech.adoc[Qxotic jinfer] (Community)
+|===
+
+Each model also has a method that takes a prompt with options and returns a response with metadata: `call(AudioTranscriptionPrompt)` and `call(TextToSpeechPrompt)`.
+The pages of the two model types describe these, and how to write code that works with any provider.
+
+A xref:models/chat.adoc[chat model] that accepts audio input can also answer questions about a recording, see xref:multimodality.adoc[Multimodality].

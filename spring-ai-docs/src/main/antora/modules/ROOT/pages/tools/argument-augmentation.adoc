@@ -1,0 +1,65 @@
+[[tool-argument-augmentation]]
+= Tool Argument Augmentation
+
+Spring AI provides a utility for dynamic augmentation of tool input schemas with additional arguments.
+This lets you capture extra information from the model — such as reasoning, confidence, or metadata — without modifying the underlying tool implementation.
+The model sees the augmented schema and fills in the extra fields; your code receives them via a consumer; the original tool receives only its expected arguments, unchanged.
+
+Common use cases:
+
+* **Inner thinking / reasoning** — capture the model's step-by-step reasoning before executing a tool.
+* **Memory enhancement** — extract insights to store in long-term memory.
+* **Analytics & tracking** — collect metadata, user intent, or usage patterns.
+* **Multi-agent coordination** — pass agent identifiers or coordination signals.
+
+image::tools/spring-ai-tool-arg-augmenter.png[Tool Argument Augmentation, width=700, align="center"]
+
+[[augmentation-quick-start]]
+== Quick Start
+
+Define the augmented arguments as a Java record:
+
+[source,java]
+----
+public record AgentThinking(
+    @ToolParam(description = "Your reasoning for calling this tool", required = true)
+    String innerThought,
+
+    @ToolParam(description = "Confidence level (low, medium, high)", required = false)
+    String confidence
+) {}
+----
+
+Wrap your tools with `AugmentedToolCallbackProvider`:
+
+[source,java]
+----
+AugmentedToolCallbackProvider<AgentThinking> provider = AugmentedToolCallbackProvider
+    .<AgentThinking>builder()
+    .toolObject(new WeatherTools())     // wrap the original tools
+    .argumentType(AgentThinking.class)  // augmentation schema type
+    .argumentConsumer(event -> {        // receives the augmented arguments; required
+        AgentThinking thinking = event.arguments();
+        log.info("Tool: {} | Reasoning: {}", event.toolDefinition().name(), thinking.innerThought());
+    })
+    .removeExtraArgumentsAfterProcessing(true)
+    .build();
+
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultTools(provider)
+    .build();
+----
+
+The LLM sees the augmented schema with your additional fields.
+Your consumer receives the `AgentThinking` record; the original tool receives only its expected arguments.
+
+[[augmentation-components]]
+== Core Components
+
+* `AugmentedToolCallbackProvider<T>` — wraps tool objects or providers, augmenting all tools with the specified record type.
+* `AugmentedToolCallback<T>` — wraps individual `ToolCallback` instances.
+* `AugmentedArgumentEvent<T>` — contains `toolDefinition()`, `rawInput()`, and `arguments()` for consumers.
+* `ToolInputSchemaAugmenter` — low-level utility for schema manipulation.
+
+The `removeExtraArgumentsAfterProcessing` option of `AugmentedToolCallbackProvider` (default `true`) controls whether augmented arguments are passed to the original tool; the `AugmentedToolCallback` constructor requires it.
+Set it to `false` if the tool can ignore extra fields and you want them preserved in the input.

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1010 398" width="1010" role="img" aria-labelledby="trace-title trace-desc" font-family="'Open Sans', 'Helvetica Neue', Arial, sans-serif" fill="currentColor">
+<title id="trace-title">The spans of a ChatClient call</title>
+<desc id="trace-desc">A trace of a ChatClient call with retrieval and one tool call. The spring.ai.chat.client span contains the ToolCallingAdvisor span. Inside it, the QuestionAnswerAdvisor span contains a vector store query and the ChatModelCallAdvisor span with a gen_ai.client.operation span, in which the model asks for a tool. Then a spring.ai.tool span runs the tool, and the advisors after ToolCallingAdvisor run again: another vector store query and another model call, which gives the final answer.</desc>
+<text x="10.0" y="20.0" text-anchor="start" font-size="12.5" font-weight="700" fill-opacity="0.8">Span</text>
+<text x="440.0" y="20.0" text-anchor="start" font-size="12.5" font-weight="700" fill-opacity="0.8">Time</text>
+<rect x="0" y="30" width="1010" height="30" fill="currentColor" fill-opacity="0.04"/>
+<text x="10.0" y="49.0" text-anchor="start" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">spring.ai.chat.client</text>
+<text x="420.0" y="49.0" text-anchor="end" font-size="11.5" fill-opacity="0.75">the ChatClient call</text>
+<rect x="440.0" y="37" width="560.0" height="16" rx="3" fill="#6DB33F" fill-opacity="1"/>
+<text x="32.0" y="79.0" text-anchor="start" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">spring.ai.advisor</text>
+<text x="420.0" y="79.0" text-anchor="end" font-size="11.5" fill-opacity="0.75">ToolCallingAdvisor</text>
+<rect x="445.6" y="67" width="548.8" height="16" rx="3" fill="#6DB33F" fill-opacity="0.55"/>
+<rect x="0" y="90" width="1010" height="30" fill="currentColor" fill-opacity="0.04"/>
+<text x="54.0" y="109.0" text-anchor="start" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">spring.ai.advisor</text>
+<text x="420.0" y="109.0" text-anchor="end" font-size="11.5" fill-opacity="0.75">QuestionAnswerAdvisor</text>
+<rect x="451.2" y="97" width="246.4" height="16" rx="3" fill="#6DB33F" fill-opacity="0.55"/>
+<text x="76.0" y="139.0" text-anchor="start" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">db.vector.client.operation</text>
+<text x="420.0" y="139.0" text-anchor="end" font-size="11.5" fill-opacity="0.75">query</text>
+<rect x="456.8" y="127" width="44.8" height="16" rx="3" fill="#3F7DE0" fill-opacity="1"/>
+<rect x="0" y="150" width="1010" height="30" fill="currentColor" fill-opacity="0.04"/>
+<text x="76.0" y="169.0" text-anchor="start" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">spring.ai.advisor</text>
+<text x="420.0" y="169.0" text-anchor="end" font-size="11.5" fill-opacity="0.75">ChatModelCallAdvisor</text>
+<rect x="507.2" y="157" width="184.8" height="16" rx="3" fill="#6DB33F" fill-opacity="0.55"/>
+<text x="98.0" y="199.0" text-anchor="start" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">gen_ai.client.operation</text>
+<text x="420.0" y="199.0" text-anchor="end" font-size="11.5" fill-opacity="0.75">chat: asks for a tool</text>
+<rect x="512.8" y="187" width="173.6" height="16" rx="3" fill="#E08A3F" fill-opacity="1"/>
+<rect x="0" y="210" width="1010" height="30" fill="currentColor" fill-opacity="0.04"/>
+<text x="54.0" y="229.0" text-anchor="start" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">spring.ai.tool</text>
+<text x="420.0" y="229.0" text-anchor="end" font-size="11.5" fill-opacity="0.75">getWeather</text>
+<rect x="703.2" y="217" width="44.8" height="16" rx="3" fill="#3F7DE0" fill-opacity="1"/>
+<text x="54.0" y="259.0" text-anchor="start" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">spring.ai.advisor</text>
+<text x="420.0" y="259.0" text-anchor="end" font-size="11.5" fill-opacity="0.75">QuestionAnswerAdvisor</text>
+<rect x="753.6" y="247" width="235.2" height="16" rx="3" fill="#6DB33F" fill-opacity="0.55"/>
+<rect x="0" y="270" width="1010" height="30" fill="currentColor" fill-opacity="0.04"/>
+<text x="76.0" y="289.0" text-anchor="start" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">db.vector.client.operation</text>
+<text x="420.0" y="289.0" text-anchor="end" font-size="11.5" fill-opacity="0.75">query</text>
+<rect x="759.2" y="277" width="39.2" height="16" rx="3" fill="#3F7DE0" fill-opacity="1"/>
+<text x="76.0" y="319.0" text-anchor="start" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">spring.ai.advisor</text>
+<text x="420.0" y="319.0" text-anchor="end" font-size="11.5" fill-opacity="0.75">ChatModelCallAdvisor</text>
+<rect x="804.0" y="307" width="179.2" height="16" rx="3" fill="#6DB33F" fill-opacity="0.55"/>
+<rect x="0" y="330" width="1010" height="30" fill="currentColor" fill-opacity="0.04"/>
+<text x="98.0" y="349.0" text-anchor="start" font-size="12.5" font-family="ui-monospace, Menlo, Consolas, monospace">gen_ai.client.operation</text>
+<text x="420.0" y="349.0" text-anchor="end" font-size="11.5" fill-opacity="0.75">chat: final answer</text>
+<rect x="809.6" y="337" width="168.0" height="16" rx="3" fill="#E08A3F" fill-opacity="1"/>
+<rect x="10" y="376" width="14" height="10" rx="2" fill="#6DB33F" fill-opacity="1"/>
+<text x="30.0" y="385.0" text-anchor="start" font-size="11.5" fill-opacity="0.8">ChatClient</text>
+<rect x="110" y="376" width="14" height="10" rx="2" fill="#6DB33F" fill-opacity="0.55"/>
+<text x="130.0" y="385.0" text-anchor="start" font-size="11.5" fill-opacity="0.8">advisor</text>
+<rect x="189" y="376" width="14" height="10" rx="2" fill="#E08A3F" fill-opacity="1"/>
+<text x="209.0" y="385.0" text-anchor="start" font-size="11.5" fill-opacity="0.8">model call</text>
+<rect x="289" y="376" width="14" height="10" rx="2" fill="#3F7DE0" fill-opacity="1"/>
+<text x="309.0" y="385.0" text-anchor="start" font-size="11.5" fill-opacity="0.8">tool call or vector store</text>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 146" width="900" role="img" aria-labelledby="tokens-title tokens-desc" font-family="'Open Sans', 'Helvetica Neue', Arial, sans-serif" fill="currentColor">
+<defs><marker id="tokens-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor" fill-opacity="0.6"/></marker><marker id="tokens-arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6DB33F"/></marker></defs>
+<title id="tokens-title">A sentence split into tokens</title>
+<desc id="tokens-desc">The sentence 'Spring AI turns your prompt into tokens.' has 7 words and is split into 9 tokens: Spring, AI, turns, your, prompt, into, tok, ens and the full stop. Each model uses its own tokenizer.</desc>
+<text x="450.0" y="26.0" text-anchor="middle" font-size="14" fill-opacity="0.85">Spring AI turns your prompt into tokens.</text>
+<rect x="198.5" y="50" width="63" height="32" rx="6" fill="#6DB33F" fill-opacity="0.16" stroke="#6DB33F" stroke-width="1"/>
+<text x="230.0" y="71.0" text-anchor="middle" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">Spring</text>
+<rect x="267.5" y="50" width="39" height="32" rx="6" fill="#6DB33F" fill-opacity="0.32" stroke="#6DB33F" stroke-width="1"/>
+<text x="287.0" y="71.0" text-anchor="middle" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">␣AI</text>
+<rect x="312.5" y="50" width="63" height="32" rx="6" fill="#6DB33F" fill-opacity="0.16" stroke="#6DB33F" stroke-width="1"/>
+<text x="344.0" y="71.0" text-anchor="middle" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">␣turns</text>
+<rect x="381.5" y="50" width="55" height="32" rx="6" fill="#6DB33F" fill-opacity="0.32" stroke="#6DB33F" stroke-width="1"/>
+<text x="409.0" y="71.0" text-anchor="middle" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">␣your</text>
+<rect x="442.5" y="50" width="71" height="32" rx="6" fill="#6DB33F" fill-opacity="0.16" stroke="#6DB33F" stroke-width="1"/>
+<text x="478.0" y="71.0" text-anchor="middle" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">␣prompt</text>
+<rect x="519.5" y="50" width="55" height="32" rx="6" fill="#6DB33F" fill-opacity="0.32" stroke="#6DB33F" stroke-width="1"/>
+<text x="547.0" y="71.0" text-anchor="middle" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">␣into</text>
+<rect x="580.5" y="50" width="47" height="32" rx="6" fill="#6DB33F" fill-opacity="0.16" stroke="#6DB33F" stroke-width="1"/>
+<text x="604.0" y="71.0" text-anchor="middle" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">␣tok</text>
+<rect x="633.5" y="50" width="39" height="32" rx="6" fill="#6DB33F" fill-opacity="0.32" stroke="#6DB33F" stroke-width="1"/>
+<text x="653.0" y="71.0" text-anchor="middle" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">ens</text>
+<rect x="678.5" y="50" width="23" height="32" rx="6" fill="#6DB33F" fill-opacity="0.16" stroke="#6DB33F" stroke-width="1"/>
+<text x="690.0" y="71.0" text-anchor="middle" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">.</text>
+<text x="450.0" y="112.0" text-anchor="middle" font-size="13" font-weight="600">7 words, 9 tokens</text>
+<text x="450.0" y="132.0" text-anchor="middle" font-size="11.5" fill-opacity="0.7">Illustrative: each model splits text with its own tokenizer, and ␣ marks a space that belongs to a token.</text>
+</svg>

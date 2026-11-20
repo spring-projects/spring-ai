@@ -1,0 +1,195 @@
+= Defaults and Mutation
+
+== Using Defaults
+
+Creating a `ChatClient` with a default system text in an `@Configuration` class simplifies runtime code.
+By setting defaults, you only need to specify the user text when calling `ChatClient`, eliminating the need to set a system text for each request in your runtime code path.
+
+=== Default System Text
+
+In the following example, we will configure the system text to always reply in a pirate's voice.
+To avoid repeating the system text in runtime code, we will create a `ChatClient` instance in a `@Configuration` class.
+
+[source,java]
+----
+@Configuration
+class Config {
+
+    @Bean
+    ChatClient chatClient(ChatClient.Builder builder) {
+        return builder.defaultSystem("You are a friendly chat bot that answers question in the voice of a Pirate")
+                .build();
+    }
+
+}
+----
+
+and a `@RestController` to invoke it:
+
+[source,java]
+----
+@RestController
+class AIController {
+
+	private final ChatClient chatClient;
+
+	AIController(ChatClient chatClient) {
+		this.chatClient = chatClient;
+	}
+
+	@GetMapping("/ai/simple")
+	public Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+		return Map.of("completion", this.chatClient.prompt().user(message).call().content());
+	}
+}
+----
+
+When calling the application endpoint via curl, the result is:
+
+[source,bash]
+----
+❯ curl localhost:8080/ai/simple
+{"completion":"Why did the pirate go to the comedy club? To hear some arrr-rated jokes! Arrr, matey!"}
+----
+
+=== Default System Text with parameters
+
+In the following example, we will use a placeholder in the system text to specify the voice of the completion at runtime instead of design time.
+
+[source,java]
+----
+@Configuration
+class Config {
+
+    @Bean
+    ChatClient chatClient(ChatClient.Builder builder) {
+        return builder.defaultSystem("You are a friendly chat bot that answers question in the voice of a {voice}")
+                .build();
+    }
+
+}
+----
+
+[source,java]
+----
+@RestController
+class AIController {
+	private final ChatClient chatClient;
+
+	AIController(ChatClient chatClient) {
+		this.chatClient = chatClient;
+	}
+
+	@GetMapping("/ai")
+	Map<String, String> completion(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message, String voice) {
+		return Map.of("completion",
+				this.chatClient.prompt()
+						.system(sp -> sp.param("voice", voice))
+						.user(message)
+						.call()
+						.content());
+	}
+
+}
+----
+
+When calling the application endpoint via httpie, the result is:
+
+[source.bash]
+----
+http localhost:8080/ai voice=='Robert DeNiro'
+{
+    "completion": "You talkin' to me? Okay, here's a joke for ya: Why couldn't the bicycle stand up by itself? Because it was two tired! Classic, right?"
+}
+----
+
+=== Other defaults
+
+At the `ChatClient.Builder` level, you can specify the default prompt configuration.
+
+* `defaultOptions(ChatOptions.Builder chatOptions)`: Pass a builder of either portable options, from `ChatOptions.builder()`, or model-specific options, such as `OpenAiChatOptions.builder()`.
+For the available options, see xref:models/chat.adoc#_chat_options[Chat Options] and the options of your model provider.
+
+* `defaultTools(Object... tools)`: Register one or more default tools that will be available to every request.
+Accepts a heterogeneous mix of `ToolCallback`, `ToolCallbackProvider`, or POJOs with `@Tool` annotated methods.
+
+* `defaultToolContext(Map<String, Object> toolContext)`: Set a default context for tool executions.
+
+* `defaultSystem(String text)`, `defaultSystem(Resource text)`, `defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer)`: These methods let you define the default system text.
+
+* `defaultUser(String text)`, `defaultUser(Resource text)`, `defaultUser(Consumer<PromptUserSpec> userSpecConsumer)`: These methods let you define the user text.
+The `Consumer<PromptUserSpec>` allows you to use a lambda to specify the user text and any default parameters.
+
+* `defaultTemplateRenderer(TemplateRenderer templateRenderer)`: Set a default `TemplateRenderer` for prompt templates.
+
+* `defaultAdvisors(Advisor... advisor)`, `defaultAdvisors(List<Advisor> advisors)`: Advisors allow modification of the data used to create the `Prompt`.
+The `QuestionAnswerAdvisor` implementation enables the pattern of `Retrieval Augmented Generation` by appending the prompt with context information related to the user text.
+
+* `defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer)`: This method allows you to define a `Consumer` to configure multiple advisors using the `AdvisorSpec`.
+Advisors can modify the data used to create the final `Prompt`.
+The `Consumer<AdvisorSpec>` lets you specify a lambda to add advisors, such as `QuestionAnswerAdvisor`, which supports `Retrieval Augmented Generation` by appending the prompt with relevant context information based on the user text.
+
+You can override these defaults at runtime using the corresponding methods without the `default` prefix.
+
+* `options(ChatOptions.Builder optionsCustomizer)`
+
+* `tools(Object... tools)`
+
+* `toolContext(Map<String, Object> toolContext)`
+
+* `messages(Message... messages)`, `messages(List<Message> messages)`
+
+* `system(String text)`, `system(Resource text)`, `system(Consumer<PromptSystemSpec> systemSpecConsumer)`
+
+* `user(String text)`, `user(Resource text)`, `user(Consumer<PromptUserSpec> userSpecConsumer)`
+
+* `templateRenderer(TemplateRenderer templateRenderer)`
+
+* `advisors(Advisor... advisor)`, `advisors(List<Advisor> advisors)`
+
+* `advisors(Consumer<AdvisorSpec> advisorSpecConsumer)`
+
+The runtime values combine with the defaults in different ways:
+
+* `tools(...)` adds tools to the default tools: the request has both the tools registered with `defaultTools(...)` and its own.
+* `advisors(...)` adds advisors to the default advisors.
+* `toolContext(...)` adds entries to the default tool context, and replaces those with the same key.
+* `options(...)` replaces the options set with `defaultOptions(...)`.
+The result is applied over the chat model's own default options.
+* `system(...)` and `user(...)` replace the default text when they set one, and add their parameters and metadata to those of the default.
+
+image::spring-ai-chat-client-defaults.svg[How request values combine with the ChatClient defaults,890,opts=inline]
+
+For example, with `spring.ai.openai.chat.model=gpt-5.4-mini` as the model's default:
+
+[source,java]
+----
+// chatClientBuilder: the auto-configured ChatClient.Builder
+ChatClient chatClient = chatClientBuilder
+    .defaultOptions(ChatOptions.builder().model("gpt-5.4"))
+    .build();
+
+// gpt-5.4: the client default, combined over the model's options
+chatClient.prompt("Summarize this contract").call().content();
+
+// gpt-5.4-mini, with low reasoning effort: the request options replace the client default,
+// so the model comes from the model's options again
+chatClient.prompt("Summarize this contract")
+    .options(OpenAiChatOptions.builder().reasoningEffort("low"))
+    .call()
+    .content();
+----
+
+To keep a value of the client default, such as the model, set it again in the request options.
+For the portable and model-specific options, and how a direct `ChatModel` call uses them, see xref:models/chat.adoc#_chat_options[Chat Options].
+
+== Mutating the ChatClient
+
+You can create a new `ChatClient` (or `ChatClientRequestSpec`) with settings replicated from an existing one using the `mutate()` method:
+
+* On `ChatClient`: `Builder mutate()` returns a `ChatClient.Builder` initialized with the client's default settings.
+* On `ChatClientRequestSpec`: `Builder mutate()` returns a `ChatClient.Builder` initialized with the request's current settings.
+* On `ChatClient.Builder`: `Builder clone()` returns a new builder with a copy of the builder's defaults.
+Changes to the copy do not affect the original builder.
+
+This is useful for creating derivative clients or requests without redefining all options.

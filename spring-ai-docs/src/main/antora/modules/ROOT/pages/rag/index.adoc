@@ -1,0 +1,325 @@
+[[rag]]
+= Retrieval Augmented Generation
+:page-aliases: api/retrieval-augmented-generation.adoc
+
+Retrieval Augmented Generation (RAG) is a technique useful to overcome the limitations of large language models
+that struggle with long-form content, factual accuracy, and context-awareness.
+
+Spring AI supports RAG by providing a modular architecture that allows you to build custom RAG flows yourself
+or use out-of-the-box RAG flows using the `Advisor` API.
+
+NOTE: Learn more about Retrieval Augmented Generation in the xref:concepts.adoc#concept-rag[concepts] section.
+
+== Advisors
+
+Spring AI provides out-of-the-box support for common RAG flows using the `Advisor` API.
+
+To use the `QuestionAnswerAdvisor` or `VectorStoreChatMemoryAdvisor`, you need to add the `spring-ai-vector-store-advisor` dependency to your project:
+
+[source,xml]
+----
+<dependency>
+   <groupId>org.springframework.ai</groupId>
+   <artifactId>spring-ai-vector-store-advisor</artifactId>
+</dependency>
+----
+
+=== QuestionAnswerAdvisor
+
+A vector database stores data that the AI model is unaware of.
+When a user question is sent to the AI model, a `QuestionAnswerAdvisor` queries the vector database for documents related to the user question.
+
+The response from the vector database is appended to the user text to provide context for the AI model to generate a response.
+
+Assuming you have already loaded data into a `VectorStore`, you can perform Retrieval Augmented Generation (RAG) by providing an instance of `QuestionAnswerAdvisor` to the `ChatClient`.
+
+[source,java]
+----
+ChatResponse response = ChatClient.builder(chatModel)
+        .build().prompt()
+        .advisors(QuestionAnswerAdvisor.builder(vectorStore).build())
+        .user(userText)
+        .call()
+        .chatResponse();
+----
+
+In this example, the `QuestionAnswerAdvisor` will perform a similarity search over all documents in the Vector Database.
+To restrict the types of documents that are searched, the `SearchRequest` takes an SQL like filter expression that is portable across all `VectorStores`.
+
+This filter expression can be configured when creating the `QuestionAnswerAdvisor` and hence will always apply to all `ChatClient` requests, or it can be provided at runtime per request.
+
+Here is how to create an instance of `QuestionAnswerAdvisor` where the threshold is `0.8` and to return the top `6` results.
+
+[source,java]
+----
+var qaAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
+        .searchRequest(SearchRequest.builder().similarityThreshold(0.8d).topK(6).build())
+        .build();
+----
+
+==== Dynamic Filter Expressions
+
+Update the `SearchRequest` filter expression at runtime using the `FILTER_EXPRESSION` advisor context parameter:
+
+[source,java]
+----
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(QuestionAnswerAdvisor.builder(vectorStore)
+        .searchRequest(SearchRequest.builder().build())
+        .build())
+    .build();
+
+// Update filter expression at runtime
+String content = this.chatClient.prompt()
+    .user("Please answer my question XYZ")
+    .advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION, "type == 'Spring'"))
+    .call()
+    .content();
+----
+
+The `FILTER_EXPRESSION` parameter allows you to dynamically filter the search results based on the provided expression.
+
+==== Custom Template
+
+The `QuestionAnswerAdvisor` uses a default template to augment the user question with the retrieved documents.
+You can customize this behavior by providing your own `PromptTemplate` object via the `.promptTemplate()` builder method.
+
+NOTE: The `PromptTemplate` provided here customizes how the advisor merges retrieved context with the user query.
+This is distinct from configuring a `TemplateRenderer` on the `ChatClient` itself (using `.templateRenderer()`), which affects the rendering of the initial user/system prompt content *before* the advisor runs.
+See xref:chatclient/basics.adoc#_prompt_templates[ChatClient Prompt Templates] for more details on client-level template rendering.
+
+The custom `PromptTemplate` can use any `TemplateRenderer` implementation.
+By default, it uses `StTemplateRenderer`, which is based on the https://www.stringtemplate.org/[StringTemplate] engine.
+The template must contain the following two placeholders:
+
+* a `query` placeholder to receive the user question.
+* a `question_answer_context` placeholder to receive the retrieved context.
+
+[source,java]
+----
+PromptTemplate customPromptTemplate = PromptTemplate.builder()
+    .renderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+    .template("""
+            <query>
+
+            Context information is below.
+
+			---------------------
+			<question_answer_context>
+			---------------------
+
+			Given the context information and no prior knowledge, answer the query.
+
+			Follow these rules:
+
+			1. If the answer is not in the context, just say that you don't know.
+			2. Avoid statements like "Based on the context..." or "The provided information...".
+            """)
+    .build();
+
+    String question = "Where does the adventure of Anacletus and Birba take place?";
+
+    QuestionAnswerAdvisor qaAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
+        .promptTemplate(customPromptTemplate)
+        .build();
+
+    String response = ChatClient.builder(chatModel).build()
+        .prompt(question)
+        .advisors(qaAdvisor)
+        .call()
+        .content();
+----
+
+NOTE: The `QuestionAnswerAdvisor.Builder.userTextAdvise()` method has been removed.
+Use `.promptTemplate()` instead.
+
+=== RetrievalAugmentationAdvisor
+
+Spring AI includes a xref:rag/modules.adoc[library of RAG modules] that you can use to build your own RAG flows.
+The `RetrievalAugmentationAdvisor` is an `Advisor` providing an out-of-the-box implementation for the most common RAG flows,
+based on a modular architecture.
+
+To use the `RetrievalAugmentationAdvisor`, you need to add the `spring-ai-rag` dependency to your project:
+
+[source,xml]
+----
+<dependency>
+   <groupId>org.springframework.ai</groupId>
+   <artifactId>spring-ai-rag</artifactId>
+</dependency>
+----
+
+==== Sequential RAG Flows
+
+===== Naive RAG
+
+[source,java]
+----
+Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+                .similarityThreshold(0.50)
+                .vectorStore(vectorStore)
+                .build())
+        .build();
+
+String answer = chatClient.prompt()
+        .advisors(retrievalAugmentationAdvisor)
+        .user(question)
+        .call()
+        .content();
+----
+
+By default, the `RetrievalAugmentationAdvisor` does not allow the retrieved context to be empty.
+When that happens,
+it instructs the model not to answer the user query.
+You can allow empty context as follows.
+
+[source,java]
+----
+Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+                .similarityThreshold(0.50)
+                .vectorStore(vectorStore)
+                .build())
+        .queryAugmenter(ContextualQueryAugmenter.builder()
+                .allowEmptyContext(true)
+                .build())
+        .build();
+
+String answer = chatClient.prompt()
+        .advisors(retrievalAugmentationAdvisor)
+        .user(question)
+        .call()
+        .content();
+----
+
+The `VectorStoreDocumentRetriever` accepts a `Filter.Expression` to filter the search results based on metadata.
+You can provide one when instantiating the `VectorStoreDocumentRetriever` or at runtime per request,
+using the `FILTER_EXPRESSION` advisor context parameter.
+
+[source,java]
+----
+Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+                .similarityThreshold(0.50)
+                .vectorStore(vectorStore)
+                .build())
+        .build();
+
+String answer = chatClient.prompt()
+        .advisors(retrievalAugmentationAdvisor)
+        .advisors(a -> a.param(VectorStoreDocumentRetriever.FILTER_EXPRESSION, "type == 'Spring'"))
+        .user(question)
+        .call()
+        .content();
+----
+
+See xref:rag/modules.adoc#_vectorstoredocumentretriever[VectorStoreDocumentRetriever] for more information.
+
+===== Advanced RAG
+
+[source,java]
+----
+Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
+        .queryTransformers(RewriteQueryTransformer.builder()
+                .chatClientBuilder(chatClientBuilder.build().mutate())
+                .build())
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+                .similarityThreshold(0.50)
+                .vectorStore(vectorStore)
+                .build())
+        .build();
+
+String answer = chatClient.prompt()
+        .advisors(retrievalAugmentationAdvisor)
+        .user(question)
+        .call()
+        .content();
+----
+
+A `QueryExpander` turns the query into several queries.
+The advisor retrieves the documents for each of them in parallel on its `TaskExecutor`, and a `DocumentJoiner` merges the results into a single list:
+
+[source,java]
+----
+Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
+        .queryExpander(MultiQueryExpander.builder()
+                .chatClientBuilder(chatClientBuilder.build().mutate())
+                .numberOfQueries(3)
+                .build())
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+                .similarityThreshold(0.50)
+                .vectorStore(vectorStore)
+                .build())
+        .documentJoiner(new ConcatenationDocumentJoiner())
+        .taskExecutor(taskExecutor)
+        .build();
+----
+
+Without a query expander, the advisor runs a single query.
+The default joiner is a `ConcatenationDocumentJoiner`, which removes duplicates and sorts the documents by score.
+The default task executor is a `ThreadPoolTaskExecutor` with 4 to 16 threads that propagates the thread-local context of the calling thread, such as the current observation, to the retrieval tasks.
+See xref:rag/modules.adoc#_query_expansion[Query Expansion] and xref:rag/modules.adoc#_document_join[Document Join] for the available modules.
+
+You can also use the `DocumentPostProcessor` API to post-process the retrieved documents before passing them to the model.
+For example, you can use such an interface to perform re-ranking of the retrieved documents based on their relevance to the query, remove irrelevant or redundant documents, or compress the content of each document to reduce noise and redundancy.
+
+[[rag-advisor-order]]
+=== Advisor Order and the Tool Calling Loop
+
+The default order of both `QuestionAnswerAdvisor` and `RetrievalAugmentationAdvisor` is `0`.
+`ToolCallingAdvisor` has the order `Ordered.HIGHEST_PRECEDENCE + 300` (`ToolCallingAdvisor.DEFAULT_ORDER`), so by default both RAG advisors run inside the xref:tools/loop.adoc#the-tool-calling-loop[tool calling loop].
+When the model calls tools, the loop sends a new request down the advisor chain after each round of tool calls.
+The RAG advisor then searches again and augments the user message of each of these requests.
+Without tool calls, the loop makes a single round and the advisor runs once.
+
+To retrieve once per `ChatClient` call, set an order lower than `ToolCallingAdvisor.DEFAULT_ORDER` with the `order()` method of either builder, which places the advisor outside the loop:
+
+[source,java]
+----
+var qaAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
+        .order(ToolCallingAdvisor.DEFAULT_ORDER - 50)
+        .build();
+----
+
+Advisors with a higher order, such as the session memory advisor (`Ordered.HIGHEST_PRECEDENCE + 1000`), then receive the augmented user message.
+See xref:tools/loop.adoc#memory-and-the-tool-loop[Memory and the Tool Loop] for how the order affects memory.
+
+[[rag-retrieved-documents]]
+=== Retrieved Documents in the Response
+
+Both advisors add the documents they used to the metadata of the `ChatResponse`:
+
+[cols="2,3,4",options="header"]
+|===
+|Advisor |Metadata key |Value
+
+|`QuestionAnswerAdvisor`
+|`QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS` (`"qa_retrieved_documents"`)
+|The `List<Document>` returned by the vector store search.
+
+|`RetrievalAugmentationAdvisor`
+|`RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT` (`"rag_document_context"`)
+|The `List<Document>` after joining and post-processing, as passed to the query augmenter.
+|===
+
+[source,java]
+----
+ChatResponse response = chatClient.prompt()
+        .advisors(qaAdvisor)
+        .user(question)
+        .call()
+        .chatResponse();
+
+List<Document> documents = response.getMetadata().get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS);
+----
+
+The advisor context of the `ChatClientResponse` (`.call().chatClientResponse().context()`) holds the same list under the same key.
+When streaming, only the response that carries the finish reason has the metadata.
+
+== In This Section
+
+* xref:rag/modules.adoc[Modular RAG]
+* xref:rag/etl/index.adoc[ETL Pipeline]
+* xref:rag/vector-store/index.adoc[Vector Store API]
+* xref:rag/semantic-cache.adoc[Semantic Caching]

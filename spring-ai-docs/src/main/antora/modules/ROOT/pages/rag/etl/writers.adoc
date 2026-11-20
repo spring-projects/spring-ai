@@ -1,0 +1,88 @@
+= Document Writers
+
+== File
+
+The `FileDocumentWriter` is a `DocumentWriter` implementation that writes the content of a list of `Document` objects into a file.
+
+=== Usage
+
+[source,java]
+----
+@Component
+class MyDocumentWriter {
+
+    public void writeDocuments(List<Document> documents) {
+        FileDocumentWriter writer = new FileDocumentWriter("output.txt", true, MetadataMode.ALL, false);
+        writer.accept(documents);
+    }
+}
+----
+
+=== Constructors
+
+The `FileDocumentWriter` provides three constructors:
+
+1. `FileDocumentWriter(String fileName)`
+2. `FileDocumentWriter(String fileName, boolean withDocumentMarkers)`
+3. `FileDocumentWriter(String fileName, boolean withDocumentMarkers, MetadataMode metadataMode, boolean append)`
+
+=== Parameters
+
+* `fileName`: The name of the file to write the documents to.
+* `withDocumentMarkers`: Whether to include document markers in the output (default: false).
+* `metadataMode`: Specifies what document content to be written to the file (default: MetadataMode.NONE).
+* `append`: If true, data will be written to the end of the file rather than the beginning (default: false).
+
+=== Behavior
+
+The `FileDocumentWriter` processes documents as follows:
+
+1. It opens a FileWriter for the specified file name.
+2. For each document in the input list:
+a. If `withDocumentMarkers` is true, it writes a document marker including the document index and page numbers.
+b. It writes the formatted content of the document based on the specified `metadataMode`.
+3. The file is closed after all documents have been written.
+
+
+
+=== Document Markers
+
+When `withDocumentMarkers` is set to true, the writer includes markers for each document in the following format:
+
+[source]
+----
+### Doc: [index], pages:[start_page_number,end_page_number]
+----
+
+=== Metadata Handling
+
+The writer uses two specific metadata keys:
+
+* `page_number`: Represents the starting page number of the document.
+* `end_page_number`: Represents the ending page number of the document.
+
+These are used when writing document markers.
+
+=== Example
+
+[source,java]
+----
+List<Document> documents = // initialize your documents
+FileDocumentWriter writer = new FileDocumentWriter("output.txt", true, MetadataMode.ALL, true);
+writer.accept(documents);
+----
+
+This will write all documents to "output.txt", including document markers, using all available metadata, and appending to the file if it already exists.
+
+=== Notes
+
+* The writer uses `FileWriter`, so it writes text files with the default character encoding of the operating system.
+* If an error occurs during writing, a `RuntimeException` is thrown with the original exception as its cause.
+* The `metadataMode` parameter allows control over how existing metadata is incorporated into the written content.
+* This writer is particularly useful for debugging or creating human-readable outputs of document collections.
+
+
+== VectorStore
+
+Provides integration with various vector stores.
+See xref:rag/vector-store/index.adoc[Vector DB Documentation] for a full listing.

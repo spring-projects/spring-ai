@@ -1,0 +1,548 @@
+[[upgrading-to-2-1-0]]
+= Upgrading to 2.1.0
+
+== Spring Boot 4.2
+
+Spring AI 2.1 is built on Spring Boot 4.2, and Spring AI 2.0 on Spring Boot 4.1.
+Upgrade your application to Spring Boot 4.2 together with Spring AI 2.1.
+
+== New in 2.1
+
+These features are new and need no migration:
+
+* `VectorStore.upsert(...)` writes documents together with embeddings you computed yourself, and replaces a document with the same id.
+See xref:rag/vector-store/index.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings].
+* `VectorStoreRetriever.similaritySearch(float[], SearchRequest)` searches with a query embedding you computed yourself, without the embedding model of the store.
+See xref:rag/vector-store/index.adoc#searching-with-precomputed-embeddings[Searching with a User-Supplied Query Embedding].
+* Session memory keeps the conversation, including tool calls, as an event log, and compacts it when it grows.
+It replaces the deprecated `ChatMemory` API, see <<_chat_memory,Chat Memory>> and xref:memory/session/index.adoc[Session Memory].
+* Tool call confirmation pauses the tool calling loop so that a person can approve a tool call before it runs.
+See xref:tools/confirmation.adoc[Tool Call Confirmation].
+* `OpenAiResponsesChatModel` supports the OpenAI Responses API, next to the Chat Completions API of `OpenAiChatModel`.
+See xref:integrations/models/openai/responses.adoc[OpenAI Responses API].
+* `DecisionModel` is a new model API, described in the next section.
+
+== Decision Models
+
+=== New: `DecisionModel` API
+
+A new `DecisionModel` API, in `org.springframework.ai.decision`, picks among a known set of outcomes, such as yes or no, one of several categories or a level on a scale, and reports how likely each outcome is.
+It follows the shape of the other model APIs: a `DecisionPrompt` goes in, a `DecisionResponse` comes out, and `DecisionOptions` tune the call.
+Three implementations are available:
+
+* `OpenAiDecisionModel`, backed by the OpenAI Decisions API and auto-configured by the OpenAI starter under `spring.ai.openai.decision`.
+See xref:integrations/models/openai/decision.adoc[OpenAI Decision Models];
+* `OllamaDecisionModel`, backed by the Ollama `/v1/systemone` endpoint through the `SystemOneClient` of `spring-ai-systemone` and auto-configured by the Ollama starter under `spring.ai.ollama.decision`, with `d1-omni:600m` as the default model and `spring.ai.ollama.init.decision` to pull decision models at startup.
+See xref:integrations/models/ollama/decision.adoc[Ollama Decision Models];
+* `SystemOneDecisionModel`, designed for the `/v1/systemone` endpoint, with the `SystemOneClient` of the protocol in the `spring-ai-systemone` module, and usable with TypeSafe, Laya, llmman, Ollama, and other compatible inference services, auto-configured by the `spring-ai-starter-model-systemone` starter under `spring.ai.systemone`.
+See xref:integrations/models/systemone.adoc[System One Decision Models].
+
+Decision models are observed with the `decision` operation name, and the new `spring-ai-autoconfigure-model-decision-observation` module adds token usage metrics.
+See xref:models/decision.adoc[Decision Models].
+
+== Message Parts
+
+=== New: Ordered `MessagePart` Content on `AssistantMessage` and `UserMessage`
+
+`AssistantMessage` and `UserMessage` now hold their content as an ordered list of `MessagePart` entries (`TextPart`, `ReasoningPart`, `ToolCallPart`, `ToolResultPart`, `MediaPart`, `UnknownPart`), available through `getParts()`.
+`getText()`, `getMedia()`, `getToolCalls()` and the new `getReasoning()` are views over the parts.
+See xref:models/chat.adoc#message-parts[Message Parts].
+
+==== Impact
+
+The constructors and the existing builder methods keep working and produce the parts in the order text, tool calls, media, so no code change is required.
+
+* `getMedia()` and `getToolCalls()` return unmodifiable lists; add media and tool calls through the builder instead of mutating the returned list.
+* `equals()` and `hashCode()` of both message types compare the parts, so media now takes part in equality; `Media` gained value equality over id, MIME type and data (the name is excluded because it defaults to a random value).
+* A message with parts but no text part has an empty text; `getText()` is `null` only for a message without any part.
+* On a builder that also holds parts, for example one returned by `mutate()`, the legacy setters replace the parts of their type in place instead of adding to them: `content(...)` the text parts, `toolCalls(...)` the tool call parts, `media(...)` the media parts and, on `ToolResponseMessage`, `responses(...)` the tool result parts.
+To keep the existing text parts and append a new one at the end of the parts, use `part(TextPart.of(...))` instead.
+
+==== Deprecated
+
+The following are still written or accepted for one release and will be removed afterwards.
+
+* The protected `textContent` field for all subclasses of AbstractMessage, is kept, but should be accessed via `getText()`
+* The protected `media` field of `AssistantMessage` and `UserMessage`, kept for subclasses that read it.
+* The protected `responses` field of `ToolResponseMessage`, kept for subclasses that read it.
+
+
+=== New: Streaming Contract for Parts
+
+Streamed chunks carry indexed partial parts (`StreamingParts`) and the response id, and `MessageAggregator` rebuilds the complete parts from them.
+Raw `ChatModel.stream()` subscribers that only read `getText()` see the text deltas exactly as before.
+Reasoning deltas now carry their text in a `ReasoningPart`.
+
+==== Impact
+
+A streamed chunk never has a `null` text, so `map(AssistantMessage::getText).collect(Collectors.joining())` keeps working.
+The chat models whose API streams tool call arguments (Anthropic, OpenAI Chat Completions and Responses, Bedrock Converse, DeepSeek) emit each argument delta as a chunk holding a partial `ToolCallPart`, before the complete call arrives once, as before.
+A partial `ToolCallPart` is not a tool call: `getToolCalls()` and `hasToolCalls()` skip it, so nothing executes on it, and `MessageAggregator` skips it, so chat memory never persists it.
+`ChatClient` passes these chunks through so that a UI can show the call in progress; `.stream().content()` is unaffected, as they carry no text.
+See xref:tools/loop.adoc#streaming-tool-call-arguments[Streaming Tool Call Arguments].
+
+In 2.1.0-M1 and 2.1.0-RC1, `MessageAggregator` appended the arguments of partial `ToolCallPart`s to their call.
+It now skips them, so a custom chat model that streams a tool call only as partial `ToolCallPart`s aggregates to a message without that tool call.
+Such a chat model must also emit the complete `ToolCallPart`, at the same index as its deltas, as the built-in chat models do.
+
+== Anthropic
+
+=== Changed: Anthropic Java SDK 3.x
+
+The Anthropic module now uses Java SDK `3.8.0` and API version `2026-10-21`.
+Remove `temperature`, `topP` and `topK` from model defaults and request options, including explicit default values.
+Remove `spring.ai.anthropic.chat.temperature`, `spring.ai.anthropic.chat.top-p` and `spring.ai.anthropic.chat.top-k`, including their legacy `.options` aliases.
+The retained Java methods and Boot properties are deprecated since `2.1.0`; the legacy aliases remain deprecated since `2.0.0`.
+Sampling values in model defaults and request options are discarded and a `WARN` message is logged.
+
+API keys now use `Authorization: Bearer` instead of `X-Api-Key`.
+Update proxies, interceptors and header allowlists that depend on the previous header.
+See xref:upgrading/anthropic-sdk.adoc#anthropic-sdk-3[Anthropic Java SDK 3.x migration] for details.
+
+=== Changed: Thinking Is Returned as `ReasoningPart`s of a Single Generation
+
+`AnthropicChatModel` maps every content block of a response to one `MessagePart`, in block order: thinking and redacted thinking become a `ReasoningPart` whose payload carries the signature or the redacted block data, and blocks Spring AI does not model yet (server tool use, server tool results, container upload) become an `UnknownPart` instead of being dropped.
+An assistant message is replayed to Anthropic in part order, so the signed thinking block stays in front of the tool call it justified, and server tool blocks go back as the JSON they arrived as; reasoning and `UnknownPart`s produced by another provider are not replayed.
+See xref:integrations/models/anthropic/chat.adoc#_response_structure[Response Structure].
+
+==== Impact
+
+* A non-streaming response has a single `Generation`; the separate thinking and redacted thinking generations are gone.
+Read the reasoning from `getResult().getOutput().getReasoning()`.
+* The package-private `AnthropicChatModel.AnthropicAssistantMessage` is removed, together with the `anthropicThinkingContents` metadata entry.
+Messages restored from a chat memory written by an earlier version lose their thinking blocks on replay.
+* The `signature` and `data` metadata keys are no longer set on the non-streaming response.
+* A redacted thinking `ReasoningPart` has no text; its payload kind is `AnthropicChatModel.PAYLOAD_REDACTED_THINKING`.
+
+==== Deprecated
+
+The streamed chunks still carry the `thinking` (`AnthropicChatModel.THINKING_METADATA_KEY`), `thinkingText` (`AnthropicChatModel.THINKING_TEXT_METADATA_KEY`), `signature` and `data` metadata keys for one release; read the chunk's parts instead.
+
+== Google GenAI
+
+=== Changed: One `Generation` per Candidate, with Ordered Message Parts
+
+`GoogleGenAiChatModel` now returns one `Generation` per response candidate, whose message holds the Gemini parts in order: thoughts as `ReasoningPart`, text as `TextPart`, function calls as `ToolCallPart`, inline data as `MediaPart`, and server-side tool calls and responses, executable code, code execution results and file data as `UnknownPart`.
+Each thought signature is the `OpaquePayload` of the part that carried it, and is replayed on that same part.
+See xref:integrations/models/google-genai/chat.adoc#message-parts[Message Parts].
+
+==== Impact
+
+* With `includeThoughts` enabled, thoughts are no longer separate generations flagged with the `isThought` metadata key, and a function call candidate is no longer split into a thought, a tool call and an answer generation.
+`getResult()` is the whole candidate, so `ChatClient...content()` returns the answer instead of the first thought.
+Read the thoughts with `AssistantMessage.getReasoning()`.
+* Text that precedes a function call in the same candidate is part of the message text.
+* Server-side tool parts, executable code and code execution results are sent back to Gemini when the message is replayed, instead of being dropped.
+* Streamed chunks carry the response id and indexed partial parts, as described in the streaming contract above.
+
+==== Migration
+
+Replace code that iterates over `getResults()` and filters on the `isThought` metadata key:
+
+[source,java]
+----
+// Before
+List<String> thoughts = response.getResults().stream()
+    .filter(g -> Boolean.TRUE.equals(g.getOutput().getMetadata().get("isThought")))
+    .map(g -> g.getOutput().getText())
+    .toList();
+
+// After
+List<String> thoughts = response.getResult().getOutput().getReasoning().stream()
+    .map(ReasoningPart::text)
+    .toList();
+----
+
+==== Removed
+
+* `GoogleGenAiChatModel.THOUGHT_METADATA_KEY` and the `isThought` metadata key it named, which were added on the 2.0.x line, are gone.
+An assistant message that still carries the key, for example one restored from a chat memory written by 2.0.x, is no longer replayed to Gemini as a thought: its text is sent as plain text, which Gemini accepts.
+
+==== Deprecated
+
+* The `thoughtSignatures` message metadata list is still written, and is used to replay the signatures of messages whose parts carry none, but the part payloads are the source of truth.
+
+
+== OpenAI Chat Completions
+
+=== Changed: `OpenAiChatModel` Builds Its Messages from Message Parts
+
+`OpenAiChatModel` maps each choice of a Chat Completions response to ordered message parts: the `reasoning_content` (or `reasoning`) field of OpenAI-compatible servers becomes a `ReasoningPart`, the content a `TextPart`, each function tool call a `ToolCallPart`, and the audio output a `MediaPart`.
+The extra fields a server returns on a tool call, such as the Gemini thought signature in `extra_content`, are the `OpaquePayload` of that `ToolCallPart` (provider `OpenAiChatModel.CHAT_COMPLETIONS_PROVIDER`, kind `OpenAiChatModel.PAYLOAD_TOOL_CALL_ADDITIONAL_PROPERTIES`).
+An assistant message is replayed from its parts, and user message parts are sent in their order, so text and media can interleave.
+See xref:integrations/models/openai/chat.adoc#message-parts[Message Parts].
+
+==== Impact
+
+* A tool-call-only choice no longer holds an empty `TextPart`; `getText()` still returns an empty string.
+* Reasoning parts without a payload are replayed as `reasoning_content`, including those produced by another chat model, such as the reasoning text `OpenAiResponsesChatModel` returns for a reasoning item without encrypted content (for example from `gpt-oss` behind a Responses-compatible server).
+Reasoning signed by another provider is not replayed, and neither is any reasoning of a message that holds some.
+Set `replayReasoningContent` to `false` for a server that rejects `reasoning_content`.
+* Streamed chunks carry indexed partial reasoning and text parts, as described in the streaming contract above.
+* Text a server streams alongside or after the tool call deltas of a turn is no longer cut to its first fragment.
+
+==== Deprecated
+
+The following message metadata keys are still written, and read on replay when the parts do not carry the value, for one release; read the parts instead.
+
+* `reasoningContent`: use `AssistantMessage.getReasoning()`.
+On a streamed chunk it holds the reasoning accumulated so far, not the delta.
+* `openai.tool_calls.additional_properties`: use the payload of the `ToolCallPart`.
+
+=== Changed: A Finish Reason That the API Does Not Define Is Kept
+
+An OpenAI-compatible provider may send a finish reason that the OpenAI API does not define, such as `eos`.
+`OpenAiChatModel` used to report `null` for it.
+`ChatGenerationMetadata.getFinishReason()` now returns the value as it was sent.
+The finish reasons that the API defines are reported by their name, such as `STOP`, as before.
+
+== DeepSeek
+
+=== Changed: `DeepSeekChatModel` Builds Its Messages from Message Parts
+
+`DeepSeekChatModel` maps each choice to ordered message parts: the `reasoning_content` becomes a `ReasoningPart`, the content a `TextPart` and each tool call a `ToolCallPart`.
+An assistant message is replayed from its parts, and the chat prefix completion flag is the new `DeepSeekChatModel.PREFIX_METADATA_KEY` (`deepseek.prefix`) metadata entry, so a plain `AssistantMessage` can carry both.
+See xref:integrations/models/deepseek.adoc#message-parts[Message Parts].
+
+==== Impact
+
+* A tool-call-only choice no longer holds an empty `TextPart`; `getText()` returns an empty string.
+* A choice without any content has an empty text instead of a `null` one.
+* Streamed responses now keep the reasoning: the aggregated message holds the `ReasoningPart`, and it is replayed as `reasoning_content`, which the DeepSeek documentation requires in thinking mode for every assistant message of a request that carries tools.
+* The reasoning of earlier assistant messages, including streamed ones, is sent as `reasoning_content` in requests without tools too, where the API ignores it.
+* Reasoning sent in the same streamed chunks as a tool call, which DeepSeek normally streams before the tool call, is no longer cut to its last fragment.
+* The prefix flag is only honored on the last message of a prompt.
+
+==== Deprecated
+
+`DeepSeekAssistantMessage` is deprecated for removal.
+`DeepSeekChatModel` still returns it, so existing casts keep working, and its accessors are views over the plain `AssistantMessage` state:
+
+* `getReasoningContent()` joins the text of the `ReasoningPart`s, and the builder's `reasoningContent(...)` replaces them; use `AssistantMessage.getReasoning()` instead.
+`setReasoningContent(...)` cannot change the immutable parts: it overrides what `getReasoningContent()` returns and what is replayed, and `copy()` or `mutate()` turn the override into the reasoning part of the new message.
+* `getPrefix()`, `setPrefix(...)` and the builder's `prefix(...)` read and write the `DeepSeekChatModel.PREFIX_METADATA_KEY` metadata entry; set that entry instead.
+
+==== Removed
+
+The `DeepSeekAssistantMessage.prefixAssistantMessage(...)` factory methods, deprecated since 2.0.0, are removed.
+
+==== Migration
+
+[source,java]
+----
+// Before
+String reasoning = ((DeepSeekAssistantMessage) response.getResult().getOutput()).getReasoningContent();
+Message prefix = DeepSeekAssistantMessage.builder().content("```python\n").prefix(true).build();
+
+// After
+List<ReasoningPart> reasoning = response.getResult().getOutput().getReasoning();
+Message prefix = AssistantMessage.builder()
+	.content("```python\n")
+	.properties(Map.of(DeepSeekChatModel.PREFIX_METADATA_KEY, true))
+	.build();
+----
+
+Add the reasoning content of a prefix message as a `ReasoningPart`, for example with `AssistantMessage.builder().part(ReasoningPart.of(...))`.
+
+=== Changed: `DeepSeekChatModel` Streams Through `DeepSeekApi.chatCompletionStreamRaw`
+
+`DeepSeekChatModel` streams through the new `DeepSeekApi.chatCompletionStreamRaw`, which returns the chunks as the server sends them, so that it can stream the tool call argument deltas.
+`DeepSeekApi.chatCompletionStream` still merges the chunks of a tool call, and is no longer used by `DeepSeekChatModel`.
+
+==== Impact
+
+A `DeepSeekApi` subclass that overrides `chatCompletionStream` is no longer called by `DeepSeekChatModel`.
+A test mock that only stubs `chatCompletionStream` returns `null` from `chatCompletionStreamRaw`, and streaming then fails with a `NullPointerException`.
+
+==== Migration
+
+Override or stub `chatCompletionStreamRaw` instead of `chatCompletionStream`.
+
+== OpenAI Service Connections
+
+=== New: `OpenAiConnectionDetails`
+
+The OpenAI auto-configurations now resolve the base URL and API key through a Spring Boot `ConnectionDetails` bean, `OpenAiConnectionDetails`.
+By default the bean is backed by the `spring.ai.openai.base-url` and `spring.ai.openai.api-key` properties, so existing configuration keeps working.
+Declaring your own `OpenAiConnectionDetails` bean supersedes those two properties, while the model-level overrides such as `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` still take precedence.
+This is the hook for pointing the OpenAI models at an OpenAI-compatible server running in a container, for example via Testcontainers or Docker Compose.
+See xref:integrations/models/openai/chat.adoc#_connection_details[Connection Details].
+
+== Bedrock Converse
+
+=== Changed: A Response Is a Single Generation of Ordered `MessagePart`s
+
+`BedrockProxyChatModel` maps every content block of a response to one `MessagePart`, in block order: text becomes a `TextPart`, tool use a `ToolCallPart`, and signed or redacted reasoning a `ReasoningPart` whose payload carries the signature or the Base64 encoded redacted content.
+An assistant message is replayed to Bedrock in part order, and the parts of a `UserMessage` are sent in their order, so text and media can interleave.
+Streamed responses now carry the reasoning they previously dropped, so a streaming tool loop with extended thinking replays its reasoning too.
+See xref:integrations/models/bedrock/converse.adoc#_reasoning[Reasoning].
+
+==== Impact
+
+* A non-streaming response has a single `Generation`.
+A response with several text blocks, or with text and tool use, used to produce one generation per text block plus one for the tool calls; read the joined text from `getResult().getOutput().getText()` and the tool calls from `getResult().getOutput().getToolCalls()`.
+* The package-private `BedrockAssistantMessage` and `BedrockReasoningContent` are removed.
+Read the reasoning from `getResult().getOutput().getReasoning()`.
+* Reasoning returned without a signature, for example by the OpenAI gpt-oss models, is replayed only when its `ReasoningPart` carries the `provider` attribute (`MessagePart.PROVIDER_ATTRIBUTE`) set to `bedrock`, so it is lost when the conversation history is stored or rebuilt without part attributes; unsigned reasoning produced by another provider is not replayed.
+* Streamed text deltas now carry their text in an indexed partial `TextPart`; `getText()` on each chunk returns the same delta as before.
+* Streams now emit additional chunks for reasoning deltas, the reasoning signature and redacted reasoning.
+They have an empty `getText()` and carry no tool calls, so code that counts chunks or treats every chunk as answer text sees them.
+
+=== `BedrockChatOptions.requestParameters` widened to `Map<String, Object>`
+
+`BedrockChatOptions.requestParameters` (and its Spring Boot property mirror `BedrockConverseProxyChatProperties.requestParameters`) has been widened from `Map<String, String>` to `Map<String, Object>`.
+This allows nested maps and lists as values, which is required for structured provider-specific fields such as Anthropic's `output_config` passed through Bedrock Converse's `additionalModelRequestFields`.
+
+==== Impact
+
+This is a source-level breaking change for callers that hold an explicitly typed `Map<String, String>` variable assigned to or read from this API.
+Inline map literals and callers already using `Map<String, Object>` (or `var`) are unaffected.
+
+==== Migration
+
+Change any explicitly typed `Map<String, String>` variable to `Map<String, Object>`:
+
+[source,java]
+----
+// Before
+Map<String, String> params = Map.of("anthropic_version", "bedrock-2023-05-31");
+BedrockChatOptions options = BedrockChatOptions.builder()
+    .requestParameters(params)
+    .build();
+
+// After
+Map<String, Object> params = Map.of("anthropic_version", "bedrock-2023-05-31");
+BedrockChatOptions options = BedrockChatOptions.builder()
+    .requestParameters(params)
+    .build();
+----
+
+Nested values are now supported:
+
+[source,java]
+----
+BedrockChatOptions options = BedrockChatOptions.builder()
+    .requestParameters(Map.of("output_config", Map.of("effort", "low")))
+    .build();
+----
+
+[source,yaml]
+----
+spring:
+  ai:
+    bedrock:
+      converse:
+        chat:
+          request-parameters:
+            output_config:
+              effort: low
+            anthropic_version: bedrock-2023-05-31
+----
+
+NOTE: Map keys bind literally — use the exact provider field name (e.g. `output_config`, not `output-config`).
+
+== Mistral AI
+
+=== Changed: `MistralAiChatModel` Builds Its Messages from Message Parts
+
+`MistralAiChatModel` maps every content chunk of a response to one `MessagePart`, in chunk order: thinking becomes a `ReasoningPart`, text a `TextPart`, and a citation reference or an image chunk an `UnknownPart`; the tool calls follow as `ToolCallPart`s.
+An assistant message that carries Mistral reasoning or other Mistral chunks is replayed as content chunks in part order, so a reasoning model gets its thinking back, as Mistral recommends.
+The parts of a `UserMessage` with media are sent in their order, so text and images can interleave.
+See xref:integrations/models/mistral-ai/chat.adoc#_reasoning_content[Reasoning Content].
+
+==== Impact
+
+* `getText()` joins the text chunks of a response without a separator; it used to join them with the platform line separator, which split the text around a citation.
+* Streamed chunks now always carry the response id and model in their `ChatResponseMetadata`; chunks without usage report an empty usage.
+* Reasoning is replayed only when its `ReasoningPart` carries the `provider` attribute (`MessagePart.PROVIDER_ATTRIBUTE`) set to `mistral_ai`, so it is lost when the conversation history is stored or rebuilt without part attributes.
+* An assistant message without reasoning parts, such as one built by an earlier version, has the thinking under the `thinking_content` metadata key replayed as a thinking chunk; earlier versions never sent the thinking back.
+* A `UserMessage` with media no longer sends an empty text chunk when it has no text.
+* `MistralAiApi.ChatCompletionMessage.ThinkChunk` gains a `signature` component; code that deconstructs it with a record pattern must add the component.
+
+==== Deprecated
+
+* `MistralAiChatModel.THINKING_CONTENT_METADATA`: read the reasoning from `getResult().getOutput().getReasoning()`.
+The metadata entry is still written, and read on replay only from an assistant message without reasoning parts.
+
+== Ollama
+
+=== Changed: `OllamaChatModel` Builds Its Messages from Message Parts
+
+`OllamaChatModel` maps the response message to ordered message parts: the thinking becomes a `ReasoningPart`, the content a `TextPart`, and each tool call a `ToolCallPart`, in this order.
+An assistant message with reasoning parts is sent back to Ollama with its thinking, so a thinking model sees its earlier reasoning, for example across the rounds of a tool calling loop.
+Earlier versions did not send the thinking back.
+See xref:integrations/models/ollama/chat.adoc#_thinking_mode_reasoning[Thinking Mode (Reasoning)].
+
+==== Impact
+
+* Read the thinking with `getResult().getOutput().getReasoning()`.
+* An empty thinking or content produces no part, so a response with tool calls has no empty text part before them.
+A message without any part, such as the final chunk of a stream, still has an empty text.
+* In a stream, the thinking and content deltas are partial parts with a stream index, and `MessageAggregator` joins them into complete parts.
+Tool calls, which Ollama streams whole, are complete parts.
+* Ollama has a single thinking field, so several reasoning parts are sent back joined with line breaks.
+A reasoning part with a payload, such as reasoning that another provider signed or encrypted, is not sent to Ollama.
+
+==== Deprecated
+
+* The `thinking` entry of the message metadata and of the generation metadata: read the reasoning from `getResult().getOutput().getReasoning()`.
+The entry is still written, and read on replay only from an assistant message without reasoning parts, such as one stored by an earlier version.
+
+== Vector Stores
+
+=== Changed: The Vector Size Comes from the Store, Not from the Embedding Model
+
+The vector stores that support `upsert` and search with a query embedding check each vector against the width of the index before they send it.
+They take that width from the configured `dimensions`, or else from the existing index, table or collection.
+They ask the embedding model only when they create the index themselves.
+`QdrantVectorStore` and `RedisVectorStore` gain a `dimensions` builder option and the `spring.ai.vectorstore.qdrant.dimensions` and `spring.ai.vectorstore.redis.dimensions` properties.
+See xref:rag/vector-store/index.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings].
+
+==== Impact
+
+* An application that writes with `upsert` into an existing index, or that configures `dimensions`, does not call the embedding model to find the width.
+* `PgVectorStore` looks for an existing table before it asks the embedding model at startup, and does not check a column declared as a plain `vector`.
+* `ElasticsearchVectorStore` uses a configured `dimensions` when it cannot read the mapping of the index.
+* When the width cannot be read, it stays unknown and is read again on the next call, and the database rejects a wrong-sized vector.
+`RedisVectorStore` refuses the write instead, because Redis stores a wrong-sized vector without an error and never finds it.
+* Observations leave out the dimension tag when the width is unknown.
+
+=== Changed: An Empty `upsert` Does Nothing
+
+`upsert` is new in 2.1.
+In 2.1.0-M1, an `upsert` with an empty list reached the store.
+A store that extends `AbstractObservationVectorStore`, as the built-in stores do, now returns at once for an empty list, without calling the database and without an observation.
+This holds for a store that does not support `upsert` as well: it throws an `UnsupportedOperationException` only for a non-empty list.
+
+== ETL Pipeline
+
+=== New: Opt-In Chunk Overlap in `TokenTextSplitter`
+
+`TokenTextSplitter.builder().withChunkOverlap(int)` makes each chunk start with the last tokens of the chunk before it, so text near a chunk boundary appears whole in at least one chunk.
+See xref:rag/etl/transformers.adoc#_chunk_overlap[Chunk Overlap].
+
+==== Impact
+
+* The overlap is `0` by default, so a splitter without an overlap produces the same chunks as before.
+* The overlap must be zero or more and less than the chunk size.
+* A subclass that overrides `doSplit(String, int)` replaces the whole algorithm, so the overlap does not apply to it unless it calls the new `doSplit(String, int, int)`.
+
+== PgVector Store
+
+=== `distance` is a reserved metadata key in `PgVectorStore`
+
+`PgVectorStore` writes the computed similarity distance into each returned document's metadata under the key `distance` (via `DocumentMetadata.DISTANCE`).
+Previously, if a stored document already contained a `distance` key in its own metadata, it was silently overwritten with the computed value.
+This has been fixed: the stored value is now preserved and a warning is logged when the collision is detected.
+
+==== Impact
+
+If your documents store a field named `distance` for domain-specific data (e.g. a geographic distance), that value now survives a similarity search.
+A `WARN`-level log entry is emitted for each affected document:
+
+----
+Skipping computed similarity distance for document <id> because its metadata already contains a 'distance' key
+----
+
+The computed similarity score is still available via `Document.getScore()` regardless of whether the metadata key was written.
+
+==== Migration
+
+If you rely on reading the computed similarity distance from `document.getMetadata().get("distance")`, switch to `document.getScore()` instead, which is always populated and returns `1.0 - distance` (higher means more similar).
+If your documents use `distance` for domain-specific data, consider renaming that field to avoid the collision and the warning.
+
+
+== Chat Client
+
+=== New: Finish Reason Categories
+
+`ChatGenerationMetadata.getFinishReasonCategory()` maps the finish reason of a provider onto a `FinishReasonCategory` (`COMPLETED`, `TRUNCATED`, `TOOL_CALL`, `FILTERED`, `OTHER`, `UNSPECIFIED`), and `ChatResponse.hasFinishReasonCategory(...)` checks all generations of a response.
+`getFinishReason()` still returns the name the provider uses.
+The chat models of Spring AI classify their own finish reasons.
+A custom `ChatModel` can do the same with `ChatGenerationMetadata.builder().finishReasonCategory(...)`.
+Without it the category is derived from the raw finish reason.
+See xref:chatclient/responses.adoc#finish-reason-categories[Finish Reason Categories].
+
+=== Changed: `entity(...)` Throws a `ContentFilteredException` for a Filtered Response It Cannot Convert
+
+When the generation that `entity(...)` converts finished in the `FILTERED` category, for example with `content_filter`, `refusal`, `guardrail_intervened` or `SAFETY`, and its text is empty or cannot be converted, `entity(...)` throws a `ContentFilteredException`.
+In the same case `responseEntity(...)` returns the response with a `null` entity.
+
+==== Impact
+
+* A filtered response that converts is returned as before.
+* Before, `entity(...)` failed with the parsing error of the converter, or returned `null` when the response had no text.
+Code that catches the parsing error, or handles `null`, for a filtered response now gets a `ContentFilteredException`.
+The parsing error is its cause.
+* Before, `responseEntity(...)` failed with the parsing error.
+It now returns a `null` entity.
+* `content()`, `chatResponse()` and streaming are unchanged.
+
+==== Migration
+
+Catch `ContentFilteredException` where a filtered response should be handled.
+It carries the finish reason, the text the provider returned, and the response.
+
+=== Changed: `StructuredOutputValidationAdvisor` Does Not Repeat a Filtered Response
+
+When a response fails the validation and finished in the `FILTERED` category, the advisor returns it without asking the model again.
+Before, it repeated the request with the validation error up to `maxRepeatAttempts` times, and each attempt was stopped the same way.
+
+
+== Chat Memory
+
+=== Deprecated: `ChatMemory` in Favor of Session Memory
+
+The `ChatMemory` API (`ChatMemory`, `MessageWindowChatMemory`, `ChatMemoryRepository`, `InMemoryChatMemoryRepository`), the `MessageChatMemoryAdvisor`, the JDBC, Cassandra, Neo4j, MongoDB and Redis chat memory repositories and their auto-configurations are deprecated for removal in 3.0.0.
+xref:memory/session/index.adoc[Session memory] replaces them; xref:upgrading/session-memory.adoc[Migrating to Session Memory] maps one onto the other.
+Session stores for Cassandra, Neo4j, MongoDB and Redis, and session dialects for HSQLDB, Oracle, SQL Server and SQLite, are planned before 3.0.0, when the deprecated modules are removed.
+
+==== Impact
+
+Nothing changes at runtime: the deprecated types keep working until 3.0.0.
+
+* The conversation key moves to `MemoryAdvisor.CONVERSATION_ID`, with the same value as `ChatMemory.CONVERSATION_ID`, so requests reach both the chat memory and the session advisors.
+* `getConversationId(context)` moves from `BaseChatMemoryAdvisor` up to `MemoryAdvisor`; `BaseChatMemoryAdvisor` inherits it, so its implementations need no change.
+* `VectorStoreChatMemoryAdvisor` is not deprecated.
+
+== Advisors
+
+=== Changed: Guardrail Refusals Are Marked
+
+The failure response of the `SafeGuardAdvisor` is now marked as the refusal of a guardrail, with the `GuardrailRefusal.FINISH_REASON` finish reason (`guardrailRefusal`).
+`GuardrailRefusal.isRefusal(chatResponse)` tells such a reply from an answer of the model, and `GuardrailRefusal.generation(text)` builds one in a guardrail advisor of your own.
+See xref:advisors/index.adoc[Advisors].
+
+==== Impact
+
+The text of the failure response and the result of `content()`, `chatResponse()` and `stream()` are the same as before.
+
+* `ChatClient.entity(...)` throws a `GuardrailRefusalException`, which carries the refusal, where it passed the failure response to the output converter before.
+It is a `ContentFilteredException`.
+With the default JSON converters that conversion failed, so the type of the exception changes.
+With a converter that accepts plain text, such as `ListOutputConverter`, the call returned the converted failure response and now throws.
+* `ChatClient.responseEntity(...)` returns the response with a `null` entity in place of the conversion.
+* The `StructuredOutputValidationAdvisor` returns a refusal as it is, without validating it or asking the model again.
+* The `SemanticCacheAdvisor` does not cache a refusal.
+* The failure response had no finish reason before.
+In a stream, advisors built on `BaseAdvisor` run their `after` step on a response with a finish reason, so those ahead of the `SafeGuardAdvisor` in the chain now run it on the refusal, as they already did for a call.
+
+==== Migration
+
+Catch `GuardrailRefusalException` around `entity(...)` where a `SafeGuardAdvisor` is in the chain, and read the refusal with `getRefusal()`.
+Use `responseEntity(...)` to get the refusal without an exception.
+
+== Modern MCP Server
+
+[[upgrading-modern-mcp-completions]]
+=== Changed: Completions Belong to Their Prompt or Template
+
+In Spring AI 2.1.0-RC2 the modern MCP server (`spring.ai.mcp.server.protocol=MODERN`) served completions from a separate `List<SyncCompletionRegistration>` bean and `McpSyncCompletionRepository`.
+Both are gone: a completion now belongs to its prompt or resource template.
+See xref:mcp/server/modern.adoc#_completions[Completions].
+
+==== Migration
+
+* Move a programmatic completion to `withCompletionHandler` on its prompt or template.
+* `SyncResourceTemplateRegistration` now holds the SDK's `McpSyncResourceTemplate`.
+Its `of(...)` factories are unchanged, but the accessor is `template()`, whose `definition()` is the `ResourceTemplate` that `resourceTemplate()` returned, and the canonical constructor takes the SDK template.

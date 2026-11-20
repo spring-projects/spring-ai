@@ -1,0 +1,36 @@
+[[memory]]
+= Memory
+
+Large language models are stateless: they do not remember earlier requests.
+To hold a conversation, the application has to store what was said and send the relevant part of it with each new request.
+
+Spring AI has two APIs for this.
+
+[cols="1,3", options="header"]
+|===
+| API | Status
+
+| xref:memory/session/index.adoc[Session API]
+| The recommended API.
+A session keeps the conversation as an append-only log of events, and session memory builds the prompt from a view of that log.
+
+| xref:memory/chat-memory.adoc[Chat Memory]
+| Deprecated since 2.1.0 and scheduled for removal in 3.0.0.
+The xref:memory/chat-memory.adoc#_vectorstorechatmemoryadvisor[`VectorStoreChatMemoryAdvisor`] is not deprecated.
+|===
+
+Use session memory for new applications.
+If you already use the `ChatMemory` API, xref:upgrading/session-memory.adoc[Migrating to Session Memory] maps one API onto the other.
+
+Where the conversation is persisted is described in xref:integrations/stores/index.adoc[Session and Memory Stores].
+
+== Long-Term Memory
+
+Both APIs keep a conversation.
+To remember facts across conversations, such as the preferences of a user, an application stores them itself, for example in a database, a vector store or files.
+
+.Community: Spring AI Agent Utils
+[TIP]
+====
+The community-maintained xref:agents/agent-utils.adoc#_long_term_memory[Spring AI Agent Utils] library provides long-term memory as tools: the model decides what to remember and keeps it in files, which are consolidated in the background.
+====

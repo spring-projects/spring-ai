@@ -1,0 +1,427 @@
+= MCP Client Boot Starter
+:page-aliases: api/mcp/mcp-client-boot-starter-docs.adoc
+
+The Spring AI MCP (Model Context Protocol) Client Boot Starter provides auto-configuration for MCP client functionality in Spring Boot applications.
+It supports both synchronous and asynchronous client implementations with various transport options.
+
+The MCP Client Boot Starter provides:
+
+* Management of multiple client instances
+* Automatic client initialization (if enabled)
+* Support for multiple named transports (STDIO, Streamable HTTP, and the deprecated SSE)
+* Integration with Spring AI's tool execution framework
+* Tool filtering capabilities for selective tool inclusion/exclusion
+* Customizable tool name prefix generation for avoiding naming conflicts
+* Proper lifecycle management with automatic cleanup of resources when the application context is closed
+* Customizable client creation through customizers
+
+== Starters
+
+=== Standard MCP Client
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-mcp-client</artifactId>
+</dependency>
+----
+
+The standard starter connects simultaneously to one or more MCP servers over the `STDIO`, `Streamable-HTTP` and `SSE` (deprecated) transports.
+With `STDIO`, the client starts the server as a child process and exchanges messages with it over standard input and output.
+A `Streamable-HTTP` connection reaches both Streamable-HTTP and stateless Streamable-HTTP servers.
+The Streamable-HTTP and SSE transports use the JDK `HttpClient`-based transport implementation.
+Each connection to an MCP server creates a new MCP client instance.
+You can choose either `SYNC` or `ASYNC` MCP clients (note: you cannot mix sync and async clients).
+For production deployment, we recommend the WebFlux-based Streamable-HTTP transport of the `spring-ai-starter-mcp-client-webflux` starter.
+
+NOTE: The client SSE transport and its `spring.ai.mcp.client.sse` properties are deprecated since Spring AI 2.0.0 and will be removed.
+Connect to a Streamable-HTTP server instead, see xref:mcp/client/transports.adoc#_streamable_http_transport_properties[Streamable-HTTP Transport Properties].
+
+=== WebFlux Client
+
+The WebFlux starter provides similar functionality to the standard starter but uses WebFlux-based Streamable-HTTP and SSE (deprecated) transport implementations.
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
+</dependency>
+----
+
+== Configuration Properties
+
+=== Common Properties
+
+The common properties are prefixed with `spring.ai.mcp.client`:
+
+[cols="3,4,3"]
+|===
+|Property |Description |Default Value
+
+|`enabled`
+|Enable/disable the MCP client
+|`true`
+
+|`name`
+|Name of the MCP client instance
+|`spring-ai-mcp-client`
+
+|`version`
+|Version of the MCP client instance
+|`1.0.0`
+
+|`initialized`
+|Whether to initialize clients on creation
+|`true`
+
+|`request-timeout`
+|Timeout duration for MCP client requests
+|`20s`
+
+|`type`
+|Client type (SYNC or ASYNC). All clients must be either sync or async; mixing is not supported
+|`SYNC`
+
+|`root-change-notification`
+|Enable/disable root change notifications for all clients
+|`true`
+
+|`toolcallback.enabled`
+|Enable/disable the MCP tool callback integration with Spring AI's tool execution framework
+|`true`
+|===
+
+=== MCP Annotations Properties
+
+MCP Client Annotations provide a declarative way to implement MCP client handlers using Java annotations.
+The client mcp-annotations properties are prefixed with `spring.ai.mcp.client.annotation-scanner`:
+
+[cols="3,4,3"]
+|===
+|Property |Description |Default Value
+
+|`enabled`
+|Enable/disable the MCP client annotations auto-scanning
+|`true`
+|===
+
+== Features
+
+=== Sync/Async Client Types
+
+The starter supports two types of clients:
+
+* Synchronous - default client type (`spring.ai.mcp.client.type=SYNC`), suitable for traditional request-response patterns with blocking operations
+
+**NOTE:** The SYNC client will register only synchronous MCP annotated methods.
+Asynchronous methods will be ignored.
+
+* Asynchronous - suitable for reactive applications with non-blocking operations, configured using `spring.ai.mcp.client.type=ASYNC`
+
+**NOTE:** The ASYNC client will register only asynchronous MCP annotated methods.
+Synchronous methods will be ignored.
+
+The tools of both types are resolved and called through the blocking `ToolCallback` contract; for the modern connections see xref:mcp/client/modern.adoc#_blocking_calls[Blocking Calls].
+
+[[client-scope-and-session-boundaries]]
+=== Client Scope and Session Boundaries
+
+This section applies to legacy connections.
+A modern connection has no session, and its `client-scope` property decides how many clients serve it, see xref:mcp/client/modern.adoc#_client_scope_and_identity[Client Scope and Identity].
+
+The auto-configured `McpSyncClient` and `McpAsyncClient` beans are application-scoped singletons.
+One client bean is created per configured MCP server connection, and that bean is shared by every request the application serves.
+
+Each client represents a single MCP protocol session.
+The session stays attached to the client bean for its whole lifetime and is replaced only when the server terminates it (HTTP 404) or the client is closed.
+
+[WARNING]
+====
+*The MCP session is not a per-user boundary.*
+
+Per-request credentials propagated through `transportContextProvider(...)`, a `McpSyncHttpClientRequestCustomizer`, or a `WebClient` `ExchangeFilterFunction` are applied per request and do reach the server with the calling user's identity.
+The MCP protocol session underneath them is still shared by every caller of that client bean.
+Multi-user applications should account for the following:
+
+* The `initialize` and `tools/list` exchanges happen once, under whatever identity is available when the client connects, not under the identity of the user who later invokes a tool.
+* Any server-side state keyed on the MCP session alone is shared by all users of the client bean.
+* Server-initiated interactions such as sampling and elicitation arrive on a shared stream and carry no per-user attribution.
+
+Do not treat the MCP session as a user or tenant boundary on either side of the connection.
+====
+
+Whether this matters depends on the MCP server you connect to.
+A shared client is fine against a stateless server, and against a stateful one that authorizes every request from the supplied token and keeps no user-meaningful state on the session.
+Consider a separate session per user or per tenant when:
+
+* The server filters `tools/list`, resources, or prompts by identity, since discovery runs once and every user then sees the first caller's view.
+* The server keeps user-meaningful state on the session, such as a working directory, subscriptions, pagination cursors, or cached context.
+* You use sampling or elicitation and need those server-initiated requests attributed to a specific user.
+* The server audits or rate-limits by session, or your deployment requires that tenants not share a protocol session.
+* You cannot verify how a third-party server treats its sessions.
+
+Applications that need a separate MCP protocol session per user or per tenant must manage that lifecycle themselves, creating one transport and client per principal and closing it when that principal's work completes.
+The auto-configured beans are not suitable for this, and Spring AI does not provide per-user client pooling.
+See xref:mcp/security.adoc#_working_around_spring_ai_autoconfiguration[Working Around Spring AI Autoconfiguration] for programmatic client construction.
+This applies to the legacy protocol: a modern connection has no session and can keep a client for each user with `client-scope=CUSTOM`, see xref:mcp/client/modern.adoc#_client_scope_and_identity[Client Scope and Identity].
+
+=== Client Customization
+
+The auto-configuration provides extensive client spec customization capabilities through callback interfaces.
+These customizers allow you to configure various aspects of the MCP client behavior, from request timeouts to event handling and message processing.
+
+==== Customization Types
+
+The following customization options are available:
+
+* *Request Configuration* - Set custom request timeouts
+* link:https://modelcontextprotocol.io/specification/2025-06-18/client/sampling[*Custom Sampling Handlers*] - standardized way for servers to request LLM sampling (`completions` or `generations`) from LLMs via clients.
+This flow allows clients to maintain control over model access, selection, and permissions while enabling servers to leverage AI capabilities — with no server API keys necessary.
+* link:https://modelcontextprotocol.io/specification/2025-06-18/client/roots[*File system (Roots) Access*] - standardized way for clients to expose filesystem `roots` to servers.
+Roots define the boundaries of where servers can operate within the filesystem, allowing them to understand which directories and files they have access to.
+Servers can request the list of roots from supporting clients and receive notifications when that list changes.
+* link:https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation[*Elicitation Handlers*] - standardized way for servers to request additional information from users through the client during interactions.
+* *Event Handlers*  - client's handler to be notified when a certain server event occurs:
+  - Tools change notifications - when the list of available server tools changes
+  - Resources change notifications - when the list of available server resources changes.
+  - Prompts change notifications - when the list of available server prompts changes.
+  - link:https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging[*Logging Handlers*] - standardized way for servers to send structured log messages to clients.
+  - link:https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress[*Progress Handlers*] - standardized way for servers to send structured progress messages to clients.
+
+Clients can control logging verbosity by setting minimum log levels
+
+
+==== Client Customization Example
+
+You can implement `McpClientCustomizer<McpClient.SyncSpec>` for synchronous clients or `McpClientCustomizer<McpClient.AsyncSpec>` for asynchronous clients, depending on your application's needs.
+
+[tabs]
+======
+Sync::
++
+[source,java]
+----
+@Component
+public class CustomMcpSyncClientCustomizer implements McpClientCustomizer<McpClient.SyncSpec> {
+    @Override
+    public void customize(String serverConfigurationName, McpClient.SyncSpec spec) {
+
+        // Customize the request timeout configuration
+        spec.requestTimeout(Duration.ofSeconds(30));
+
+        // Sets the root URIs that this client can access.
+        spec.roots(roots);
+
+        // Sets a custom sampling handler for processing message creation requests.
+        spec.sampling((CreateMessageRequest messageRequest) -> {
+            // Handle sampling
+            CreateMessageResult result = ...
+            return result;
+        });
+
+        // Sets a custom elicitation handler for processing elicitation requests.
+        spec.elicitation((ElicitFormRequest request) -> {
+          // handle elicitation
+          return new ElicitResult(ElicitResult.Action.ACCEPT, Map.of("message", request.message()));
+        });
+
+        // Adds a consumer to be notified when progress notifications are received.
+        spec.progressConsumer((ProgressNotification progress) -> {
+         // Handle progress notifications
+        });
+
+        // Adds a consumer to be notified when the available tools change, such as tools
+        // being added or removed.
+        spec.toolsChangeConsumer((List<McpSchema.Tool> tools) -> {
+            // Handle tools change
+        });
+
+        // Adds a consumer to be notified when the available resources change, such as resources
+        // being added or removed.
+        spec.resourcesChangeConsumer((List<McpSchema.Resource> resources) -> {
+            // Handle resources change
+        });
+
+        // Adds a consumer to be notified when the available prompts change, such as prompts
+        // being added or removed.
+        spec.promptsChangeConsumer((List<McpSchema.Prompt> prompts) -> {
+            // Handle prompts change
+        });
+
+        // Adds a consumer to be notified when logging messages are received from the server.
+        spec.loggingConsumer((McpSchema.LoggingMessageNotification log) -> {
+            // Handle log messages
+        });
+    }
+}
+----
+
+Async::
++
+[source,java]
+----
+@Component
+public class CustomMcpAsyncClientCustomizer implements McpClientCustomizer<McpClient.AsyncSpec> {
+    @Override
+    public void customize(String serverConfigurationName, McpClient.AsyncSpec spec) {
+        // Customize the async client configuration
+        spec.requestTimeout(Duration.ofSeconds(30));
+    }
+}
+----
+======
+The `serverConfigurationName` parameter is the name of the server configuration that the customizer is being applied to and the MCP Client is created for.
+
+The MCP client auto-configuration automatically detects and applies any customizers found in the application context.
+
+== MCP Client Annotations
+
+The MCP Client Boot Starter automatically detects and registers annotated methods for handling various MCP client operations:
+
+* *@McpLogging* - Handles logging message notifications from MCP servers
+* *@McpSampling* - Handles sampling requests from MCP servers for LLM completions
+* *@McpElicitation* - Handles elicitation requests to gather additional information from users
+* *@McpProgress* - Handles progress notifications for long-running operations
+* *@McpToolListChanged* - Handles notifications when the server's tool list changes
+* *@McpResourceListChanged* - Handles notifications when the server's resource list changes
+* *@McpPromptListChanged* - Handles notifications when the server's prompt list changes
+
+Example usage:
+
+[source,java]
+----
+@Component
+public class McpClientHandlers {
+
+    @McpLogging(clients = "server1")
+    public void handleLoggingMessage(LoggingMessageNotification notification) {
+        System.out.println("Received log: " + notification.level() +
+                          " - " + notification.data());
+    }
+
+    @McpSampling(clients = "server1")
+    public CreateMessageResult handleSamplingRequest(CreateMessageRequest request) {
+        // Process the request and generate a response
+        String response = generateLLMResponse(request);
+
+        return CreateMessageResult.builder(Role.ASSISTANT, response, "gpt-5.4-mini")
+            .build();
+    }
+
+    @McpProgress(clients = "server1")
+    public void handleProgressNotification(ProgressNotification notification) {
+        double percentage = notification.progress() * 100;
+        System.out.println(String.format("Progress: %.2f%% - %s",
+            percentage, notification.message()));
+    }
+
+    @McpToolListChanged(clients = "server1")
+    public void handleToolListChanged(List<McpSchema.Tool> updatedTools) {
+        System.out.println("Tool list updated: " + updatedTools.size() + " tools available");
+        // Update local tool registry
+        toolRegistry.updateTools(updatedTools);
+    }
+}
+----
+
+The annotations support both synchronous and asynchronous implementations, and can be configured for specific clients using the `clients` parameter:
+
+[source,java]
+----
+@McpLogging(clients = "server1")
+public void handleServer1Logs(LoggingMessageNotification notification) {
+    // Handle logs from specific server
+    logToFile("server1.log", notification);
+}
+
+@McpSampling(clients = "server1")
+public Mono<CreateMessageResult> handleAsyncSampling(CreateMessageRequest request) {
+    return Mono.fromCallable(() -> {
+        String response = generateLLMResponse(request);
+        return CreateMessageResult.builder(Role.ASSISTANT, response, "gpt-5.4-mini")
+            .build();
+    }).subscribeOn(Schedulers.boundedElastic());
+}
+----
+
+For detailed information about all available annotations and their usage patterns, see the xref:mcp/annotations/client.adoc[MCP Client Annotations] documentation.
+
+== Usage Example
+
+Add the appropriate starter dependency to your project and configure the client in `application.properties` or `application.yml`:
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        enabled: true
+        name: my-mcp-client
+        version: 1.0.0
+        request-timeout: 30s
+        type: SYNC  # or ASYNC for reactive applications
+        root-change-notification: false
+        streamable-http:
+          connections:
+            server1:
+              url: http://localhost:8080
+            server2:
+              url: http://otherserver:8081
+              endpoint: /mcp
+        stdio:
+          connections:
+            server3:
+              command: /path/to/server
+              args:
+                - --port=8080
+                - --mode=production
+              env:
+                API_KEY: your-api-key
+                DEBUG: "true"
+----
+
+The MCP client beans will be automatically configured and available for injection:
+
+[source,java]
+----
+@Autowired
+private List<McpSyncClient> mcpSyncClients;  // For sync client
+
+// OR
+
+@Autowired
+private List<McpAsyncClient> mcpAsyncClients;  // For async client
+----
+
+When tool callbacks are enabled (the default behavior), the registered MCP Tools with all MCP clients are provided as a `ToolCallbackProvider` instance:
+
+[source,java]
+----
+@Autowired
+private SyncMcpToolCallbackProvider toolCallbackProvider;
+ToolCallback[] toolCallbacks = toolCallbackProvider.getToolCallbacks();
+----
+
+== Example Applications
+
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/web-search/brave-chatbot[Brave Web Search Chatbot] - A chatbot that uses the Model Context Protocol to interact with a web search server.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-default-client[Default MCP Client Starter] - A simple example of using the default `spring-ai-starter-mcp-client` MCP Client Boot Starter.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/client-starter/starter-webflux-client[WebFlux MCP Client Starter] - A simple example of using the `spring-ai-starter-mcp-client-webflux` MCP Client Boot Starter.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/modern-migration/modern-client-from-legacy[Modern MCP Client] - A synchronous client with modern connections: client scopes, annotated elicitation and progress handlers that take the `ToolContext`, list-changed handlers, and a legacy connection next to a modern one.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/modern-migration/modern-client-async[Asynchronous Modern MCP Client] - The same client with `spring.ai.mcp.client.type=ASYNC`: reactive handlers, the caller identity and reactive change notifications.
+- link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/modern-migration[Migrating to the Modern Protocol] - The same ticket application on the legacy and the modern protocol, as servers and clients, with what changes in each migration.
+
+== Additional Resources
+
+* link:https://docs.spring.io/spring-ai/reference/[Spring AI Documentation]
+* link:https://modelcontextprotocol.io/specification/latest[Model Context Protocol Specification]
+* link:https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.developing-auto-configuration[Spring Boot Auto-configuration]
+
+== In This Section
+
+* xref:mcp/client/transports.adoc[Client Transports]
+* xref:mcp/client/modern.adoc[MCP 2026-07-28 Connections]
+* xref:mcp/client/tools.adoc[MCP Tool Callbacks]

@@ -1,0 +1,119 @@
+[[tutorial-rag]]
+= Chat with Your Documents
+
+This tutorial builds an application that answers questions from a document of your own, using retrieval augmented generation (RAG).
+You load the document into a vector store once, and for every question Spring AI retrieves the relevant passages and adds them to the prompt.
+
+It builds on the application from the xref:get-started/quickstart.adoc[Quickstart].
+
+== Add the Dependencies
+
+The OpenAI starter from the quickstart provides both a chat model and an embedding model.
+Add the module that contains the `QuestionAnswerAdvisor`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-vector-store-advisor</artifactId>
+</dependency>
+----
+
+== Create a Vector Store
+
+A vector store keeps the embeddings of your documents and finds the ones most similar to a question.
+This tutorial uses the in-memory `SimpleVectorStore`, which needs no infrastructure:
+
+[source,java]
+----
+@Configuration
+class RagConfiguration {
+
+    @Bean
+    VectorStore vectorStore(EmbeddingModel embeddingModel) {
+        return SimpleVectorStore.builder(embeddingModel).build();
+    }
+}
+----
+
+WARNING: `SimpleVectorStore` is meant for testing and demonstration.
+For anything else, choose one of the xref:integrations/vector-stores/index.adoc[vector store integrations].
+The rest of the code in this tutorial does not change.
+
+== Load a Document
+
+Put a text file, for example `handbook.txt`, in `src/main/resources`.
+Then read it, split it into chunks and add the chunks to the vector store when the application starts:
+
+[source,java]
+----
+@Bean
+ApplicationRunner loadDocuments(VectorStore vectorStore,
+        @Value("classpath:handbook.txt") Resource handbook) {
+    return args -> {
+        List<Document> documents = new TextReader(handbook).read();
+        List<Document> chunks = TokenTextSplitter.builder().build().apply(documents);
+        vectorStore.add(chunks);
+    };
+}
+----
+
+The `add` method computes the embedding of each chunk and stores it.
+Splitting matters because a question is matched against chunks, and a chunk has to fit in the prompt.
+
+To read other formats, such as PDF or Markdown, see xref:integrations/document-readers/index.adoc[Document Readers].
+
+== Answer Questions from the Document
+
+Add the `QuestionAnswerAdvisor` to the `ChatClient`.
+For each request it searches the vector store for chunks related to the question and appends them to the user text:
+
+[source,java]
+----
+@RestController
+class HandbookController {
+
+    private final ChatClient chatClient;
+
+    HandbookController(ChatClient.Builder chatClientBuilder, VectorStore vectorStore) {
+        this.chatClient = chatClientBuilder
+            .defaultAdvisors(QuestionAnswerAdvisor.builder(vectorStore).build())
+            .build();
+    }
+
+    @GetMapping("/ask")
+    String ask(@RequestParam String question) {
+        return this.chatClient.prompt()
+            .user(question)
+            .call()
+            .content();
+    }
+}
+----
+
+== Run and Test
+
+Start the application and ask something that only your document can answer:
+
+[source,shell]
+----
+curl 'http://localhost:8080/ask?question=How+many+vacation+days+do+I+get'
+----
+
+== Tune the Retrieval
+
+The advisor accepts a `SearchRequest` that controls how many chunks are retrieved and how similar they have to be:
+
+[source,java]
+----
+var qaAdvisor = QuestionAnswerAdvisor.builder(vectorStore)
+    .searchRequest(SearchRequest.builder().similarityThreshold(0.8d).topK(6).build())
+    .build();
+----
+
+== Next Steps
+
+* xref:rag/index.adoc[Retrieval Augmented Generation] describes the advisors in detail, including filtering by metadata.
+* xref:rag/modules.adoc[Modular RAG] shows how to rewrite queries, combine retrievers and post-process results.
+* xref:rag/etl/index.adoc[ETL Pipeline] covers reading, transforming and writing documents.
+* xref:rag/vector-store/filters.adoc[Metadata Filters] restrict a search to part of your data.
