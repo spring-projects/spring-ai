@@ -1,0 +1,258 @@
+= Voyage AI Embeddings and Reranking
+
+Spring AI supports the https://www.voyageai.com/[Voyage AI] text embedding models, contextualized chunk embedding models, multimodal embedding models and rerankers.
+Voyage AI has no official Java SDK, so Spring AI calls the https://docs.voyageai.com/reference/embeddings-api[Voyage AI REST API] directly.
+
+In every part of the integration the model is explicit.
+There is no default model: a missing model, or a model that does not belong to the endpoint, fails with an error that says so.
+
+== Available Models
+
+[cols="2,3,3", stripes=even]
+|====
+| Feature | Models | Spring AI type
+
+| Text embeddings
+| `voyage-4-large`, `voyage-4`, `voyage-4-lite`, `voyage-code-4`, `voyage-3-large`, `voyage-3.5`, `voyage-3.5-lite`, `voyage-code-3`, `voyage-finance-2`, `voyage-law-2`
+| `VoyageAiEmbeddingModel`, an `EmbeddingModel`
+
+| Contextualized chunk embeddings
+| `voyage-context-4`, `voyage-context-3`
+| `VoyageAiContextualizedEmbeddingModel`
+
+| Multimodal embeddings
+| `voyage-multimodal-3.5`, `voyage-multimodal-3`
+| `VoyageAiMultimodalEmbeddingModel`, a `DocumentEmbeddingModel`
+
+| Reranking
+| `rerank-3`, `rerank-3-lite`, `rerank-2.5`, `rerank-2.5-lite`
+| `VoyageAiDocumentReranker`, a RAG `DocumentPostProcessor`
+|====
+
+The text embedding models other than `voyage-finance-2` and `voyage-law-2` return 1024 dimensions by default and accept the dimensions 256, 512, 1024 and 2048.
+`voyage-finance-2` and `voyage-law-2` return 1024 dimensions only.
+The contextualized models accept 256, 512, 1024 and 2048.
+`voyage-multimodal-3.5` accepts 256, 512, 1024 and 2048, and `voyage-multimodal-3` returns 1024 only.
+
+== Prerequisites
+
+Create an account at https://www.voyageai.com/[Voyage AI] and generate an API key.
+Set the configuration property `spring.ai.voyageai.api-key` to it, preferably through an environment variable:
+
+[source,yaml]
+----
+spring:
+  ai:
+    voyageai:
+      api-key: ${VOYAGE_API_KEY}
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project.
+Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Voyage AI models.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-voyage-ai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-voyage-ai'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+The text embedding model is created unless another provider is selected with `spring.ai.model.embedding`, and the application does not start if `spring.ai.voyageai.embedding.model` is not set.
+If you use the starter only for the other models, set `spring.ai.model.embedding=none` to disable the text embedding model.
+The contextualized embedding model, the multimodal embedding model and the reranker are created when their `model` property is set.
+
+=== Retry Properties
+
+The prefix `spring.ai.retry` configures the retry mechanism, see the xref:integrations/models/mistral-ai/embeddings.adoc#_retry_properties[retry properties].
+By default server errors (`5xx`) are retried and client errors (`4xx`) are not.
+Add `429` to `spring.ai.retry.on-http-codes` to retry Voyage AI rate limit errors.
+The message of an error exception contains the `detail` text that Voyage AI returned, prefixed with the HTTP status.
+
+=== Connection Properties
+
+The prefix `spring.ai.voyageai` is used as the property prefix that lets you connect to Voyage AI.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.voyageai.base-url | The URL to connect to | https://api.voyageai.com
+| spring.ai.voyageai.api-key | The API key | -
+|====
+
+=== Text Embedding Properties
+
+The prefix `spring.ai.voyageai.embedding` configures the text embedding model.
+The prefix `spring.ai.model.embedding` selects the provider (`voyage-ai`).
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.voyageai.embedding.model | The text embedding model, for example `voyage-4`. Required. | -
+| spring.ai.voyageai.embedding.dimensions | The dimension of the vectors. Sent only when set. | -
+| spring.ai.voyageai.embedding.input-type | `document` or `query`. Sent only when set. | -
+| spring.ai.voyageai.embedding.truncation | Whether over-long texts are truncated instead of rejected. Sent only when set. | -
+| spring.ai.voyageai.embedding.metadata-mode | Which document metadata is embedded together with the text. | EMBED
+|====
+
+=== Contextualized Embedding Properties
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.voyageai.contextualized-embedding.model | `voyage-context-4` or `voyage-context-3`. Creates the bean when set. | -
+| spring.ai.voyageai.contextualized-embedding.dimensions | The dimension of the vectors. Sent only when set. | -
+| spring.ai.voyageai.contextualized-embedding.input-type | `document` or `query`. A request can set it instead. | -
+|====
+
+=== Multimodal Embedding Properties
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.voyageai.multimodal-embedding.model | `voyage-multimodal-3.5` or `voyage-multimodal-3`. Creates the bean when set. | -
+| spring.ai.voyageai.multimodal-embedding.dimensions | The dimension of the vectors. Sent only when set. | -
+| spring.ai.voyageai.multimodal-embedding.input-type | `document` or `query`. Sent only when set. | -
+| spring.ai.voyageai.multimodal-embedding.truncation | Whether over-long inputs are truncated instead of rejected. Sent only when set. | -
+|====
+
+=== Rerank Properties
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.voyageai.rerank.model | `rerank-3`, `rerank-3-lite`, `rerank-2.5` or `rerank-2.5-lite`. Creates the bean when set. | -
+| spring.ai.voyageai.rerank.top-k | Keeps only the `top-k` most relevant documents. | all documents
+| spring.ai.voyageai.rerank.truncation | Whether over-long input is truncated instead of rejected. Sent only when set. | -
+|====
+
+== Text Embeddings
+
+[source,java]
+----
+VoyageAiApi api = VoyageAiApi.builder().apiKey(System.getenv("VOYAGE_API_KEY")).build();
+
+VoyageAiEmbeddingModel embeddingModel = VoyageAiEmbeddingModel.builder()
+    .voyageAiApi(api)
+    .options(VoyageAiEmbeddingOptions.builder()
+        .model(VoyageAiApi.EmbeddingModel.VOYAGE_4_LITE)
+        .inputType(VoyageAiApi.InputType.DOCUMENT)
+        .dimensions(512)
+        .build())
+    .build();
+
+EmbeddingResponse response = embeddingModel.call(new EmbeddingRequest(List.of("Hello", "World"),
+    VoyageAiEmbeddingOptions.builder().inputType(VoyageAiApi.InputType.QUERY).build()));
+----
+
+A request with more than 1000 texts is split into several API calls, and the vectors are returned in the order of the texts.
+Voyage AI also limits the total tokens of a request (1M tokens for the `-lite` models, 320K for `voyage-4` and `voyage-3.5`, 120K for the others).
+Spring AI does not count tokens, so a request over that limit is rejected by the API.
+Keep the batches of a vector store small enough, for example with a `TokenCountBatchingStrategy` that uses a conservative limit.
+
+If a Voyage AI response carries no token usage, the call fails instead of reporting zero tokens.
+
+== Contextualized Chunk Embeddings
+
+A contextualized model embeds every chunk of a document together with the rest of the document.
+Each instruction of the request is one document, or one query, depending on the input type.
+The input type is required.
+
+With `DOCUMENT`, Voyage AI chunks the document (the request always sets `enable_auto_chunking` and a `chunk_size` of 32000 tokens) and the response holds one embedding per chunk, in document order.
+The text of a chunk is the `documentData` of the embedding's `EmbeddingResultMetadata`, and the `documentId` is the index of the document in the request.
+With `QUERY`, nothing is chunked and the response holds one embedding per query.
+
+[source,java]
+----
+VoyageAiContextualizedEmbeddingModel model = VoyageAiContextualizedEmbeddingModel.builder()
+    .voyageAiApi(api)
+    .options(VoyageAiContextualizedEmbeddingOptions.builder()
+        .model(VoyageAiApi.ContextualizedEmbeddingModel.VOYAGE_CONTEXT_4)
+        .inputType(VoyageAiApi.InputType.DOCUMENT)
+        .dimensions(256)
+        .build())
+    .build();
+
+EmbeddingResponse response = model.call(new EmbeddingRequest(List.of(fullTextOfDocument), null));
+for (Embedding chunk : response.getResults()) {
+    String text = (String) chunk.getMetadata().getDocumentData();
+    float[] vector = chunk.getOutput();
+}
+----
+
+This model is deliberately not an `EmbeddingModel`: one document yields several vectors, which does not fit the one-vector-per-text contract that vector stores rely on.
+
+== Multimodal Embeddings
+
+`VoyageAiMultimodalEmbeddingModel` embeds `Document` instances that hold text, an image or a video.
+`voyage-multimodal-3.5` accepts images and `video/mp4` videos, `voyage-multimodal-3` accepts images only.
+The images may be PNG, JPEG, WebP or GIF.
+
+The media data of a `Media` may be an `http(s)` URL, a base64 data URL, or the bytes of a file, for example read from a `Resource`.
+Voyage AI requires the images and videos of one request to be given either all as URLs or all as base64, so a request that mixes the two is rejected.
+
+[source,java]
+----
+VoyageAiMultimodalEmbeddingModel model = VoyageAiMultimodalEmbeddingModel.builder()
+    .voyageAiApi(api)
+    .options(VoyageAiMultimodalEmbeddingOptions.builder()
+        .model(VoyageAiApi.MultimodalEmbeddingModel.VOYAGE_MULTIMODAL_3_5)
+        .inputType(VoyageAiApi.InputType.DOCUMENT)
+        .build())
+    .build();
+
+Document photo = new Document(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("photo.png")), Map.of());
+EmbeddingResponse response = model.call(new DocumentEmbeddingRequest(photo, new Document("A banana")));
+----
+
+NOTE: Voyage AI limits the tokens and pixels of a request, and the size of each image and video.
+Spring AI does not check these limits.
+
+== Reranking
+
+`VoyageAiDocumentReranker` is a `DocumentPostProcessor` for the xref:rag/modules.adoc#_document_post_processing[RAG] pipeline.
+It scores all retrieved documents against the query in one call, returns the most relevant first and puts the relevance score in `Document#getScore()`.
+At most 1000 documents can be reranked in one call.
+It is independent of the `DecisionDocumentReranker`, which asks a decision model instead.
+
+[source,java]
+----
+VoyageAiDocumentReranker reranker = VoyageAiDocumentReranker.builder()
+    .voyageAiApi(api)
+    .model(VoyageAiApi.RerankModel.RERANK_3)
+    .topK(5)
+    .build();
+
+RetrievalAugmentationAdvisor advisor = RetrievalAugmentationAdvisor.builder()
+    .documentRetriever(retriever)
+    .documentPostProcessors(reranker)
+    .build();
+----
+
+With the auto-configuration, set `spring.ai.voyageai.rerank.model` and inject the `VoyageAiDocumentReranker` bean.

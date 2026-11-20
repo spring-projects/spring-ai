@@ -208,6 +208,8 @@ For example, it could rank documents based on their relevance to the query, remo
 
 For example, the xref:integrations/models/jinfer/embeddings.adoc#reranking[Qxotic jinfer] integration provides `JinferDocumentPostProcessor`, which reranks the retrieved documents with a local reranker model.
 
+The xref:integrations/models/voyage-ai.adoc#_reranking[Voyage AI] integration provides `VoyageAiDocumentReranker`, which reranks the retrieved documents with a Voyage AI reranker.
+
 ==== DecisionDocumentReranker
 
 The `DecisionDocumentReranker` reorders the retrieved documents with a xref:models/decision.adoc[decision model], asking one yes/no question about each document: does the passage answer the query?
