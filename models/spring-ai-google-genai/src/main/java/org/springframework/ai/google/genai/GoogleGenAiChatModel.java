@@ -708,7 +708,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 						});
 
 				return aggregatedFlux.doOnError(observation::error)
-					.doFinally(s -> observation.stop())
+					.doFinally(s -> {
+						responseStream.close();
+						observation.stop();
+					})
 					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
 			}

@@ -409,6 +409,7 @@ public class DeepSeekChatModel implements ChatModel {
 			case LENGTH -> FinishReasonCategory.TRUNCATED;
 			case TOOL_CALLS, TOOL_CALL -> FinishReasonCategory.TOOL_CALL;
 			case CONTENT_FILTER -> FinishReasonCategory.FILTERED;
+			case INSUFFICIENT_SYSTEM_RESOURCE, ABORTED -> FinishReasonCategory.OTHER;
 		};
 	}
 
