@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.client.ChatClientMessageAggregator;
@@ -87,6 +88,8 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 	private static final ChatClientMessageAggregator CHAT_CLIENT_MESSAGE_AGGREGATOR = new ChatClientMessageAggregator();
 
+	protected static final Scheduler DEFAULT_TOOL_EXECUTION_SCHEDULER = Schedulers.boundedElastic();
+
 	/**
 	 * Default advisor order. Higher than
 	 * {@link org.springframework.ai.chat.client.advisor.api.Advisor#DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER}
@@ -113,11 +116,21 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 	private final boolean conversationHistoryEnabled;
 
+	private final Scheduler toolExecutionScheduler;
+
 	protected ToolCallingAdvisor(ToolCallingManager toolCallingManager,
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, int advisorOrder,
 			boolean conversationHistoryEnabled) {
+		this(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled,
+				DEFAULT_TOOL_EXECUTION_SCHEDULER);
+	}
+
+	protected ToolCallingAdvisor(ToolCallingManager toolCallingManager,
+			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, int advisorOrder,
+			boolean conversationHistoryEnabled, Scheduler toolExecutionScheduler) {
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
 		Assert.notNull(toolExecutionEligibilityChecker, "toolExecutionEligibilityChecker must not be null");
+		Assert.notNull(toolExecutionScheduler, "toolExecutionScheduler must not be null");
 		Assert.isTrue(advisorOrder > BaseAdvisor.HIGHEST_PRECEDENCE && advisorOrder < BaseAdvisor.LOWEST_PRECEDENCE,
 				"advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
 
@@ -125,6 +138,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		this.toolExecutionEligibilityChecker = toolExecutionEligibilityChecker;
 		this.advisorOrder = advisorOrder;
 		this.conversationHistoryEnabled = conversationHistoryEnabled;
+		this.toolExecutionScheduler = toolExecutionScheduler;
 	}
 
 	@Override
@@ -135,6 +149,15 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 	@Override
 	public int getOrder() {
 		return this.advisorOrder;
+	}
+
+	/**
+	 * Returns the scheduler used to execute blocking tool calls in the streaming path.
+	 * @return the tool execution scheduler
+	 * @since 2.1.0
+	 */
+	public Scheduler getToolExecutionScheduler() {
+		return this.toolExecutionScheduler;
 	}
 
 	// -------------------------------------------------------------------------
@@ -394,7 +417,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 		final ChatClientResponse finalAggregatedResponse = aggregatedResponse;
 
-		// Execute tool calls on bounded elastic scheduler (tool execution is blocking)
+		// Execute tool calls on the configured scheduler (tool execution is blocking)
 		Flux<ChatClientResponse> toolCallFlux = Flux.deferContextual(ctx -> {
 			ToolExecutionResult toolExecutionResult;
 			try {
@@ -446,7 +469,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 						toolExecutionResult.conversationHistory(), usageAccumulator);
 			}
 		});
-		return toolCallFlux.subscribeOn(Schedulers.boundedElastic());
+		return toolCallFlux.subscribeOn(this.toolExecutionScheduler);
 	}
 
 	/**
@@ -599,6 +622,8 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 		private boolean conversationHistoryEnabled = true;
 
+		private Scheduler toolExecutionScheduler = DEFAULT_TOOL_EXECUTION_SCHEDULER;
+
 		protected Builder() {
 		}
 
@@ -658,6 +683,20 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		}
 
 		/**
+		 * Sets the scheduler used to execute blocking tool calls in the streaming path.
+		 * Applications can use an isolated scheduler to prevent long-running tools from
+		 * consuming the shared Reactor bounded-elastic scheduler.
+		 * @param toolExecutionScheduler the scheduler used for tool execution
+		 * @return this Builder instance for method chaining
+		 * @since 2.1.0
+		 */
+		public T toolExecutionScheduler(Scheduler toolExecutionScheduler) {
+			Assert.notNull(toolExecutionScheduler, "toolExecutionScheduler must not be null");
+			this.toolExecutionScheduler = toolExecutionScheduler;
+			return self();
+		}
+
+		/**
 		 * Disables internal conversation history. You need a memory advisor, a
 		 * {@code MemoryAdvisor}, registered next in the chain.
 		 * @return this Builder instance for method chaining
@@ -706,6 +745,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			copy.toolExecutionEligibilityChecker = this.toolExecutionEligibilityChecker;
 			copy.advisorOrder = this.advisorOrder;
 			copy.conversationHistoryEnabled = this.conversationHistoryEnabled;
+			copy.toolExecutionScheduler = this.toolExecutionScheduler;
 			return copy;
 		}
 
@@ -729,6 +769,14 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		}
 
 		/**
+		 * Returns the configured tool execution scheduler.
+		 * @return the tool execution scheduler
+		 */
+		protected Scheduler getToolExecutionScheduler() {
+			return this.toolExecutionScheduler;
+		}
+
+		/**
 		 * Builds and returns a new ToolCallingAdvisor instance with the configured
 		 * properties.
 		 * @return a new ToolCallingAdvisor instance
@@ -737,7 +785,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		 */
 		public ToolCallingAdvisor build() {
 			return new ToolCallingAdvisor(this.toolCallingManager, this.toolExecutionEligibilityChecker,
-					this.advisorOrder, this.conversationHistoryEnabled);
+					this.advisorOrder, this.conversationHistoryEnabled, this.toolExecutionScheduler);
 		}
 
 	}
