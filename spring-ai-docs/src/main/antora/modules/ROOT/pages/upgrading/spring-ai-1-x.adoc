@@ -1,0 +1,260 @@
+= Upgrading to 1.0 and 1.1
+
+[[upgrading-to-1-1-0-RC1]]
+== Upgrading to 1.1.0-RC1
+
+=== Breaking Changes
+
+==== Text-to-Speech (TTS) API Migration
+
+The OpenAI Text-to-Speech implementation has been migrated from provider-specific classes to shared interfaces.
+This enables writing portable code that works across multiple TTS providers (OpenAI, ElevenLabs, and future providers).
+
+===== Removed Classes
+
+The following deprecated classes have been removed from the `org.springframework.ai.openai.audio.speech` package:
+
+* `SpeechModel` → Use `TextToSpeechModel` (from `org.springframework.ai.audio.tts`)
+* `StreamingSpeechModel` → Use `StreamingTextToSpeechModel` (from `org.springframework.ai.audio.tts`)
+* `SpeechPrompt` → Use `TextToSpeechPrompt` (from `org.springframework.ai.audio.tts`)
+* `SpeechResponse` → Use `TextToSpeechResponse` (from `org.springframework.ai.audio.tts`)
+* `SpeechMessage` → Use `TextToSpeechMessage` (from `org.springframework.ai.audio.tts`)
+* `Speech` (in `org.springframework.ai.openai.audio.speech`) → Use `Speech` (from `org.springframework.ai.audio.tts`)
+
+Additionally, the `speed` parameter type changed from `Float` to `Double` across all OpenAI TTS components for consistency with other TTS providers.
+
+===== Migration Steps
+
+1. **Update Imports**: Replace all imports from `org.springframework.ai.openai.audio.speech.*` with `org.springframework.ai.audio.tts.*`
+
+2. **Update Type References**: Replace all occurrences of the old class names with the new ones:
++
+[source,text]
+----
+Find:    SpeechModel
+Replace: TextToSpeechModel
+
+Find:    StreamingSpeechModel
+Replace: StreamingTextToSpeechModel
+
+Find:    SpeechPrompt
+Replace: TextToSpeechPrompt
+
+Find:    SpeechResponse
+Replace: TextToSpeechResponse
+
+Find:    SpeechMessage
+Replace: TextToSpeechMessage
+----
+
+3. **Update Speed Parameter**: Change from `Float` to `Double`:
++
+[source,text]
+----
+Find:    .speed(1.0f)
+Replace: .speed(1.0)
+
+Find:    Float speed
+Replace: Double speed
+----
+
+4. **Update Dependency Injection**: If you inject `SpeechModel`, update to `TextToSpeechModel`:
++
+[source,java]
+----
+// Before
+public MyService(SpeechModel speechModel) { ... }
+
+// After
+public MyService(TextToSpeechModel textToSpeechModel) { ... }
+----
+
+===== Benefits
+
+* **Portability**: Write code once, switch between OpenAI, ElevenLabs, or other TTS providers easily
+* **Consistency**: Same patterns as ChatModel and other Spring AI abstractions
+* **Type Safety**: Improved type hierarchy with proper interface implementations
+* **Future-Proof**: New TTS providers will automatically work with your existing code
+
+===== Additional Resources
+
+For a comprehensive migration guide with detailed code examples, see:
+
+* xref:upgrading/text-to-speech.adoc[OpenAI TTS Migration Guide]
+* xref:models/audio/speech.adoc#_writing_provider_agnostic_code[Writing Provider-Agnostic TTS Code]
+
+[[upgrading-to-1-0-0-snapshot]]
+== Upgrading to 1.0.0-SNAPSHOT
+
+=== Overview
+The 1.0.0-SNAPSHOT version includes significant changes to artifact IDs, package names, and module structure.
+This section provides guidance specific to using the SNAPSHOT version.
+
+=== Add Snapshot Repositories
+
+To use the 1.0.0-SNAPSHOT version, you need to add the snapshot repositories to your build file.
+For detailed instructions, refer to the xref:get-started/project-setup.adoc#_snapshots_add_snapshot_repositories[Snapshots - Add Snapshot Repositories] section in the Getting Started guide.
+
+=== Update Dependency Management
+
+Update your Spring AI BOM version to `1.0.0-SNAPSHOT` in your build configuration.
+For detailed instructions on configuring dependency management, refer to the xref:get-started/project-setup.adoc#dependency-management[Dependency Management] section in the Getting Started guide.
+
+=== Artifact ID, Package, and Module Changes
+The 1.0.0-SNAPSHOT includes changes to artifact IDs, package names, and module structure.
+
+For details, refer to:
+- xref:upgrading/archive.adoc#common-artifact-id-changes[Common Artifact ID Changes]
+- xref:upgrading/archive.adoc#common-package-changes[Common Package Changes]
+- xref:upgrading/archive.adoc#common-module-structure[Common Module Structure]
+
+[[upgrading-to-1-0-0-RC1]]
+== Upgrading to 1.0.0-RC1
+
+You can automate the upgrade process to 1.0.0-RC1 using an OpenRewrite recipe.
+This recipe helps apply many of the necessary code changes for this version.
+Find the recipe and usage instructions at https://github.com/arconia-io/arconia-migrations/blob/main/docs/spring-ai.md[Arconia Spring AI Migrations].
+
+=== Breaking Changes
+
+
+==== Chat Client and Advisors
+
+The main changes that impact end user code are:
+
+* In `VectorStoreChatMemoryAdvisor`:
+** The constant `CHAT_MEMORY_RETRIEVE_SIZE_KEY` has been renamed to `TOP_K`.
+** The constant `DEFAULT_CHAT_MEMORY_RESPONSE_SIZE` (value: 100) has been renamed to `DEFAULT_TOP_K` with a new default value of 20.
+
+* The constant `CHAT_MEMORY_CONVERSATION_ID_KEY` has been renamed to `CONVERSATION_ID` and moved from `AbstractChatMemoryAdvisor` to the `ChatMemory` interface.
+Update your imports to use `org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID`.
+
+===== Self-contained Templates in Advisors
+
+The built-in advisors that perform prompt augmentation have been updated to use self-contained templates.
+The goal is for each advisor to be able to perform templating operations without affecting nor being affected by templating and prompt decisions in other advisors.
+
+*If you were providing custom templates for the following advisors, you'll need to update them to ensure all expected placeholders are included.*
+
+* The `QuestionAnswerAdvisor` expects a template with the following placeholders (see xref:rag/index.adoc#_questionansweradvisor[more details]):
+** a `query` placeholder to receive the user question.
+** a `question_answer_context` placeholder to receive the retrieved context.
+* The `VectorStoreChatMemoryAdvisor` expects a template with the following placeholders (see xref:memory/chat-memory.adoc#_vectorstorechatmemoryadvisor[more details]):
+** an `instructions` placeholder to receive the original system message.
+** a `long_term_memory` placeholder to receive the retrieved conversation memory.
+
+==== Observability
+* Refactored content observation to use logging instead of tracing (https://github.com/spring-projects/spring-ai/commit/ca843e85887aa1da6300c77550c379c103500897[ca843e8])
+  ** Replaced content observation filters with logging handlers
+  ** Renamed configuration properties to better reflect their purpose:
+    *** `include-prompt` → `log-prompt`
+    *** `include-completion` → `log-completion`
+    *** `include-query-response` → `log-query-response`
+  ** Added `TracingAwareLoggingObservationHandler` for trace-aware logging
+  ** Replaced `micrometer-tracing-bridge-otel` with `micrometer-tracing`
+  ** Removed event-based tracing in favor of direct logging
+  ** Removed direct dependency on the OTel SDK
+  ** Renamed `includePrompt` to `logPrompt` in observation properties (in `ChatClientBuilderProperties`, `ChatObservationProperties`, and `ImageObservationProperties`)
+
+==== Chat Memory Repository Module and Autoconfiguration Renaming
+
+We've standardized the naming pattern for chat memory components by adding the repository suffix throughout the codebase.
+This change affects Cassandra, JDBC, and Neo4j implementations, impacting artifact IDs, Java package names, and class names for clarity.
+
+==== Artifact IDs
+All memory-related artifacts now follow a consistent pattern:
+
+* `spring-ai-model-chat-memory-*` → `spring-ai-model-chat-memory-repository-*`
+* `spring-ai-autoconfigure-model-chat-memory-*` → `spring-ai-autoconfigure-model-chat-memory-repository-*`
+* `spring-ai-starter-model-chat-memory-*` → `spring-ai-starter-model-chat-memory-repository-*`
+
+==== Java Packages
+
+* Package paths now include `.repository.` segment
+* Example: `org.springframework.ai.chat.memory.jdbc` → `org.springframework.ai.chat.memory.repository.jdbc`
+
+==== Configuration Classes
+
+* Main autoconfiguration classes now use the `Repository` suffix
+* Example: `JdbcChatMemoryAutoConfiguration` → `JdbcChatMemoryRepositoryAutoConfiguration`
+
+==== Properties
+
+* Configuration properties renamed from `spring.ai.chat.memory.<storage>...` to `spring.ai.chat.memory.repository.<storage>...`
+
+
+**Migration Required:**
+- Update your Maven/Gradle dependencies to use the new artifact IDs.
+- Update any imports, class references, or configuration that used the old package or class names.
+
+==== Message Aggregator Refactoring
+
+===== Changes
+
+* `MessageAggregator` class has been moved from `org.springframework.ai.chat.model` package in the `spring-ai-client-chat` module to the `spring-ai-model` module (same package name)
+* The `aggregateChatClientResponse` method has been removed from `MessageAggregator` and moved to a new class `ChatClientMessageAggregator` in the `org.springframework.ai.chat.client` package
+
+===== Migration Guide
+
+If you were directly using the `aggregateChatClientResponse` method from `MessageAggregator`, you need to use the new `ChatClientMessageAggregator` class instead:
+
+[source,java]
+----
+// Before
+new MessageAggregator().aggregateChatClientResponse(chatClientResponses, aggregationHandler);
+
+// After
+new ChatClientMessageAggregator().aggregateChatClientResponse(chatClientResponses, aggregationHandler);
+----
+
+Don't forget to add the appropriate import:
+
+[source,java]
+----
+import org.springframework.ai.chat.client.ChatClientMessageAggregator;
+----
+
+==== Watson
+The Watson AI model was removed as it was based on the older text generation that is considered outdated as there is a new chat generation model available.
+Hopefully Watson will reappear in a future version of Spring AI
+
+==== MoonShot and QianFan
+
+Moonshot and Qianfan have been removed since they are not accessible from outside China.
+These have been moved to the Spring AI Community repository.
+
+==== Removed Vector Store
+* Removed HanaDB vector store autoconfiguration (https://github.com/spring-projects/spring-ai/commit/f3b46244942c5072c2e2fa89e62cde71c61bbf25[f3b4624])
+
+==== Memory Management
+* Removed CassandraChatMemory implementation (https://github.com/spring-projects/spring-ai/commit/11e3c8f9a6636d77f203968b83625d3e5694c408[11e3c8f])
+* Simplified chat memory advisor hierarchy and removed deprecated API (https://github.com/spring-projects/spring-ai/commit/848a3fd31fadd07c9ba77f6dc30425389d095e9a[848a3fd])
+* Removed deprecations in JdbcChatMemory (https://github.com/spring-projects/spring-ai/commit/356a68f15eea07a040bd27c66442472fc55e6475[356a68f])
+* Refactored chat memory repository artifacts for clarity (https://github.com/spring-projects/spring-ai/commit/2d517eec5cd7ce5f88149b876ed57a06ad353e11[2d517ee])
+* Refactored chat memory repository autoconfigurations and Spring Boot starters for clarity (https://github.com/spring-projects/spring-ai/commit/f6dba1bf083d847cdc07888ba62746683e3d61bb[f6dba1b])
+
+==== Message and Template APIs
+* Removed deprecated UserMessage constructors (https://github.com/spring-projects/spring-ai/commit/06edee406978d172a1f87f4c7b255282f9d55e4c[06edee4])
+* Removed deprecated PromptTemplate constructors (https://github.com/spring-projects/spring-ai/commit/722c77e812f3f3ea40cf2258056fcf1578b15c62[722c77e])
+* Removed deprecated methods from Media (https://github.com/spring-projects/spring-ai/commit/228ef10bfbfe279d7d09f2a7ba166db873372118[228ef10])
+* Refactored StTemplateRenderer: renamed supportStFunctions to validateStFunctions (https://github.com/spring-projects/spring-ai/commit/0e15197298c0848b78a746f3d740191e6a6aee7a[0e15197])
+* Removed left over TemplateRender interface after moving it (https://github.com/spring-projects/spring-ai/commit/52675d854ccecbc702cec24c4f070520eca64938[52675d8])
+
+==== Additional Client API Changes
+* Removed deprecations in ChatClient and Advisors (https://github.com/spring-projects/spring-ai/commit/4fe74d886e26d52abf6f2f5545264d422a0be4b2[4fe74d8])
+* Removed deprecations from OllamaApi and AnthropicApi (https://github.com/spring-projects/spring-ai/commit/46be8987d6bc385bf74b9296aa4308c7a8658d2f[46be898])
+
+==== Package Structure Changes
+* Removed inter-package dependency cycles in spring-ai-model (https://github.com/spring-projects/spring-ai/commit/ebfa5b9b2cc2ab0d20e25dc6128c4b1c9c327f89[ebfa5b9])
+* Moved MessageAggregator to spring-ai-model module (https://github.com/spring-projects/spring-ai/commit/54e5c07428909ceec248e3bbd71e2df4b0812e49[54e5c07])
+
+==== Dependencies
+* Removed unused json-path dependency in spring-ai-openai (https://github.com/spring-projects/spring-ai/commit/9de13d1b2fdb67219dc7afbf319ade789784f2b9[9de13d1])
+
+=== Behavior Changes
+
+==== Azure OpenAI
+* Added Entra ID identity management for Azure OpenAI with clean autoconfiguration (https://github.com/spring-projects/spring-ai/commit/3dc86d33ce90ebd68ec3997a0eb4704ab7774e99[3dc86d3])
+
+=== General Cleanup
+* Removed all code deprecations (https://github.com/spring-projects/spring-ai/commit/76bee8ceb2854839f93a6c52876f50bb24219355[76bee8c]) and (https://github.com/spring-projects/spring-ai/commit/b6ce7f3e4a7aafe6b9031043f63813dde6e73605[b6ce7f3])

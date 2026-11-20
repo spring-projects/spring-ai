@@ -1,0 +1,263 @@
+= The Tool Calling Loop
+
+[[the-tool-calling-loop]]
+== The Tool Calling Loop
+
+When you call `.call()` or `.stream()` on a `ChatClient` request, the request flows through the advisor chain.
+`ToolCallingAdvisor` — auto-registered by `DefaultChatClient` — owns the tool execution lifecycle:
+
+image::tools/spring-ai-tool-calling-advisor-flow.png[Tool Calling Advisor Flow, width=800, align="center"]
+
+1. The advisor sends the request to the model with all registered tool definitions included.
+2. The model decides whether to call any tools and returns a response.
+3. If the response contains tool calls, the advisor:
+   a. Hands them to `ToolCallingManager`, which finds the matching `ToolCallback` and executes it.
+   b. Appends the tool results to the conversation history.
+   c. Sends the updated history back to the model.
+4. Steps 2–3 repeat until the model produces a response without tool calls; that response is returned to the caller.
+
+Both blocking (`.call()`) and streaming (`.stream()`) modes are fully supported.
+
+`ToolCallingAdvisor` is a **recursive advisor** — it re-enters the downstream advisor chain on each iteration of the loop.
+The same mechanism drives structured-output validation retries and any other looped advisor pattern.
+See xref:advisors/recursive.adoc[Recursive Advisors] for the underlying pattern.
+
+`DefaultChatClient` enforces that **at most one `ToolAdvisor` is present** in the chain.
+Attempting to register a second one fails with an explicit error.
+
+For the full `ToolCallingAdvisor` builder API, hook methods, and configuration options, see xref:tools/tool-calling-advisor.adoc[ToolCallingAdvisor].
+
+[[streaming-tool-call-arguments]]
+=== Streaming Tool Call Arguments
+
+When streaming, the chat models whose API streams tool call arguments (Anthropic, OpenAI Chat Completions and Responses, Amazon Bedrock Converse, DeepSeek) also stream them to the caller, so that a UI can show which tool the model is calling, and its arguments, while the model is still writing them.
+Each argument delta arrives as a chunk holding a `ToolCallPart` marked partial (see `StreamingParts`), with the id and name of the call and only the new arguments fragment.
+The first delta of a call may already carry arguments, or none yet.
+Joined, the fragments of a call are its arguments, while a single fragment is usually not valid JSON.
+The complete tool call can still differ slightly: Bedrock, for instance, completes a call without arguments to `{}`.
+A call whose id and name arrive on separate deltas, as some OpenAI-compatible servers send them, streams no deltas from OpenAI Chat Completions or DeepSeek, and only its complete tool call arrives.
+
+A partial `ToolCallPart` is not a tool call: `AssistantMessage.getToolCalls()` and `hasToolCalls()` skip it, so `ToolCallingManager` never executes it, and `MessageAggregator` does not aggregate it, so a memory advisor never persists it.
+The chat model emits the complete tool call later in the same response, and `ToolCallingAdvisor` executes it and keeps that chunk out of the stream as before.
+
+[source,java]
+----
+chatClient.prompt("Write a hello world script to hello.py")
+    .tools(new FileTools())
+    .stream()
+    .chatResponse()
+    .subscribe(response -> response.getResults().forEach(generation -> {
+        for (MessagePart part : generation.getOutput().getParts()) {
+            if (part instanceof ToolCallPart toolCallPart && StreamingParts.isPartial(part)) {
+                ToolCall delta = toolCallPart.toolCall();
+                ui.showToolCallProgress(delta.id(), delta.name(), delta.arguments());
+            }
+        }
+    }));
+----
+
+`.stream().content()` is not affected: the argument delta chunks carry no text.
+
+[[memory-and-the-tool-loop]]
+== Memory and the Tool Loop
+
+NOTE: `MessageChatMemoryAdvisor` and the `ChatMemory` API are deprecated since 2.1.0, for removal in 3.0.0, in favor of xref:memory/session/index.adoc[session memory]; see xref:upgrading/session-memory.adoc[Migrating to Session Memory].
+The session memory advisor sits inside the loop by default; see xref:memory/session/chat-client.adoc[ChatClient Integration].
+
+Where you place `MessageChatMemoryAdvisor` relative to `ToolCallingAdvisor` (default order `HIGHEST_PRECEDENCE + 300`) determines how much conversation context the memory store captures.
+
+[[outside-the-loop]]
+=== Outside the Loop (default)
+
+`MessageChatMemoryAdvisor`'s default order is `HIGHEST_PRECEDENCE + 200` — lower than `ToolCallingAdvisor`, which places it **outside** the loop.
+The memory advisor:
+
+* Loads history once before the loop starts.
+* Persists only the final user message and the final assistant message after the loop completes.
+* Never sees tool call requests or tool response messages.
+
+This is the safe default and works with every `ChatMemoryRepository` implementation.
+It also matches the behavior of Spring AI 1.x, where the tool loop was internal to each `ChatModel` and memory could not observe tool messages.
+
+[source,java]
+----
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())  // outside the loop by default
+    .build();
+----
+
+[[inside-the-loop]]
+=== Inside the Loop
+
+To give the model the full tool transcript on subsequent turns — so it can reason about what was already tried, which tools were called, and what they returned — place the memory advisor **inside** the loop by giving it an order greater than `ToolCallingAdvisor.DEFAULT_ORDER`:
+
+[source,java]
+----
+var chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
+    .order(BaseAdvisor.HIGHEST_PRECEDENCE + 400)  // inside (after) ToolCallingAdvisor
+    .build();
+
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(chatMemoryAdvisor)
+    .build();
+----
+
+To avoid duplicate writes, `ToolCallingAdvisor`'s internal conversation history must be disabled when a memory advisor sits inside the loop.
+**With the auto-registered `ToolCallingAdvisor`, this is automatic** — `DefaultChatClient` detects any `MemoryAdvisor` inside the loop and disables internal history with no additional configuration.
+If you construct a `ToolCallingAdvisor` manually, call `.disableInternalConversationHistory()` on the builder yourself.
+
+NOTE: Disabling internal history only changes what's forwarded to the rest of the chain each round — xref:tools/reference.adoc#tool-call-limits[tool call limits] still see the complete history for the current turn regardless, so limits keep working correctly with a memory advisor nested inside the loop.
+
+image::tools/spring-ai-tool-calling-with-inside-memory.png[ChatMemoryAdvisor inside the ToolCallingAdvisor loop, width=800, align="center"]
+
+[[backend-compatibility]]
+=== Backend Compatibility
+
+Not every `ChatMemoryRepository` can persist tool messages.
+The repository has to know how to serialize `ToolResponseMessage` and tool call request messages alongside ordinary user and assistant turns — and most current implementations only model the latter.
+
+As of 2.0, the built-in repositories that support the full message set are:
+
+* xref:integrations/stores/chat-memory-repositories.adoc#_in_memory_repository[InMemoryChatMemoryRepository]
+* xref:integrations/stores/chat-memory-repositories.adoc#_redischatmemoryrepository[RedisChatMemoryRepository]
+* xref:integrations/stores/chat-memory-repositories.adoc#_neo4j_chatmemoryrepository[Neo4jChatMemoryRepository]
+
+Any of them is safe inside the loop.
+
+TIP: For JDBC-backed persistence with full tool-message support, an event log and turn-aware compaction, use xref:memory/session/index.adoc[Session Memory] with its xref:integrations/stores/session-jdbc.adoc[JDBC repository].
+
+[[user-controlled-tool-execution]]
+== User-Controlled Tool Execution
+
+The auto-registered loop covers most cases, but some scenarios genuinely need you to own each iteration:
+
+* Gating tool execution on an external approval step.
+For a person approving individual tool calls, xref:tools/confirmation.adoc[Tool Call Confirmation] keeps the loop and only pauses it.
+* Forwarding intermediate progress to an SSE or WebSocket endpoint.
+* Applying conditional logic between turns.
+* Stopping the loop based on a side-channel signal.
+
+Opt out per call by setting `AdvisorParams.toolCallingAdvisorAutoRegister(false)` on the request.
+You become responsible for detecting tool calls in the `ChatResponse` and executing them via `ToolCallingManager`:
+
+[source,java]
+----
+ChatClient chatClient = ...
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+
+ToolCallback[] tools = ToolCallbacks.from(new WeatherTools());
+ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder().toolCallbacks(tools).build();
+
+String question = "What is the weather in Amsterdam and Paris?";
+
+// ToolCallingAdvisor disabled — no tool loop runs automatically
+ChatClientResponse response = chatClient.prompt()
+    .user(question)
+    .tools(tools)
+    .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+    .call()
+    .chatClientResponse();
+
+Prompt prompt = new Prompt(List.of(new UserMessage(question)), chatOptions);
+
+// Drive the loop yourself — each iteration is observable and interruptible
+while (response.chatResponse() != null && response.chatResponse().hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response.chatResponse());
+    prompt = new Prompt(result.conversationHistory(), chatOptions);
+    response = chatClient.prompt()
+        .messages(result.conversationHistory())
+        .tools(tools)
+        .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+        .call()
+        .chatClientResponse();
+}
+----
+
+The same pattern applies to the streaming API, where each iteration's chunk `Flux` can be forwarded to a subscriber while being aggregated with `ChatClientMessageAggregator`.
+See xref:tools/tool-calling-advisor.adoc#user-controlled-streaming[User-Controlled Streaming] for the full streaming variant.
+
+To disable auto-registration globally for every call from an auto-configured `ChatClient`, set:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-calling.enabled=false
+----
+
+NOTE: Driving the loop yourself outside the framework also bypasses the observation of each round and the advisors that would run inside the loop.
+For most needs — including streaming intermediate progress to a UI — placing a custom advisor **inside** the loop (see xref:#extending-the-loop[Extending the Loop]) is simpler and more composable than full opt-out.
+
+[[extending-the-loop]]
+== Extending the Loop: Custom `ToolAdvisor`
+
+The tool loop is not a black box.
+`ToolCallingAdvisor` exposes hook methods at well-defined points, and `DefaultChatClient`'s auto-configuration accepts custom implementations transparently.
+This is the same extension point that `ToolSearchToolCallingAdvisor` uses to implement progressive tool disclosure.
+
+`ToolAdvisor` is a marker interface: any custom tool call advisor must implement it so that `DefaultChatClient` recognizes it, enforces the single-advisor constraint, and registers it in place of the default.
+
+[[hook-methods]]
+=== Hook Methods
+
+The base `ToolCallingAdvisor` exposes five pairs of protected hook methods (one each for the call and stream paths):
+
+[cols="1,2", options="header"]
+|====
+| Hook | When it fires
+| `doInitializeLoop` / `doInitializeLoopStream` | Once, before the first iteration
+| `doBeforeCall` / `doBeforeStream` | Before each iteration
+| `doAfterCall` / `doAfterStream` | After each iteration
+| `doFinalizeLoop` / `doFinalizeLoopStream` | Once, after the loop ends
+| `doGetNextInstructionsForToolCall` / `doGetNextInstructionsForToolCallStream` | After the tools ran, to build the messages of the next iteration
+|====
+
+`ToolSearchToolCallingAdvisor` uses `doInitializeLoop` to index the tool set and augment the system message, and `doBeforeCall` to inject only the tools discovered so far.
+Any custom subclass follows the same pattern.
+
+Common use cases for a custom loop:
+
+* **Approval gate** — pause before executing a destructive tool and wait for human confirmation.
+* **Observability** — emit structured events for each tool call to a side channel.
+* **Budget enforcement** — count tokens or LLM calls per session and abort if limits are exceeded.
+* **Custom tool resolution** — resolve tools from a dynamic source not available at startup.
+
+[[custom-tool-advisor-autoconfig]]
+=== Auto-Configuration Integration
+
+Custom `ToolAdvisor` implementations plug into the auto-configuration system without requiring any manual `ChatClient` wiring.
+The extension point is the `ToolCallingAdvisor.Builder<?>` bean.
+
+`ChatClientAutoConfiguration` declares a default `ToolCallingAdvisor.Builder<?>` bean guarded by `@ConditionalOnMissingBean`.
+To replace it, register your own `ToolCallingAdvisor.Builder<?>` bean — typed as the base `ToolCallingAdvisor.Builder<?>` — in an auto-configuration that runs **before** `ChatClientAutoConfiguration`:
+
+[source,java]
+----
+@AutoConfiguration(beforeName = "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration")
+@ConditionalOnProperty(prefix = "my.advisor", name = "enabled", havingValue = "true")
+public class MyToolAdvisorAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean
+    ToolCallingAdvisor.Builder<?> toolCallingAdvisorBuilder(ToolCallingManager toolCallingManager) {
+        return MyCustomToolCallingAdvisor.builder()
+            .toolCallingManager(toolCallingManager);
+    }
+}
+----
+
+`ChatClient.Builder` then uses your custom builder to auto-register your advisor transparently.
+`ToolSearchToolCallingAdvisor`'s auto-configuration uses exactly this mechanism.
+Your builder must override `newCopy()` and `copy()`, as in the xref:tools/tool-calling-advisor.adoc#subclass-example[subclass example].
+`ChatClient` calls `copy()` on the builder for every request; without the overrides, it auto-registers a plain `ToolCallingAdvisor` instead of your subclass.
+
+For the full `ToolCallingAdvisor` builder API and hook signatures, see xref:tools/tool-calling-advisor.adoc[ToolCallingAdvisor].
+
+== Stopping and Observing the Loop
+
+The loop runs until the model produces a final answer.
+To end it early, for example from a stop button or when a budget is used up, an advisor inside the loop can check a signal before each model request.
+
+.Community: Spring AI Agent Utils
+[TIP]
+====
+xref:agents/agent-utils.adoc#_stopping_and_observing_the_loop[Spring AI Agent Utils] provides `InterruptAdvisor`, which does this, and `ToolCallListener`, which observes every tool call.
+====

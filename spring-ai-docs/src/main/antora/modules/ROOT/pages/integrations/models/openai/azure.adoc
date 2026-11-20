@@ -1,0 +1,31 @@
+[[azure-openai]]
+= Azure and Microsoft Foundry
+:page-aliases: api/audio/transcriptions/azure-openai-transcriptions.adoc, api/chat/azure-openai-chat.adoc, api/embeddings/azure-openai-embeddings.adoc, api/image/azure-openai-image.adoc
+
+OpenAI models deployed on Azure / Microsoft Foundry are accessed through the OpenAI module.
+There is no separate Azure OpenAI module.
+If you are upgrading from the removed `spring-ai-azure-openai` module, see xref:upgrading/spring-ai-2-0.adoc#_spring_ai_azure_openai_module_removal[`spring-ai-azure-openai` module removal].
+
+Use the OpenAI page for the model type you need:
+
+* xref:integrations/models/openai/chat.adoc[OpenAI Chat]
+* xref:integrations/models/openai/embeddings.adoc[OpenAI Embeddings]
+* xref:integrations/models/openai/image.adoc[OpenAI Image Generation]
+* xref:integrations/models/openai/transcription.adoc[OpenAI Transcription]
+
+== Custom Microsoft Entra Credentials
+
+Use `AzureOpenAiCredentials` to authenticate with a custom Azure `TokenCredential`, such as a user-assigned managed identity:
+
+[source,java]
+----
+TokenCredential tokenCredential = new DefaultAzureCredentialBuilder()
+    .managedIdentityClientId(clientId)
+    .build();
+
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+    .credential(AzureOpenAiCredentials.from(tokenCredential))
+    .build();
+----
+
+Add `com.azure:azure-identity` to the application dependencies when using Microsoft Entra authentication.

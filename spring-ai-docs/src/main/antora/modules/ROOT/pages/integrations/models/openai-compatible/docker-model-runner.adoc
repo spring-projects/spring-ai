@@ -1,0 +1,70 @@
+[[docker-model-runner]]
+= Docker Model Runner Chat
+:page-aliases: api/chat/dmr-chat.adoc
+
+https://docs.docker.com/ai/model-runner/[Docker Model Runner] runs models from https://hub.docker.com/u/ai[Docker Hub] on your own machine, and offers them through an OpenAI-compatible API.
+Spring AI uses it through the xref:integrations/models/openai/chat.adoc[OpenAI chat model]: you point the OpenAI module at the Model Runner and choose a model.
+
+== Configuration
+
+Enable Model Runner in Docker Desktop with TCP access on port 12434:
+
+[source,shell]
+----
+docker desktop enable model-runner --tcp 12434
+----
+
+Add the OpenAI starter:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+Then set the base URL and a model.
+The Model Runner does not check the API key, but the OpenAI module needs one, so set any value:
+
+[source,properties]
+----
+spring.ai.openai.base-url=http://localhost:12434/engines/v1
+spring.ai.openai.api-key=unused
+spring.ai.openai.chat.model=ai/gemma3
+----
+
+The OpenAI module passes the base URL to the OpenAI SDK as it is, so it must include the `/v1` path.
+
+All other properties and options are those of the OpenAI chat model, see xref:integrations/models/openai/chat.adoc[OpenAI Chat].
+
+== Using Testcontainers
+
+In tests, the `DockerModelRunnerContainer` of Testcontainers gives access to the Model Runner of the Docker host.
+Its `getOpenAIEndpoint()` returns the URL up to `/engines`, so add `/v1`:
+
+[source,java]
+----
+@Container
+static DockerModelRunnerContainer dmr = new DockerModelRunnerContainer("alpine/socat:1.7.4.3-r0");
+
+@Bean
+OpenAiChatModel chatModel() {
+	return OpenAiChatModel.builder()
+		.options(OpenAiChatOptions.builder()
+			.baseUrl(dmr.getOpenAIEndpoint() + "/v1")
+			.apiKey("unused")
+			.model("ai/gemma3")
+			.build())
+		.build();
+}
+----
+
+== Differences from OpenAI
+
+Tool calling works when the selected model supports it.
+Which other OpenAI features work depends on the model.
+
+== Example
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/DockerModelRunnerWithOpenAiChatModelIT.java[DockerModelRunnerWithOpenAiChatModelIT] test shows chat, streaming and tool calling with the Docker Model Runner.

@@ -1,0 +1,119 @@
+[[quickstart]]
+= Quickstart
+
+This guide builds a small web application that sends a question to a chat model and returns the answer.
+It uses OpenAI, and shows at the end how to run the same code against a local model.
+
+== Generate the Project
+
+Go to https://start.spring.io/[start.spring.io] and create a project with the *Spring Web* and *OpenAI* dependencies.
+
+If you add Spring AI to an existing project instead, import the Spring AI BOM as described in xref:get-started/project-setup.adoc#dependency-management[Dependency Management] and add the OpenAI starter:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+}
+----
+======
+
+== Add Your API Key
+
+Create an API key in your OpenAI account and expose it as an environment variable:
+
+[source,shell]
+----
+export OPENAI_API_KEY=<your key>
+----
+
+Then reference it in `src/main/resources/application.properties`:
+
+[source,properties]
+----
+spring.ai.openai.api-key=${OPENAI_API_KEY}
+----
+
+== Write a ChatClient Call
+
+The starter auto-configures a `ChatClient.Builder` that you can inject.
+Add a controller that builds a `ChatClient` and uses it:
+
+[source,java]
+----
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+class ChatController {
+
+    private final ChatClient chatClient;
+
+    ChatController(ChatClient.Builder chatClientBuilder) {
+        this.chatClient = chatClientBuilder.build();
+    }
+
+    @GetMapping("/ai")
+    String ask(@RequestParam(defaultValue = "Tell me a joke") String message) {
+        return this.chatClient.prompt()
+            .user(message)
+            .call()
+            .content();
+    }
+}
+----
+
+The `user` method sets the user message, `call` sends the request to the model, and `content` returns the response as a `String`.
+
+== Run and Test
+
+Start the application:
+
+[source,shell]
+----
+./mvnw spring-boot:run
+----
+
+Then call the endpoint:
+
+[source,shell]
+----
+curl 'http://localhost:8080/ai?message=Why+is+the+sky+blue'
+----
+
+== Run Against a Local Model
+
+The controller does not depend on OpenAI.
+To use a model served by https://ollama.com[Ollama] on your machine, replace the starter with `spring-ai-starter-model-ollama` and replace the API key property with the model name:
+
+[source,properties]
+----
+spring.ai.ollama.chat.model=<a model you have pulled>
+----
+
+The Java code stays the same.
+See xref:integrations/models/ollama/chat.adoc[Ollama Chat] for the details.
+
+== Next Steps
+
+* xref:chatclient/index.adoc[ChatClient] covers system prompts, streaming and mapping responses to Java types.
+* xref:tools/index.adoc[Tool Calling] lets the model call your Java methods.
+* xref:rag/index.adoc[Retrieval Augmented Generation] answers questions from your own documents.
+* xref:memory/index.adoc[Memory] keeps a conversation going across requests.
+* xref:get-started/choose-provider.adoc[Choosing a Model Provider] lists the alternatives to OpenAI.

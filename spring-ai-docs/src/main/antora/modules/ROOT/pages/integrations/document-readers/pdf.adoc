@@ -1,0 +1,136 @@
+= PDF Document Readers
+
+== PDF Page
+The `PagePdfDocumentReader` uses Apache PdfBox library to parse PDF documents.
+
+=== Dependencies
+Add the dependency to your project using Maven or Gradle.
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-pdf-document-reader</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-pdf-document-reader'
+}
+----
+======
+
+=== Example
+
+[source,java]
+----
+@Component
+public class MyPagePdfDocumentReader {
+
+	List<Document> getDocsFromPdf() {
+
+		PagePdfDocumentReader pdfReader = new PagePdfDocumentReader("classpath:/sample1.pdf",
+				PdfDocumentReaderConfig.builder()
+					.withPageTopMargin(0)
+					.withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
+						.withNumberOfTopTextLinesToDelete(0)
+						.build())
+					.withPagesPerDocument(1)
+					.build());
+
+		return pdfReader.read();
+    }
+
+}
+
+----
+
+[[pdf-reader-config]]
+=== Configuration
+
+`PdfDocumentReaderConfig.builder()` provides the following options:
+
+* `withPagesPerDocument(int)`: the number of pages to put into one `Document` (default `1`).
+`0` (`PdfDocumentReaderConfig.ALL_PAGES`) puts all pages into a single `Document`.
+* `withPageTopMargin(int)` and `withPageBottomMargin(int)`: the height, in points (1/72 inch), to leave out at the top and at the bottom of each page, for example to drop headers and footers (default `0`).
+* `addPageRange(int startPage, int endPage)`: reads only the pages of the inclusive, one-based range.
+Call it several times to read several ranges; with no range, the whole document is read.
+An end page beyond the last page is clamped to the last page.
+A `Document` never spans pages outside the ranges, so with disjoint ranges `pagesPerDocument` is a maximum.
+* `withPageExtractedTextFormatter(ExtractedTextFormatter)`: post-processes the text of each page.
+`ExtractedTextFormatter.builder()` can delete text lines at the top and bottom of a page (`withNumberOfTopTextLinesToDelete`, `withNumberOfBottomTextLinesToDelete`, `withNumberOfTopPagesToSkipBeforeDelete`), align the text to the left (`withLeftAlignment`) and set the line separator (`overrideLineSeparator`).
+* `withReversedParagraphPosition(boolean)`: kept in the configuration, but neither reader uses it.
+
+[source,java]
+----
+PagePdfDocumentReader pdfReader = new PagePdfDocumentReader("classpath:/sample1.pdf",
+        PdfDocumentReaderConfig.builder()
+            .addPageRange(3, 10)       // skip the cover and the table of contents
+            .addPageRange(15, 20)
+            .withPageBottomMargin(50)  // leave out the footer
+            .build());
+----
+
+== PDF Paragraph
+The `ParagraphPdfDocumentReader` uses the PDF catalog (e.g. TOC) information to split the input PDF into text paragraphs and output a single `Document` per paragraph.
+
+NOTE: Not all PDF documents contain the PDF catalog.
+
+The `ParagraphPdfDocumentReader` uses only the text formatter of the xref:integrations/document-readers/pdf.adoc#pdf-reader-config[configuration].
+It ignores the margins and `pagesPerDocument`, and it rejects a configuration with page ranges with an `IllegalArgumentException`.
+
+=== Dependencies
+Add the dependency to your project using Maven or Gradle.
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-pdf-document-reader</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-pdf-document-reader'
+}
+----
+======
+
+=== Example
+
+[source,java]
+----
+@Component
+public class MyPagePdfDocumentReader {
+
+	List<Document> getDocsFromPdfWithCatalog() {
+
+        ParagraphPdfDocumentReader pdfReader = new ParagraphPdfDocumentReader("classpath:/sample1.pdf",
+                PdfDocumentReaderConfig.builder()
+                    .withPageTopMargin(0)
+                    .withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
+                        .withNumberOfTopTextLinesToDelete(0)
+                        .build())
+                    .withPagesPerDocument(1)
+                    .build());
+
+	    return pdfReader.read();
+    }
+}
+----

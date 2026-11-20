@@ -1,0 +1,334 @@
+= OpenAI-Compatible Endpoints
+
+OpenAI-compatible inference servers like vLLM, Ollama, and others often support additional parameters beyond those defined in OpenAI's standard API.
+For example, these servers may accept parameters such as `top_k`, `repetition_penalty`, or other sampling controls that the official OpenAI API does not recognize.
+
+The `extraBody` option allows you to pass arbitrary parameters to these servers.
+Any key-value pairs provided in `extraBody` are included at the top level of the JSON request, enabling you to leverage server-specific features while using Spring AI's OpenAI client.
+
+[IMPORTANT]
+====
+The `extraBody` parameter is intended for use with OpenAI-compatible servers, not the official OpenAI API.
+The official OpenAI API applies strict validation and will return an HTTP 400 error (`"Unknown parameter: 'extra_body'"`) if unrecognized fields are encountered.
+
+If you are communicating with the official OpenAI API, you should **never** populate the `extraBody` parameter.
+
+Also note that the `extraBody` Map is intentionally flattened into the top-level of the JSON request during serialization.
+So setting `extraBody(Map.of("custom_flag", true))` results in `{"custom_flag": true}` at the root of the JSON payload, matching the behavior of official SDKs.
+====
+
+== Configuration with Properties
+
+You can configure extra parameters using Spring Boot properties.
+Each property under `spring.ai.openai.chat.extra-body` becomes a top-level parameter in the request:
+
+[source,properties]
+----
+spring.ai.openai.base-url=http://localhost:8000/v1
+spring.ai.openai.chat.model=meta-llama/Llama-3-8B-Instruct
+spring.ai.openai.chat.temperature=0.7
+spring.ai.openai.chat.extra-body.top_k=50
+spring.ai.openai.chat.extra-body.repetition_penalty=1.1
+----
+
+This configuration would produce a JSON request like:
+
+[source,json]
+----
+{
+  "model": "meta-llama/Llama-3-8B-Instruct",
+  "temperature": 0.7,
+  "top_k": 50,
+  "repetition_penalty": 1.1,
+  "messages": [...]
+}
+----
+
+== Runtime Configuration with Builder
+
+You can also specify extra parameters at runtime using the options builder:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Tell me a creative story",
+        OpenAiChatOptions.builder()
+            .model("meta-llama/Llama-3-8B-Instruct")
+            .temperature(0.7)
+            .extraBody(Map.of(
+                "top_k", 50,
+                "repetition_penalty", 1.1,
+                "frequency_penalty", 0.5
+            ))
+            .build()
+    ));
+----
+
+== Example: vLLM Server
+
+When running vLLM with a Llama model, you might want to use sampling parameters specific to vLLM:
+
+[source,properties]
+----
+spring.ai.openai.base-url=http://localhost:8000/v1
+spring.ai.openai.chat.model=meta-llama/Llama-3-70B-Instruct
+spring.ai.openai.chat.extra-body.top_k=40
+spring.ai.openai.chat.extra-body.top_p=0.95
+spring.ai.openai.chat.extra-body.repetition_penalty=1.05
+spring.ai.openai.chat.extra-body.min_p=0.05
+----
+
+Refer to the link:https://docs.vllm.ai/en/latest/[vLLM documentation] for a complete list of supported sampling parameters.
+
+== Example: Ollama Server
+
+When using Ollama through the OpenAI-compatible endpoint, you can pass Ollama-specific parameters:
+
+[source,java]
+----
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+    .model("llama3.2")
+    .extraBody(Map.of(
+        "num_predict", 100,
+        "top_k", 40,
+        "repeat_penalty", 1.1
+    ))
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("Generate text", options));
+----
+
+Consult the link:https://github.com/ollama/ollama/blob/main/docs/api.md[Ollama API documentation] for available parameters.
+
+[NOTE]
+====
+The `extraBody` parameter accepts any `Map<String, Object>`, allowing you to pass whatever parameters your target server supports.
+Spring AI does not validate these parameters—they are passed directly to the server.
+This design provides maximum flexibility for working with diverse OpenAI-compatible implementations.
+====
+
+== Reasoning Content from Reasoning Models
+
+Some OpenAI-compatible servers that support reasoning models (such as DeepSeek R1, vLLM with reasoning parsers) expose the model's internal chain of thought via a `reasoning_content` field in their API responses.
+This field contains the step-by-step reasoning process the model used to arrive at its final answer.
+
+Spring AI maps this field to a `ReasoningPart` of the `AssistantMessage`, available through `getReasoning()`.
+The same text is also written to the `reasoningContent` key of the `AssistantMessage` metadata.
+That metadata key is deprecated and will be removed in a future release; new code should read the parts.
+
+[IMPORTANT]
+====
+**Important distinction about `reasoning_content` availability:**
+
+* **OpenAI-compatible servers** (DeepSeek, vLLM): Expose `reasoning_content` in Chat Completions API responses ✅
+* **Official OpenAI models** (the GPT-5 and GPT-6 models): Do **NOT** expose reasoning text in Chat Completions API responses ❌
+
+Official OpenAI reasoning models hide the chain-of-thought content when using the Chat Completions API.
+They only expose `reasoning_tokens` count in usage statistics.
+To get reasoning summaries from official OpenAI models, use OpenAI's Responses API through xref:integrations/models/openai/responses.adoc[`OpenAiResponsesChatModel`].
+That endpoint is also the only one that supports reasoning together with tool calling on GPT-5.4 and later.
+
+**Fallback behavior:** When `reasoning_content` is not provided by the server (e.g., official OpenAI Chat Completions), `getReasoning()` is empty and the deprecated `reasoningContent` metadata field is an empty string.
+====
+
+=== Accessing Reasoning Content
+
+When using a compatible server, you can access the reasoning content from the message parts.
+
+**Using ChatModel directly:**
+
+[source,java]
+----
+// Configure to use DeepSeek R1 or vLLM with a reasoning model
+ChatResponse response = chatModel.call(
+    new Prompt("Which number is larger: 9.11 or 9.8?")
+);
+
+// Get the assistant message
+AssistantMessage message = response.getResult().getOutput();
+
+// Access the reasoning content from the parts
+for (ReasoningPart reasoning : message.getReasoning()) {
+    System.out.println("Model's reasoning process:");
+    System.out.println(reasoning.text());
+}
+
+// The final answer is in the regular text
+System.out.println("\nFinal answer:");
+System.out.println(message.getText());
+----
+
+**Using ChatClient:**
+
+[source,java]
+----
+ChatClient chatClient = ChatClient.create(chatModel);
+
+String result = chatClient.prompt()
+    .user("Which number is larger: 9.11 or 9.8?")
+    .call()
+    .chatResponse()
+    .getResult()
+    .getOutput()
+    .getText();
+
+// To access reasoning content with ChatClient, retrieve the full response
+ChatResponse response = chatClient.prompt()
+    .user("Which number is larger: 9.11 or 9.8?")
+    .call()
+    .chatResponse();
+
+AssistantMessage message = response.getResult().getOutput();
+List<ReasoningPart> reasoning = message.getReasoning();
+----
+
+When the assistant message is part of the history of a later request, its reasoning parts are sent back as `reasoning_content`, which DeepSeek requires on assistant tool-call messages in thinking mode.
+
+=== Streaming Reasoning Content
+
+When streaming, each chunk carries its reasoning delta as a partial `ReasoningPart` and its text delta as a partial `TextPart`, so you can append them as they arrive:
+
+[source,java]
+----
+Flux<ChatResponse> responseFlux = chatModel.stream(
+    new Prompt("Solve this logic puzzle...")
+);
+
+StringBuilder reasoning = new StringBuilder();
+StringBuilder answer = new StringBuilder();
+
+responseFlux.subscribe(chunk -> {
+    AssistantMessage message = chunk.getResult().getOutput();
+
+    // Accumulate the reasoning deltas
+    for (ReasoningPart part : message.getReasoning()) {
+        reasoning.append(part.text());
+    }
+
+    // Accumulate the final answer
+    answer.append(message.getText());
+});
+----
+
+The aggregated response produced by `ChatClient` or `MessageAggregator` contains the complete `ReasoningPart` followed by the complete `TextPart`.
+
+[NOTE]
+====
+The deprecated `reasoningContent` metadata key of a streamed chunk holds the reasoning accumulated so far, not the delta, so it must not be appended.
+It is kept for one release so that last-wins metadata aggregation still yields the full text.
+====
+
+=== Example: DeepSeek R1
+
+DeepSeek R1 is a reasoning model that exposes its internal reasoning process:
+
+[source,properties]
+----
+spring.ai.openai.api-key=${DEEPSEEK_API_KEY}
+spring.ai.openai.base-url=https://api.deepseek.com
+spring.ai.openai.chat.model=deepseek-reasoner
+----
+
+When you make requests to DeepSeek R1, responses will include both the reasoning content (the model's thought process) and the final answer.
+
+Refer to the link:https://api-docs.deepseek.com/guides/reasoning_model[DeepSeek API documentation] for more details on reasoning models.
+
+=== Example: vLLM with Reasoning Parser
+
+vLLM supports reasoning models when configured with a reasoning parser:
+
+[source,bash]
+----
+vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \
+    --enable-reasoning \
+    --reasoning-parser deepseek_r1
+----
+
+[source,properties]
+----
+spring.ai.openai.base-url=http://localhost:8000/v1
+spring.ai.openai.chat.model=deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+----
+
+Consult the link:https://docs.vllm.ai/en/latest/features/reasoning_outputs.html[vLLM reasoning outputs documentation] for supported reasoning models and parsers.
+
+[NOTE]
+====
+The availability of `reasoning_content` depends entirely on the inference server you're using.
+Not all OpenAI-compatible servers expose reasoning content, even when using reasoning-capable models.
+Always refer to your server's API documentation to understand what fields are available in responses.
+====
+
+=== Replaying Reasoning Content in Multi-Turn Conversations [[replay-reasoning-content]]
+
+When an assistant message that carries reasoning is included in a subsequent request, Spring AI replays that reasoning as the `reasoning_content` property of the next request (see xref:integrations/models/openai/chat.adoc#message-parts[Message Parts] for which reasoning parts are replayed).
+Some OpenAI-compatible reasoning endpoints — such as DeepSeek's thinking mode — require this and return HTTP 400 if the property is absent.
+Other endpoints, such as Groq, reject the property outright.
+
+You can control this behavior with `spring.ai.openai.chat.replay-reasoning-content` (or `OpenAiChatOptions.replayReasoningContent`).
+When unset (the default), the content is replayed whenever it is present.
+Set to `false` to suppress the replay:
+
+[source,properties]
+----
+# Disable reasoning content replay (e.g. for Groq)
+spring.ai.openai.chat.replay-reasoning-content=false
+----
+
+Or per-request via options:
+
+[source,java]
+----
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+    .replayReasoningContent(false)
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt(messages, options));
+----
+
+== Tool Call Additional Properties for OpenAI-Compatible Providers [[tool-call-additional-properties]]
+
+Some OpenAI-compatible providers attach extra fields to tool-call objects in their responses.
+A common example is Google Gemini's OpenAI-compatible endpoint, which returns a `thought_signature` field required for multi-turn tool calling:
+
+[source,json]
+----
+{
+  "tool_calls": [
+    {
+      "id": "call_1",
+      "type": "function",
+      "function": { "name": "get_weather", "arguments": "{\"location\":\"Seoul\"}" },
+      "extra_content": { "google": { "thought_signature": "..." } }
+    }
+  ]
+}
+----
+
+Without these provider-specific fields present in the follow-up request, some models reject the tool-call history.
+
+Spring AI automatically captures any extra fields present on tool-call objects in the provider response and replays them verbatim when the assistant message is included in a subsequent request.
+No configuration is required — the behavior is transparent for both blocking and streaming flows.
+
+The extra fields are stored as a JSON object string in the `OpaquePayload` of the corresponding `ToolCallPart`, with provider `OpenAiChatModel.CHAT_COMPLETIONS_PROVIDER` and kind `OpenAiChatModel.PAYLOAD_TOOL_CALL_ADDITIONAL_PROPERTIES`, so they survive with the message parts:
+
+[source,java]
+----
+AssistantMessage message = response.getResult().getOutput();
+for (MessagePart part : message.getParts()) {
+    if (part instanceof ToolCallPart toolCallPart && toolCallPart.payload() != null
+            && OpenAiChatModel.CHAT_COMPLETIONS_PROVIDER.equals(toolCallPart.payload().provider())) {
+        String extraFields = toolCallPart.payload().data(); // {"extra_content":{"google":{...}}}
+    }
+}
+----
+
+For one release they are also written to the `openai.tool_calls.additional_properties` message metadata key, a map from tool call id to the same JSON string.
+That key is deprecated: on replay the part payload is used first, and the metadata map is only read for a tool call part without that payload, such as one restored from a chat memory written by an earlier version.
+
+[NOTE]
+====
+This applies only to extra fields on the tool-call object itself.
+Extra fields inside the nested `function` object are not preserved.
+====

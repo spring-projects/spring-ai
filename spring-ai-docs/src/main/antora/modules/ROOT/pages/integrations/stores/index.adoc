@@ -1,0 +1,17 @@
+[[conversation-stores]]
+= Session and Memory Stores
+
+These integrations persist conversations.
+
+[cols="2,3", options="header"]
+|===
+| Store | Used by
+
+| xref:integrations/stores/session-jdbc.adoc[JDBC Session Repository]
+| The xref:memory/session/index.adoc[Session API]
+
+| xref:integrations/stores/chat-memory-repositories.adoc[Chat Memory Repositories]
+| The deprecated xref:memory/chat-memory.adoc[Chat Memory] API, with repositories for JDBC, Cassandra, Neo4j, MongoDB and Redis.
+|===
+
+To implement your own session store, see xref:memory/session/extending.adoc[Extension Points].

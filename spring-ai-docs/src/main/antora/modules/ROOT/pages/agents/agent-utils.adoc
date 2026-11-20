@@ -1,0 +1,223 @@
+[[agent-utils]]
+= Spring AI Agent Utils
+:community-project: Spring AI Agent Utils
+:community-docs: {agent-utils-docs}/
+:community-issues: https://github.com/spring-ai-community/spring-ai-agent-utils/issues
+
+include::partial$community-note.adoc[]
+
+link:{agent-utils-docs}/[Spring AI Agent Utils] is a library of ready-made tools and advisors for building agents with Spring AI.
+It brings the capabilities of coding agents such as Claude Code to Java applications: file and shell tools, web search, task lists, Agent Skills, long-term memory, sub-agents and sandboxed execution.
+
+Spring AI provides the building blocks of an agent, as described in xref:agents/index.adoc[Agents].
+Agent Utils builds on them: its tools are ordinary Spring AI tools, and its advisors are ordinary `ChatClient` advisors.
+
+== Add the Dependency
+
+Import the bill of materials, then add the modules that you need.
+Set `spring-ai-agent-utils.version` to the Agent Utils release that supports your Spring AI version, as listed in its link:{agent-utils-docs}/[documentation]:
+
+[source,xml]
+----
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.springaicommunity</groupId>
+            <artifactId>spring-ai-agent-utils-bom</artifactId>
+            <version>${spring-ai-agent-utils.version}</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+    <dependency>
+        <groupId>org.springaicommunity</groupId>
+        <artifactId>spring-ai-agent-utils</artifactId>
+    </dependency>
+</dependencies>
+----
+
+[cols="2,3", options="header"]
+|===
+| Module | Contents
+
+| `spring-ai-agent-utils`
+| The tools, the advisors, Agent Skills, long-term memory and local sub-agents.
+
+| `spring-ai-agent-utils-a2a`
+| Sub-agents that run remotely and are called through the A2A protocol.
+
+| `spring-ai-agent-utils-docker-cli`
+| An execution backend that runs shell commands inside a Docker container.
+|===
+
+Each Agent Utils release is built against a specific Spring AI version.
+
+== What It Provides
+
+[cols="2,3,3", options="header"]
+|===
+| Capability | Classes | Use it to
+
+| Files and code search
+| link:{agent-utils-docs}/tools/FileSystemTools/[`FileSystemTools`], link:{agent-utils-docs}/tools/GrepTool/[`GrepTool`], link:{agent-utils-docs}/tools/GlobTool/[`GlobTool`]
+| Let the model read, write and edit files, and find files and text.
+
+| Shell
+| link:{agent-utils-docs}/tools/ShellTools/[`ShellTools`]
+| Let the model run commands, also in the background.
+
+| Web
+| link:{agent-utils-docs}/tools/SmartWebFetchTool/[`SmartWebFetchTool`], link:{agent-utils-docs}/tools/BraveWebSearchTool/[`BraveWebSearchTool`]
+| Fetch and summarize web pages, and search the web with the Brave Search API.
+
+| Environment context
+| link:{agent-utils-docs}/tools/AgentEnvironment/[`AgentEnvironment`]
+| Add information about the environment and the Git status of the project to the system prompt.
+
+| Questions to the user
+| link:{agent-utils-docs}/tools/AskUserQuestionTool/[`AskUserQuestionTool`]
+| Let the model ask the user multiple-choice questions while it works.
+
+| Task lists
+| link:{agent-utils-docs}/tools/TodoWriteTool/[`TodoWriteTool`]
+| Let the model plan a task as a list of steps and track its progress.
+
+| Agent Skills
+| link:{agent-utils-docs}/tools/SkillsTool/[`SkillsTool`]
+| Give the model instructions, scripts and reference files that it loads only when a task needs them.
+
+| Long-term memory
+| link:{agent-utils-docs}/tools/AutoMemoryTools/[`AutoMemoryTools`], link:{agent-utils-docs}/tools/AutoMemoryToolsAdvisor/[`AutoMemoryToolsAdvisor`], link:{agent-utils-docs}/tools/AutoDreamService/[`AutoDreamService`], link:{agent-utils-docs}/tools/AutoDreamAdvisor/[`AutoDreamAdvisor`]
+| Keep facts across conversations, and consolidate them in the background.
+
+| Sub-agents
+| link:{agent-utils-docs}/tools/TaskTools/[`TaskTool`], link:{agent-utils-docs}/tools/Subagent/[sub-agent framework]
+| Delegate tasks to specialized agents with their own context window, locally or through A2A.
+
+| Sandboxed execution
+| link:{agent-utils-docs}/tools/WorkspaceAndExecSPI/[`Workspace`, `ExecBackend`], link:{agent-utils-docs}/tools/DockerCliExecBackend/[`DockerCliExecBackend`]
+| Confine the file tools to a directory, and run shell commands in a container.
+
+| Loop control
+| link:{agent-utils-docs}/tools/InterruptAdvisor/[`InterruptAdvisor`], link:{agent-utils-docs}/tools/ToolCallListener/[`ToolCallListener`]
+| Stop a running agent, and observe every tool call.
+|===
+
+== A Minimal Coding Agent
+
+The following agent can search, read and change the files of one project, run commands, and keep a task list:
+
+[source,java]
+----
+@Bean
+ChatClient codingAgent(ChatClient.Builder chatClientBuilder) {
+    Path project = Path.of("/workspace/project");
+    Workspace workspace = Workspace.local(project);
+
+    return chatClientBuilder
+        .defaultSystem("You are a coding assistant for the project in " + project + ".")
+        .defaultTools(
+            FileSystemTools.builder().workspace(workspace).build(),
+            GrepTool.builder().workspace(workspace).build(),
+            GlobTool.builder().workspace(workspace).build(),
+            ShellTools.builder().workingDirectory(project).build(),
+            TodoWriteTool.builder().build())
+        .build();
+}
+----
+
+The `Workspace` confines the file and search tools to the project directory.
+The working directory of `ShellTools` only sets where commands start, and does not stop a command from reaching other files.
+
+WARNING: Shell and file tools let the model act on the machine that runs the application.
+Run the commands in a container with link:{agent-utils-docs}/tools/DockerCliExecBackend/[`DockerCliExecBackend`], and consider xref:tools/confirmation.adoc[Tool Call Confirmation] for tools whose effects a person should approve.
+
+To keep the conversation across requests, add xref:memory/session/index.adoc[session memory].
+The link:https://github.com/spring-ai-community/spring-ai-agent-utils/tree/main/examples/code-agent-demo[code agent demo] is a complete coding assistant with all the tools.
+
+== Agent Skills
+
+https://agentskills.io[Agent Skills] is an open format for packaging instructions, scripts and reference files that an agent loads when it needs them.
+A skill is a directory with a `SKILL.md` file: a name and a description in YAML front matter, followed by instructions.
+It can also contain scripts and reference files.
+The model sees only the names and descriptions, and loads a skill when a task matches it.
+In Agent Utils, Agent Skills work with any model, unlike the xref:integrations/models/anthropic/skills-and-web-search.adoc[skills of the Anthropic API].
+
+[source,java]
+----
+ChatClient chatClient = chatClientBuilder
+    .defaultToolCallbacks(SkillsTool.builder()
+        .addSkillsDirectory("skills")
+        .build())
+    .build();
+----
+
+Agent Skills can also be loaded from the classpath and from JAR dependencies, see link:{agent-utils-docs}/tools/SkillsTool/[SkillsTool].
+
+== Long-Term Memory
+
+xref:memory/session/index.adoc[Session memory] keeps one conversation.
+`AutoMemoryTools` keeps facts across conversations, such as the preferences of a user or decisions about a project, as files in a directory.
+The model decides what to remember, using tools to create, edit and delete memory files.
+
+`AutoMemoryToolsAdvisor` adds the memory tools and the instructions for using them to every request:
+
+[source,java]
+----
+ChatClient chatClient = chatClientBuilder
+    .defaultAdvisors(AutoMemoryToolsAdvisor.builder()
+        .memoriesRootDirectory("/home/user/.agent/memories")
+        .build())
+    .build();
+----
+
+`AutoDreamService` and `AutoDreamAdvisor` consolidate the memories in the background, after a response has been returned.
+
+== Sub-Agents
+
+A sub-agent works on a task in its own context window, with its own system prompt, tools and model, and returns only the result.
+This keeps the context of the main agent small, and implements the xref:agents/patterns.adoc[orchestrator-workers] pattern.
+
+`TaskTool` lets the main agent delegate to sub-agents:
+
+[source,java]
+----
+ToolCallback taskTool = TaskTool.builder()
+    .subagentTypes(ClaudeSubagentType.builder()
+        .chatClientBuilder("default", chatClientBuilder.clone())
+        .build())
+    .build();
+
+ChatClient chatClient = chatClientBuilder
+    .defaultToolCallbacks(taskTool)
+    .build();
+----
+
+Sub-agents can be defined in Markdown files, and the `spring-ai-agent-utils-a2a` module adds remote agents that are called through the A2A protocol.
+See link:{agent-utils-docs}/tools/TaskTools/[Task Tools] and link:{agent-utils-docs}/tools/Subagent/[Subagent Framework].
+
+== Stopping and Observing the Loop
+
+The xref:tools/loop.adoc[tool calling loop] runs until the model produces a final answer.
+`InterruptAdvisor` checks a signal before every model request in the loop, so that a stop button, a deadline or a budget can end it:
+
+[source,java]
+----
+AtomicBoolean interrupted = new AtomicBoolean();
+
+ChatClient chatClient = chatClientBuilder
+    .defaultAdvisors(InterruptAdvisor.builder().interruptSignal(interrupted::get).build())
+    .build();
+----
+
+When the signal is set, the call ends with a `TurnInterruptedException`.
+
+`ToolCallListener` observes every tool call, for example to write an audit log or to stream progress to a user interface.
+It also decides whether a failed tool call is reported to the model or rethrown.
+
+== Examples
+
+The link:https://github.com/spring-ai-community/spring-ai-agent-utils/tree/main/examples[examples] of the project include a coding agent, Agent Skills, sub-agents (local and A2A), long-term memory, task lists and questions to the user.

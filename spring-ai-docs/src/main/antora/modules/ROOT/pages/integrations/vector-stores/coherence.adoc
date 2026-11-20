@@ -1,0 +1,99 @@
+[[coherence]]
+= Oracle Coherence
+:page-aliases: api/vectordbs/coherence.adoc
+
+This page describes how to use Oracle Coherence 24.09 or later as a `VectorStore`.
+
+The `CoherenceVectorStore` supports:
+
+* Vectors with unspecified or fixed dimensions.
+* A configurable distance type for similarity search.
+* Vector indexes, either HNSW or binary quantization.
+* Exact and approximate similarity search.
+* xref:rag/vector-store/filters.adoc[Metadata filter] expressions.
+
+== Dependency
+
+Add the Coherence vector store module to your project:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-coherence-store</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-coherence-store'
+}
+----
+======
+
+TIP: Refer to xref:get-started/project-setup.adoc#dependency-management[Dependency Management] to add the Spring AI BOM to your build file.
+
+Spring AI does not provide a Spring Boot starter or auto-configuration for this store.
+You create the `CoherenceVectorStore` bean yourself.
+
+== Manual Configuration
+
+The store needs a Coherence `Session` and an `EmbeddingModel`:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(Session session, EmbeddingModel embeddingModel) {
+    return CoherenceVectorStore.builder(session, embeddingModel)
+        .mapName("spring-ai-documents")
+        .distanceType(CoherenceVectorStore.DistanceType.COSINE)
+        .indexType(CoherenceVectorStore.IndexType.HNSW)
+        .build();
+}
+----
+
+[cols="2,4,2", options="header"]
+|===
+| Builder method | Description | Default
+
+| `mapName`
+| The name of the Coherence map that holds the documents.
+| `spring-ai-documents`
+
+| `distanceType`
+| The distance used for similarity search: `COSINE`, `IP` (inner product) or `L2` (squared Euclidean distance).
+| `COSINE`
+
+| `indexType`
+| The vector index: `NONE` (exact, brute-force search), `BINARY` (binary quantization) or `HNSW`.
+| `NONE`
+
+| `forcedNormalization`
+| Whether vectors are normalized when they are ingested.
+A similarity threshold can be used only with the `COSINE` and `IP` distance types when the ingested vectors are normalized.
+| `false`
+|===
+
+== Accessing the Native Client
+
+The Coherence Vector Store implementation provides access to the underlying native Coherence client (`Session`) through the `getNativeClient()` method:
+
+[source,java]
+----
+CoherenceVectorStore vectorStore = context.getBean(CoherenceVectorStore.class);
+Optional<Session> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    Session session = nativeClient.get();
+    // Use the native client for Coherence-specific operations
+}
+----
+
+The native client gives you access to Coherence-specific features and operations that might not be exposed through the `VectorStore` interface.

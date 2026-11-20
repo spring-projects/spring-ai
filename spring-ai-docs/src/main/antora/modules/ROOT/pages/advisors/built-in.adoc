@@ -1,0 +1,82 @@
+[[built-in-advisors]]
+= Built-in Advisors
+
+Spring AI ships the following advisors.
+Each one is described in detail on the page for the feature it implements.
+
+[cols="2,2,2,4", options="header"]
+|===
+| Advisor | Module | Default order | What it does
+
+| `SimpleLoggerAdvisor`
+| `spring-ai-client-chat`
+| `0`
+| Logs the request and the response of a `ChatClient` call.
+See xref:chatclient/advisors.adoc[Advisors and Memory in ChatClient].
+
+| `SafeGuardAdvisor`
+| `spring-ai-client-chat`
+| `0`
+| Blocks the call to the model when the user input contains one of a list of sensitive words.
+See xref:resilience/guardrails.adoc[Guardrails].
+
+| `StructuredOutputValidationAdvisor`
+| `spring-ai-client-chat`
+| `LOWEST_PRECEDENCE - 2000`
+| Validates the model output against the expected schema and retries when it does not match.
+See xref:structured-output/validation.adoc[Schema Validation and Self-Correction].
+
+| `ToolCallingAdvisor`
+| `spring-ai-client-chat`
+| `HIGHEST_PRECEDENCE + 300`
+| Runs the tool calling loop.
+See xref:tools/tool-calling-advisor.adoc[ToolCallingAdvisor].
+
+| `ToolSearchToolCallingAdvisor`
+| `spring-ai-tool-search-advisor`
+| `HIGHEST_PRECEDENCE + 300`
+| A tool calling advisor that lets the model discover tools on demand instead of receiving all of them on every request.
+See xref:tools/tool-search.adoc[Tool Search].
+
+| `SessionMemoryAdvisor`, `SessionTurnAdvisor`
+| `spring-ai-session-advisor`
+| `HIGHEST_PRECEDENCE + 1000` and `+ 200`
+| Connect a `ChatClient` call to xref:memory/session/index.adoc[session memory].
+See xref:memory/session/chat-client.adoc[ChatClient Integration].
+
+| `MessageChatMemoryAdvisor`
+| `spring-ai-client-chat`
+| `HIGHEST_PRECEDENCE + 200`
+| Adds the conversation history from a `ChatMemory` to the prompt.
+Part of the deprecated xref:memory/chat-memory.adoc[Chat Memory] API.
+
+| `VectorStoreChatMemoryAdvisor`
+| `spring-ai-vector-store-advisor`
+| `HIGHEST_PRECEDENCE + 200`
+| Stores and retrieves conversation memory in a vector store.
+See xref:memory/chat-memory.adoc[Chat Memory].
+
+| `QuestionAnswerAdvisor`
+| `spring-ai-vector-store-advisor`
+| `0`
+| Retrieves documents from a vector store and adds them to the prompt.
+See xref:rag/index.adoc[Retrieval Augmented Generation].
+
+| `RetrievalAugmentationAdvisor`
+| `spring-ai-rag`
+| `0`
+| Implements retrieval augmented generation from composable modules.
+See xref:rag/modules.adoc[Modular RAG].
+
+| `SemanticCacheAdvisor`
+| `spring-ai-redis-semantic-cache`
+| `HIGHEST_PRECEDENCE + 200`
+| Returns a cached response when a semantically similar question was answered before.
+See xref:rag/semantic-cache.adoc[Semantic Caching].
+|===
+
+The chain always ends with `ChatModelCallAdvisor` or `ChatModelStreamAdvisor`, at `LOWEST_PRECEDENCE`, which send the request to the chat model.
+`ChatClient` adds them for you, and the `ToolCallingAdvisor` too, see xref:advisors/index.adoc#_the_advisor_chain[The Advisor Chain].
+Every built-in advisor lets you change its order through its builder or constructor.
+
+To write your own advisor, see xref:advisors/custom.adoc[Writing an Advisor].
