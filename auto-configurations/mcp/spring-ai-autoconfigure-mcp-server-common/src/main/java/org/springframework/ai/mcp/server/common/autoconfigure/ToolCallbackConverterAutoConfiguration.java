@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -61,10 +62,10 @@ public class ToolCallbackConverterAutoConfiguration {
 
 		// De-duplicate tools by their name, keeping the first occurrence of each tool
 		// name
+		// On duplicate key, keep the existing tool
 		return tools.stream() // Key: tool name
 			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool,
-					(existing, replacement) -> existing)) // On duplicate key, keep the
-															// existing tool
+					(existing, replacement) -> existing, LinkedHashMap::new))
 			.values()
 			.stream()
 			.map(tool -> {
@@ -91,11 +92,11 @@ public class ToolCallbackConverterAutoConfiguration {
 			McpServerProperties serverProperties) {
 		// De-duplicate tools by their name, keeping the first occurrence of each tool
 		// name
+		// On duplicate key, keep the existing tool
 		return tools.stream() // Key: tool name
 			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool,
 					// Value: the tool itself
-					(existing, replacement) -> existing)) // On duplicate key, keep the
-			// existing tool
+					(existing, replacement) -> existing, LinkedHashMap::new)))
 			.values()
 			.stream()
 			.map(tool -> {
