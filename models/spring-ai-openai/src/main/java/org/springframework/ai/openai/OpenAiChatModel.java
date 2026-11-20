@@ -216,6 +216,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private final ToolCallingManager toolCallingManager;
 
+	private final List<OpenAiMessageParamCustomizer> messageParamCustomizers;
+
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
@@ -228,11 +230,18 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private OpenAiChatModel(OpenAIClient openAiClient, OpenAIClientAsync openAiClientAsync, OpenAiChatOptions options,
 			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager) {
+		this(openAiClient, openAiClientAsync, options, observationRegistry, toolCallingManager, List.of());
+	}
+
+	private OpenAiChatModel(OpenAIClient openAiClient, OpenAIClientAsync openAiClientAsync, OpenAiChatOptions options,
+			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
+			List<OpenAiMessageParamCustomizer> messageParamCustomizers) {
 		this.openAiClient = openAiClient;
 		this.openAiClientAsync = openAiClientAsync;
 		this.options = options;
 		this.observationRegistry = observationRegistry;
 		this.toolCallingManager = toolCallingManager;
+		this.messageParamCustomizers = List.copyOf(messageParamCustomizers);
 	}
 
 	/**
@@ -835,12 +844,26 @@ public final class OpenAiChatModel implements ChatModel {
 	}
 
 	private List<ChatCompletionMessageParam> toMessageParams(Message message, boolean replayReasoningContent) {
-		return switch (message.getMessageType()) {
+		List<ChatCompletionMessageParam> params = switch (message.getMessageType()) {
 			case USER, SYSTEM -> List.of(ChatCompletionMessageParam.ofUser(userMessageParam(message)));
 			case ASSISTANT -> List.of(ChatCompletionMessageParam
 				.ofAssistant(assistantMessageParam((AssistantMessage) message, replayReasoningContent)));
 			case TOOL -> toolMessageParams((ToolResponseMessage) message);
 		};
+		if (this.messageParamCustomizers.isEmpty()) {
+			return params;
+		}
+		return params.stream().map(param -> applyMessageParamCustomizers(message, param)).toList();
+	}
+
+	private ChatCompletionMessageParam applyMessageParamCustomizers(Message message,
+			ChatCompletionMessageParam messageParam) {
+		ChatCompletionMessageParam current = messageParam;
+		for (OpenAiMessageParamCustomizer customizer : this.messageParamCustomizers) {
+			current = Objects.requireNonNull(customizer.customize(message, current),
+					"OpenAiMessageParamCustomizer must not return null");
+		}
+		return current;
 	}
 
 	/**
@@ -1522,20 +1545,6 @@ public final class OpenAiChatModel implements ChatModel {
 	 */
 	private static final Map<String, Object> NULL_TYPE_SCHEMA = Map.of("type", "null");
 
-	/**
-	 * Rewrites an object schema in place to satisfy OpenAI's strict function-calling
-	 * mode: every property must be listed in "required", with optionality expressed via a
-	 * nullable type rather than omission from "required", and every object level must pin
-	 * {@code "additionalProperties"} to {@code false}. {@link JsonSchemaGenerator}
-	 * produces conventional JSON Schema instead - it omits
-	 * {@code @ToolParam(required = false)} properties from "required" - so this widens
-	 * the type of each such property to also accept {@code null} and backfills "required"
-	 * with every property key. Schemas from other sources (MCP servers, hand-written
-	 * inputSchema JSON) may also lack "additionalProperties", so it is backfilled with
-	 * {@code false} wherever absent; an explicit value is preserved. Recurses into nested
-	 * object/array-item schemas and {@code $defs} definitions so their own optional
-	 * properties are fixed up too.
-	 */
 	@SuppressWarnings("unchecked")
 	private static void applyStrictModeRequirements(Map<String, Object> schema) {
 		if (schema.get("$defs") instanceof Map<?, ?> defs) {
@@ -2087,6 +2096,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 		private List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers = new ArrayList<>();
 
+		private List<OpenAiMessageParamCustomizer> messageParamCustomizers = new ArrayList<>();
+
 		private Builder() {
 		}
 
@@ -2175,6 +2186,35 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 
 		/**
+		 * Registers an {@link OpenAiMessageParamCustomizer} that customizes each
+		 * {@link ChatCompletionMessageParam} built from a {@link Message} before the chat
+		 * completion request is created. Customizers are applied in the order they are
+		 * registered, after Spring AI's default conversion.
+		 * @param customizer the customizer to register
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		public Builder messageParamCustomizer(OpenAiMessageParamCustomizer customizer) {
+			Assert.notNull(customizer, "customizer cannot be null");
+			this.messageParamCustomizers.add(customizer);
+			return this;
+		}
+
+		/**
+		 * Sets the full list of {@link OpenAiMessageParamCustomizer customizers} to
+		 * apply, replacing any customizers registered earlier on this builder. The order
+		 * of the list is preserved when invoking the customizers.
+		 * @param customizers the customizers to set
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		public Builder messageParamCustomizers(List<OpenAiMessageParamCustomizer> customizers) {
+			Assert.notNull(customizers, "customizers cannot be null");
+			this.messageParamCustomizers = new ArrayList<>(customizers);
+			return this;
+		}
+
+		/**
 		 * Builds a new {@link OpenAiChatModel} instance.
 		 * @return the configured chat model
 		 */
@@ -2212,7 +2252,7 @@ public final class OpenAiChatModel implements ChatModel {
 					ToolCallingManager.builder().observationRegistry(resolvedObservationRegistry).build());
 
 			return new OpenAiChatModel(resolvedClient, resolvedClientAsync, resolvedOptions,
-					resolvedObservationRegistry, resolvedToolCallingManager);
+					resolvedObservationRegistry, resolvedToolCallingManager, this.messageParamCustomizers);
 		}
 
 	}

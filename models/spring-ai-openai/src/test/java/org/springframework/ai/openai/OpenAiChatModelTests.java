@@ -18,6 +18,7 @@ package org.springframework.ai.openai;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,6 +51,7 @@ import com.openai.models.chat.completions.ChatCompletionMessage;
 import com.openai.models.chat.completions.ChatCompletionMessageFunctionToolCall;
 import com.openai.models.chat.completions.ChatCompletionMessageParam;
 import com.openai.models.chat.completions.ChatCompletionMessageToolCall;
+import com.openai.models.chat.completions.ChatCompletionUserMessageParam;
 import com.openai.models.completions.CompletionUsage;
 import com.openai.services.async.ChatServiceAsync;
 import com.openai.services.async.chat.ChatCompletionServiceAsync;
@@ -1861,6 +1863,97 @@ class OpenAiChatModelTests {
 		ChatResponse response = chatModel.call(new Prompt("hi", options));
 
 		assertThat(response.getMetadata().getRateLimit()).isInstanceOf(EmptyRateLimit.class);
+	}
+
+	@Test
+	void messageParamCustomizerAddsAdditionalPropertiesToUserMessage() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.messageParamCustomizer((message, messageParam) -> {
+				if (messageParam.isUser()) {
+					ChatCompletionUserMessageParam customized = messageParam.asUser()
+						.toBuilder()
+						.putAdditionalProperty("custom_provider_field", JsonValue.from("custom_value"))
+						.build();
+					return ChatCompletionMessageParam.ofUser(customized);
+				}
+				return messageParam;
+			})
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("hello", options), false);
+
+		ChatCompletionUserMessageParam userParam = request.messages().get(0).asUser();
+		assertThat(userParam._additionalProperties()).containsEntry("custom_provider_field",
+				JsonValue.from("custom_value"));
+	}
+
+	@Test
+	void messageParamCustomizersApplyInRegistrationOrderAndCanBeReplaced() {
+		List<String> executionOrder = new ArrayList<>();
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+
+		OpenAiMessageParamCustomizer replacedCustomizer = (message, messageParam) -> {
+			executionOrder.add("replaced");
+			return messageParam;
+		};
+		OpenAiMessageParamCustomizer firstCustomizer = (message, messageParam) -> {
+			executionOrder.add("first");
+			if (messageParam.isUser()) {
+				return ChatCompletionMessageParam.ofUser(messageParam.asUser()
+					.toBuilder()
+					.putAdditionalProperty("step", JsonValue.from("first"))
+					.build());
+			}
+			return messageParam;
+		};
+		OpenAiMessageParamCustomizer secondCustomizer = (message, messageParam) -> {
+			executionOrder.add("second");
+			if (messageParam.isUser()) {
+				return ChatCompletionMessageParam.ofUser(messageParam.asUser()
+					.toBuilder()
+					.putAdditionalProperty("step", JsonValue.from("second"))
+					.build());
+			}
+			return messageParam;
+		};
+
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.messageParamCustomizer(replacedCustomizer)
+			.messageParamCustomizers(List.of(firstCustomizer, secondCustomizer))
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("hello", options), false);
+
+		assertThat(executionOrder).containsExactly("first", "second");
+		assertThat(request.messages().get(0).asUser()._additionalProperties()).containsEntry("step",
+				JsonValue.from("second"));
+	}
+
+	@Test
+	void messageParamCustomizerRejectsNullArgumentsAndNullReturn() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+
+		assertThatThrownBy(() -> OpenAiChatModel.builder().messageParamCustomizer(null))
+			.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> OpenAiChatModel.builder().messageParamCustomizers(null))
+			.isInstanceOf(IllegalArgumentException.class);
+
+		OpenAiChatModel nullReturningModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.messageParamCustomizer((message, messageParam) -> null)
+			.build();
+
+		assertThatThrownBy(() -> nullReturningModel.createRequest(new Prompt("hello", options), false))
+			.isInstanceOf(NullPointerException.class);
 	}
 
 	private static ChatCompletion chatCompletion(String model, String content) {
