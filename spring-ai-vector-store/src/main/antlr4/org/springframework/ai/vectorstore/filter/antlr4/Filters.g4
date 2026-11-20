@@ -32,10 +32,10 @@ booleanExpression
     | identifier (NOT IN | NIN) constantArray                     # NinExpression
     | identifier IS NULL                                          # IsNullExpression
     | identifier IS NOT NULL                                      # IsNotNullExpression
-    | left=booleanExpression operator=AND right=booleanExpression # AndExpression
-    | left=booleanExpression operator=OR right=booleanExpression  # OrExpression
     | LEFT_PARENTHESIS booleanExpression RIGHT_PARENTHESIS        # GroupExpression
     | NOT booleanExpression                                       # NotExpression
+    | left=booleanExpression operator=AND right=booleanExpression # AndExpression
+    | left=booleanExpression operator=OR right=booleanExpression  # OrExpression
     ;
 
 constantArray
