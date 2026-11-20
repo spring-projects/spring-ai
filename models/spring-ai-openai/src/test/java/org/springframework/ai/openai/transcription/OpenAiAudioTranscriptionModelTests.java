@@ -200,7 +200,7 @@ class OpenAiAudioTranscriptionModelTests {
 	@Test
 	void optionsBuilderMergeOverridesNonNullValues() {
 		OpenAiAudioTranscriptionOptions base = OpenAiAudioTranscriptionOptions.builder()
-			.model("whisper-1")
+			.model(OpenAiAudioTranscriptionOptions.DEFAULT_TRANSCRIPTION_MODEL)
 			.language("en")
 			.temperature(0.5f)
 			.build();
@@ -215,7 +215,7 @@ class OpenAiAudioTranscriptionModelTests {
 			.merge(override)
 			.build();
 
-		assertThat(merged.getModel()).isEqualTo("whisper-1");
+		assertThat(merged.getModel()).isEqualTo(OpenAiAudioTranscriptionOptions.DEFAULT_TRANSCRIPTION_MODEL);
 		assertThat(merged.getLanguage()).isEqualTo("de");
 		assertThat(merged.getPrompt()).isEqualTo("new prompt");
 		assertThat(merged.getTemperature()).isEqualTo(0.5f);

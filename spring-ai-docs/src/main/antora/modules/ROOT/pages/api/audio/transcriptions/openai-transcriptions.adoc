@@ -93,7 +93,7 @@ The prefix `spring.ai.openai.audio.transcription` is used as the property prefix
 | spring.ai.openai.audio.transcription.api-key    | The API Key           |  -
 | spring.ai.openai.audio.transcription.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.audio.transcription.project-id      | Optionally, you can specify which project is used for an API request. |  -
-| spring.ai.openai.audio.transcription.model  | ID of the model to use for transcription. Available models: `gpt-4o-transcribe` (speech-to-text powered by GPT-4o), `gpt-4o-mini-transcribe` (speech-to-text powered by GPT-4o mini), `gpt-4o-transcribe-diarize` (speaker diarization), or `whisper-1` (general-purpose speech recognition model, default). |  whisper-1
+| spring.ai.openai.audio.transcription.model  | ID of the model to use for transcription. Available models: `gpt-transcribe` (default), `gpt-live-transcribe`, `gpt-4o-transcribe` (speech-to-text powered by GPT-4o), `gpt-4o-mini-transcribe` (speech-to-text powered by GPT-4o mini), `gpt-4o-transcribe-diarize` (speaker diarization), or `whisper-1` (deprecated). |  gpt-transcribe
 | spring.ai.openai.audio.transcription.response-format | The format of the transcript output: `json`, `text`, `srt`, `verbose_json`, `vtt`, or `diarized_json` (speaker-labeled segments, requires `gpt-4o-transcribe-diarize`). |  text
 | spring.ai.openai.audio.transcription.prompt | An optional text to guide the model's style or continue a previous audio segment. The prompt should match the audio language. |
 | spring.ai.openai.audio.transcription.language | The language of the input audio. Supplying the input language in ISO-639-1 format will improve accuracy and latency. |
