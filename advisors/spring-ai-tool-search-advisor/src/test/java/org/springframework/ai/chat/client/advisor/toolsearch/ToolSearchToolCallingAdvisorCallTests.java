@@ -770,6 +770,106 @@ public class ToolSearchToolCallingAdvisorCallTests {
 			.containsExactlyInAnyOrder("toolSearchTool", "weather", "clothing");
 	}
 
+	/**
+	 * A tool discovered in one iteration stays available in a later iteration even when
+	 * the prompt no longer carries the tool search response, for example when a
+	 * downstream memory advisor restores the conversation after this advisor prepared the
+	 * iteration.
+	 */
+	@Test
+	void testAccumulation_keepsDiscoveredToolWhenSearchResponseIsNoLongerInPrompt() {
+		ToolSearchToolCallingAdvisor advisor = ToolSearchToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.toolIndex(this.toolIndex)
+			.build();
+
+		when(this.toolCallingManager.resolveToolDefinitions(any(ToolCallingChatOptions.class))).thenReturn(List.of());
+
+		TestToolCallingChatOptions toolOptions = new TestToolCallingChatOptions();
+		toolOptions.setToolCallbacks(List.of(mockCallback("weather")));
+
+		ToolResponseMessage searchResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id1", "toolSearchTool", "[\"weather\"]")))
+			.build();
+
+		ToolCallingChatOptions afterSearch = captureToolOptionsForPrompt(advisor,
+				List.of(new UserMessage("test"), searchResponse), toolOptions);
+		assertThat(afterSearch.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.contains("toolSearchTool", "weather");
+
+		// The next iteration carries only the failed tool call: the search response is
+		// gone from the prompt.
+		ToolResponseMessage toolError = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id2", "weather", "invalid code")))
+			.build();
+
+		ToolCallingChatOptions afterError = captureToolOptionsForPrompt(advisor,
+				List.of(new UserMessage("test"), toolError), toolOptions);
+		assertThat(afterError.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.contains("toolSearchTool", "weather");
+	}
+
+	@Test
+	void testNonAccumulation_doesNotKeepDiscoveredToolWhenSearchResponseIsNoLongerInPrompt() {
+		ToolSearchToolCallingAdvisor advisor = ToolSearchToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.toolIndex(this.toolIndex)
+			.referenceToolNameAccumulation(false)
+			.build();
+
+		when(this.toolCallingManager.resolveToolDefinitions(any(ToolCallingChatOptions.class))).thenReturn(List.of());
+
+		TestToolCallingChatOptions toolOptions = new TestToolCallingChatOptions();
+		toolOptions.setToolCallbacks(List.of(mockCallback("weather")));
+
+		ToolResponseMessage searchResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id1", "toolSearchTool", "[\"weather\"]")))
+			.build();
+
+		ToolCallingChatOptions afterSearch = captureToolOptionsForPrompt(advisor,
+				List.of(new UserMessage("test"), searchResponse), toolOptions);
+		assertThat(afterSearch.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.contains("toolSearchTool", "weather");
+
+		ToolResponseMessage toolError = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id2", "weather", "invalid code")))
+			.build();
+
+		ToolCallingChatOptions afterError = captureToolOptionsForPrompt(advisor,
+				List.of(new UserMessage("test"), toolError), toolOptions);
+		assertThat(afterError.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactly("toolSearchTool");
+	}
+
+	@Test
+	void testEvictSession_clearsDiscoveredTools() {
+		ToolSearchToolCallingAdvisor advisor = ToolSearchToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.toolIndex(this.toolIndex)
+			.build();
+
+		when(this.toolCallingManager.resolveToolDefinitions(any(ToolCallingChatOptions.class))).thenReturn(List.of());
+
+		TestToolCallingChatOptions toolOptions = new TestToolCallingChatOptions();
+		toolOptions.setToolCallbacks(List.of(mockCallback("weather")));
+
+		ToolResponseMessage searchResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id1", "toolSearchTool", "[\"weather\"]")))
+			.build();
+
+		captureToolOptionsForPrompt(advisor, List.of(new UserMessage("test"), searchResponse), toolOptions);
+		advisor.evictSession("test-session-id");
+
+		ToolResponseMessage toolError = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id2", "weather", "invalid code")))
+			.build();
+
+		ToolCallingChatOptions afterEviction = captureToolOptionsForPrompt(advisor,
+				List.of(new UserMessage("test"), toolError), toolOptions);
+		assertThat(afterEviction.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactly("toolSearchTool");
+	}
+
 	// Helper methods
 
 	private ToolCallback mockCallback(String name) {
