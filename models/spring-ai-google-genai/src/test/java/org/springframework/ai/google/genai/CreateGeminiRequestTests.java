@@ -627,6 +627,69 @@ public class CreateGeminiRequestTests {
 	}
 
 	@Test
+	public void createRequestWithThinkingLevelXHigh() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("DEFAULT_MODEL")
+			.thinkingLevel(GoogleGenAiThinkingLevel.XHIGH)
+			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
+
+		assertThat(request.config().thinkingConfig()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingLevel().get().toString()).isEqualTo("XHIGH");
+	}
+
+	@Test
+	public void createRequestWithSupportedThinkingLevelsOnGemini4Hydrogen() {
+		for (GoogleGenAiThinkingLevel level : List.of(GoogleGenAiThinkingLevel.LOW, GoogleGenAiThinkingLevel.MEDIUM,
+				GoogleGenAiThinkingLevel.HIGH, GoogleGenAiThinkingLevel.XHIGH)) {
+			var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+			GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+					GoogleGenAiChatOptions.builder().model("gemini-4-hydrogen").thinkingLevel(level).build()));
+
+			assertThat(request.config().thinkingConfig()).isPresent();
+			assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
+			assertThat(request.config().thinkingConfig().get().thinkingLevel().get().toString())
+				.isEqualTo(level.name());
+		}
+	}
+
+	@Test
+	public void createRequestWithMinimalThinkingLevelOnGemini4HydrogenThrows() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("gemini-4-hydrogen")
+			.thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL)
+			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		assertThatThrownBy(() -> client.createGeminiRequest(new Prompt("Test message content", options)))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("MINIMAL")
+			.hasMessageContaining("not supported")
+			.hasMessageContaining("gemini-4-hydrogen");
+	}
+
+	@Test
+	public void createRequestWithXHighThinkingLevelOnGemini4CarbonAndArgonThrows() {
+		for (String modelName : List.of("gemini-4-carbon", "gemini-4-argon")) {
+			GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+				.model(modelName)
+				.thinkingLevel(GoogleGenAiThinkingLevel.XHIGH)
+				.build();
+			var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+			assertThatThrownBy(() -> client.createGeminiRequest(new Prompt("Test message content", options)))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("XHIGH")
+				.hasMessageContaining("not supported")
+				.hasMessageContaining(modelName);
+		}
+	}
+
+	@Test
 	public void createRequestWithIncludeServerSideToolInvocationsEnabled() {
 		var client = GoogleGenAiChatModel.builder()
 			.genAiClient(this.genAiClient)
