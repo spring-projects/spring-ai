@@ -18,6 +18,7 @@ package org.springframework.ai.openai;
 
 import java.util.List;
 
+import com.openai.core.ObjectMappers;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionChunk;
 import com.openai.models.chat.completions.ChatCompletionChunk.Choice;
@@ -39,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
  * (e.g. DeepSeek) send them as empty strings instead.
  *
  * @author Jewoo Shin
+ * @author Minju Kim
  */
 class OpenAiChatModelChunkMergerTests {
 
@@ -116,6 +118,66 @@ class OpenAiChatModelChunkMergerTests {
 	}
 
 	@Test
+	void mergeToolCallDeltasWithoutIndex() throws Exception {
+		// Gemini's OpenAI-compatible endpoint streams each tool call whole, in its own
+		// chunk, and omits the 'index' field.
+		ChatCompletionChunk merged = OpenAiChatModel.ChunkMerger.mergeChunks(List.of(parseChunk("""
+				{"id": "c1", "object": "chat.completion.chunk", "created": 1, "model": "gemini",
+				"choices": [{"index": 0, "delta": {"role": "assistant", "tool_calls": [
+				{"id": "call_a", "type": "function",
+				"function": {"name": "tool_a", "arguments": "{\\"a\\":1}"}}]}}]}
+				"""), parseChunk("""
+				{"id": "c1", "object": "chat.completion.chunk", "created": 1, "model": "gemini",
+				"choices": [{"index": 0, "delta": {"role": "assistant", "tool_calls": [
+				{"id": "call_b", "type": "function",
+				"function": {"name": "tool_b", "arguments": "{\\"b\\":2}"}}]}}]}
+				"""), finishChunk()));
+
+		List<ToolCall> toolCalls = merged.choices().get(0).delta().toolCalls().orElseThrow();
+		assertThat(toolCalls).hasSize(2);
+		assertThat(toolCalls.get(0).id()).contains("call_a");
+		assertThat(toolCalls.get(0).function().orElseThrow().name()).contains("tool_a");
+		assertThat(toolCalls.get(0).function().orElseThrow().arguments()).contains("{\"a\":1}");
+		assertThat(toolCalls.get(1).id()).contains("call_b");
+		assertThat(toolCalls.get(1).function().orElseThrow().name()).contains("tool_b");
+		assertThat(toolCalls.get(1).function().orElseThrow().arguments()).contains("{\"b\":2}");
+
+		List<ChatCompletionMessageFunctionToolCall> functionToolCalls = OpenAiChatModel.ChunkMerger
+			.chunkToChatCompletion(merged)
+			.choices()
+			.get(0)
+			.message()
+			.toolCalls()
+			.orElseThrow()
+			.stream()
+			.map(toolCall -> toolCall.function().orElseThrow())
+			.toList();
+		assertThat(functionToolCalls).extracting(ChatCompletionMessageFunctionToolCall::id)
+			.containsExactly("call_a", "call_b");
+	}
+
+	@Test
+	void mergeContinuationToolCallDeltasWithoutIndexIntoPreviousCall() throws Exception {
+		// Without an index, a delta that carries no id continues the previous tool call.
+		ChatCompletionChunk merged = OpenAiChatModel.ChunkMerger.mergeChunks(List.of(parseChunk("""
+				{"id": "c1", "object": "chat.completion.chunk", "created": 1, "model": "m",
+				"choices": [{"index": 0, "delta": {"tool_calls": [
+				{"id": "call_a", "type": "function",
+				"function": {"name": "get_weather", "arguments": "{\\"city\\": "}}]}}]}
+				"""), parseChunk("""
+				{"id": "c1", "object": "chat.completion.chunk", "created": 1, "model": "m",
+				"choices": [{"index": 0, "delta": {"tool_calls": [
+				{"function": {"arguments": "\\"Seoul\\"}"}}]}}]}
+				"""), finishChunk()));
+
+		List<ToolCall> toolCalls = merged.choices().get(0).delta().toolCalls().orElseThrow();
+		assertThat(toolCalls).hasSize(1);
+		assertThat(toolCalls.get(0).id()).contains("call_a");
+		assertThat(toolCalls.get(0).function().orElseThrow().name()).contains("get_weather");
+		assertThat(toolCalls.get(0).function().orElseThrow().arguments()).contains("{\"city\": \"Seoul\"}");
+	}
+
+	@Test
 	void chunkToChatCompletionRequiresToolCallId() {
 		ChatCompletionChunk chunk = chunk(FinishReason.TOOL_CALLS,
 				toolCallDelta(0, null, "get_weather", "{\"city\":\"Seoul\"}"));
@@ -182,6 +244,10 @@ class OpenAiChatModelChunkMergerTests {
 			.created(1L)
 			.model("test-model")
 			.build();
+	}
+
+	private static ChatCompletionChunk parseChunk(String json) throws Exception {
+		return ObjectMappers.jsonMapper().readValue(json, ChatCompletionChunk.class);
 	}
 
 	private static ChatCompletionChunk finishChunk() {
