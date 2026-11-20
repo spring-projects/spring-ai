@@ -1357,7 +1357,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * <p>
 	 * Conversion: parses the JSON schema to a Map, extracts "properties" (added via
 	 * {@code putAdditionalProperty()}), extracts "required" fields (added via
-	 * {@code addRequired()}), then builds the Tool with name, description, and schema.
+	 * {@code addRequired()}), keeps every other keyword except "$schema", such as the
+	 * "$defs" that "$ref" pointers resolve against, then builds the Tool with name,
+	 * description, and schema.
 	 * @param toolDefinition the tool definition with name, description, and JSON schema
 	 * @return the Anthropic SDK Tool
 	 * @throws RuntimeException if the JSON schema cannot be parsed
@@ -1366,10 +1368,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private Tool toAnthropicTool(ToolDefinition toolDefinition) {
 		try {
 			// Parse the JSON schema string into a Map
-			var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
-			java.util.Map<String, Object> schemaMap = jsonMapper.readValue(toolDefinition.inputSchema(),
-					new tools.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {
-					});
+			Map<String, Object> schemaMap = AnthropicJsonSchemaUtils.parse(toolDefinition.inputSchema());
 
 			// Build properties via putAdditionalProperty (SDK requires structured input)
 			Tool.InputSchema.Properties.Builder propertiesBuilder = Tool.InputSchema.Properties.builder();
@@ -1392,6 +1391,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 					inputSchemaBuilder.addRequired(req);
 				}
 			}
+
+			// Keep the remaining keywords, such as the "$defs" that "$ref" pointers in
+			// the properties resolve against
+			inputSchemaBuilder.putAllAdditionalProperties(
+					AnthropicJsonSchemaUtils.toAdditionalProperties(schemaMap, "type", "properties", "required"));
 
 			return Tool.builder()
 				.name(toolDefinition.name())

@@ -36,7 +36,6 @@ import com.anthropic.models.messages.ThinkingConfigEnabled;
 import com.anthropic.models.messages.ThinkingConfigParam;
 import com.anthropic.models.messages.ToolChoice;
 import org.jspecify.annotations.Nullable;
-import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -64,6 +63,7 @@ import org.springframework.util.CollectionUtils;
  * @author Austin Dase
  * @author Sebastien Deleuze
  * @author Seeun Kim
+ * @author Raphael Vullriede
  * @since 1.0.0
  * @see AnthropicChatModel
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
@@ -614,19 +614,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		@Override
 		public B outputSchema(@Nullable String outputSchema) {
 			if (outputSchema != null) {
-				Map<String, Object> schemaMap = JSON_MAPPER.readValue(outputSchema,
-						new TypeReference<Map<String, Object>>() {
-						});
-				JsonOutputFormat.Schema.Builder schemaBuilder = JsonOutputFormat.Schema.builder();
-				for (Map.Entry<String, Object> entry : schemaMap.entrySet()) {
-					// Strip JSON Schema meta-fields not supported by the Anthropic
-					// API
-					if ("$schema".equals(entry.getKey()) || "$defs".equals(entry.getKey())) {
-						continue;
-					}
-					schemaBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
-				}
-				JsonOutputFormat jsonOutputFormat = JsonOutputFormat.builder().schema(schemaBuilder.build()).build();
+				Map<String, Object> schemaMap = AnthropicJsonSchemaUtils.parse(outputSchema);
+				JsonOutputFormat.Schema schema = JsonOutputFormat.Schema.builder()
+					.putAllAdditionalProperties(AnthropicJsonSchemaUtils.toAdditionalProperties(schemaMap))
+					.build();
+				JsonOutputFormat jsonOutputFormat = JsonOutputFormat.builder().schema(schema).build();
 				OutputConfig.Builder configBuilder = OutputConfig.builder().format(jsonOutputFormat);
 				if (this.outputConfig != null) {
 					this.outputConfig.effort().ifPresent(configBuilder::effort);
