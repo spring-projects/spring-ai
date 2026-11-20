@@ -1,0 +1,18 @@
+[[upgrade-notes]]
+= Upgrade Notes
+:page-aliases: upgrade-notes.adoc
+
+The pages listed under _In This Section_ describe, release by release, the changes that can affect an application when it moves to a newer Spring AI version.
+The following guides cover larger migrations in detail:
+
+* xref:upgrading/session-memory.adoc[Chat Memory to Session Memory]
+* xref:upgrading/anthropic-sdk.adoc[Anthropic Module to the Official SDK]
+* xref:upgrading/mcp-2-0.adoc[MCP Changes in 2.0]
+* xref:upgrading/text-to-speech.adoc[Text-to-Speech API Changes]
+
+== In This Section
+
+* xref:upgrading/spring-ai-2-1.adoc[Upgrading to 2.1]
+* xref:upgrading/spring-ai-2-0.adoc[Upgrading to 2.0]
+* xref:upgrading/spring-ai-1-x.adoc[Upgrading to 1.0 and 1.1]
+* xref:upgrading/archive.adoc[Pre-1.0 Archive]

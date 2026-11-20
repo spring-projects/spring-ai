@@ -38,6 +38,7 @@ import org.springframework.util.Assert;
  * formatting.
  *
  * @author Christian Tzolov
+ * @author Dimitar Proynov
  */
 public class PDFLayoutTextStripperByArea extends ForkPDFLayoutTextStripper {
 
@@ -148,6 +149,10 @@ public class PDFLayoutTextStripperByArea extends ForkPDFLayoutTextStripper {
 	@Override
 	protected void writePage() throws IOException {
 		for (String region : this.regionArea.keySet()) {
+			// super.writePage() accumulates lines in a field shared across regions;
+			// reset it per region, otherwise each region's output also contains every
+			// previous region's lines, and gap computation leaks across regions too.
+			this.resetLineState();
 			this.charactersByArticle = this.regionCharacterList.get(region);
 			this.output = this.regionText.get(region);
 			super.writePage();

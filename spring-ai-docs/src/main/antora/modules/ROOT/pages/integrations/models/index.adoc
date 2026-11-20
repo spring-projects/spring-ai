@@ -1,0 +1,100 @@
+[[model-providers]]
+= Model Providers
+
+The table shows which xref:models/index.adoc[model types] each provider integration implements.
+Follow a link for the dependency, configuration properties and provider-specific features.
+
+[cols="2,1,1,1,1,1,1,1", options="header"]
+|===
+| Provider | Chat | Embedding | Image | Text to speech | Transcription | Moderation | Decision
+
+| xref:integrations/models/openai/index.adoc[OpenAI]
+| xref:integrations/models/openai/chat.adoc[Yes]
+| xref:integrations/models/openai/embeddings.adoc[Yes]
+| xref:integrations/models/openai/image.adoc[Yes]
+| xref:integrations/models/openai/speech.adoc[Yes]
+| xref:integrations/models/openai/transcription.adoc[Yes]
+| xref:integrations/models/openai/moderation.adoc[Yes]
+| xref:integrations/models/openai/decision.adoc[Yes]
+
+| xref:integrations/models/anthropic/index.adoc[Anthropic]
+| xref:integrations/models/anthropic/chat.adoc[Yes]
+| | | | | |
+
+| xref:integrations/models/google-genai/index.adoc[Google GenAI]
+| xref:integrations/models/google-genai/chat.adoc[Yes]
+| xref:integrations/models/google-genai/embeddings.adoc[Yes]
+| xref:integrations/models/google-genai/image.adoc[Yes]
+| xref:integrations/models/google-genai/speech.adoc[Yes]
+| xref:integrations/models/google-genai/transcription.adoc[Yes]
+| |
+
+| xref:integrations/models/vertex-ai/index.adoc[Google Vertex AI]
+|
+| xref:integrations/models/vertex-ai/text-embeddings.adoc[Yes]
+| | | | |
+
+| xref:integrations/models/bedrock/index.adoc[Amazon Bedrock]
+| xref:integrations/models/bedrock/converse.adoc[Yes]
+| xref:integrations/models/bedrock/cohere-embeddings.adoc[Cohere], xref:integrations/models/bedrock/titan-embeddings.adoc[Titan]
+| | | | |
+
+| xref:integrations/models/mistral-ai/index.adoc[Mistral AI]
+| xref:integrations/models/mistral-ai/chat.adoc[Yes]
+| xref:integrations/models/mistral-ai/embeddings.adoc[Yes]
+| | |
+| xref:integrations/models/mistral-ai/moderation.adoc[Yes]
+|
+
+| xref:integrations/models/ollama/index.adoc[Ollama]
+| xref:integrations/models/ollama/chat.adoc[Yes]
+| xref:integrations/models/ollama/embeddings.adoc[Yes]
+| | | |
+| xref:integrations/models/ollama/decision.adoc[Yes]
+
+| xref:integrations/models/deepseek.adoc[DeepSeek]
+| xref:integrations/models/deepseek.adoc[Yes]
+| | | | | |
+
+| xref:integrations/models/elevenlabs.adoc[ElevenLabs]
+| | |
+| xref:integrations/models/elevenlabs.adoc[Yes]
+| | |
+
+| xref:integrations/models/stability-ai.adoc[Stability AI]
+| |
+| xref:integrations/models/stability-ai.adoc[Yes]
+| | | |
+
+| xref:integrations/models/systemone.adoc[System One]
+| | | | | |
+| xref:integrations/models/systemone.adoc[Yes]
+
+| xref:integrations/models/transformers.adoc[Transformers (ONNX)]
+|
+| xref:integrations/models/transformers.adoc[Yes]
+| | | | |
+
+| xref:integrations/models/postgresml.adoc[PostgresML]
+|
+| xref:integrations/models/postgresml.adoc[Yes]
+| | | | |
+
+| xref:integrations/models/jinfer/index.adoc[Qxotic jinfer] (Community)
+| xref:integrations/models/jinfer/chat.adoc[Yes]
+| xref:integrations/models/jinfer/embeddings.adoc[Yes]
+|
+| xref:integrations/models/jinfer/speech.adoc[Yes]
+| xref:integrations/models/jinfer/transcription.adoc[Yes]
+| |
+|===
+
+For a feature-by-feature comparison of the chat models, see xref:integrations/models/comparison.adoc[Chat Model Comparison].
+
+== Other Ways to Reach a Model
+
+* Services and local servers that expose an OpenAI-compatible API, such as Groq, NVIDIA, Perplexity and Docker Model Runner, are used through the OpenAI module.
+See xref:integrations/models/openai-compatible/index.adoc[OpenAI-Compatible Endpoints].
+* OpenAI models deployed on Azure are used through the OpenAI module.
+See xref:integrations/models/openai/azure.adoc[Azure and Microsoft Foundry].
+* Integrations maintained outside the Spring AI repository are listed under xref:integrations/community/index.adoc[Community-Maintained Integrations].

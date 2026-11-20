@@ -1,0 +1,44 @@
+[[nvidia]]
+= NVIDIA Chat
+:page-aliases: api/chat/nvidia-chat.adoc
+
+The https://docs.api.nvidia.com/nim/reference/llm-apis[NVIDIA LLM API] offers models from many providers through an OpenAI-compatible API.
+Spring AI uses it through the xref:integrations/models/openai/chat.adoc[OpenAI chat model]: you point the OpenAI module at NVIDIA's endpoint and choose a model.
+
+== Configuration
+
+Add the OpenAI starter:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+Create an account on https://build.nvidia.com/explore/discover[build.nvidia.com], choose a model and get an API key from its page.
+Then set the base URL, the key, the model and a maximum number of tokens:
+
+[source,properties]
+----
+spring.ai.openai.base-url=https://integrate.api.nvidia.com/v1
+spring.ai.openai.api-key=${NVIDIA_API_KEY}
+spring.ai.openai.chat.model=meta/llama-3.1-70b-instruct
+spring.ai.openai.chat.max-tokens=2048
+----
+
+IMPORTANT: The NVIDIA LLM API requires the maximum number of tokens to be set, and fails without it.
+
+The OpenAI module passes the base URL to the OpenAI SDK as it is, so it must include the `/v1` path.
+
+All other properties and options are those of the OpenAI chat model, see xref:integrations/models/openai/chat.adoc[OpenAI Chat].
+
+== Differences from OpenAI
+
+Tool calling works when the selected model supports it.
+Which other OpenAI features work depends on the model.
+
+== Example
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/NvidiaWithOpenAiChatModelIT.java[NvidiaWithOpenAiChatModelIT] test shows chat, streaming and tool calling with the NVIDIA LLM API.

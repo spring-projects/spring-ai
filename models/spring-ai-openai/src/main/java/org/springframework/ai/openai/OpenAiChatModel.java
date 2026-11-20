@@ -298,8 +298,8 @@ public final class OpenAiChatModel implements ChatModel {
 				RateLimit rateLimit = OpenAiRateLimit.from(rawResponse.headers());
 
 				if (chatCompletion.choices().isEmpty()) {
-					if (logger.isWarnEnabled()) {
-						logger.warn("No choices returned for prompt: " + prompt);
+					if (logger.isDebugEnabled()) {
+						logger.debug("No choices returned for prompt: " + prompt);
 					}
 					return new ChatResponse(List.of());
 				}

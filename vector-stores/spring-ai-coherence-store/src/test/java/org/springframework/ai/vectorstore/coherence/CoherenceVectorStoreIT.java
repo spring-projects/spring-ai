@@ -68,6 +68,14 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 @Disabled("Crashes on github actions run")
 public class CoherenceVectorStoreIT {
 
+	static {
+		// The cluster members below are started with coherence.serializer=pof, but the
+		// serializer of a cache service is resolved from each member's own
+		// configuration, so without setting it here too, this JVM would join with the
+		// default java serializer and the POF paths would never be exercised.
+		System.setProperty("coherence.serializer", "pof");
+	}
+
 	@RegisterExtension
 	static TestLogsExtension testLogs = new TestLogsExtension();
 
@@ -308,6 +316,76 @@ public class CoherenceVectorStoreIT {
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getMetadata()).containsKeys("meta1", DocumentMetadata.DISTANCE.value());
+		});
+	}
+
+	@Test
+	public void searchWithMetadataKeyCollidingWithMapMethodIsALiteralLookup() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var document = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2026));
+
+			vectorStore.add(List.of(document));
+
+			SearchRequest searchRequest = SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.build();
+
+			// No document carries a literal "size" key, so the filter matches nothing
+			// rather than the metadata map's size() being invoked on the storage member
+			assertThat(vectorStore
+				.similaritySearch(SearchRequest.from(searchRequest).filterExpression("\"size\" >= 0").build()))
+				.isEmpty();
+
+			// Parentheses are not a method call either, so "clear()" is looked up as an
+			// absent key and the comparison against the sentinel matches
+			assertThat(vectorStore.similaritySearch(
+					SearchRequest.from(searchRequest).filterExpression("\"clear()\" != 'sentinel'").build()))
+				.hasSize(1);
+
+			// ... and evaluating it did not empty the metadata map
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.from(searchRequest).filterExpression("country == 'BG'").build());
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getMetadata()).containsEntry("country", "BG").containsEntry("year", 2026);
+
+			truncateMap(context, ((CoherenceVectorStore) vectorStore).getMapName());
+		});
+	}
+
+	@Test
+	public void searchMatchesMetadataFieldNamedAfterAMapMethod() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var document = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("size", 3, "empty", false));
+
+			vectorStore.add(List.of(document));
+
+			SearchRequest searchRequest = SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.build();
+
+			// A metadata field genuinely named after a Map method is still readable,
+			// which also exercises deserializing and evaluating the extractors on the
+			// storage members
+			assertThat(vectorStore
+				.similaritySearch(SearchRequest.from(searchRequest).filterExpression("\"size\" == 3").build()))
+				.hasSize(1);
+
+			assertThat(vectorStore
+				.similaritySearch(SearchRequest.from(searchRequest).filterExpression("\"empty\" == false").build()))
+				.hasSize(1);
+
+			truncateMap(context, ((CoherenceVectorStore) vectorStore).getMapName());
 		});
 	}
 

@@ -1,0 +1,148 @@
+= Metrics Reference
+
+This page lists the metrics that Spring AI's observations produce, with the names they have in Prometheus.
+xref:observability/index.adoc[Observability] describes the observations and their keys.
+
+== How Observations Become Metrics
+
+Spring Boot records two timers for every observation:
+
+* A timer with the name of the observation, for the operations that have completed.
+It has a tag for each low-cardinality key of the observation, and an `error` tag with the exception class name, or `none` when the operation succeeded.
+* A long task timer with the name of the observation followed by `.active`, for the operations that are still running.
+
+Prometheus replaces the dots of a name with underscores and adds the unit and a suffix.
+For the `gen_ai.client.operation` observation, the series are:
+
+[cols="2,3", options="header"]
+|===
+| Series | Meaning
+
+| `gen_ai_client_operation_seconds_count`
+| Number of completed operations
+
+| `gen_ai_client_operation_seconds_sum`
+| Total time of the completed operations
+
+| `gen_ai_client_operation_seconds_max`
+| Longest completed operation in the recent time window
+
+| `gen_ai_client_operation_active_seconds_count`
+| Number of operations running now
+
+| `gen_ai_client_operation_active_seconds_sum`
+| Time the running operations have taken so far
+
+| `gen_ai_client_operation_active_seconds_max`
+| Time the longest running operation has taken so far
+|===
+
+The other observations follow the same pattern.
+Other registries name the series their own way; with OTLP, for example, the timer keeps the name of the observation.
+
+== Timers
+
+[cols="2,3,3", options="header"]
+|===
+| Series prefix | Records | Tags (besides `error`)
+
+| `spring_ai_chat_client`
+| `ChatClient` calls, `call()` and `stream()`
+| `gen_ai_operation_name` (`framework`), `gen_ai_system` (`spring_ai`), `spring_ai_kind` (`chat_client`), `spring_ai_chat_client_stream`
+
+| `spring_ai_advisor`
+| Each advisor of a `ChatClient` call, including the advisors it calls
+| `gen_ai_operation_name` (`framework`), `gen_ai_system` (`spring_ai`), `spring_ai_kind` (`advisor`), `spring_ai_advisor_name`
+
+| `gen_ai_client_operation`
+| Calls of chat, embedding, image, text-to-speech, transcription and decision models
+| `gen_ai_operation_name` (`chat`, `embedding`, `image`, `text_to_speech`, `transcription` or `decision`), `gen_ai_system` (the provider, for example `openai`), `gen_ai_request_model`, and `gen_ai_response_model` for chat, embedding and decision models
+
+| `spring_ai_tool`
+| Tool calls
+| `gen_ai_operation_name` (`execute_tool`), `gen_ai_system` (`spring_ai`), `spring_ai_kind` (`tool_call`), `spring_ai_tool_definition_name`, `spring_ai_tool_type`
+
+| `db_vector_client_operation`
+| Vector store operations
+| `db_operation_name` (`add`, `upsert`, `delete` or `query`), `db_system` (the store, for example `pg_vector`), `spring_ai_kind` (`vector_store`)
+|===
+
+The timers nest like the spans of a xref:observability/index.adoc#_the_trace_of_a_chatclient_call[trace].
+The `spring_ai_chat_client` timer of a call includes the time of its advisors, and each `spring_ai_advisor` timer includes the time of the advisors it calls, so also of the model calls and tool calls inside it.
+Use `gen_ai_client_operation` to measure the time spent in the model.
+
+== Token Usage
+
+Model calls increment the `gen_ai.client.token.usage` counter by the number of tokens the provider reports, exported as `gen_ai_client_token_usage_total`.
+
+[cols="2,3", options="header"]
+|===
+| Tag | Meaning
+
+| `gen_ai_token_type`
+| `input` for prompt tokens, `output` for completion tokens, `total` for both
+
+| `gen_ai_operation_name`, `gen_ai_system`, `gen_ai_request_model`, `gen_ai_response_model`
+| The low-cardinality keys of the model call, as on the `gen_ai_client_operation` timer
+|===
+
+A provider that reports no token usage for a call adds nothing to the counter.
+Sum either `input` and `output` or `total`, not all three.
+
+== Example Queries
+
+Tokens per minute, per model and token type:
+
+[source,promql]
+----
+sum by (gen_ai_request_model, gen_ai_token_type) (
+  rate(gen_ai_client_token_usage_total{gen_ai_token_type!="total"}[5m])
+) * 60
+----
+
+Average duration of chat model calls, per provider:
+
+[source,promql]
+----
+sum by (gen_ai_system) (rate(gen_ai_client_operation_seconds_sum{gen_ai_operation_name="chat"}[5m]))
+/
+sum by (gen_ai_system) (rate(gen_ai_client_operation_seconds_count{gen_ai_operation_name="chat"}[5m]))
+----
+
+Share of failed tool calls, per tool:
+
+[source,promql]
+----
+sum by (spring_ai_tool_definition_name) (rate(spring_ai_tool_seconds_count{error!="none"}[5m]))
+/
+sum by (spring_ai_tool_definition_name) (rate(spring_ai_tool_seconds_count[5m]))
+----
+
+Model calls in progress:
+
+[source,promql]
+----
+sum by (gen_ai_system) (gen_ai_client_operation_active_seconds_count)
+----
+
+Percentiles need histogram buckets, which Spring Boot does not publish by default.
+Turn them on for a timer with a property:
+
+[source,properties]
+----
+management.metrics.distribution.percentiles-histogram.gen_ai.client.operation=true
+----
+
+Then the 95th percentile of the model call duration is:
+
+[source,promql]
+----
+histogram_quantile(0.95,
+  sum by (le, gen_ai_system) (rate(gen_ai_client_operation_seconds_bucket[5m])))
+----
+
+== References
+
+* https://docs.spring.io/spring-boot/reference/actuator/metrics.html[Spring Boot Metrics]
+* https://docs.micrometer.io/micrometer/reference/concepts/naming.html[Micrometer: Naming Meters]
+* https://opentelemetry.io/docs/specs/semconv/gen-ai/[OpenTelemetry Semantic Conventions for Generative AI]

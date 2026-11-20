@@ -1,0 +1,203 @@
+[[chatmodel-tool-calling]]
+= Tool Calling with ChatModel
+:page-aliases: api/tools/chatmodel-tool-calling.adoc
+
+`ChatModel` is the low-level interface to a chat provider.
+It sends tool definitions to the model and returns the model's response, but it does not execute the tool calls in that response: that is the caller's job.
+
+For most applications, xref:tools/index.adoc[`ChatClient`] is the better entry point.
+Its xref:tools/tool-calling-advisor.adoc[`ToolCallingAdvisor`] runs the tool calling loop, and it works together with memory, retrieval and the other xref:advisors/index.adoc[advisors].
+This page is for code that deliberately uses the lower-level API.
+
+[[when-to-use]]
+== When to Use `ChatModel` Directly
+
+Use `ChatModel` directly when:
+
+* you integrate tool calling into an orchestrator of your own, such as a workflow engine or another agent framework, that runs its own loop;
+* you build infrastructure on top of Spring AI, such as a library with its own higher-level API.
+
+For chat applications, retrieval, agents and assistants, use `ChatClient`.
+
+[[no-internal-tool-execution]]
+== No Internal Tool Execution
+
+`ChatModel.call(prompt)` and `ChatModel.stream(prompt)` return the model's response, including any tool call requests, without executing them.
+To execute the tools and call the model again, see <<driving-the-loop-manually>>.
+
+NOTE: In Spring AI 1.x, each `ChatModel` ran its own tool execution loop.
+See xref:upgrading/spring-ai-2-0.adoc#tool-calling-1x-to-2x[Upgrading Tool Calling from 1.x to 2.0] for what changed.
+
+[[passing-tools]]
+== Passing Tools to `ChatModel`
+
+Tools are passed in the chat options of the provider, which all implement `ToolCallingChatOptions`.
+Use the options class of your provider, such as `OpenAiChatOptions`, `AnthropicChatOptions` or `OllamaChatOptions`:
+the chat models expect their own options type, and some reject or ignore other types.
+
+`ToolCallbacks.from(...)` turns objects with `@Tool` methods into callbacks.
+
+[[per-request-tools]]
+=== Per-Request Tools
+
+[source,java]
+----
+ToolCallback[] tools = ToolCallbacks.from(new DateTimeTools());
+
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+	.model("gpt-5.4-mini")
+	.toolCallbacks(tools)
+	.build();
+
+ChatResponse response = chatModel.call(new Prompt("What day is tomorrow?", options));
+----
+
+If the model decides to call a tool, the response contains the call request, and you execute it yourself.
+
+[[default-tools]]
+=== Default Tools
+
+Tools set in the options of the chat model are sent with every request that has no options of its own:
+
+[source,java]
+----
+ChatModel chatModel = OpenAiChatModel.builder()
+	.options(OpenAiChatOptions.builder()
+		.model("gpt-5.4-mini")
+		.toolCallbacks(ToolCallbacks.from(new DateTimeTools()))
+		.build())
+	.build();
+----
+
+WARNING: Default tools are offered to the model on every request.
+Add tools that change data or have other risks per request instead.
+
+[[override-semantics]]
+=== Request Options Replace the Default Options
+
+When a `Prompt` carries options, the chat model uses them instead of its default options, as a whole.
+Nothing is merged: the model name, the temperature, the tools and the tool context all come from the request options.
+The default options apply only to a `Prompt` without options.
+
+To use the default tools plus one more, build the request options from the defaults:
+
+[source,java]
+----
+OpenAiChatOptions defaults = (OpenAiChatOptions) chatModel.getOptions();
+
+List<ToolCallback> tools = new ArrayList<>();
+if (defaults.getToolCallbacks() != null) {
+	tools.addAll(defaults.getToolCallbacks());
+}
+tools.add(otherTool);
+
+OpenAiChatOptions options = defaults.mutate()
+	.toolCallbacks(tools)
+	.build();
+----
+
+NOTE: The OpenAI Responses API model is an exception: when the request options are not `OpenAiResponsesChatOptions`, it combines them with its default options.
+`ChatClient` is different too: its per-call `.tools(...)` add to its `.defaultTools(...)`, see xref:tools/defining.adoc[Defining Tools].
+
+[[driving-the-loop-manually]]
+== Driving the Loop Manually
+
+When the response contains tool calls, execute them and call the model again with the results, until the model answers without tool calls.
+This is the loop that `ToolCallingAdvisor` runs for `ChatClient`.
+
+[[blocking-loop]]
+=== Blocking
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+	.model("gpt-5.4-mini")
+	.toolCallbacks(ToolCallbacks.from(new WeatherTools()))
+	.build();
+
+Prompt prompt = new Prompt("What is the weather in Amsterdam and Paris?", options);
+ChatResponse response = chatModel.call(prompt);
+
+while (response.hasToolCalls()) {
+	ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response);
+	if (result.returnDirect()) {
+		break; // the tool results are the answer, see Return Direct
+	}
+	prompt = new Prompt(result.conversationHistory(), options);
+	response = chatModel.call(prompt);
+}
+----
+
+* `ToolCallingManager` executes the tool calls.
+Spring Boot auto-configures a `DefaultToolCallingManager`; without Spring Boot, build one with `ToolCallingManager.builder().build()`.
+* `executeToolCalls(prompt, response)` executes the tools that the model asked for and returns a `ToolExecutionResult`.
+* `result.conversationHistory()` holds the messages of the prompt, the model's tool call request and the tool results.
+Use it as the messages of the next prompt.
+* `result.returnDirect()` is `true` when all the called tools return their result directly, see <<return-direct>>.
+
+[[streaming-loop]]
+=== Streaming
+
+With `stream()`, aggregate the chunks of each round with `MessageAggregator` before you check for tool calls.
+You can pass the chunks on, for example to a server-sent events endpoint, while they are aggregated:
+
+[source,java]
+----
+Prompt prompt = new Prompt("What is the weather in Amsterdam and Paris?", options);
+
+while (true) {
+	AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+	new MessageAggregator()
+		.aggregate(chatModel.stream(prompt).doOnNext(chunk -> forwardToClient(chunk)), aggregated::set)
+		.blockLast();
+
+	ChatResponse response = aggregated.get();
+	if (!response.hasToolCalls()) {
+		break;
+	}
+	ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response);
+	if (result.returnDirect()) {
+		break;
+	}
+	prompt = new Prompt(result.conversationHistory(), options);
+}
+----
+
+For the same pattern with `ChatClient` and its advisors, see xref:tools/tool-calling-advisor.adoc#user-controlled-streaming[ToolCallingAdvisor: User-Controlled Streaming].
+
+[[tool-context]]
+== Tool Context
+
+Tool context passes data that is not meant for the model, such as a tenant id, to the tools.
+Set it in the options:
+
+[source,java]
+----
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+	.model("gpt-5.4-mini")
+	.toolCallbacks(ToolCallbacks.from(new CustomerTools()))
+	.toolContext(Map.of("tenantId", "acme"))
+	.build();
+
+chatModel.call(new Prompt("Tell me about customer 42", options));
+----
+
+Like the tools, the tool context of request options replaces the default one.
+See xref:tools/reference.adoc#tool-context[Tool Context] for how a tool reads it.
+
+[[return-direct]]
+== Return Direct
+
+`executeToolCalls(...)` honors the `returnDirect` flag of the tools.
+`ToolExecutionResult.returnDirect()` is `true` only when every tool called in that round has `returnDirect = true`.
+The tool results are then the answer, and you skip the next model call.
+See xref:tools/reference.adoc#return-direct[Return Direct] for how to set the flag on a tool.
+
+[[see-also]]
+== See Also
+
+* xref:tools/index.adoc[Tool Calling], the `ChatClient` path
+* xref:tools/tool-calling-advisor.adoc[`ToolCallingAdvisor`], which runs the loop for `ChatClient`
+* xref:upgrading/spring-ai-2-0.adoc#tool-calling-1x-to-2x[Upgrading Tool Calling from 1.x to 2.0]

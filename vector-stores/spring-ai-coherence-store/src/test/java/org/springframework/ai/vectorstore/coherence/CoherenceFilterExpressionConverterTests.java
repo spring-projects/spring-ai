@@ -16,10 +16,20 @@
 
 package org.springframework.ai.vectorstore.coherence;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import com.oracle.coherence.ai.DocumentChunk;
+import com.oracle.coherence.ai.Float32Vector;
+import com.tangosol.io.DefaultSerializer;
+import com.tangosol.io.Serializer;
+import com.tangosol.io.pof.ConfigurablePofContext;
+import com.tangosol.util.ExternalizableHelper;
+import com.tangosol.util.Filter;
 import com.tangosol.util.Filters;
 import com.tangosol.util.ValueExtractor;
 import com.tangosol.util.extractor.ChainedExtractor;
-import com.tangosol.util.extractor.UniversalExtractor;
+import com.tangosol.util.filter.ExtractorFilter;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
@@ -87,7 +97,8 @@ public class CoherenceFilterExpressionConverterTests {
 	}
 
 	private ValueExtractor extractor(String property) {
-		return new ChainedExtractor(new UniversalExtractor<>("metadata"), new UniversalExtractor<>(property));
+		return new ChainedExtractor(CoherenceFilterExpressionConverter.MetadataExtractor.INSTANCE,
+				new CoherenceFilterExpressionConverter.MetadataKeyExtractor(property));
 	}
 
 	@Test
@@ -145,6 +156,123 @@ public class CoherenceFilterExpressionConverterTests {
 	void testCategoryWithNumericComparison() {
 		final Expression e = new FilterExpressionTextParser().parse("categoryId >= 5");
 		assertThat(CONVERTER.convert(e)).isEqualTo(Filters.greaterEqual(extractor("categoryId"), 5));
+	}
+
+	@Test
+	void testQuotedIdentifierWithoutParenthesesStillWorks() {
+		final Expression e = new FilterExpressionTextParser().parse("\"field with spaces\" == 'value'");
+		assertThat(CONVERTER.convert(e)).isEqualTo(Filters.equal(extractor("field with spaces"), "value"));
+	}
+
+	@Test
+	void testQuotedIdentifierWithParenthesesIsALiteralKey() {
+		// Parentheses are not special: their use is never interpreted as a Coherence
+		// method expression.
+		final Expression e = new FilterExpressionTextParser().parse("\"size()\" == 2");
+		assertThat(CONVERTER.convert(e)).isEqualTo(Filters.equal(extractor("size()"), 2));
+	}
+
+	@Test
+	void testQuotedIdentifierNamedClearIsALiteralKey() {
+		final Expression e = new FilterExpressionTextParser().parse("\"clear()\" != 'sentinel'");
+		assertThat(CONVERTER.convert(e)).isEqualTo(Filters.notEqual(extractor("clear()"), "sentinel"));
+	}
+
+	@Test
+	void quotedIdentifierNamedSizeDoesNotInvokeMapSizeMethod() {
+		final Expression e = new FilterExpressionTextParser().parse("\"size\" >= 0");
+		final Filter<?> filter = CONVERTER.convert(e);
+
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("country", "BG");
+		metadata.put("city", "Sofia");
+
+		assertThat(evaluate(filter, new DocumentChunk("hello", metadata, new Float32Vector(new float[] { 1.0f }))))
+			.isFalse();
+	}
+
+	@Test
+	void quotedIdentifierNamedEmptyDoesNotInvokeMapIsEmptyMethod() {
+		final Expression e = new FilterExpressionTextParser().parse("\"empty\" == false");
+		final Filter<?> filter = CONVERTER.convert(e);
+
+		Map<String, Object> metadata = new HashMap<>();
+
+		assertThat(evaluate(filter, new DocumentChunk("hello", metadata, new Float32Vector(new float[] { 1.0f }))))
+			.isFalse();
+	}
+
+	@Test
+	void quotedIdentifierNamedClearParenthesesDoesNotMutateMetadata() {
+		final Expression e = new FilterExpressionTextParser().parse("\"clear()\" != 'sentinel'");
+		final Filter<?> filter = CONVERTER.convert(e);
+
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("country", "BG");
+		metadata.put("city", "Sofia");
+
+		// The metadata map has no literal "clear()" key, so the literal lookup
+		// returns null, and null is legitimately not equal to "sentinel"
+		assertThat(evaluate(filter, new DocumentChunk("hello", metadata, new Float32Vector(new float[] { 1.0f }))))
+			.isTrue();
+		assertThat(metadata).hasSize(2);
+	}
+
+	@Test
+	void quotedIdentifierMatchesALiteralMetadataFieldActuallyNamedSize() {
+		final Expression e = new FilterExpressionTextParser().parse("\"size\" == 3");
+		final Filter<?> filter = CONVERTER.convert(e);
+
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("size", 3);
+
+		assertThat(evaluate(filter, new DocumentChunk("hello", metadata, new Float32Vector(new float[] { 1.0f }))))
+			.isTrue();
+	}
+
+	@Test
+	void convertedFilterUsesReflectionFreeExtractors() {
+		final Expression e = new FilterExpressionTextParser().parse("country == 'BG'");
+		final Filter<?> filter = CONVERTER.convert(e);
+
+		// Coherence extractor equality is canonical-name based, so it cannot tell a
+		// reflective extractor apart from a literal one with the same name. Assert the
+		// concrete extractor types instead.
+		final ValueExtractor[] extractors = ((ChainedExtractor) ((ExtractorFilter) filter).getValueExtractor())
+			.getExtractors();
+		assertThat(extractors).hasSize(2);
+		assertThat(extractors[0]).isInstanceOf(CoherenceFilterExpressionConverter.MetadataExtractor.class);
+		assertThat(extractors[1]).isInstanceOf(CoherenceFilterExpressionConverter.MetadataKeyExtractor.class);
+	}
+
+	@Test
+	void convertedFilterSurvivesJavaSerialization() {
+		assertRoundTrips(new DefaultSerializer());
+	}
+
+	@Test
+	void convertedFilterSurvivesPofSerialization() {
+		// A cluster configured with coherence.serializer=pof can only serialize
+		// extractors registered as POF user types, which is what
+		// spring-ai-coherence-pof-config.xml does through the PofConfigProvider SPI.
+		assertRoundTrips(new ConfigurablePofContext("coherence-pof-config.xml"));
+	}
+
+	// Filters are shipped to the storage members that evaluate them, so every extractor
+	// they hold must round-trip through whichever serializer the cluster is configured
+	// with.
+	private void assertRoundTrips(Serializer serializer) {
+		final Expression e = new FilterExpressionTextParser().parse("country == 'BG'");
+		final Filter<?> filter = CONVERTER.convert(e);
+
+		final Object deserialized = ExternalizableHelper.fromBinary(ExternalizableHelper.toBinary(filter, serializer),
+				serializer);
+
+		assertThat(deserialized).isEqualTo(filter);
+	}
+
+	private boolean evaluate(Filter<?> filter, DocumentChunk chunk) {
+		return ((Filter<DocumentChunk>) filter).evaluate(chunk);
 	}
 
 }

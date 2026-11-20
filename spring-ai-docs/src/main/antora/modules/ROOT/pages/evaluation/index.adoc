@@ -1,0 +1,15 @@
+[[evaluation]]
+= Evaluation and Testing
+
+The output of a model is not deterministic, so testing an AI application means evaluating answers as well as asserting on them.
+Spring AI helps in two ways.
+
+== Evaluating Responses
+
+* xref:evaluation/evaluators.adoc[Evaluators] describes the `Evaluator` interface and the evaluators that ship with Spring AI, which check a response for relevancy and factual accuracy.
+* xref:evaluation/llm-as-judge.adoc[LLM as a Judge] shows how to use one model to score the answers of another.
+
+== Running Models and Stores Locally
+
+* xref:evaluation/testcontainers.adoc[Testcontainers] provides service connections for integration tests.
+* xref:evaluation/docker-compose.adoc[Docker Compose Dev Services] starts the services your application needs at development time.

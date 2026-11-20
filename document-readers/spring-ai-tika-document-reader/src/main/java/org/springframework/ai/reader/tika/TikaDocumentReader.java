@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import org.apache.tika.exception.WriteLimitReachedException;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -34,6 +35,7 @@ import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.ExtractedTextFormatter;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
@@ -47,8 +49,14 @@ import org.springframework.util.StringUtils;
  * If you require more specialized handling for PDFs, consider using the
  * PagePdfDocumentReader or ParagraphPdfDocumentReader.
  *
+ * The extracted text is held in memory, so by default this reader extracts at most
+ * {@link #DEFAULT_MAX_CHARACTERS} characters per document and fails if a document exceeds
+ * that limit. Use {@link #TikaDocumentReader(Resource, int, ExtractedTextFormatter)} to
+ * configure a different limit when reading documents from trusted sources.
+ *
  * @author Christian Tzolov
  * @author ikaitist
+ * @author Dimitar Proynov
  */
 
 public class TikaDocumentReader implements DocumentReader {
@@ -59,19 +67,28 @@ public class TikaDocumentReader implements DocumentReader {
 	public static final String METADATA_SOURCE = "source";
 
 	/**
+	 * The default maximum number of characters extracted from a single document. Prevents
+	 * a large or highly expanding document from exhausting the JVM heap. Roughly
+	 * equivalent to a few thousand pages of text, which is far beyond the size of typical
+	 * documents.
+	 */
+	public static final int DEFAULT_MAX_CHARACTERS = 10_000_000;
+
+	/**
 	 * Parser to automatically detect the type of document and extract text.
 	 */
 	private final AutoDetectParser parser;
 
 	/**
-	 * Supplies the handler to manage content extraction. Called on every {@link #get()}.
+	 * Supplies the handler that manages content extraction for a single {@link #get()}
+	 * call.
 	 */
 	private final Supplier<ContentHandler> contentHandlerSupplier;
 
 	/**
-	 * Parsing context containing information about the parsing process.
+	 * The maximum number of characters to extract, or {@code -1} if unlimited.
 	 */
-	private final ParseContext context;
+	private final int maxCharacters;
 
 	/**
 	 * The resource pointing to the document.
@@ -109,33 +126,49 @@ public class TikaDocumentReader implements DocumentReader {
 	}
 
 	/**
-	 * Constructor initializing the reader with a resource and a text formatter. This
-	 * constructor will create a BodyContentHandler that allows for reading large PDFs
-	 * (constrained only by memory)
+	 * Constructor initializing the reader with a resource and a text formatter. Extracts
+	 * at most {@link #DEFAULT_MAX_CHARACTERS} characters.
 	 * @param resource Resource pointing to the document
 	 * @param textFormatter Formatter for the extracted text
 	 */
 	public TikaDocumentReader(Resource resource, ExtractedTextFormatter textFormatter) {
-		this(resource, () -> new BodyContentHandler(-1), textFormatter);
+		this(resource, DEFAULT_MAX_CHARACTERS, textFormatter);
+	}
+
+	/**
+	 * Constructor initializing the reader with a resource, a maximum number of characters
+	 * to extract, and a text formatter.
+	 * @param resource Resource pointing to the document
+	 * @param maxCharacters Maximum number of characters to extract, or {@code -1} to
+	 * disable the limit. Because the extracted text is held in memory, disabling the
+	 * limit is only safe for documents from trusted sources.
+	 * @param textFormatter Formatter for the extracted text
+	 * @throws IllegalArgumentException if {@code maxCharacters} is lower than {@code -1}
+	 * @since 2.0.2.1
+	 */
+	public TikaDocumentReader(Resource resource, int maxCharacters, ExtractedTextFormatter textFormatter) {
+		this(resource, () -> new BodyContentHandler(maxCharacters), maxCharacters, textFormatter);
 	}
 
 	/**
 	 * Constructor initializing the reader with a resource, content handler, and a text
 	 * formatter. The given handler is reused for every call to {@link #get()}, so it
-	 * collects the text of each call on top of the previous ones.
+	 * collects the text of each call on top of the previous ones. Any limit on the
+	 * extracted text is the responsibility of the handler.
 	 * @param resource Resource pointing to the document
 	 * @param contentHandler Handler to manage content extraction
 	 * @param textFormatter Formatter for the extracted text
 	 */
 	public TikaDocumentReader(Resource resource, ContentHandler contentHandler, ExtractedTextFormatter textFormatter) {
-		this(resource, () -> contentHandler, textFormatter);
+		this(resource, () -> contentHandler, -1, textFormatter);
 	}
 
-	private TikaDocumentReader(Resource resource, Supplier<ContentHandler> contentHandlerSupplier,
+	private TikaDocumentReader(Resource resource, Supplier<ContentHandler> contentHandlerSupplier, int maxCharacters,
 			ExtractedTextFormatter textFormatter) {
+		Assert.isTrue(maxCharacters >= -1, "maxCharacters must be -1 or greater");
 		this.parser = new AutoDetectParser();
 		this.contentHandlerSupplier = contentHandlerSupplier;
-		this.context = new ParseContext();
+		this.maxCharacters = maxCharacters;
 		this.resource = resource;
 		this.textFormatter = textFormatter;
 	}
@@ -143,19 +176,35 @@ public class TikaDocumentReader implements DocumentReader {
 	/**
 	 * Extracts and returns the list of documents from the resource.
 	 * @return List of extracted {@link Document}
+	 * @throws IllegalStateException if the extracted text exceeds the configured maximum
+	 * number of characters
 	 */
 	@Override
 	public List<Document> get() {
+		ContentHandler contentHandler = this.contentHandlerSupplier.get();
 		try (InputStream inputStream = this.resource.getInputStream();
 				TikaInputStream stream = TikaInputStream.get(inputStream)) {
-			ContentHandler contentHandler = this.contentHandlerSupplier.get();
-			Metadata parseMetadata = new Metadata();
-			this.parser.parse(stream, contentHandler, parseMetadata, this.context);
+			this.parser.parse(stream, contentHandler, new Metadata(), new ParseContext());
 			return List.of(toDocument(contentHandler.toString()));
 		}
 		catch (Exception e) {
+			if (WriteLimitReachedException.isWriteLimitReached(e)) {
+				throw new IllegalStateException(writeLimitReachedMessage(), e);
+			}
 			throw new RuntimeException(e);
 		}
+	}
+
+	/**
+	 * Returns the message reported when the extracted text exceeds the write limit.
+	 * @return Message describing the exceeded limit
+	 */
+	private String writeLimitReachedMessage() {
+		if (this.maxCharacters < 0) {
+			return "Text extracted from '%s' exceeds the content handler write limit".formatted(resourceName());
+		}
+		return "Text extracted from '%s' exceeds the maximum of %d characters".formatted(resourceName(),
+				this.maxCharacters);
 	}
 
 	/**

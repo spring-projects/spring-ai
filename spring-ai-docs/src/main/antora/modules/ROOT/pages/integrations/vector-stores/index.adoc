@@ -1,0 +1,37 @@
+= Vector Stores
+
+These are the available implementations of the `VectorStore` interface:
+
+* xref:integrations/vector-stores/azure.adoc[Azure AI Search] - The https://learn.microsoft.com/en-us/azure/search/vector-search-overview[Azure] vector store.
+* xref:integrations/vector-stores/apache-cassandra.adoc[Apache Cassandra] - The https://cassandra.apache.org/doc/latest/cassandra/vector-search/overview.html[Apache Cassandra] vector store.
+* xref:integrations/vector-stores/bedrock-knowledge-base.adoc[Amazon Bedrock Knowledge Base] - The https://aws.amazon.com/bedrock/knowledge-bases/[Amazon Bedrock Knowledge Bases] vector store (similarity search only).
+* xref:integrations/vector-stores/chroma.adoc[Chroma Vector Store] - The https://www.trychroma.com/[Chroma] vector store.
+* xref:integrations/vector-stores/coherence.adoc[Oracle Coherence Vector Store] - The https://coherence.community/[Oracle Coherence] vector store.
+* xref:integrations/vector-stores/couchbase.adoc[Couchbase Vector Store] - The https://www.couchbase.com/[Couchbase] vector store.
+* xref:integrations/vector-stores/elasticsearch.adoc[Elasticsearch Vector Store] - The https://www.elastic.co/[Elasticsearch] vector store.
+* xref:integrations/vector-stores/gemfire.adoc[GemFire Vector Store] - The https://tanzu.vmware.com/content/blog/vmware-gemfire-vector-database-extension[GemFire] vector store.
+* xref:integrations/vector-stores/mariadb.adoc[MariaDB Vector Store] - The https://mariadb.com/[MariaDB] vector store.
+* xref:integrations/vector-stores/milvus.adoc[Milvus Vector Store] - The https://milvus.io/[Milvus] vector store.
+* xref:integrations/vector-stores/mongodb.adoc[MongoDB Atlas Vector Store] - The https://www.mongodb.com/atlas/database[MongoDB Atlas] vector store.
+* xref:integrations/vector-stores/neo4j.adoc[Neo4j Vector Store] - The https://neo4j.com/[Neo4j] vector store.
+* xref:integrations/vector-stores/opensearch.adoc[OpenSearch Vector Store] - The https://opensearch.org/platform/search/vector-database.html[OpenSearch] vector store.
+* xref:integrations/vector-stores/oracle.adoc[Oracle Vector Store] - The https://docs.oracle.com/en/database/oracle/oracle-database/23/vecse/overview-ai-vector-search.html[Oracle Database] vector store.
+* xref:integrations/vector-stores/pgvector.adoc[PgVector Store] - The https://github.com/pgvector/pgvector[PostgreSQL/PGVector] vector store.
+* xref:integrations/vector-stores/pinecone.adoc[Pinecone Vector Store] - https://www.pinecone.io/[Pinecone] vector store.
+* xref:integrations/vector-stores/qdrant.adoc[Qdrant Vector Store] - https://www.qdrant.tech/[Qdrant] vector store.
+* xref:integrations/vector-stores/redis.adoc[Redis Vector Store] - The https://redis.io/[Redis] vector store.
+* xref:integrations/vector-stores/typesense.adoc[Typesense Vector Store] - The https://typesense.org/docs/27.1/api/vector-search.html[Typesense] vector store.
+* xref:integrations/vector-stores/weaviate.adoc[Weaviate Vector Store] - The https://weaviate.io/[Weaviate] vector store.
+* xref:integrations/vector-stores/s3-vector-store.adoc[S3 Vector Store] - The https://aws.amazon.com/s3/features/vectors/[AWS S3] vector store.
+* link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-vector-store/src/main/java/org/springframework/ai/vectorstore/SimpleVectorStore.java[SimpleVectorStore] - A simple implementation of a vector storage, good only for testing purposes.
+
+NOTE: Azure Cosmos DB vector store support is available as an external module maintained by the Azure Cosmos DB team.
+See https://azurecosmosdb.github.io/spring-ai/docs/index.html for more information.
+
+WARNING: The `SimpleVectorStore` implementation is not designed for production use and should only be used for testing or demonstration purposes.
+
+More implementations may be supported in future releases.
+
+If you have a vector database that needs to be supported by Spring AI, open an issue on GitHub or, even better, submit a pull request with an implementation.
+
+Information on each of the `VectorStore` implementations can be found in the subsections of this chapter.

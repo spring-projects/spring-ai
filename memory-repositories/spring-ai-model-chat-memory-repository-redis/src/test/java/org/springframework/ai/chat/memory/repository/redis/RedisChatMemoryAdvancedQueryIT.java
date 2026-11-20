@@ -447,6 +447,103 @@ class RedisChatMemoryAdvancedQueryIT {
 	}
 
 	@Test
+	void shouldNeutralizeContentInjectionInFindByContent() {
+		this.contextRunner.run(context -> {
+			RedisChatMemoryRepository chatMemory = context.getBean(RedisChatMemoryRepository.class);
+
+			// Clear any existing test data
+			chatMemory.findConversationIds().forEach(chatMemory::clear);
+
+			String conversationA = "content-injection-a";
+			String conversationB = "content-injection-b";
+
+			chatMemory.add(conversationA, new UserMessage("apple"));
+			chatMemory.add(conversationB, new UserMessage("banana"));
+
+			// Give Redis time to index the documents
+			Thread.sleep(100);
+
+			// Sanity: a legitimate content pattern matches only its own message
+			assertThat(chatMemory.findByContent("apple", 10)).hasSize(1);
+
+			// A crafted pattern that, unescaped, closes the "@content:(...)" clause and
+			// unions a match-everything tag clause: @content:*) | (@conversation_id:{*}
+			// Expect: pattern treated as a literal content search, matching nothing
+			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> injected = chatMemory
+				.findByContent("*) | (@conversation_id:{*}", 10);
+
+			assertThat(injected).isEmpty();
+
+			// Clean up
+			chatMemory.clear(conversationA);
+			chatMemory.clear(conversationB);
+		});
+	}
+
+	@Test
+	void shouldNeutralizeNegationAndFuzzyOperatorsInFindByContent() {
+		this.contextRunner.run(context -> {
+			RedisChatMemoryRepository chatMemory = context.getBean(RedisChatMemoryRepository.class);
+
+			// Clear any existing test data
+			chatMemory.findConversationIds().forEach(chatMemory::clear);
+
+			String conversationA = "operator-injection-a";
+			String conversationB = "operator-injection-b";
+
+			chatMemory.add(conversationA, new UserMessage("weather today"));
+			chatMemory.add(conversationA, new UserMessage("weather tomorrow"));
+			chatMemory.add(conversationB, new UserMessage("secret banana"));
+
+			// Give Redis time to index the documents
+			Thread.sleep(100);
+
+			// Sanity: a legitimate content pattern matches only its own messages
+			assertThat(chatMemory.findByContent("weather", 10)).hasSize(2);
+
+			// Unescaped, "-zzz" is a negation matching every document, "-weather" selects
+			// exactly the documents NOT containing "weather" (other conversations), and
+			// "~zzz" is an optional term matching everything. All must be treated as
+			// literals, matching nothing.
+			for (String pattern : List.of("-zzz", "-weather", "~zzz", "~weather")) {
+				assertThat(chatMemory.findByContent(pattern, 10)).as("pattern: %s", pattern).isEmpty();
+			}
+
+			// Clean up
+			chatMemory.clear(conversationA);
+			chatMemory.clear(conversationB);
+		});
+	}
+
+	@Test
+	void shouldNotFailOnLoneWildcardOrParameterInFindByContent() {
+		this.contextRunner.run(context -> {
+			RedisChatMemoryRepository chatMemory = context.getBean(RedisChatMemoryRepository.class);
+
+			// Clear any existing test data
+			chatMemory.findConversationIds().forEach(chatMemory::clear);
+
+			String conversationId = "syntax-error-test";
+			chatMemory.add(conversationId, new UserMessage("apple"));
+
+			// Give Redis time to index the documents
+			Thread.sleep(100);
+
+			// Unescaped, these produce a RediSearch syntax error instead of an empty
+			// result
+			for (String pattern : List.of("*", "**", "$x")) {
+				assertThat(chatMemory.findByContent(pattern, 10)).as("pattern: %s", pattern).isEmpty();
+			}
+
+			// Legitimate wildcard usage must keep working
+			assertThat(chatMemory.findByContent("app*", 10)).hasSize(1);
+
+			// Clean up
+			chatMemory.clear(conversationId);
+		});
+	}
+
+	@Test
 	void shouldExecuteCustomQuery() {
 		this.contextRunner.run(context -> {
 			RedisChatMemoryRepository chatMemory = context.getBean(RedisChatMemoryRepository.class);

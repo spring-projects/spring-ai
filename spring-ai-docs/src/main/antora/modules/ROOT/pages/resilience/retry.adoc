@@ -1,0 +1,121 @@
+[[retry]]
+= Retry
+
+Calls to a model provider can fail for reasons that go away on their own, such as rate limiting or a temporary outage.
+Spring AI retries such calls with an exponential backoff.
+How a call is retried depends on the model integration: some integrations use the retry support of Spring AI, and others use the retry support of the provider SDK they are built on.
+
+== Which Integrations Use It
+
+The retry support of Spring AI is a Spring Framework `RetryTemplate` (`org.springframework.core.retry.RetryTemplate`) together with a `ResponseErrorHandler` that turns HTTP error responses into exceptions.
+The following integrations use it, and the `spring.ai.retry` properties apply to them:
+
+* xref:integrations/models/deepseek.adoc[DeepSeek] chat.
+* xref:integrations/models/elevenlabs.adoc[ElevenLabs] text-to-speech.
+* xref:integrations/models/google-genai/index.adoc[Google GenAI] chat, embedding, image, speech and transcription models.
+* xref:integrations/models/mistral-ai/index.adoc[Mistral AI] chat, embedding and moderation models.
+* xref:integrations/models/ollama/index.adoc[Ollama] chat.
+* xref:integrations/models/vertex-ai/text-embeddings.adoc[Google Vertex AI] text embeddings.
+
+The Google GenAI and Google Vertex AI integrations call the provider through the Google SDK, so they use only the `RetryTemplate` and not the `ResponseErrorHandler`.
+The `RetryTemplate` retries only the exceptions listed under <<_exceptions,Exceptions>>, and these integrations do not translate the errors of the Google SDK into them, so the `RetryTemplate` does not retry a failed Google SDK call.
+The HTTP status code properties below apply only to the integrations that call the provider over Spring's `RestClient` or `WebClient`: DeepSeek, ElevenLabs, Mistral AI and Ollama.
+
+The other integrations do not use the `spring.ai.retry` properties:
+
+* xref:integrations/models/openai/index.adoc[OpenAI] uses the retry support of the OpenAI Java SDK.
+Set the number of retries with `spring.ai.openai.max-retries`, which defaults to `3`, or per model, for example with `spring.ai.openai.chat.max-retries`.
+* xref:integrations/models/anthropic/index.adoc[Anthropic] uses the retry support of the Anthropic Java SDK.
+Set the number of retries with `spring.ai.anthropic.max-retries`.
+When it is not set, the SDK default of `2` applies.
+* xref:integrations/models/bedrock/index.adoc[Amazon Bedrock] uses the retry strategy of the AWS SDK.
+* xref:integrations/models/systemone.adoc[System One] has its own retry settings under `spring.ai.systemone.retry`.
+
+== Exceptions
+
+The `ResponseErrorHandler` reports a failed HTTP call as one of two exceptions:
+
+* `TransientAiException` for an error that is worth retrying.
+* `NonTransientAiException` for an error that will not be fixed by retrying, such as an invalid request.
+
+The `RetryTemplate` retries a call that fails with a `TransientAiException` or a `ResourceAccessException`.
+Spring throws a `ResourceAccessException` for an I/O error, such as a refused connection or a read timeout.
+Any other exception, including a `NonTransientAiException`, ends the call at once.
+
+== Configuration Properties
+
+The `spring-ai-autoconfigure-retry` module configures the `RetryTemplate` and the `ResponseErrorHandler` from properties with the `spring.ai.retry` prefix.
+The model integrations that use it list the same properties on their own page.
+
+[cols="3,5,1", options="header"]
+|===
+| Property | Description | Default
+
+| `spring.ai.retry.max-attempts`
+| Maximum number of retries after the first call.
+With the default, a call is made at most 11 times.
+| 10
+
+| `spring.ai.retry.backoff.initial-interval`
+| Initial sleep duration for the exponential backoff policy.
+| 2 sec.
+
+| `spring.ai.retry.backoff.multiplier`
+| Backoff interval multiplier.
+| 5
+
+| `spring.ai.retry.backoff.max-interval`
+| Maximum backoff duration.
+| 3 min.
+
+| `spring.ai.retry.on-client-errors`
+| If `false`, throw a `NonTransientAiException` and do not retry for `4xx` client error codes.
+If `true`, throw a `TransientAiException` and retry.
+| false
+
+| `spring.ai.retry.exclude-on-http-codes`
+| List of HTTP status codes that should not trigger a retry.
+| empty
+
+| `spring.ai.retry.on-http-codes`
+| List of HTTP status codes that should trigger a retry.
+A code in this list is retried even when it is a `4xx` code.
+| empty
+|===
+
+== Example
+
+To give up sooner and wait less between attempts:
+
+[source,properties]
+----
+spring.ai.retry.max-attempts=3
+spring.ai.retry.backoff.initial-interval=1s
+spring.ai.retry.backoff.multiplier=2
+spring.ai.retry.backoff.max-interval=10s
+----
+
+== Replacing the Beans
+
+The auto-configured `RetryTemplate` and `ResponseErrorHandler` beans back off when the application defines its own.
+Define a bean of either type to replace the default, for example to retry other exceptions or to treat some status codes differently:
+
+[source,java]
+----
+@Bean
+RetryTemplate retryTemplate() {
+    RetryPolicy retryPolicy = RetryPolicy.builder()
+        .maxRetries(3)
+        .includes(TransientAiException.class)
+        .includes(ResourceAccessException.class)
+        .delay(Duration.ofSeconds(1))
+        .multiplier(2)
+        .maxDelay(Duration.ofSeconds(10))
+        .build();
+    return new RetryTemplate(retryPolicy);
+}
+----
+
+The `spring.ai.retry` properties do not apply to a bean you define yourself.
+When you build a model without Spring Boot, pass a `RetryTemplate` to its builder, for example with `OllamaChatModel.builder().retryTemplate(...)`.
+Without one, the model uses `RetryUtils.DEFAULT_RETRY_TEMPLATE`, which has the same defaults as the properties.

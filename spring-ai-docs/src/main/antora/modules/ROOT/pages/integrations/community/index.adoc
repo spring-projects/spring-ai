@@ -1,0 +1,71 @@
+[[community-integrations]]
+= Community-Maintained Integrations
+:page-aliases: api/chat/oci-genai-chat.adoc, api/embeddings/oci-genai-embeddings.adoc, api/vectordbs/azure-cosmos-db.adoc
+
+The integrations on this page are maintained outside the Spring AI repository.
+Their own documentation is the source of truth for setup and configuration.
+
+[cols="2,2,3", options="header"]
+|===
+| Integration | Provides | Documentation
+
+| Qxotic jinfer
+| Chat, embedding, text-to-speech and transcription models that run inside the JVM
+| xref:integrations/models/jinfer/index.adoc[Qxotic jinfer]
+
+| Oracle Cloud Infrastructure Generative AI
+| Chat and embedding models
+| https://github.com/oracle/spring-cloud-oracle/tree/main/spring-ai-oracle[Spring Cloud Oracle]
+
+| Azure Cosmos DB
+| Vector store
+| https://azurecosmosdb.github.io/spring-ai/docs/index.html[Azure Cosmos DB for Spring AI]
+
+| Spring AI Agent Utils
+| Agent tools, Agent Skills, long-term memory, sub-agents and sandboxed execution
+| xref:agents/agent-utils.adoc[Spring AI Agent Utils]
+
+| MCP Security
+| OAuth 2.0 and API key security for MCP servers and clients
+| xref:mcp/security.adoc[MCP Security]
+
+| [[a2a]]Spring AI A2A
+| Exposes a Spring AI agent, built on `ChatClient`, as a server of the https://a2a-protocol.org/[Agent2Agent (A2A) protocol]
+| https://github.com/spring-ai-community/spring-ai-a2a[spring-ai-a2a]
+
+| [[acp]]ACP Spring Boot Autoconfiguration
+| Auto-configured clients, agents and transports for the https://agentclientprotocol.com[Agent Client Protocol (ACP)] Java SDK
+| https://github.com/spring-ai-community/acp-autoconfig[acp-autoconfig]
+
+| [[acp-harness-client]]Spring AI ACP Harness Client
+| One programming model and configuration for coding agents that speak ACP, such as Goose, Codex and OpenCode
+| https://spring-ai-community.github.io/spring-ai-acp-harness-client/[spring-ai-acp-harness-client]
+
+| [[decision-extensions]]Spring AI Decision Extensions
+| Model-as-a-judge, self-refine and guardrail advisors, and patterns built on the xref:models/decision.adoc[`DecisionModel`] API
+| xref:models/decision.adoc#decision-extensions[Building on Decision Models]
+
+| [[session-extensions]]Spring AI Session Extensions
+| Add-ons for xref:memory/session/index.adoc[session memory]: a turn status for each session, and tool call confirmations that are kept in the session log and resumed on any instance
+| link:{session-extensions-docs}/[spring-ai-session-extensions]
+
+| [[agentcore]]Spring AI AgentCore
+| Amazon Bedrock AgentCore for Spring AI: runtime endpoints, identity, memory, browser, code interpreter and more
+| https://github.com/spring-ai-community/spring-ai-agentcore[spring-ai-agentcore]
+|===
+
+Pages about a community-maintained project outside this section are marked "(Community)" in the navigation.
+The main page of each project starts with a "Community-maintained" note that links to the project's own documentation and issue tracker.
+
+[[community-support]]
+== Support and Security
+
+Community projects extend Spring AI with integrations and features beyond the core project, and many of them are well worth using.
+They are maintained by their own authors, not by the Spring AI team, and come with different terms:
+
+* *Support.* They are not covered by the Spring AI https://spring.io/support-policy[support policy] or by commercial support, and the Spring AI BOM does not manage their versions.
+* *Security.* They are outside the https://spring.io/security-policy[Spring security policy]: each project handles vulnerability reports, fixes and disclosure itself, on its own schedule.
+* *Versions.* Each project follows its own release schedule and versioning; a 0.x version can change its API between releases.
+* *Compatibility.* Each release targets specific Spring AI versions: check the project's documentation before you upgrade either one.
+
+Before you use a community project in production, evaluate it as you would any other third-party dependency: its release history, how active its issue tracker is, and how it handles security reports.

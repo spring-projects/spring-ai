@@ -1,0 +1,15 @@
+[[resilience]]
+= Resilience and Safety
+
+Model providers fail, throttle and time out, and both users and models produce content you may not want to pass on.
+This section covers the features that help an application cope.
+
+* xref:resilience/retry.adoc[Retry] describes how failed model calls are retried and how to tune it.
+* xref:resilience/guardrails.adoc[Guardrails] describes how to block unwanted input before it reaches the model, and how to check content with a moderation model.
+
+Related topics:
+
+* xref:structured-output/validation.adoc[Schema Validation and Self-Correction] retries when the model returns output that does not match the expected schema.
+* xref:tools/confirmation.adoc[Tool Call Confirmation] asks a person to approve a tool call before it runs.
+* xref:observability/index.adoc[Observability] shows what the application and the model are doing.
+* xref:agents/agent-utils.adoc[Spring AI Agent Utils] (Community) runs the shell commands of an agent in a Docker container, and stops a running agent on a signal.

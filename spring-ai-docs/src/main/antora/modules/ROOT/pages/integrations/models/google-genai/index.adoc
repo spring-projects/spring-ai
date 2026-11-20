@@ -1,0 +1,31 @@
+[[google-genai]]
+= Google GenAI
+
+Spring AI integrates the Google GenAI models through one module per model type.
+
+[cols="1,2,2", options="header"]
+|===
+| Model type | Starter | Page
+
+| Chat
+| `spring-ai-starter-model-google-genai`
+| xref:integrations/models/google-genai/chat.adoc[Chat]
+
+| Embedding
+| `spring-ai-starter-model-google-genai-embedding`
+| xref:integrations/models/google-genai/embeddings.adoc[Text Embeddings]
+
+| Image
+| `spring-ai-starter-model-google-genai-image`
+| xref:integrations/models/google-genai/image.adoc[Image Generation]
+
+| Text to speech
+| `spring-ai-starter-model-google-genai-tts`
+| xref:integrations/models/google-genai/speech.adoc[Text to Speech]
+
+| Transcription
+| `spring-ai-starter-model-google-genai-transcription`
+| xref:integrations/models/google-genai/transcription.adoc[Transcription]
+|===
+
+For embeddings through Vertex AI, see xref:integrations/models/vertex-ai/index.adoc[Google Vertex AI].

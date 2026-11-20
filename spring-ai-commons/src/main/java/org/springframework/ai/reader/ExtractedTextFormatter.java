@@ -32,6 +32,7 @@ import org.springframework.util.StringUtils;
  * An instance of this formatter can be customized using the {@link Builder} nested class.
  *
  * @author Christian Tzolov
+ * @author Dimitar Proynov
  */
 public final class ExtractedTextFormatter {
 
@@ -84,7 +85,7 @@ public final class ExtractedTextFormatter {
 	 * @return Returns the same text but with blank lines trimmed.
 	 */
 	public static String trimAdjacentBlankLines(String pageText) {
-		return pageText.replaceAll("(?m)(^ *\n)", "\n").replaceAll("(?m)^$([\r\n]+?)(^$[\r\n]+?^)+", "$1");
+		return collapseBlankLineRuns(pageText.replaceAll("(?m)(^ *\n)", "\n"), true);
 	}
 
 	/**
@@ -92,7 +93,102 @@ public final class ExtractedTextFormatter {
 	 * @return Returns the same text but aligned to the left side.
 	 */
 	public static String alignToLeft(String pageText) {
-		return pageText.replaceAll("(?m)(^ *| +(?= |$))", "").replaceAll("(?m)^$(	?)(^$[\r\n]+?^)+", "$1");
+		return collapseBlankLineRuns(pageText.replaceAll("(?m)(^ *| +(?= |$))", ""), false);
+	}
+
+	/**
+	 * Collapses runs of consecutive blank lines (lines with no characters before their
+	 * line terminator), keeping only the first line of each run if {@code keepFirstOfRun}
+	 * is {@code true} - so a lone blank line is left untouched - and dropping the run
+	 * entirely otherwise. Implemented as a single linear scan rather than as a regular
+	 * expression with a quantified group, since matching such a group recurses one call
+	 * frame per repetition and can overflow the stack on text with enough consecutive
+	 * blank lines.
+	 * @param text text to collapse blank line runs in.
+	 * @param keepFirstOfRun whether a run keeps its first line or is dropped entirely.
+	 * @return the text with blank line runs collapsed.
+	 */
+	private static String collapseBlankLineRuns(String text, boolean keepFirstOfRun) {
+		StringBuilder result = new StringBuilder(text.length());
+		boolean previousLineWasBlank = false;
+		int lineStart = 0;
+		while (lineStart < text.length()) {
+			int terminatorStart = indexOfLineTerminator(text, lineStart);
+			int lineEnd = indexAfterLineTerminator(text, terminatorStart);
+			// A blank line has no content, so its terminator starts where the line does.
+			boolean lineIsBlank = (terminatorStart == lineStart);
+			boolean lineEndsText = (lineEnd == text.length());
+			if (isLineKept(lineIsBlank, previousLineWasBlank, lineEndsText, keepFirstOfRun)) {
+				result.append(text, lineStart, lineEnd);
+			}
+			previousLineWasBlank = lineIsBlank;
+			lineStart = lineEnd;
+		}
+		return result.toString();
+	}
+
+	/**
+	 * Decides whether one line is kept as it is or dropped while collapsing blank lines.
+	 * @param lineIsBlank whether this line has no content before its terminator.
+	 * @param previousLineWasBlank whether the line right before this one was blank.
+	 * @param lineEndsText whether this line's terminator ends the text.
+	 * @param keepFirstOfRun whether a run keeps its first line or is dropped entirely.
+	 * @return {@code true} to keep the line, {@code false} to drop it.
+	 */
+	private static boolean isLineKept(boolean lineIsBlank, boolean previousLineWasBlank, boolean lineEndsText,
+			boolean keepFirstOfRun) {
+		if (!lineIsBlank) {
+			// Lines with content are always kept.
+			return true;
+		}
+		if (lineEndsText) {
+			// The regular expressions this scan replaces needed a line start right after
+			// the blank lines they matched, which never matches at the end of the text,
+			// so a blank line ending the text was always left in place. Kept as is,
+			// meaning such a run collapses to two lines rather than one when
+			// keepFirstOfRun is set.
+			return true;
+		}
+		if (!keepFirstOfRun) {
+			// Every blank line of the run is dropped.
+			return false;
+		}
+		// Only the first blank line of the run is kept, which leaves a lone blank line
+		// untouched.
+		return !previousLineWasBlank;
+	}
+
+	/**
+	 * @return the index, starting from {@code from}, of the first {@code \r} or
+	 * {@code \n} character, or {@code text.length()} if there is none.
+	 */
+	private static int indexOfLineTerminator(String text, int from) {
+		int length = text.length();
+		for (int i = from; i < length; i++) {
+			char c = text.charAt(i);
+			if (c == '\n' || c == '\r') {
+				return i;
+			}
+		}
+		return length;
+	}
+
+	/**
+	 * @return the index right after the line terminator starting at
+	 * {@code terminatorStart} (treating a {@code \r} immediately followed by {@code \n}
+	 * as a single, two-character terminator), or {@code terminatorStart} itself if it is
+	 * at or past the end of the text.
+	 */
+	private static int indexAfterLineTerminator(String text, int terminatorStart) {
+		int length = text.length();
+		if (terminatorStart >= length) {
+			return terminatorStart;
+		}
+		if (text.charAt(terminatorStart) == '\r') {
+			int next = terminatorStart + 1;
+			return (next < length && text.charAt(next) == '\n') ? next + 1 : next;
+		}
+		return terminatorStart + 1;
 	}
 
 	/**
