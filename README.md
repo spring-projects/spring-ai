@@ -6,10 +6,7 @@ Its goal is to apply Spring ecosystem design principles, such as portability and
 
 At its core, Spring AI addresses the fundamental challenge of AI integration: connecting your enterprise __Data__ and __APIs__ with the __AI Models__.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="spring-ai-docs/src/main/antora/modules/ROOT/images/spring-ai-project-map-dark.svg">
-  <img src="spring-ai-docs/src/main/antora/modules/ROOT/images/spring-ai-project-map-light.svg" alt="The building blocks of Spring AI: the ChatClient and its features, the model APIs and providers, vector stores and retrieval, the Model Context Protocol, the Session API, observability, evaluation and resilience, and the Spring AI Community projects" width="100%">
-</picture>
+![The building blocks of Spring AI: the ChatClient and its features, the model APIs and providers, vector stores and retrieval, the Model Context Protocol, the Session API, observability, evaluation and resilience, and the Spring AI Community projects](spring-ai-docs/src/main/antora/modules/ROOT/images/spring-ai-project-map-light.svg)
 
 ## Getting Started
 
