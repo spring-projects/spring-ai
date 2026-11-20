@@ -110,6 +110,17 @@ class TypesenseFilterExpressionConverterTests {
 	}
 
 	@Test
+	void testGroupAsRightOperand() {
+		// city == "Sofia" AND (year >= 2020 OR country == "BG")
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(AND, new Expression(EQ, new Key("city"), new Value("Sofia")),
+					new Group(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
+							new Expression(EQ, new Key("country"), new Value("BG"))))));
+		assertThat(vectorExpr).isEqualTo(
+				"metadata.city: \"Sofia\" && (metadata.year: >= 2020 || metadata.country: \"BG\")");
+	}
+
+	@Test
 	void testBoolean() {
 		String vectorExpr = this.converter
 			.convertExpression(new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
