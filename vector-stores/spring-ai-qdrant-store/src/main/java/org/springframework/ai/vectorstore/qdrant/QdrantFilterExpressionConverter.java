@@ -42,14 +42,18 @@ class QdrantFilterExpressionConverter {
 	}
 
 	protected Filter convertOperand(Operand operand) {
+		if (operand instanceof Group group) {
+			return convertOperand(group.content());
+		}
+
 		var context = Filter.newBuilder();
 		List<Condition> mustClauses = new ArrayList<>();
 		List<Condition> shouldClauses = new ArrayList<>();
 		List<Condition> mustNotClauses = new ArrayList<>();
 
 		if (operand instanceof Expression expression) {
-			if (expression.type() == ExpressionType.NOT && expression.left() instanceof Group group) {
-				mustNotClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(group.content())));
+			if (expression.type() == ExpressionType.NOT) {
+				mustNotClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(expression.left())));
 			}
 			else if (expression.type() == ExpressionType.AND) {
 				Assert.state(expression.right() != null, "expected an expression with a right operand");
@@ -68,6 +72,9 @@ class QdrantFilterExpressionConverter {
 				mustClauses.add(parseComparison((Key) expression.left(), (Value) expression.right(), expression));
 			}
 
+		}
+		else {
+			throw new IllegalArgumentException("Unsupported filter operand: " + operand);
 		}
 
 		return context.addAllMust(mustClauses).addAllShould(shouldClauses).addAllMustNot(mustNotClauses).build();
