@@ -43,6 +43,7 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -423,6 +424,31 @@ public abstract class AbstractVectorStoreUpsertTests {
 					.containsExactly(nearId, farId);
 				assertThat(vectorStore.similaritySearch(pointingAt(0),
 						SearchRequest.builder().topK(3).similarityThreshold(0.9).build()))
+					.extracting(Document::getId)
+					.containsExactly(nearId);
+			});
+		});
+	}
+
+	@Test
+	protected void searchWithQueryEmbeddingAppliesSimilarityThresholdWithOrFilter() {
+		Assumptions.assumeTrue(embeddingDimensions() >= 2, "needs at least two dimensions for two distinct rows");
+		executeTest(vectorStore -> {
+			String nearId = UUID.randomUUID().toString();
+			String farId = UUID.randomUUID().toString();
+			vectorStore
+				.upsert(List.of(new EmbeddedDocument(new Document(nearId, "near", Map.of("tag", "n")), pointingAt(0)),
+						new EmbeddedDocument(new Document(farId, "far", Map.of("tag", "f")), pointingAt(1))));
+
+			FilterExpressionBuilder b = new FilterExpressionBuilder();
+			Filter.Expression eitherTag = b.or(b.eq("tag", "n"), b.eq("tag", "f")).build();
+			await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+				assertThat(vectorStore.similaritySearch(pointingAt(0),
+						SearchRequest.builder().topK(3).similarityThresholdAll().filterExpression(eitherTag).build()))
+					.extracting(Document::getId)
+					.containsExactly(nearId, farId);
+				assertThat(vectorStore.similaritySearch(pointingAt(0),
+						SearchRequest.builder().topK(3).similarityThreshold(0.9).filterExpression(eitherTag).build()))
 					.extracting(Document::getId)
 					.containsExactly(nearId);
 			});

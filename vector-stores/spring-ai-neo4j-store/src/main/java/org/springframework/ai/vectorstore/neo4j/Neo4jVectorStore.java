@@ -388,8 +388,9 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		StringBuilder condition = new StringBuilder("score >= $threshold");
 		if (request.hasFilterExpression()) {
 			Assert.state(request.getFilterExpression() != null, "filter expression can't be null");
-			condition.append(" AND ")
-				.append(this.filterExpressionConverter.convertExpression(request.getFilterExpression()));
+			condition.append(" AND (")
+				.append(this.filterExpressionConverter.convertExpression(request.getFilterExpression()))
+				.append(")");
 		}
 		return condition.toString();
 	}
