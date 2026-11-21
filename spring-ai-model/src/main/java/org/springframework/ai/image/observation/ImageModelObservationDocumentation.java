@@ -91,6 +91,17 @@ public enum ImageModelObservationDocumentation implements ObservationDocumentati
 	 */
 	public enum HighCardinalityKeyNames implements KeyName {
 
+		/**
+		 * Describes a class of error the operation ended with. Only present when the
+		 * operation failed.
+		 */
+		ERROR_TYPE {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.ERROR_TYPE.value();
+			}
+		},
+
 		// Request
 
 		/**
