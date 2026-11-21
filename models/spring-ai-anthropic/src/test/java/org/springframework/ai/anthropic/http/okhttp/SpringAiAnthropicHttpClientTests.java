@@ -16,6 +16,14 @@
 
 package org.springframework.ai.anthropic.http.okhttp;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import com.anthropic.backends.AnthropicBackend;
 import com.anthropic.core.RequestOptions;
 import com.anthropic.core.http.HttpMethod;
@@ -31,6 +39,7 @@ import okhttp3.mockwebserver.SocketPolicy;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 /**
  * Tests for {@link SpringAiAnthropicHttpClient} connection handling.
@@ -118,6 +127,77 @@ class SpringAiAnthropicHttpClientTests {
 				assertThat(notFollowed.statusCode()).isEqualTo(302);
 			}
 			assertThat(server.getRequestCount()).isEqualTo(3);
+		}
+	}
+
+	@Test
+	void closeFromAnotherThreadEndsAReadInFlight() throws Exception {
+		try (MockWebServer server = new MockWebServer()) {
+			// A few bytes at a time, so the reading thread is blocked in a read most of
+			// the time, as it is between two events of a stream.
+			server.enqueue(new MockResponse().setResponseCode(200)
+				.setHeader("Content-Type", "text/event-stream")
+				.setChunkedBody("data: {}\n\n".repeat(500), 10)
+				.throttleBody(10, 500, TimeUnit.MILLISECONDS));
+			server.start();
+
+			AnthropicBackend backend = AnthropicBackend.builder().apiKey("test-key").build();
+			SpringAiAnthropicHttpClient client = SpringAiAnthropicHttpClient.builder().backend(backend).build();
+			HttpRequest request = HttpRequest.builder()
+				.method(HttpMethod.GET)
+				.baseUrl(server.url("/").toString())
+				.addPathSegment("stream")
+				.build();
+			HttpResponse response = client.execute(request, RequestOptions.none());
+			InputStream body = response.body();
+			CountDownLatch firstByte = new CountDownLatch(1);
+			CompletableFuture<Throwable> readEnded = new CompletableFuture<>();
+			Thread reader = new Thread(() -> {
+				try {
+					while (body.read() != -1) {
+						firstByte.countDown();
+					}
+					readEnded.complete(null);
+				}
+				catch (Throwable ex) {
+					readEnded.complete(ex);
+				}
+			});
+			reader.start();
+			assertThat(firstByte.await(5, TimeUnit.SECONDS)).isTrue();
+			// The first bytes are read by now, and the reader waits for the next ones.
+			Thread.sleep(100);
+
+			response.close();
+
+			assertThat(readEnded).succeedsWithin(Duration.ofSeconds(5)).isInstanceOf(IOException.class);
+			await()
+				.untilAsserted(() -> assertThat(client.getOkHttpClient().connectionPool().connectionCount()).isZero());
+		}
+	}
+
+	@Test
+	void closeWithoutAReadInFlightKeepsTheConnectionForReuse() throws Exception {
+		try (MockWebServer server = new MockWebServer()) {
+			server.enqueue(new MockResponse().setResponseCode(200)
+				.setHeader("Content-Type", "application/json")
+				.setBody(MESSAGES_RESPONSE));
+			server.start();
+
+			AnthropicBackend backend = AnthropicBackend.builder().apiKey("test-key").build();
+			SpringAiAnthropicHttpClient client = SpringAiAnthropicHttpClient.builder().backend(backend).build();
+			HttpRequest request = HttpRequest.builder()
+				.method(HttpMethod.GET)
+				.baseUrl(server.url("/").toString())
+				.addPathSegment("message")
+				.build();
+
+			try (HttpResponse response = client.execute(request, RequestOptions.none())) {
+				assertThat(new String(response.body().readAllBytes(), StandardCharsets.UTF_8))
+					.isEqualTo(MESSAGES_RESPONSE);
+			}
+
+			assertThat(client.getOkHttpClient().connectionPool().idleConnectionCount()).isEqualTo(1);
 		}
 	}
 
