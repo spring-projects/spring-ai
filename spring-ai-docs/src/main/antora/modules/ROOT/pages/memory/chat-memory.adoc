@@ -4,7 +4,7 @@
 
 WARNING: The `ChatMemory` API, its repositories, the `MessageChatMemoryAdvisor` and their auto-configurations are deprecated since 2.1.0 and will be removed in 3.0.0.
 Use xref:memory/session/index.adoc[Session Memory] instead; xref:upgrading/session-memory.adoc[Migrating to Session Memory] maps one onto the other.
-Session stores for Cassandra, Neo4j, MongoDB and Redis, and session dialects for HSQLDB, Oracle and SQLite, are planned before 3.0.0, when the deprecated modules are removed.
+Session stores for Cassandra, Neo4j, MongoDB and Redis, and session dialects for HSQLDB and SQLite, are planned before 3.0.0, when the deprecated modules are removed.
 The `VectorStoreChatMemoryAdvisor` is not deprecated.
 
 Large language models (LLMs) are stateless, meaning they do not retain information about previous interactions.

@@ -3,7 +3,7 @@
 :page-aliases: api/session/jdbc.adoc
 
 `spring-ai-session-jdbc` stores sessions in a relational database.
-It supports PostgreSQL, MySQL, MariaDB, Microsoft SQL Server and H2 out of the box.
+It supports PostgreSQL, MySQL, MariaDB, Microsoft SQL Server, Oracle and H2 out of the box.
 
 [source,xml]
 ----
@@ -44,6 +44,10 @@ Each supported database has a dialect, detected from the database metadata, and 
 | `SqlServerJdbcSessionRepositoryDialect`
 | `org/springframework/ai/session/jdbc/schema-sqlserver.sql`
 
+| Oracle Database (23ai and later for the script, 12c and later for the dialect)
+| `OracleJdbcSessionRepositoryDialect`
+| `org/springframework/ai/session/jdbc/schema-oracle.sql`
+
 | H2
 | `H2JdbcSessionRepositoryDialect`
 | `org/springframework/ai/session/jdbc/schema-h2.sql`
@@ -54,6 +58,7 @@ Another database is rejected at startup with an `IllegalStateException`; to use 
 With the auto-configuration, `initialize-schema` applies the script on startup.
 Otherwise use Spring Boot's SQL initialization, `spring.sql.init.schema-locations=classpath:org/springframework/ai/session/jdbc/schema-postgresql.sql`, or copy the script into your migration tool.
 The scripts are safe to re-run.
+The Oracle script relies on `IF NOT EXISTS`, which needs Oracle Database 23ai; on an earlier release, remove those clauses and run the script once.
 
 == Manual bean setup
 
@@ -111,13 +116,13 @@ image::session/session-jdbc-append-sequence.svg[A compaction and a concurrent ap
 A read with the view flag selects the session's newest `COMPACTION` row, fetches in one query the rows it names plus every row from the boundary on, ordered by `seq`, and lets `EventFilter.apply` put them in view order, filter and window them.
 
 *Windows.*
-A `lastN` window is `ORDER BY seq DESC LIMIT ?`, or `OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY` on SQL Server.
+A `lastN` window is `ORDER BY seq DESC LIMIT ?`, `OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY` on SQL Server, or `FETCH FIRST ? ROWS ONLY` on Oracle.
 When the window lands mid-turn, one bounded extra query fetches the rows between the nearest preceding user message and the window, served by the `(session_id, seq)` index, so the window keeps turns whole.
 The newest boundary of a session, read before every view, is served by the `(session_id, event_type, seq)` index.
 
 *Keys are case-sensitive.*
 On MySQL and MariaDB the id and index columns use the `utf8mb4_bin` collation, and on SQL Server the `Latin1_General_100_BIN2` collation, so `findByMetadata` and the id lookups are case-sensitive, as on the other databases.
-These three databases ignore trailing spaces when they compare keys, so a session id or an event id must not differ from another only by trailing spaces: `abc` and `abc` followed by a space are the same id there, and different ids on PostgreSQL and H2.
+These three databases ignore trailing spaces when they compare keys, so a session id or an event id must not differ from another only by trailing spaces: `abc` and `abc` followed by a space are the same id there, and different ids on PostgreSQL, H2 and Oracle.
 `findByMetadata` is not affected, because it compares the whole value again on the sessions the query returns.
 
 *Indexed attributes.*
@@ -196,7 +201,7 @@ Override it when the store can match text in its query, and agree with the refer
 Existing events never move, change or disappear; `CompactionBoundary.project(log)` is the reference projection.
 * *`findByMetadata` is the one scoped lookup*: every store indexes `SessionAttributes.PRINCIPAL_NAME`.
 
-`spring-ai-test` ships `AbstractSessionRepositoryContractTests`, the suite the in-memory, H2, PostgreSQL, MySQL, MariaDB and SQL Server repositories run.
+`spring-ai-test` ships `AbstractSessionRepositoryContractTests`, the suite the in-memory, H2, PostgreSQL, MySQL, MariaDB, SQL Server and Oracle repositories run.
 Extend it and return your repository:
 
 [source,xml]
