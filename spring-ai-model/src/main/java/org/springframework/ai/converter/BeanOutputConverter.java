@@ -184,14 +184,21 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * Parses the given text to transform it to the desired target type.
 	 * @param text The LLM output in string format.
 	 * @return The parsed output in the desired target type.
+	 * @throws StructuredOutputConversionException if JSON parsing or mapping fails,
+	 * retaining the original input text and the underlying cause
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
 	public T convert(String text) {
 		// Clean the text using the configured text cleaner
-		text = this.textCleaner.clean(text);
-
-		return (T) this.jsonMapper.readValue(text, this.jsonMapper.constructType(this.type));
+		String cleanedText = this.textCleaner.clean(text);
+		try {
+			return (T) this.jsonMapper.readValue(cleanedText, this.jsonMapper.constructType(this.type));
+		}
+		catch (JacksonException ex) {
+			throw new StructuredOutputConversionException(
+					"Could not convert model output to " + this.type.getTypeName(), text, ex);
+		}
 	}
 
 	/**

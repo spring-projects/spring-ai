@@ -1,5 +1,15 @@
 [[upgrading-to-2-1-0]]
-= Upgrading to 2.1.0
+= Upgrading to 2.1
+
+[[upgrading-to-2-1-1]]
+== Changes in 2.1.1
+
+=== Structured Output Conversion Failures
+
+`BeanOutputConverter` now wraps JSON parsing and mapping failures in `StructuredOutputConversionException`.
+Its `getText()` accessor provides the complete input before response cleaning, and `getCause()` preserves the original Jackson exception.
+Code that catches Jackson exceptions directly around `BeanOutputConverter.convert()` or `ChatClient` entity conversion should catch `StructuredOutputConversionException` instead.
+See xref:structured-output/converters.adoc[Output Converters].
 
 == Spring Boot 4.2
 
