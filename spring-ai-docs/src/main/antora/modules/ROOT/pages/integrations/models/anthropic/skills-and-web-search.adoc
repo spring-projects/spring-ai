@@ -1,0 +1,379 @@
+= Anthropic Skills and Web Search
+
+== Skills
+
+Anthropic's https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview[Skills API] extends Claude's capabilities with specialized, pre-packaged abilities for document generation.
+Skills enable Claude to create actual downloadable files -- Excel spreadsheets, PowerPoint presentations, Word documents, and PDFs -- rather than just describing what these documents might contain.
+
+[NOTE]
+====
+*Supported Models*
+
+Skills are available on every Claude model.
+
+*Requirements*
+
+* Skills require the code execution capability (automatically enabled by Spring AI when skills are configured)
+* Maximum of 8 skills per request
+* Generated files are available for download via the Files API for 24 hours
+====
+
+=== Pre-built Anthropic Skills
+
+Spring AI provides type-safe access to Anthropic's pre-built skills through the `AnthropicSkill` enum:
+
+[cols="2,3,4", stripes=even]
+|====
+| Skill | Description | Generated File Type
+
+| `XLSX`
+| Excel spreadsheet generation and manipulation
+| `.xlsx` (Microsoft Excel)
+
+| `PPTX`
+| PowerPoint presentation creation
+| `.pptx` (Microsoft PowerPoint)
+
+| `DOCX`
+| Word document generation
+| `.docx` (Microsoft Word)
+
+| `PDF`
+| PDF document creation
+| `.pdf` (Portable Document Format)
+|====
+
+=== Basic Usage
+
+Enable skills by adding them to your `AnthropicChatOptions`:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Create an Excel spreadsheet with Q1 2025 sales data. " +
+        "Include columns for Month, Revenue, and Expenses with 3 rows of sample data.",
+        AnthropicChatOptions.builder()
+            .model(Model.CLAUDE_SONNET_4_6)
+            .maxTokens(4096)
+            .skill(AnthropicSkill.XLSX)
+            .build()
+    )
+);
+
+// Claude will generate an actual Excel file
+String responseText = response.getResult().getOutput().getText();
+System.out.println(responseText);
+// Output: "I've created an Excel spreadsheet with your Q1 2025 sales data..."
+----
+
+=== Multiple Skills
+
+You can enable multiple skills in a single request (up to 8):
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Create a sales report with both an Excel file containing the raw data " +
+        "and a PowerPoint presentation summarizing the key findings.",
+        AnthropicChatOptions.builder()
+            .model(Model.CLAUDE_SONNET_4_6)
+            .maxTokens(8192)
+            .skill(AnthropicSkill.XLSX)
+            .skill(AnthropicSkill.PPTX)
+            .build()
+    )
+);
+----
+
+=== Using AnthropicSkillContainer for Advanced Configuration
+
+For more control over skill types and versions, use `AnthropicSkillContainer` directly:
+
+[source,java]
+----
+AnthropicSkillContainer container = AnthropicSkillContainer.builder()
+    .skill(AnthropicSkill.XLSX)
+    .skill(AnthropicSkill.PPTX, "20251013") // Specific version
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the quarterly report",
+        AnthropicChatOptions.builder()
+            .model(Model.CLAUDE_SONNET_4_6)
+            .maxTokens(4096)
+            .skillContainer(container)
+            .build()
+    )
+);
+----
+
+=== Downloading Generated Files
+
+When Claude generates files using Skills, the response contains file IDs that can be used to download the actual files via the Files API.
+Spring AI provides the `AnthropicSkillsResponseHelper` utility class for extracting file IDs and downloading files.
+
+==== Extracting File IDs
+
+[source,java]
+----
+import org.springframework.ai.anthropic.AnthropicSkillsResponseHelper;
+
+ChatResponse response = chatModel.call(prompt);
+
+// Extract all file IDs from the response
+List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
+
+for (String fileId : fileIds) {
+    System.out.println("Generated file ID: " + fileId);
+}
+----
+
+==== Downloading All Files
+
+The `AnthropicSkillsResponseHelper` provides a convenience method to download all generated files at once.
+It needs the `AnthropicClient` of the chat model, which `AnthropicChatModel.getAnthropicClient()` returns:
+
+[source,java]
+----
+import com.anthropic.client.AnthropicClient;
+
+AnthropicClient anthropicClient = chatModel.getAnthropicClient(); // chatModel is the AnthropicChatModel
+
+// Download all files to a target directory
+Path targetDir = Path.of("generated-files");
+Files.createDirectories(targetDir);
+
+List<Path> savedFiles = AnthropicSkillsResponseHelper.downloadAllFiles(
+        response, anthropicClient, targetDir);
+
+for (Path file : savedFiles) {
+    System.out.println("Downloaded: " + file.getFileName() +
+                       " (" + Files.size(file) + " bytes)");
+}
+----
+
+==== Extracting Container ID
+
+For multi-turn conversations with Skills, you can extract the container ID for reuse:
+
+[source,java]
+----
+String containerId = AnthropicSkillsResponseHelper.extractContainerId(response);
+
+if (containerId != null) {
+    System.out.println("Container ID for reuse: " + containerId);
+}
+----
+
+=== Complete Example
+
+Here's a complete example showing Skills usage with file download:
+
+[source,java]
+----
+@Service
+public class DocumentGenerationService {
+
+    private final AnthropicChatModel chatModel;
+
+    public DocumentGenerationService(AnthropicChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+
+    public Path generateSalesReport(String quarter, Path outputDir) throws IOException {
+        // Generate Excel report using Skills
+        ChatResponse response = chatModel.call(
+            new Prompt(
+                "Create an Excel spreadsheet with " + quarter + " sales data. " +
+                "Include Month, Revenue, Expenses, and Profit columns.",
+                AnthropicChatOptions.builder()
+                    .model(Model.CLAUDE_SONNET_4_6)
+                    .maxTokens(4096)
+                    .skill(AnthropicSkill.XLSX)
+                    .build()
+            )
+        );
+
+        // Extract file IDs from the response
+        List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
+
+        if (fileIds.isEmpty()) {
+            throw new RuntimeException("No file was generated");
+        }
+
+        // Download all generated files
+        List<Path> savedFiles = AnthropicSkillsResponseHelper.downloadAllFiles(
+                response, chatModel.getAnthropicClient(), outputDir);
+
+        return savedFiles.get(0);
+    }
+}
+----
+
+=== Best Practices
+
+1. **Use appropriate models**: Skills work best with Claude Sonnet 4 and later models.
+Ensure you're using a supported model.
+
+2. **Set sufficient max tokens**: Document generation can require significant tokens.
+Use `maxTokens(4096)` or higher for complex documents.
+
+3. **Be specific in prompts**: Provide clear, detailed instructions about document structure, content, and formatting.
+
+4. **Handle file downloads promptly**: Generated files expire after 24 hours.
+Download files soon after generation.
+
+5. **Check for file IDs**: Always verify that file IDs were returned before attempting downloads.
+Some prompts may result in text responses without file generation.
+
+6. **Use defensive error handling**: Wrap file operations in try-catch blocks to handle network issues or expired files gracefully.
+
+[source,java]
+----
+List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
+
+if (fileIds.isEmpty()) {
+    // Claude may have responded with text instead of generating a file
+    String text = response.getResult().getOutput().getText();
+    log.warn("No files generated. Response: {}", text);
+    return;
+}
+
+try {
+    List<Path> files = AnthropicSkillsResponseHelper.downloadAllFiles(
+            response, chatModel.getAnthropicClient(), targetDir);
+    // Process files...
+} catch (IOException e) {
+    log.error("Failed to download file: {}", e.getMessage());
+}
+----
+
+=== Skills for Any Model
+
+The skills on this page run in Anthropic's environment and work only with Anthropic models.
+
+.Community: Spring AI Agent Utils
+[TIP]
+====
+xref:agents/agent-utils.adoc#_agent_skills[Spring AI Agent Utils] runs Agent Skills in your application: a skill is a directory with a `SKILL.md` file, and it works with any model that supports tool calling.
+====
+
+== Web Search
+
+Anthropic's https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/web-search[Web Search] tool allows Claude to search the web during a conversation and use the results to generate cited responses.
+
+[NOTE]
+====
+* Web search is a built-in server-side tool — no external tool callbacks are needed
+* Web search results automatically include citations with URLs
+* You can combine web search with other tools (function calling, code execution, skills) in the same request
+====
+
+=== Basic Usage
+
+Enable web search by adding an `AnthropicWebSearchTool` to your chat options:
+
+[source,java]
+----
+var webSearch = AnthropicWebSearchTool.builder().build();
+
+ChatResponse response = chatModel.call(
+    new Prompt("What is the latest released version of Spring AI?",
+        AnthropicChatOptions.builder()
+            .webSearchTool(webSearch)
+            .build()));
+
+String answer = response.getResult().getOutput().getText();
+----
+
+=== Configuration Options
+
+[cols="3,5,1", stripes=even]
+|====
+| Option | Description | Default
+
+| maxUses | Maximum number of web searches Claude can perform per request | -
+| allowedDomains | Restrict search results to these domains only | -
+| blockedDomains | Exclude these domains from search results | -
+| userLocation | Approximate user location for localizing results (city, country, region, timezone) | -
+|====
+
+=== Domain Filtering
+
+Restrict or exclude specific domains from search results:
+
+[source,java]
+----
+var webSearch = AnthropicWebSearchTool.builder()
+    .allowedDomains(List.of("docs.spring.io", "github.com"))
+    .blockedDomains(List.of("example.com"))
+    .maxUses(5)
+    .build();
+----
+
+=== User Location
+
+Provide approximate location to localize search results:
+
+[source,java]
+----
+var webSearch = AnthropicWebSearchTool.builder()
+    .userLocation("San Francisco", "US", "California", "America/Los_Angeles")
+    .build();
+----
+
+=== Accessing Web Search Results
+
+Web search results and citations are available in the response metadata:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt("What happened in tech news today?",
+        AnthropicChatOptions.builder()
+            .webSearchTool(AnthropicWebSearchTool.builder().build())
+            .build()));
+
+// Get web search results
+@SuppressWarnings("unchecked")
+List<AnthropicWebSearchResult> results =
+    (List<AnthropicWebSearchResult>) response.getMetadata().get("web-search-results");
+
+if (results != null) {
+    for (AnthropicWebSearchResult result : results) {
+        System.out.println("Title: " + result.title());
+        System.out.println("URL: " + result.url());
+        System.out.println("Page age: " + result.pageAge());
+    }
+}
+
+// Get web search citations
+@SuppressWarnings("unchecked")
+List<Citation> citations =
+    (List<Citation>) response.getMetadata().get("citations");
+
+if (citations != null) {
+    for (Citation citation : citations) {
+        if (citation.getType() == Citation.LocationType.WEB_SEARCH_RESULT_LOCATION) {
+            System.out.println("Source: " + citation.getUrl());
+            System.out.println("Title: " + citation.getDocumentTitle());
+            System.out.println("Cited text: " + citation.getCitedText());
+        }
+    }
+}
+----
+
+=== Spring Boot Configuration
+
+Configure web search via `application.properties` or `application.yml`:
+
+[source,properties]
+----
+spring.ai.anthropic.chat.web-search-tool.max-uses=5
+spring.ai.anthropic.chat.web-search-tool.allowed-domains=docs.spring.io,github.com
+spring.ai.anthropic.chat.web-search-tool.user-location.city=San Francisco
+spring.ai.anthropic.chat.web-search-tool.user-location.country=US
+----

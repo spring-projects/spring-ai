@@ -1,0 +1,41 @@
+[[perplexity]]
+= Perplexity Chat
+:page-aliases: api/chat/perplexity-chat.adoc
+
+https://perplexity.ai/[Perplexity] combines its language models with real-time web search, and offers them through an OpenAI-compatible API.
+Spring AI uses Perplexity through the xref:integrations/models/openai/chat.adoc[OpenAI chat model]: you point the OpenAI module at Perplexity's endpoint and choose a Perplexity model.
+
+== Configuration
+
+Add the OpenAI starter:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+Create an API key as described in https://docs.perplexity.ai/guides/getting-started[Getting Started with Perplexity], then set the base URL, the key and a model from the https://docs.perplexity.ai/guides/model-cards[Perplexity models]:
+
+[source,properties]
+----
+spring.ai.openai.base-url=https://api.perplexity.ai
+spring.ai.openai.api-key=${PERPLEXITY_API_KEY}
+spring.ai.openai.chat.model=sonar
+----
+
+Unlike the other services, Perplexity's API has no version path, so the base URL ends at the host name.
+
+All other properties and options are those of the OpenAI chat model, see xref:integrations/models/openai/chat.adoc[OpenAI Chat].
+
+== Differences from OpenAI
+
+* Perplexity does not support tool calling.
+* Perplexity does not accept images or other media.
+* Answers are based on a web search, which Perplexity runs for each request.
+
+== Example
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/PerplexityWithOpenAiChatModelIT.java[PerplexityWithOpenAiChatModelIT] test shows chat and streaming with Perplexity.

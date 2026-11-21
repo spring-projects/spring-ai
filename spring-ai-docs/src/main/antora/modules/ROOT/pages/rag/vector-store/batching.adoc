@@ -1,0 +1,226 @@
+= Batching and Schema Initialization
+
+== Batching Strategy
+
+When working with vector stores, it's often necessary to embed large numbers of documents.
+While it might seem straightforward to make a single call to embed all documents at once, this approach can lead to issues.
+Embedding models process text as tokens and have a maximum token limit, often referred to as the context window size.
+This limit restricts the amount of text that can be processed in a single embedding request.
+Attempting to embed too many tokens in one call can result in errors or truncated embeddings.
+
+To address this token limit, Spring AI implements a batching strategy.
+This approach breaks down large sets of documents into smaller batches that fit within the embedding model's maximum context window.
+Batching not only solves the token limit issue but can also lead to improved performance and more efficient use of API rate limits.
+
+Spring AI provides this functionality through the `BatchingStrategy` interface, which allows for processing documents in sub-batches based on their token counts.
+
+The core `BatchingStrategy` interface is defined as follows:
+
+[source,java]
+----
+public interface BatchingStrategy {
+    List<List<Document>> batch(List<Document> documents);
+}
+----
+
+This interface defines a single method, `batch`, which takes a list of documents and returns a list of document batches.
+
+=== Default Implementation
+
+Spring AI provides a default implementation called `TokenCountBatchingStrategy`.
+This strategy batches documents based on their token counts, ensuring that each batch does not exceed a calculated maximum input token count.
+
+Key features of `TokenCountBatchingStrategy`:
+
+1. Uses https://developers.openai.com/api/docs/guides/embeddings#embedding-models[OpenAI's max input token count] (8191) as the default upper limit.
+2. Incorporates a reserve percentage (default 10%) to provide a buffer for potential overhead.
+3. Calculates the actual max input token count as: `actualMaxInputTokenCount = originalMaxInputTokenCount * (1 - RESERVE_PERCENTAGE)`
+
+The strategy estimates the token count for each document, groups them into batches without exceeding the max input token count, and throws an exception if a single document exceeds this limit.
+
+You can also customize the `TokenCountBatchingStrategy` to better suit your specific requirements.
+This can be done by creating a new instance with custom parameters in a Spring Boot `@Configuration` class.
+
+Here's an example of how to create a custom `TokenCountBatchingStrategy` bean:
+
+[source,java]
+----
+@Configuration
+public class EmbeddingConfig {
+    @Bean
+    public BatchingStrategy customTokenCountBatchingStrategy() {
+        return new TokenCountBatchingStrategy(
+            EncodingType.CL100K_BASE,  // Specify the encoding type
+            8000,                      // Set the maximum input token count
+            0.1                        // Set the reserve percentage
+        );
+    }
+}
+----
+
+In this configuration:
+
+1. `EncodingType.CL100K_BASE`: Specifies the encoding type used for tokenization.
+This encoding type is used by the `JTokkitTokenCountEstimator` to accurately estimate token counts.
+2. `8000`: Sets the maximum input token count.
+This value should be less than or equal to the maximum context window size of your embedding model.
+3. `0.1`: Sets the reserve percentage.
+The percentage of tokens to reserve from the max input token count.
+This creates a buffer for potential token count increases during processing.
+
+By default, this constructor uses `Document.DEFAULT_CONTENT_FORMATTER` for content formatting and `MetadataMode.NONE` for metadata handling.
+If you need to customize these parameters, you can use the full constructor with additional parameters.
+
+Once defined, the vector store auto-configurations use this bean in place of the default strategy.
+A vector store passes its `BatchingStrategy` to the `EmbeddingModel` when it embeds the documents it adds.
+
+The `TokenCountBatchingStrategy` internally uses a `TokenCountEstimator` (specifically, `JTokkitTokenCountEstimator`) to calculate token counts for efficient batching.
+This ensures accurate token estimation based on the specified encoding type.
+
+
+Additionally, `TokenCountBatchingStrategy` provides flexibility by allowing you to pass in your own implementation of the `TokenCountEstimator` interface.
+This feature enables you to use custom token counting strategies tailored to your specific needs.
+For example:
+
+[source,java]
+----
+TokenCountEstimator customEstimator = new YourCustomTokenCountEstimator();
+TokenCountBatchingStrategy strategy = new TokenCountBatchingStrategy(
+		this.customEstimator,
+    8000,  // maxInputTokenCount
+    0.1,   // reservePercentage
+    Document.DEFAULT_CONTENT_FORMATTER,
+    MetadataMode.NONE
+);
+----
+
+=== Working with Auto-Truncation
+
+Some embedding models, such as Google Vertex AI text embedding, support an `auto_truncate` feature.
+When enabled, the model silently truncates text inputs that exceed the maximum size and continues processing; when disabled, it throws an explicit error for inputs that are too large.
+
+When using auto-truncation with the batching strategy, you must configure your batching strategy with a much higher input token count than the model's actual maximum.
+This prevents the batching strategy from raising exceptions for large documents, allowing the embedding model to handle truncation internally.
+
+==== Configuration for Auto-Truncation
+
+When enabling auto-truncation, set your batching strategy's maximum input token count much higher than the model's actual limit.
+This prevents the batching strategy from raising exceptions for large documents, allowing the embedding model to handle truncation internally.
+
+Here's an example configuration for using Vertex AI with auto-truncation and custom `BatchingStrategy` and then using them in the PgVectorStore:
+
+[source,java]
+----
+@Configuration
+public class AutoTruncationEmbeddingConfig {
+
+    @Bean
+    public VertexAiTextEmbeddingModel vertexAiEmbeddingModel(
+            VertexAiEmbeddingConnectionDetails connectionDetails) {
+
+        VertexAiTextEmbeddingOptions options = VertexAiTextEmbeddingOptions.builder()
+                .model(VertexAiTextEmbeddingOptions.DEFAULT_MODEL_NAME)
+                .autoTruncate(true)  // Enable auto-truncation
+                .build();
+
+        return new VertexAiTextEmbeddingModel(connectionDetails, options);
+    }
+
+    @Bean
+    public BatchingStrategy batchingStrategy() {
+        // Only use a high token limit if auto-truncation is enabled in your embedding model.
+        // Set a much higher token count than the model actually supports
+        // (e.g., 132,900 when Vertex AI supports only up to 20,000)
+        return new TokenCountBatchingStrategy(
+                EncodingType.CL100K_BASE,
+                132900,  // Artificially high limit
+                0.1      // 10% reserve
+        );
+    }
+
+    @Bean
+    public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
+        return PgVectorStore.builder(jdbcTemplate, embeddingModel)
+            .batchingStrategy(batchingStrategy)  // use the custom strategy
+            // other properties omitted here
+            .build();
+    }
+}
+----
+
+In this configuration:
+
+1. The embedding model has auto-truncation enabled, allowing it to handle oversized inputs gracefully.
+2. The batching strategy uses an artificially high token limit (132,900) that's much larger than the actual model limit (20,000).
+3. The vector store uses the configured embedding model and the custom `BatchingStrategy` bean.
+
+==== Why This Works
+
+This approach works because:
+
+1. The `TokenCountBatchingStrategy` checks if any single document exceeds the configured maximum and throws an `IllegalArgumentException` if it does.
+2. By setting a very high limit in the batching strategy, we ensure that this check never fails.
+3. Documents or batches exceeding the model's limit are silently truncated and processed by the embedding model's auto-truncation feature.
+
+==== Best Practices
+
+When using auto-truncation:
+
+- Set the batching strategy's max input token count to be at least 5-10x larger than the model's actual limit to avoid premature exceptions from the batching strategy.
+- Monitor your logs for truncation warnings from the embedding model (note: not all models log truncation events).
+- Consider the implications of silent truncation on your embedding quality.
+- Test with sample documents to ensure truncated embeddings still meet your requirements.
+- Document this configuration for future maintainers, as it is non-standard.
+
+CAUTION: While auto-truncation prevents errors, it can result in incomplete embeddings.
+Important information at the end of long documents may be lost.
+If your application requires all content to be embedded, split documents into smaller chunks before embedding.
+
+==== Spring Boot Auto-Configuration
+
+If you're using Spring Boot auto-configuration, you must provide a custom `BatchingStrategy` bean to override the default one that comes with Spring AI:
+
+[source,java]
+----
+@Bean
+public BatchingStrategy customBatchingStrategy() {
+    // This bean will override the default BatchingStrategy
+    return new TokenCountBatchingStrategy(
+            EncodingType.CL100K_BASE,
+            132900,  // Much higher than model's actual limit
+            0.1
+    );
+}
+----
+
+The presence of this bean in your application context replaces the default batching strategy of the auto-configured vector stores.
+
+=== Custom Implementation
+
+While `TokenCountBatchingStrategy` provides a robust default implementation, you can customize the batching strategy to fit your specific needs.
+This can be done through Spring Boot's auto-configuration.
+
+To customize the batching strategy, define a `BatchingStrategy` bean in your Spring Boot application:
+
+[source,java]
+----
+@Configuration
+public class EmbeddingConfig {
+    @Bean
+    public BatchingStrategy customBatchingStrategy() {
+        return new CustomBatchingStrategy();
+    }
+}
+----
+
+The auto-configured vector stores then use this custom `BatchingStrategy`.
+If you build a vector store yourself, pass the strategy with the `batchingStrategy(...)` method of its builder.
+
+NOTE: Vector stores supported by Spring AI are configured to use the default `TokenCountBatchingStrategy`.
+
+== Schema Initialization
+
+Some vector stores require their backend schema to be initialized before usage.
+It will not be initialized for you by default.
+You must opt-in, by passing a `boolean` for the appropriate constructor argument or, if using Spring Boot, setting the appropriate `initialize-schema` property to `true` in `application.properties` or `application.yml`.
+Check the documentation for the vector store you are using for the specific property name.

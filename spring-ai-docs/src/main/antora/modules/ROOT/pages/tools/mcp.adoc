@@ -1,0 +1,119 @@
+[[mcp-tools]]
+= Using MCP Tools
+
+The link:https://modelcontextprotocol.io[Model Context Protocol] (MCP) is a standardized way for AI applications to consume tools, resources, and prompts from remote servers.
+Spring AI integrates MCP from both directions: your application can consume tools from MCP servers, and it can expose its own tools to MCP clients.
+
+[[consuming-mcp-server-tools]]
+== Consuming MCP Server Tools
+
+Add the MCP client starter and configure connections to one or more MCP servers:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-mcp-client</artifactId>
+</dependency>
+----
+
+[source,properties]
+----
+spring.ai.mcp.client.stdio.connections.my-server.command=npx
+spring.ai.mcp.client.stdio.connections.my-server.args=-y,@modelcontextprotocol/server-everything
+----
+
+Auto-configuration connects to all configured servers and exposes their tools as a `SyncMcpToolCallbackProvider` bean (or `AsyncMcpToolCallbackProvider` for the async client type).
+
+The provider lists the tools of the servers when it is first used, not at startup.
+MCP tools are not added to the `ToolCallbackResolver`, which would list them eagerly, so they cannot be resolved by name: inject the provider and pass it to the `ChatClient` explicitly:
+
+[source,java]
+----
+@Autowired SyncMcpToolCallbackProvider mcpTools;
+
+// Once, as default tools for every request
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultTools(mcpTools)
+    .build();
+
+// Or per call
+chatClient.prompt()
+    .user("Search the web for the latest Spring AI release notes")
+    .tools(mcpTools)
+    .call()
+    .content();
+----
+
+Tool callback auto-configuration is enabled by default and can be turned off with `spring.ai.mcp.client.toolcallback.enabled=false`.
+See xref:mcp/client/index.adoc[MCP Client Boot Starter] for the full configuration surface — transports, security, filtering, name-prefix generation.
+
+[[exposing-mcp-server-tools]]
+== Exposing Spring Tools as an MCP Server
+
+Going the other direction — exposing your Spring beans as MCP tools — takes the MCP server starter and `@McpTool` methods.
+`ToolCallback` and `ToolCallbackProvider` beans, including `@Tool` methods wrapped in a `MethodToolCallbackProvider`, are exposed as well, unless `spring.ai.mcp.server.tool-callback-converter` is `false`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+</dependency>
+----
+
+Set the protocol explicitly, since the starter selects the deprecated SSE transport when it is not set:
+
+[source,properties]
+----
+spring.ai.mcp.server.protocol=STREAMABLE
+----
+
+[source,java]
+----
+@Component
+public class WeatherTools {
+
+    @McpTool(description = "Get the current weather for a given city")
+    public String getWeather(
+            @McpToolParam(description = "City name") String city) {
+        return weatherService.fetch(city);
+    }
+}
+----
+
+Auto-configuration scans for `@McpTool`-annotated beans, generates JSON schemas for their parameters, and registers them with the MCP server.
+See xref:mcp/server/index.adoc[MCP Server Boot Starter] for transport, security, and observability options.
+
+[[combining-local-and-mcp-tools]]
+== Combining Local and MCP Tools
+
+Local `@Tool` methods and remote MCP tools share the same `ToolCallback` interface — the model and the `ToolCallingAdvisor` don't distinguish between them.
+`.tools(...)` and `.defaultTools(...)` accept both types in a single call, so you can mix freely:
+
+[source,java]
+----
+chatClient.prompt()
+    .tools(new LocalTools(), mcpTools)
+    .call()
+    .content();
+----
+
+A few things to be aware of in hybrid setups:
+
+* **Name conflicts are only handled within the MCP side.** `DefaultMcpToolNamePrefixGenerator` prefixes duplicates across MCP servers, but it doesn't know about local `@Tool` methods.
+If a local tool and a remote MCP tool share a name, you need to rename one of them yourself, or use an `McpToolFilter` to drop the remote one.
+* **Restrict what's exposed.** MCP tools come from external sources whose surface you don't fully control.
+An `McpToolFilter` bean lets you select which tools enter the namespace based on server identity, tool name, or description — useful for limiting the blast radius of a chatty or untrusted MCP server.
+
+[WARNING]
+====
+A name conflict between two tool sources is only caught when the merged list goes through `ChatClient`.
+`.tools(...)` and `.defaultTools(...)` validate the full merged list and throw `IllegalStateException` if any two callbacks share a name, so a conflict here fails the request instead of running the wrong tool.
+
+That validation does not run if you call `ChatModel.call()`/`.stream()` directly, or build your own tool-calling loop, with a hand-assembled `ToolCallingChatOptions`.
+On that path, tool execution resolves by name only: whichever callback comes first in the merged list wins, silently, with no error or log.
+A remote MCP tool that happens to share a name with a trusted local tool can therefore execute in its place.
+
+If you combine local and MCP tools outside `ChatClient`, either keep the sources namespaced so their names can't collide (see xref:mcp/client/tools.adoc#mcp-tool-name-prefix-generation[Tool Name Prefix Generation]), or call `ToolCallingChatOptions.validateToolCallbacks(...)` yourself on the merged list before use.
+====

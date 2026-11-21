@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 312" width="900" role="img" aria-labelledby="advisor-call-stream-title advisor-call-stream-desc" font-family="'Open Sans', 'Helvetica Neue', Arial, sans-serif" fill="currentColor">
+<defs><marker id="advisor-call-stream-ext" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto"><path d="M1 1 L11 6 L1 11 z" fill="var(--body-background-color, #fff)" stroke="currentColor" stroke-opacity="0.7"/></marker><marker id="advisor-call-stream-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor" fill-opacity="0.6"/></marker><marker id="advisor-call-stream-has" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="9" orient="auto"><path d="M1 5 L7 1 L13 5 L7 9 z" fill="currentColor" fill-opacity="0.7"/></marker></defs>
+<title id="advisor-call-stream-title">How BaseAdvisor runs before() and after()</title>
+<desc id="advisor-call-stream-desc">For call(), BaseAdvisor runs before() on the calling thread, calls the next advisor, and runs after() once with the complete response. For stream(), it runs before() on its scheduler, calls the next advisor, which returns a Flux of chunks, and runs after() only for the chunk that carries a finish reason.</desc>
+<text x="220.0" y="22.0" text-anchor="middle" font-size="15" font-weight="700">call()</text>
+<text x="680.0" y="22.0" text-anchor="middle" font-size="15" font-weight="700">stream()</text>
+<rect x="70" y="40" width="300" height="46" rx="8" fill="#6DB33F"/><text x="220.0" y="60.0" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">before(request)</text><text x="220.0" y="77.0" text-anchor="middle" font-size="11" fill="#fff">on the calling thread</text>
+<rect x="70" y="116" width="300" height="46" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.2"/><text x="220.0" y="136.0" text-anchor="middle" font-size="13" font-weight="600">chain.nextCall(request)</text><text x="220.0" y="153.0" text-anchor="middle" font-size="11" fill-opacity="0.75">the rest of the chain and the model</text>
+<rect x="70" y="192" width="300" height="46" rx="8" fill="#6DB33F"/><text x="220.0" y="212.0" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">after(response)</text><text x="220.0" y="229.0" text-anchor="middle" font-size="11" fill="#fff">once, with the complete response</text>
+<path d="M220.0 86.0 L220.0 112.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-call-stream-arrow)"/>
+<path d="M220.0 162.0 L220.0 188.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-call-stream-arrow)"/>
+<rect x="520" y="40" width="320" height="46" rx="8" fill="#6DB33F"/><text x="680.0" y="60.0" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">before(request)</text><text x="680.0" y="77.0" text-anchor="middle" font-size="11" fill="#fff">on getScheduler(), boundedElastic by default</text>
+<rect x="520" y="116" width="320" height="46" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.2"/><text x="680.0" y="136.0" text-anchor="middle" font-size="13" font-weight="600">chain.nextStream(request)</text><text x="680.0" y="153.0" text-anchor="middle" font-size="11" fill-opacity="0.75">returns a Flux of response chunks</text>
+<rect x="530" y="186" width="58" height="26" rx="5" fill="none" stroke="currentColor" stroke-opacity="0.4"/>
+<text x="559.0" y="203.0" text-anchor="middle" font-size="11" fill-opacity="0.8">chunk</text>
+<rect x="604" y="186" width="58" height="26" rx="5" fill="none" stroke="currentColor" stroke-opacity="0.4"/>
+<text x="633.0" y="203.0" text-anchor="middle" font-size="11" fill-opacity="0.8">chunk</text>
+<rect x="678" y="186" width="58" height="26" rx="5" fill="none" stroke="currentColor" stroke-opacity="0.4"/>
+<text x="707.0" y="203.0" text-anchor="middle" font-size="11" fill-opacity="0.8">chunk</text>
+<rect x="752" y="186" width="80" height="26" rx="5" fill="#6DB33F" fill-opacity="0.18" stroke="#6DB33F"/>
+<text x="792.0" y="203.0" text-anchor="middle" font-size="11" font-weight="700">finish</text>
+<rect x="620" y="236" width="220" height="40" rx="8" fill="#6DB33F"/><text x="730.0" y="253.0" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">after(chunk)</text><text x="730.0" y="270.0" text-anchor="middle" font-size="11" fill="#fff">only for the chunk with a finish reason</text>
+<path d="M680.0 86.0 L680.0 112.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-call-stream-arrow)"/>
+<path d="M680.0 162.0 L680.0 182.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-call-stream-arrow)"/>
+<path d="M792.0 212.0 L760.0 232.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-call-stream-arrow)"/>
+<text x="450.0" y="300.0" text-anchor="middle" font-size="12" fill-opacity="0.75">BaseAdvisor implements adviseCall() and adviseStream() from these two methods. Other chunks pass through unchanged.</text>
+</svg>

@@ -1,0 +1,105 @@
+= Markdown Document Reader
+
+The `MarkdownDocumentReader` processes Markdown documents, converting them into a list of `Document` objects.
+
+== Dependencies
+Add the dependency to your project using Maven or Gradle.
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-markdown-document-reader</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-markdown-document-reader'
+}
+----
+======
+
+== Example
+
+[source,java]
+----
+@Component
+class MyMarkdownReader {
+
+    private final Resource resource;
+
+    MyMarkdownReader(@Value("classpath:code.md") Resource resource) {
+        this.resource = resource;
+    }
+
+    List<Document> loadMarkdown() {
+        MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
+            .withHorizontalRuleCreateDocument(true)
+            .withIncludeCodeBlock(false)
+            .withIncludeBlockquote(false)
+            .withAdditionalMetadata("filename", "code.md")
+            .build();
+
+        MarkdownDocumentReader reader = new MarkdownDocumentReader(this.resource, config);
+        return reader.get();
+    }
+}
+----
+
+The `MarkdownDocumentReaderConfig` allows you to customize the behavior of the MarkdownDocumentReader:
+
+* `horizontalRuleCreateDocument`: When set to `true`, horizontal rules in the Markdown will create new `Document` objects.
+* `includeCodeBlock`: When set to `true`, code blocks will be included in the same `Document` as the surrounding text.
+When `false`, code blocks create separate `Document` objects.
+* `includeBlockquote`: When set to `true`, blockquotes will be included in the same `Document` as the surrounding text.
+When `false`, blockquotes create separate `Document` objects.
+* `additionalMetadata`: Allows you to add custom metadata to all created `Document` objects.
+
+== Sample Document: code.md
+
+[source,markdown]
+----
+This is a Java sample application:
+
+```java
+package com.example.demo;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class DemoApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(DemoApplication.class, args);
+    }
+}
+```
+
+Markdown also provides the possibility to `use inline code formatting throughout` the entire sentence.
+
+---
+
+Another possibility is to set block code without specific highlighting:
+
+```
+./mvnw spring-javaformat:apply
+```
+----
+
+Behavior: The MarkdownDocumentReader processes the Markdown content and creates Document objects based on the configuration:
+
+* Headers become metadata in the Document objects.
+* Paragraphs become the content of Document objects.
+* Code blocks can be separated into their own Document objects or included with surrounding text.
+* Blockquotes can be separated into their own Document objects or included with surrounding text.
+* Horizontal rules can be used to split the content into separate Document objects.
+
+The reader preserves formatting like inline code, lists, and text styling within the content of the Document objects.

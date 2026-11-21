@@ -1,0 +1,358 @@
+[[StructuredOutputConverter]]
+= Output Converters
+:page-aliases: api/structured-output-converter.adoc, api/structured-output/converters.adoc
+
+The xref:structured-output/index.adoc[high-level `.entity(...)` API] is built on top of the `StructuredOutputConverter` abstraction.
+Most applications never use it directly.
+Use this lower-level API when you need to:
+
+* parse answers that the built-in converters reject, for example JSON surrounded by explanations;
+* produce a format other than JSON, such as YAML or CSV;
+* use a converter with the low-level xref:models/chat.adoc[`ChatModel`] API.
+
+A converter takes part before and after the model call.
+Before the call, it supplies format instructions that are added to the prompt.
+After the call, it turns the text of the answer into an instance of the target type:
+
+image::spring-ai-structured-output.svg[Structured output with format instructions,860,opts=inline]
+
+TIP: Format instructions ask the model for a format, but cannot force it.
+Combine converters with xref:structured-output/validation.adoc[schema validation], or use xref:structured-output/native.adoc[provider-native structured output] where the model supports it.
+
+Converters are not used for xref:tools/index.adoc[tool calling], whose arguments are already structured.
+
+== Structured Output API
+
+The `StructuredOutputConverter` interface combines the Spring https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/core/convert/converter/Converter.html[`Converter<String, T>`] interface with a `FormatProvider`:
+
+[source,java]
+----
+public interface StructuredOutputConverter<T> extends Converter<String, T>, FormatProvider {
+
+	String NO_JSON_SCHEMA = "";
+
+	default String getJsonSchema() {
+		return NO_JSON_SCHEMA;
+	}
+}
+
+public interface FormatProvider {
+
+	String getFormat();
+}
+----
+
+* `getFormat()` returns the format instructions for the model.
+* `convert(String)` turns the text of the answer into the target type `T`.
+* `getJsonSchema()` returns the JSON schema of the target type, if the converter has one.
+
+For example, `MapOutputConverter` returns these format instructions:
+
+----
+Your response should be in JSON format.
+The data structure for the JSON should match this Java class: java.util.HashMap
+Do not include any explanations, only provide a RFC8259 compliant JSON response following this format without deviation.
+Remove the ```json markdown surrounding the output including the trailing "```".
+----
+
+With the low-level `ChatModel` API, you add the format instructions to the prompt yourself, usually through a xref:prompts/index.adoc#_prompttemplate[PromptTemplate] with a `+{format}+` placeholder:
+
+image::spring-ai-converter-flow.svg[How a converter takes part in a ChatModel call,900,opts=inline]
+
+[source,java]
+----
+StructuredOutputConverter<ActorsFilms> converter = new BeanOutputConverter<>(ActorsFilms.class);
+
+Prompt prompt = PromptTemplate.builder()
+	.template("""
+		Generate the filmography of 5 movies for {actor}.
+		{format}
+		""")
+	.variables(Map.of("actor", "Tom Hanks", "format", converter.getFormat()))
+	.build()
+	.create();
+
+String text = chatModel.call(prompt).getResult().getOutput().getText();
+ActorsFilms actorsFilms = converter.convert(text);
+----
+
+`ChatClient` does all of this for you when you call `.entity(...)`.
+
+[[_getjsonschema]]
+=== The Role of `getJsonSchema()`
+
+Added in 2.0 as a default method of `StructuredOutputConverter`, `getJsonSchema()` lets a converter take part in xref:structured-output/native.adoc[`useProviderStructuredOutput()`] and xref:structured-output/validation.adoc[`validateSchema()`].
+Return the schema of your target type, typically by delegating to a `BeanOutputConverter`, and both options work.
+If you leave it at the default, which returns no schema, `useProviderStructuredOutput()` falls back to the format instructions, and `validateSchema()` throws an `IllegalArgumentException`.
+
+=== Available Converters
+
+image::spring-ai-converter-hierarchy.svg[The structured output converters,860,opts=inline]
+
+* `BeanOutputConverter<T>` converts the answer into a Java class, a record or a generic type given as a link:https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/core/ParameterizedTypeReference.html[`ParameterizedTypeReference`].
+Its format instructions contain a JSON schema of the type, generated according to JSON Schema draft 2020-12.
+It cleans the text of the answer, see <<cleaning-the-response>>, and parses it with a Jackson `JsonMapper`.
+This is the converter that `.entity(Class)` and `.entity(ParameterizedTypeReference)` use.
+* `MapOutputConverter` converts the answer into a `Map<String, Object>`.
+It extends `AbstractMessageOutputConverter`, which parses the text with a Spring link:https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/messaging/converter/MessageConverter.html[`MessageConverter`].
+* `ListOutputConverter` converts a comma-separated answer into a `List<String>`.
+It extends `AbstractConversionServiceOutputConverter`, which converts the text with a Spring link:https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/core/convert/ConversionService.html[`ConversionService`].
+
+[[cleaning-the-response]]
+== Cleaning the Response
+
+Models often add something around the JSON they were asked for: a markdown code fence, or the reasoning of a thinking model.
+Before `BeanOutputConverter` parses the answer, it passes the text through a `ResponseTextCleaner`.
+The default cleaner applies, in this order:
+
+. `WhitespaceCleaner` trims leading and trailing whitespace.
+. `ThinkingTagCleaner` removes reasoning blocks, such as `<thinking>...</thinking>` (Amazon Nova), `<think>...</think>` (Qwen) and `<reasoning>...</reasoning>`.
+. `MarkdownCodeBlockCleaner` removes a code fence, such as ` ```json `, that surrounds the whole answer.
+. `WhitespaceCleaner` trims the result again.
+
+To change the cleaning, pass your own cleaner to the `BeanOutputConverter` constructor, together with an optional `JsonMapper`.
+`ResponseTextCleaner` has a single method, `clean(String)`, so a lambda will do, and `CompositeResponseTextCleaner` chains several cleaners.
+A custom cleaner replaces the default one, so add the default steps you still want.
+
+== Using Converters
+
+The following sections show each converter with the `ChatClient` API and with the low-level `ChatModel` API.
+The examples use this record:
+
+[source,java]
+----
+record ActorsFilms(String actor, List<String> movies) {
+}
+----
+
+=== Bean Output Converter
+
+With `ChatClient`:
+
+[source,java]
+----
+ActorsFilms actorsFilms = ChatClient.create(chatModel).prompt()
+	.user(u -> u.text("Generate the filmography of 5 movies for {actor}.")
+		.param("actor", "Tom Hanks"))
+	.call()
+	.entity(ActorsFilms.class);
+----
+
+With `ChatModel`:
+
+[source,java]
+----
+BeanOutputConverter<ActorsFilms> converter = new BeanOutputConverter<>(ActorsFilms.class);
+
+Prompt prompt = PromptTemplate.builder()
+	.template("""
+		Generate the filmography of 5 movies for {actor}.
+		{format}
+		""")
+	.variables(Map.of("actor", "Tom Hanks", "format", converter.getFormat()))
+	.build()
+	.create();
+
+ActorsFilms actorsFilms = converter.convert(chatModel.call(prompt).getResult().getOutput().getText());
+----
+
+==== Handling Conversion Failures
+
+If `BeanOutputConverter` cannot deserialize the model output, it throws `StructuredOutputConversionException`.
+The exception's `getText()` returns the complete original input, before whitespace, thinking tags or Markdown code fences are removed, and `getCause()` retains the underlying JSON parsing or mapping exception.
+This also applies when using `ChatClient.call().entity(...)` or `responseEntity(...)` with a `BeanOutputConverter`.
+
+[source,java]
+----
+try {
+	ActorsFilms actorsFilms = chatClient.prompt()
+		.user("Generate the filmography of Tom Hanks.")
+		.call()
+		.entity(ActorsFilms.class);
+}
+catch (StructuredOutputConversionException ex) {
+	String originalResponse = ex.getText();
+	// Inspect the original response or use it in application-specific recovery.
+}
+----
+
+==== Property Ordering in the Generated Schema
+
+`BeanOutputConverter` respects the Jackson `@JsonPropertyOrder` annotation when it generates the schema, for records and for classes:
+
+[source,java]
+----
+@JsonPropertyOrder({"actor", "movies"})
+record ActorsFilms(String actor, List<String> movies) {
+}
+----
+
+==== Generic Types
+
+Use a `ParameterizedTypeReference` for generic target types, such as a list of records.
+With `ChatClient`:
+
+[source,java]
+----
+List<ActorsFilms> actorsFilms = ChatClient.create(chatModel).prompt()
+	.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+	.call()
+	.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {});
+----
+
+With `ChatModel`, pass the same type to the converter:
+
+[source,java]
+----
+BeanOutputConverter<List<ActorsFilms>> converter =
+	new BeanOutputConverter<>(new ParameterizedTypeReference<List<ActorsFilms>>() {});
+----
+
+The rest is the same as in the previous example.
+
+=== Map Output Converter
+
+With `ChatClient`:
+
+[source,java]
+----
+Map<String, Object> result = ChatClient.create(chatModel).prompt()
+	.user("Provide an array of the numbers from 1 to 9 under the key 'numbers'.")
+	.call()
+	.entity(new MapOutputConverter());
+----
+
+With `ChatModel`:
+
+[source,java]
+----
+MapOutputConverter converter = new MapOutputConverter();
+
+Prompt prompt = PromptTemplate.builder()
+	.template("""
+		Provide an array of the numbers from 1 to 9 under the key 'numbers'.
+		{format}
+		""")
+	.variables(Map.of("format", converter.getFormat()))
+	.build()
+	.create();
+
+Map<String, Object> result = converter.convert(chatModel.call(prompt).getResult().getOutput().getText());
+----
+
+`.entity(new ParameterizedTypeReference<Map<String, Object>>() {})` also returns a map, but through `BeanOutputConverter`, with a JSON schema in the format instructions.
+
+=== List Output Converter
+
+With `ChatClient`:
+
+[source,java]
+----
+List<String> flavors = ChatClient.create(chatModel).prompt()
+	.user(u -> u.text("List five {subject}.")
+		.param("subject", "ice cream flavors"))
+	.call()
+	.entity(new ListOutputConverter());
+----
+
+With `ChatModel`:
+
+[source,java]
+----
+ListOutputConverter converter = new ListOutputConverter();
+
+Prompt prompt = PromptTemplate.builder()
+	.template("""
+		List five {subject}.
+		{format}
+		""")
+	.variables(Map.of("subject", "ice cream flavors", "format", converter.getFormat()))
+	.build()
+	.create();
+
+List<String> flavors = converter.convert(chatModel.call(prompt).getResult().getOutput().getText());
+----
+
+== Custom Cleaning and Custom Converters
+
+=== Extracting JSON from Prose
+
+The default cleaner removes a code fence only when the fence surrounds the whole answer.
+When the model writes an explanation before or after the JSON, the answer still fails to parse:
+
+[source,text]
+----
+Here's the filmography:
+```json
+{ "actor": "Tom Hanks", "movies": ["Forrest Gump", "Cast Away"] }
+```
+----
+
+A custom cleaner can cut out the JSON object.
+This one keeps the removal of reasoning blocks, then takes the text from the first `{` to the last `}`:
+
+[source,java]
+----
+ResponseTextCleaner extractJson = text -> {
+	if (text == null) {
+		return null;
+	}
+	int start = text.indexOf('{');
+	int end = text.lastIndexOf('}');
+	return (start >= 0 && end > start) ? text.substring(start, end + 1) : text;
+};
+
+BeanOutputConverter<ActorsFilms> converter = new BeanOutputConverter<>(ActorsFilms.class, null,
+		CompositeResponseTextCleaner.builder()
+			.addCleaner(new ThinkingTagCleaner())
+			.addCleaner(extractJson)
+			.build());
+
+ActorsFilms films = chatClient.prompt()
+	.user("Generate the filmography for a random actor.")
+	.call()
+	.entity(converter);
+----
+
+The converter is still a `BeanOutputConverter`, so it still has a JSON schema, and xref:structured-output/validation.adoc[`validateSchema()`] and xref:structured-output/native.adoc[`useProviderStructuredOutput()`] work as with `.entity(ActorsFilms.class)`.
+
+=== Writing a Converter
+
+To change more than the cleaning, implement `StructuredOutputConverter` and delegate to a `BeanOutputConverter` for the parts you keep.
+Delegate `getJsonSchema()` as well, so that both options keep working, see <<_getjsonschema,The Role of `getJsonSchema()`>>:
+
+[source,java]
+----
+public class AuditingOutputConverter<T> implements StructuredOutputConverter<T> {
+
+	private static final Logger logger = LoggerFactory.getLogger(AuditingOutputConverter.class);
+
+	private final BeanOutputConverter<T> delegate;
+
+	public AuditingOutputConverter(Class<T> type) {
+		this.delegate = new BeanOutputConverter<>(type);
+	}
+
+	@Override
+	public String getFormat() {
+		return this.delegate.getFormat();
+	}
+
+	@Override
+	public String getJsonSchema() {
+		return this.delegate.getJsonSchema();
+	}
+
+	@Override
+	public T convert(String text) {
+		logger.debug("Model answer: {}", text);
+		return this.delegate.convert(text);
+	}
+}
+----
+
+=== Non-JSON Formats
+
+For formats other than JSON, such as YAML for configuration or CSV for extracted data, implement `StructuredOutputConverter` from scratch: write your own `getFormat()` instructions and your own `convert(...)` parser.
+Leave `getJsonSchema()` at its default: the format instructions alone guide the model, also when you call `useProviderStructuredOutput()`.
+Do not call `validateSchema()` with such a converter, because without a schema it throws an `IllegalArgumentException`.

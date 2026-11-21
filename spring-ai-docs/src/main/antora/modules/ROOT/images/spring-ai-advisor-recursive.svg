@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 372" width="640" role="img" aria-labelledby="advisor-recursive-title advisor-recursive-desc" font-family="'Open Sans', 'Helvetica Neue', Arial, sans-serif" fill="currentColor">
+<defs><marker id="advisor-recursive-ext" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="11" markerHeight="11" orient="auto"><path d="M1 1 L11 6 L1 11 z" fill="var(--body-background-color, #fff)" stroke="currentColor" stroke-opacity="0.7"/></marker><marker id="advisor-recursive-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="currentColor" fill-opacity="0.6"/></marker><marker id="advisor-recursive-has" viewBox="0 0 14 10" refX="1" refY="5" markerWidth="12" markerHeight="9" orient="auto"><path d="M1 5 L7 1 L13 5 L7 9 z" fill="currentColor" fill-opacity="0.7"/></marker></defs>
+<title id="advisor-recursive-title">A recursive advisor</title>
+<desc id="advisor-recursive-desc">Advisors before the recursive advisor run once. The recursive advisor calls a copy of the rest of the chain, checks the response, and calls the copy again with a changed request until it is done. The advisors after it and the chat model run on every round.</desc>
+<rect x="130" y="30" width="360" height="46" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.2"/><text x="310.0" y="50.0" text-anchor="middle" font-size="13" font-weight="600">Advisors before it</text><text x="310.0" y="67.0" text-anchor="middle" font-size="11" fill-opacity="0.75">run once per call</text>
+<rect x="130" y="106" width="360" height="92" rx="8" fill="#6DB33F"/><text x="310.0" y="156.5" text-anchor="middle" font-size="13" font-weight="700" fill="#fff"></text>
+<text x="310.0" y="128.0" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Recursive advisor</text>
+<text x="310.0" y="150.0" text-anchor="middle" font-size="11" fill="#fff" font-family="ui-monospace, Menlo, Consolas, monospace">response = chain.copy(this).nextCall(request)</text>
+<text x="310.0" y="170.0" text-anchor="middle" font-size="11.5" fill="#fff">done?  no: change the request, call again</text>
+<text x="310.0" y="188.0" text-anchor="middle" font-size="11.5" fill="#fff">yes: return the response</text>
+<rect x="130" y="236" width="360" height="46" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.2"/><text x="310.0" y="256.0" text-anchor="middle" font-size="13" font-weight="600">Advisors after it</text><text x="310.0" y="273.0" text-anchor="middle" font-size="11" fill-opacity="0.75">run on every round</text>
+<rect x="180" y="312" width="260" height="40" rx="8" fill="#6DB33F" fill-opacity="0.14" stroke="#6DB33F" stroke-width="1.2"/><text x="310.0" y="336.5" text-anchor="middle" font-size="14">ChatModel</text>
+<rect x="110" y="226" width="400" height="138" rx="10" fill="none" stroke="#6DB33F" stroke-width="1.6" stroke-dasharray="6 4"/>
+<text x="520.0" y="300.0" text-anchor="start" font-size="12.5" font-weight="700" fill="#6DB33F">repeated</text>
+<text x="520.0" y="316.0" text-anchor="start" font-size="12.5" font-weight="700" fill="#6DB33F">for each round</text>
+<path d="M270.0 78.0 L270.0 102.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-recursive-arrow)"/>
+<path d="M350.0 104.0 L350.0 80.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-recursive-arrow)"/>
+<path d="M270.0 200.0 L270.0 232.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-recursive-arrow)"/>
+<path d="M350.0 234.0 L350.0 202.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-recursive-arrow)"/>
+<path d="M270.0 284.0 L270.0 308.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-recursive-arrow)"/>
+<path d="M350.0 310.0 L350.0 286.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-recursive-arrow)"/>
+<path d="M270.0 6.0 L270.0 26.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-recursive-arrow)"/>
+<path d="M350.0 28.0 L350.0 8.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#advisor-recursive-arrow)"/>
+<text x="260.0" y="16.0" text-anchor="end" font-size="11" fill-opacity="0.75" font-style="italic">request</text>
+<text x="360.0" y="16.0" text-anchor="start" font-size="11" fill-opacity="0.75" font-style="italic">response</text>
+</svg>

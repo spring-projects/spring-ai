@@ -1,0 +1,88 @@
+[[tutorial-tools]]
+= Give the Model Tools
+
+A model can only answer from its training data and the prompt.
+Tools let it do more: the model asks your application to run a Java method, and uses the result to continue.
+This tutorial adds two tools to the application from the xref:get-started/quickstart.adoc[Quickstart].
+
+== Define the Tools
+
+A tool is a method annotated with `@Tool`.
+The description tells the model what the tool is for, so write it carefully:
+
+[source,java]
+----
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.context.i18n.LocaleContextHolder;
+
+class DateTimeTools {
+
+    @Tool(description = "Get the current date and time in the user's timezone")
+    String getCurrentDateTime() {
+        return LocalDateTime.now().atZone(LocaleContextHolder.getTimeZone().toZoneId()).toString();
+    }
+
+    @Tool(description = "Set a user alarm for the given time, provided in ISO-8601 format")
+    void setAlarm(String time) {
+        LocalDateTime alarmTime = LocalDateTime.parse(time, DateTimeFormatter.ISO_DATE_TIME);
+        System.out.println("Alarm set for " + alarmTime);
+    }
+}
+----
+
+The first tool gives the model information it does not have.
+The second one takes an action.
+
+== Pass the Tools to ChatClient
+
+Pass an instance of the class to the `tools` method of the request:
+
+[source,java]
+----
+@RestController
+class AssistantController {
+
+    private final ChatClient chatClient;
+
+    AssistantController(ChatClient.Builder chatClientBuilder) {
+        this.chatClient = chatClientBuilder.build();
+    }
+
+    @GetMapping("/assistant")
+    String assistant(@RequestParam String message) {
+        return this.chatClient.prompt()
+            .user(message)
+            .tools(new DateTimeTools())
+            .call()
+            .content();
+    }
+}
+----
+
+To make the tools available on every request, register them once with `defaultTools` on the `ChatClient.Builder` instead.
+
+== Run and Test
+
+Ask a question that needs both tools:
+
+[source,shell]
+----
+curl 'http://localhost:8080/assistant?message=Can+you+set+an+alarm+10+minutes+from+now'
+----
+
+The model decides to call `getCurrentDateTime()`, and then `setAlarm(...)` with the time it computed.
+You see `Alarm set for ...` in the application log, and the response confirms the alarm.
+
+== What Happened
+
+`ChatClient` sent the tool definitions to the model together with your message.
+The model answered with a request to call a tool.
+Spring AI ran the method, sent the result back, and repeated this until the model produced a final answer.
+This round-trip is the xref:tools/loop.adoc[tool calling loop], and Spring AI runs it for you.
+
+== Next Steps
+
+* xref:tools/defining.adoc[Defining Tools] covers parameters, descriptions and the programmatic ways to define a tool.
+* xref:tools/confirmation.adoc[Tool Call Confirmation] asks a person to approve a tool call before it runs.
+* xref:tools/mcp.adoc[Using MCP Tools] makes tools from MCP servers available to the model.
+* xref:tools/tool-search.adoc[Tool Search] helps when an application has a large number of tools.

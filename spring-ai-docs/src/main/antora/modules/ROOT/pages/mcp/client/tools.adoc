@@ -1,0 +1,218 @@
+= MCP Tool Callbacks
+
+The MCP client turns the tools of every connected server into Spring AI `ToolCallback` instances.
+This page describes how to choose which tools are exposed, how they are named, and what the server receives with each call.
+To pass the tools to a `ChatClient`, see xref:tools/mcp.adoc[Using MCP Tools].
+
+== Tool Filtering
+
+The MCP Client Boot Starter supports filtering of discovered tools through the `McpToolFilter` interface.
+This allows you to selectively include or exclude tools based on custom criteria such as the MCP connection information or tool properties.
+
+To implement tool filtering, create a bean that implements the `McpToolFilter` interface:
+
+[source,java]
+----
+@Component
+public class CustomMcpToolFilter implements McpToolFilter {
+
+    @Override
+    public boolean test(McpConnectionInfo connectionInfo, McpSchema.Tool tool) {
+        // Filter logic based on connection information and tool properties
+        // Return true to include the tool, false to exclude it
+
+        // Example: Exclude tools from a specific client
+        if (connectionInfo.clientInfo().name().equals("restricted-client")) {
+            return false;
+        }
+
+        // Example: Only include tools with specific names
+        if (tool.name().startsWith("allowed_")) {
+            return true;
+        }
+
+        // Example: Filter based on tool description or other properties
+        if (tool.description() != null &&
+            tool.description().contains("experimental")) {
+            return false;
+        }
+
+        return true; // Include all other tools by default
+    }
+}
+----
+
+The `McpConnectionInfo` record provides access to:
+
+* `clientCapabilities` - The capabilities of the MCP client
+* `clientInfo` - Information about the MCP client (name and version)
+* `initializeResult` - The initialization result from the MCP server
+
+The filter is automatically detected and applied to both synchronous and asynchronous MCP tool callback providers.
+If no custom filter is provided, all discovered tools are included by default.
+
+Note: Only one `McpToolFilter` bean should be defined in the application context.
+If multiple filters are needed, combine them into a single composite filter implementation.
+
+[[mcp-tool-name-prefix-generation]]
+== Tool Name Prefix Generation
+
+The MCP Client Boot Starter supports customizable tool name prefix generation through the `McpToolNamePrefixGenerator` interface.
+This feature helps avoid naming conflicts when integrating tools from multiple MCP servers by adding unique prefixes to tool names.
+
+By default, if no custom `McpToolNamePrefixGenerator` bean is provided, the starter uses `DefaultMcpToolNamePrefixGenerator` which ensures unique tool names across all MCP client connections.
+The default generator:
+
+* Tracks all existing connections and tool names to ensure uniqueness
+* Formats tool names by replacing hyphens with underscores and removing every other character that is not an ASCII letter, a digit, an underscore or a CJK character (e.g., `my-tool` becomes `my_tool`)
+* When duplicate tool names are detected across different connections, adds a counter prefix (e.g., `alt_1_toolName`, `alt_2_toolName`)
+* Is thread-safe and maintains idempotency - the same combination of (client, server, tool) always gets the same unique name
+
+For example:
+* First occurrence of tool `search` → `search`
+* Second occurrence of tool `search` from a different connection → `alt_1_search`
+* Tool with special characters `my-special-tool` → `my_special_tool`
+
+You can customize this behavior by providing your own implementation:
+
+[source,java]
+----
+@Component
+public class CustomToolNamePrefixGenerator implements McpToolNamePrefixGenerator {
+
+    @Override
+    public String prefixedToolName(McpConnectionInfo connectionInfo, Tool tool) {
+        // Custom logic to generate prefixed tool names
+
+        // Example: Use server name and version as prefix
+        String serverName = connectionInfo.initializeResult().serverInfo().name();
+        String serverVersion = connectionInfo.initializeResult().serverInfo().version();
+        return serverName + "_v" + serverVersion.replace(".", "_") + "_" + tool.name();
+    }
+}
+----
+
+The `McpConnectionInfo` record provides comprehensive information about the MCP connection:
+
+* `clientCapabilities` - The capabilities of the MCP client
+* `clientInfo` - Information about the MCP client (name, title, and version)
+* `initializeResult` - The initialization result from the MCP server, including server information
+
+=== Built-in Prefix Generators
+
+The framework provides several built-in prefix generators:
+
+* `DefaultMcpToolNamePrefixGenerator` - Ensures unique tool names by tracking duplicates and adding counter prefixes when needed (used by default if no custom bean is provided)
+* `McpToolNamePrefixGenerator.noPrefix()` - Returns tool names without any prefix (may cause conflicts if multiple servers provide tools with the same name)
+
+To disable prefixing entirely and use raw tool names (not recommended if using multiple MCP servers), register the no-prefix generator as a bean:
+
+[source,java]
+----
+@Configuration
+public class McpConfiguration {
+
+    @Bean
+    public McpToolNamePrefixGenerator mcpToolNamePrefixGenerator() {
+        return McpToolNamePrefixGenerator.noPrefix();
+    }
+}
+----
+
+The prefix generator is automatically detected and applied to both synchronous and asynchronous MCP tool callback providers through Spring's `ObjectProvider` mechanism.
+If no custom generator bean is provided, the `DefaultMcpToolNamePrefixGenerator` is used automatically.
+
+WARNING: When using `McpToolNamePrefixGenerator.noPrefix()` with multiple MCP servers, duplicate tool names will cause an `IllegalStateException`.
+The default `DefaultMcpToolNamePrefixGenerator` prevents this by automatically adding unique prefixes to duplicate tool names.
+
+NOTE: This generator only de-duplicates names across MCP connections; it has no visibility into local `@Tool` methods.
+See xref:tools/mcp.adoc#combining-local-and-mcp-tools[Combining Local and MCP Tools] for the local/remote collision case and which call paths actually guard against it.
+
+== Tool Context to MCP Meta Converter
+
+The MCP Client Boot Starter supports customizable conversion of Spring AI's xref:tools/reference.adoc#tool-context[ToolContext] to MCP tool-call metadata through the `ToolContextToMcpMetaConverter` interface.
+This feature allows you to pass additional contextual information (e.g. user id, secrets token) as metadata along with the LLM's generated call arguments.
+
+For example you can pass the MCP `progressToken` to your link:https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress#progress-flow[MCP Progress Flow] in the tool context to track the progress of long-running operations:
+
+[source,java]
+----
+ChatModel chatModel = ...
+
+String response = ChatClient.create(chatModel)
+        .prompt("Tell me more about the customer with ID 42")
+        .toolContext(Map.of("progressToken", "my-progress-token"))
+        .call()
+        .content();
+----
+
+By default, if no custom converter bean is provided, the starter uses `ToolContextToMcpMetaConverter.defaultConverter()` which:
+
+* Filters out the MCP exchange key (`McpToolUtils.TOOL_CONTEXT_MCP_EXCHANGE_KEY`)
+* Filters out entries with null values
+* Passes through all other context entries as metadata
+
+
+
+
+You can customize this behavior by providing your own implementation:
+
+[source,java]
+----
+@Component
+public class CustomToolContextToMcpMetaConverter implements ToolContextToMcpMetaConverter {
+
+    @Override
+    public Map<String, Object> convert(ToolContext toolContext) {
+        if (toolContext == null || toolContext.getContext() == null) {
+            return Map.of();
+        }
+
+        // Custom logic to convert tool context to MCP metadata
+        Map<String, Object> metadata = new HashMap<>();
+
+        // Example: Add custom prefix to all keys
+        for (Map.Entry<String, Object> entry : toolContext.getContext().entrySet()) {
+            if (entry.getValue() != null) {
+                metadata.put("app_" + entry.getKey(), entry.getValue());
+            }
+        }
+
+        // Example: Add additional metadata
+        metadata.put("timestamp", System.currentTimeMillis());
+        metadata.put("source", "spring-ai");
+
+        return metadata;
+    }
+}
+----
+
+=== Built-in Converters
+
+The framework provides built-in converters:
+
+* `ToolContextToMcpMetaConverter.defaultConverter()` - Filters out MCP exchange key and null values (used by default if no custom bean is provided)
+* `ToolContextToMcpMetaConverter.noOp()` - Returns an empty map, effectively disabling context-to-metadata conversion
+
+To disable context-to-metadata conversion entirely:
+
+[source,java]
+----
+@Configuration
+public class McpConfiguration {
+
+    @Bean
+    public ToolContextToMcpMetaConverter toolContextToMcpMetaConverter() {
+        return ToolContextToMcpMetaConverter.noOp();
+    }
+}
+----
+
+The converter is automatically detected and applied to both synchronous and asynchronous MCP tool callbacks through Spring's `ObjectProvider` mechanism.
+If no custom converter bean is provided, the default converter is used automatically.
+
+== Disable the MCP ToolCallback Auto-Configuration
+
+The MCP ToolCallback auto-configuration is enabled by default, but can be disabled with the `spring.ai.mcp.client.toolcallback.enabled=false` property.
+
+When disabled, no `ToolCallbackProvider` bean is created from the available MCP tools.

@@ -1,0 +1,338 @@
+= MCP Client Transports
+
+== Transport Support
+
+The auto-configuration supports multiple transport types:
+
+* Standard I/O (Stdio) (activated by the `spring-ai-starter-mcp-client` and `spring-ai-starter-mcp-client-webflux`)
+* (HttpClient) Streamable-HTTP and SSE (activated by the `spring-ai-starter-mcp-client`)
+* (WebFlux) Streamable-HTTP and SSE (activated by the `spring-ai-starter-mcp-client-webflux`)
+
+With STDIO, the client starts the server as a child process and exchanges messages with it over standard input and output.
+The SSE transport is deprecated, see <<_sse_transport_properties>>.
+
+== Stdio Transport Properties
+
+Properties for Standard I/O transport are prefixed with `spring.ai.mcp.client.stdio`:
+
+[cols="3,4,3"]
+|===
+|Property |Description |Default Value
+
+|`servers-configuration`
+|Resource containing the MCP servers configuration in JSON format
+|-
+
+|`connections`
+|Map of named stdio connection configurations
+|-
+
+|`connections.[name].command`
+|The command to execute for the MCP server
+|-
+
+|`connections.[name].args`
+|List of command arguments
+|-
+
+|`connections.[name].env`
+|Map of environment variables for the server process
+|-
+|===
+
+Example configuration:
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        stdio:
+          connections:
+            server1:
+              command: /path/to/server
+              args:
+                - --port=8080
+                - --mode=production
+              env:
+                API_KEY: your-api-key
+                DEBUG: "true"
+----
+
+Alternatively, you can configure stdio connections using an external JSON file using the link:https://modelcontextprotocol.io/quickstart/user[Claude Desktop format]:
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        stdio:
+          servers-configuration: classpath:mcp-servers.json
+----
+
+The Claude Desktop format looks like this:
+
+[source,json]
+----
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/username/Desktop",
+        "/Users/username/Downloads"
+      ]
+    }
+  }
+}
+----
+
+== Windows STDIO Configuration
+
+IMPORTANT: On Windows, commands like `npx`, `npm`, and `node` are implemented as **batch files** (`.cmd`), not native executables.
+Java's `ProcessBuilder` cannot execute batch files directly and requires the `cmd.exe /c` wrapper.
+
+=== Why Windows Needs Special Handling
+
+When Java's `ProcessBuilder` (used internally by `StdioClientTransport`) attempts to spawn a process on Windows, it can only execute:
+
+* Native executables (`.exe` files)
+* System commands available to `cmd.exe`
+
+Windows batch files like `npx.cmd`, `npm.cmd`, and even `python.cmd` (from the Microsoft Store) require the `cmd.exe` shell to execute them.
+
+=== Solution: cmd.exe Wrapper
+
+Wrap batch file commands with `cmd.exe /c`:
+
+**Windows Configuration:**
+[source,json]
+----
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "cmd.exe",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\Users\\username\\Desktop"
+      ]
+    }
+  }
+}
+----
+
+**Linux/macOS Configuration:**
+[source,json]
+----
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/username/Desktop"
+      ]
+    }
+  }
+}
+----
+
+=== Cross-Platform Programmatic Configuration
+
+For applications that need to work across platforms without separate configuration files, use OS detection in your Spring Boot application:
+
+[source,java]
+----
+@Bean(destroyMethod = "close")
+@ConditionalOnMissingBean(McpSyncClient.class)
+public McpSyncClient mcpClient() {
+    ServerParameters stdioParams;
+
+    if (isWindows()) {
+        // Windows: cmd.exe /c npx approach
+        var winArgs = new ArrayList<>(Arrays.asList(
+            "/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "target"));
+        stdioParams = ServerParameters.builder("cmd.exe")
+                .args(winArgs)
+                .build();
+    } else {
+        // Linux/Mac: direct npx approach
+        stdioParams = ServerParameters.builder("npx")
+                .args("-y", "@modelcontextprotocol/server-filesystem", "target")
+                .build();
+    }
+
+    McpSyncClient client = McpClient.sync(new StdioClientTransport(stdioParams, McpJsonDefaults.getMapper()))
+            .requestTimeout(Duration.ofSeconds(10))
+            .build();
+    client.initialize();
+    return client;
+}
+
+private static boolean isWindows() {
+    return System.getProperty("os.name").toLowerCase().contains("win");
+}
+----
+
+NOTE: When using programmatic configuration with `@Bean`, add `@ConditionalOnMissingBean(McpSyncClient.class)` to avoid conflicts with auto-configuration from JSON files.
+
+=== Path Considerations
+
+**Relative paths** (recommended for portability):
+[source,json]
+----
+{
+  "command": "cmd.exe",
+  "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "target"]
+}
+----
+
+The MCP server resolves relative paths based on the application's working directory.
+
+**Absolute paths** (Windows requires backslashes or escaped forward slashes):
+[source,json]
+----
+{
+  "command": "cmd.exe",
+  "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\username\\project\\target"]
+}
+----
+
+=== Common Windows Batch Files Requiring cmd.exe
+
+* `npx.cmd`, `npm.cmd` - Node package managers
+* `python.cmd` - Python (Microsoft Store installation)
+* `pip.cmd` - Python package manager
+* `mvn.cmd` - Maven wrapper
+* `gradle.cmd` - Gradle wrapper
+* Custom `.cmd` or `.bat` scripts
+
+=== Reference Implementation
+
+See link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/filesystem[Spring AI Examples - Filesystem] for a complete cross-platform MCP client implementation that automatically detects the OS and configures the client appropriately.
+
+== Streamable-HTTP Transport Properties
+
+Used for connecting to Streamable-HTTP and Stateless Streamable-HTTP MCP servers.
+A connection can also speak the 2026-07-28 protocol revision, see xref:mcp/client/modern.adoc[MCP 2026-07-28 ("Modern") Connections].
+
+Properties for Streamable-HTTP transport are prefixed with `spring.ai.mcp.client.streamable-http`:
+
+[cols="3,4,3"]
+|===
+|Property |Description | Default Value
+
+|`connections`
+|Map of named Streamable-HTTP connection configurations
+|-
+
+|`connections.[name].url`
+|Base URL endpoint for Streamable-Http communication with the MCP server
+|-
+
+|`connections.[name].endpoint`
+|the streamable-http endpoint (as url suffix) to use for the connection
+|`/mcp`
+|===
+
+Example configuration:
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        streamable-http:
+          connections:
+            server1:
+              url: http://localhost:8080
+            server2:
+              url: http://otherserver:8081
+              endpoint: /custom-sse
+----
+
+== SSE Transport Properties
+
+WARNING: The client SSE transport and its `spring.ai.mcp.client.sse` properties are deprecated since Spring AI 2.0.0 and will be removed.
+Use <<_streamable_http_transport_properties,Streamable-HTTP>> connections instead.
+
+Properties for Server-Sent Events (SSE) transport are prefixed with `spring.ai.mcp.client.sse`:
+
+[cols="3,4,3"]
+|===
+|Property |Description | Default Value
+
+|`connections`
+|Map of named SSE connection configurations
+|-
+
+|`connections.[name].url`
+|Base URL endpoint for SSE communication with the MCP server
+|-
+
+|`connections.[name].sse-endpoint`
+|the sse endpoint (as url suffix) to use for the connection
+|`/sse`
+|===
+
+Example configurations:
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        sse:
+          connections:
+            # Simple configuration using default /sse endpoint
+            server1:
+              url: http://localhost:8080
+            # Custom SSE endpoint
+            server2:
+              url: http://otherserver:8081
+              sse-endpoint: /custom-sse
+            # Complex URL with path and token (like MCP Hub)
+            mcp-hub:
+              url: http://localhost:3000
+              sse-endpoint: /mcp-hub/sse/cf9ec4527e3c4a2cbb149a85ea45ab01
+            # SSE endpoint with query parameters
+            api-server:
+              url: https://api.example.com
+              sse-endpoint: /v1/mcp/events?token=abc123&format=json
+----
+
+=== URL Splitting Guidelines
+
+When you have a full SSE URL, split it into base URL and endpoint path:
+
+[cols="2,2"]
+|===
+|Full URL |Configuration
+
+|`\http://localhost:3000/mcp-hub/sse/token123`
+|`url: http://localhost:3000` +
+`sse-endpoint: /mcp-hub/sse/token123`
+
+|`\https://api.service.com/v2/events?key=secret`
+|`url: https://api.service.com` +
+`sse-endpoint: /v2/events?key=secret`
+
+|`\http://localhost:8080/sse`
+|`url: http://localhost:8080` +
+`sse-endpoint: /sse` (or omit for default)
+|===
+
+=== Troubleshooting SSE Connections
+
+*404 Not Found Errors:*
+
+* Verify URL splitting: ensure the base `url` contains only the scheme, host, and port
+* Check the `sse-endpoint` starts with `/` and includes the full path and query parameters
+* Test the full URL directly in a browser or curl to confirm it's accessible

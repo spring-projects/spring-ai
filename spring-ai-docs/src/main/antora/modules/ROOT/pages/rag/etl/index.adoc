@@ -1,0 +1,109 @@
+= ETL Pipeline
+:page-aliases: api/etl-pipeline.adoc
+
+The Extract, Transform, and Load (ETL) framework serves as the backbone of data processing within the Retrieval Augmented Generation (RAG) use case.
+
+The ETL pipeline orchestrates the flow from raw data sources to a structured vector store, ensuring data is in the optimal format for retrieval by the AI model.
+
+The RAG use case is text to augment the capabilities of generative models by retrieving relevant information from a body of data to enhance the quality and relevance of the generated output.
+
+== API Overview
+
+The ETL pipelines creates, transforms and stores `Document` instances.
+
+image::spring-ai-document1-api.jpg[Spring AI Message API, width=400, align="center"]
+
+The `Document` class contains text, metadata and optionally additional media types like images, audio and video.
+
+There are three main components of the ETL pipeline,
+
+* `DocumentReader` that implements `Supplier<List<Document>>`
+* `DocumentTransformer` that implements `Function<List<Document>, List<Document>>`
+* `DocumentWriter` that implements `Consumer<List<Document>>`
+
+The `Document` class content is created from PDFs, text files and other document types with the help of `DocumentReader`.
+
+To construct a simple ETL pipeline, you can chain together an instance of each type.
+
+image::etl-pipeline.jpg[align="center"]
+
+Let's say we have the following instances of those three ETL types
+
+* `PagePdfDocumentReader` an implementation of `DocumentReader`
+* `TokenTextSplitter` an implementation of `DocumentTransformer`
+* `VectorStore` an implementation of `DocumentWriter`
+
+To perform the basic loading of data into a Vector Database for use with the Retrieval Augmented Generation pattern, use the following code in Java function style syntax.
+
+[source,java]
+----
+vectorStore.accept(tokenTextSplitter.apply(pdfReader.get()));
+----
+
+Alternatively, you can use method names that are more naturally expressive for the domain
+
+[source,java]
+----
+vectorStore.write(tokenTextSplitter.split(pdfReader.read()));
+----
+
+== ETL Interfaces
+
+The ETL pipeline is composed of the following interfaces and implementations.
+Detailed ETL class diagram is shown in the <<etl-class-diagram>> section.
+
+=== DocumentReader
+
+Provides a source of documents from diverse origins.
+[source,java]
+----
+public interface DocumentReader extends Supplier<List<Document>> {
+
+    default List<Document> read() {
+		return get();
+	}
+}
+----
+
+
+=== DocumentTransformer
+
+Transforms a batch of documents as part of the processing workflow.
+
+[source,java]
+----
+public interface DocumentTransformer extends Function<List<Document>, List<Document>> {
+
+    default List<Document> transform(List<Document> transform) {
+		return apply(transform);
+	}
+}
+----
+
+
+=== DocumentWriter
+
+Manages the final stage of the ETL process, preparing documents for storage.
+
+```java
+public interface DocumentWriter extends Consumer<List<Document>> {
+
+    default void write(List<Document> documents) {
+		accept(documents);
+	}
+}
+```
+
+
+[[etl-class-diagram]]
+=== ETL Class Diagram
+
+The following class diagram illustrates the ETL interfaces and implementations.
+
+// image::etl-class-diagram.jpg[align="center", width="800px"]
+image::etl-class-diagram.jpg[align="center"]
+
+== In This Section
+
+* xref:rag/etl/transformers.adoc[Transformers]
+* xref:rag/etl/writers.adoc[Writers]

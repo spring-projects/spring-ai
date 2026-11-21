@@ -1,0 +1,12 @@
+// A page that describes a community-maintained project includes this partial right after its title.
+// Set these attributes in the page header first:
+//   :community-project: the project name
+//   :community-docs: the URL of the project's documentation
+//   :community-issues: the URL of the project's issue tracker
+.Community-maintained
+[NOTE]
+====
+{community-project} is maintained by the community, outside the Spring AI project, and is released on its own schedule.
+Its link:{community-docs}[documentation] is the source of truth, and questions and issues go to its link:{community-issues}[issue tracker].
+Like all community projects, it is not covered by the Spring AI support and security policies: see xref:integrations/community/index.adoc#community-support[Support and Security].
+====

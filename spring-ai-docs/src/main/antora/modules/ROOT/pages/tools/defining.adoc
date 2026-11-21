@@ -1,0 +1,174 @@
+= Defining Tools
+
+[[defining-tools]]
+== Defining Tools
+
+Spring AI offers three ways to define tools, from highest-level to most explicit:
+
+[cols="1,3,1", options="header"]
+|====
+| Style | Use when | Section
+| Declarative `@Tool` | You own the method and want minimal ceremony | xref:#declarative-tool[Declarative]
+| `MethodToolCallback` | You need programmatic control over a method-backed tool | xref:#method-tool-callback[Programmatic: Method]
+| `FunctionToolCallback` | You want to expose a `Function` / `Supplier` / `Consumer` lambda or method reference | xref:#function-tool-callback[Programmatic: Function]
+|====
+
+All three produce `ToolCallback` instances that flow through the same loop.
+You can mix styles freely.
+
+[[declarative-tool]]
+=== Declarative: `@Tool`
+
+Annotate any method — public, package-private, private; static or instance — with `@Tool`:
+
+[source,java]
+----
+class WeatherTools {
+
+    @Tool(description = "Get the current weather for a given city")
+    public String getWeather(String city) {
+        return weatherService.fetch(city);
+    }
+}
+----
+
+The `@Tool` annotation supports:
+
+* `name` — the tool name.
+Defaults to the method name.
+Must be unique within the tool set provided to a model.
+* `description` — what the tool does and when to use it.
+Strongly recommended; without it the description is the method name, which rarely tells the model when to call the tool.
+* `returnDirect` — return the result directly to the caller instead of feeding it back to the model.
+See xref:tools/reference.adoc#return-direct[Return Direct].
+* `requiresConfirmation` — pause the tool-calling loop before a call of the tool runs, so that a person can allow or deny it.
+See xref:tools/confirmation.adoc[Tool Call Confirmation].
+* `resultConverter` — the `ToolCallResultConverter` to use.
+See xref:tools/reference.adoc#result-conversion[Result Conversion].
+
+NOTE: For AOT compilation (GraalVM native image), the class containing the `@Tool` methods must be a Spring bean (e.g. `@Component`).
+Otherwise, annotate it with `@RegisterReflection(memberCategories = MemberCategory.INVOKE_DECLARED_METHODS)`.
+
+Add `@ToolParam` to describe individual parameters:
+
+[source,java]
+----
+class WeatherTools {
+
+    @Tool(description = "Get the weather for a city at a specific time")
+    public String getWeather(
+            @ToolParam(description = "City name") String city,
+            @ToolParam(description = "Time in ISO-8601 format", required = false) String at) {
+        return weatherService.fetch(city, at);
+    }
+}
+----
+
+By default all parameters are required.
+`@ToolParam(required = false)` or `@Nullable` makes a parameter optional.
+See xref:tools/reference.adoc#json-schema[JSON Schema] for the full schema customization options.
+
+[[method-tool-callback]]
+=== Programmatic: `MethodToolCallback`
+
+For dynamic tool registration — when you don't control the source class, or you want to build the tool definition at runtime — use `MethodToolCallback`:
+
+[source,java]
+----
+Method method = ReflectionUtils.findMethod(WeatherTools.class, "getWeather", String.class);
+
+MethodToolCallback callback = MethodToolCallback.builder()
+    .toolDefinition(ToolDefinitions.builder(method)
+        .description("Get the current weather for a given city")
+        .build())
+    .toolMethod(method)
+    .toolObject(new WeatherTools())
+    .build();
+----
+
+The `toolObject` is required for instance methods, optional for static methods.
+See xref:tools/reference.adoc#tool-specification-reference[Tool Specification Reference] for the full builder API.
+
+[[function-tool-callback]]
+=== Programmatic: `FunctionToolCallback`
+
+For tools backed by a `Function`, `Supplier`, `Consumer`, or `BiFunction` — including lambdas and method references — use `FunctionToolCallback`:
+
+[source,java]
+----
+FunctionToolCallback callback = FunctionToolCallback.builder("currentWeather", weatherService::getWeather)
+    .description("Get the weather in location")
+    .inputType(WeatherRequest.class)
+    .build();
+----
+
+The factory takes a name and the function reference.
+The builder sets the description and the input type (used for JSON schema generation).
+
+[[tool-callback-beans]]
+=== `ToolCallback` Beans
+
+Define a tool once as a `ToolCallback` bean and inject it where needed, then pass it with `.tools(...)`.
+Spring AI also registers `ToolCallback` beans with the `ToolCallbackResolver`, which resolves a tool by name when the xref:tools/reference.adoc#tool-resolution[resolution fallback] is enabled:
+
+[source,java]
+----
+@Configuration(proxyBeanMethods = false)
+class WeatherToolsConfig {
+
+    @Bean
+    ToolCallback currentWeather(WeatherService weatherService) {
+        return FunctionToolCallback.builder("currentWeather", weatherService::getWeather)
+            .description("Get the weather in location")
+            .inputType(WeatherRequest.class)
+            .build();
+    }
+}
+----
+
+Inject and pass the bean to `ChatClient`:
+
+[source,java]
+----
+@Autowired ToolCallback currentWeather;
+
+ChatClient.create(chatModel)
+    .prompt("What's the weather in Copenhagen?")
+    .tools(currentWeather)
+    .call()
+    .content();
+----
+
+NOTE: Spring AI 2.0 removes the `SpringBeanToolCallbackResolver` pattern where bare `Function` beans were resolved by name via `toolNames(...)`.
+Tools must now be registered as explicit `ToolCallback` beans.
+See xref:upgrading/spring-ai-2-0.adoc#tool-calling-1x-to-2x[Upgrading Tool Calling from 1.x to 2.0].
+
+[[passing-tools]]
+== Passing Tools to ChatClient
+
+`ChatClient` exposes two methods for providing tools:
+
+[source,java]
+----
+// Per call — tools available only for this single request
+chatClient.prompt(...)
+    .tools(new WeatherTools(), currentWeather)
+    .call();
+
+// As defaults — tools available on every request built from this client
+ChatClient client = ChatClient.builder(chatModel)
+    .defaultTools(new WeatherTools(), currentWeather)
+    .build();
+----
+
+Both methods are **heterogeneous**: they accept `@Tool`-annotated POJO instances, `ToolCallback` instances, `ToolCallbackProvider` instances, and arrays or collections of any of these.
+You can mix styles in a single call.
+
+Per-call `.tools(...)` **appends** to the client's defaults — it does not replace them.
+The final tool list sent to the model is the union of `.defaultTools(...)` and any `.tools(...)` added at the call site.
+
+WARNING: Default tools are shared across every request built from the same `ChatClient.Builder`.
+They are useful for tools that should always be available, but they can also be dangerous if used carelessly — risk-tier and destructive tools should typically be added per call, not as defaults.
+
+NOTE: Tools registered via `ToolCallingChatOptions.toolCallbacks(...)` on the underlying `ChatModel` **are** overridden by the request-level tool list.
+See xref:tools/chatmodel.adoc[ChatModel Tool Calling] for the precedence rules.

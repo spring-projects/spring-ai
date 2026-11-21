@@ -1,0 +1,64 @@
+[[chat-model-comparison]]
+= Chat Model Comparison
+:page-aliases: api/chat/comparison.adoc
+
+The table compares the chat model integrations of Spring AI:
+
+* *Input*: what the model accepts besides text, see xref:multimodality.adoc[Multimodality].
+* *Tool calling*: whether the model can call xref:tools/index.adoc[tools].
+* *Streaming*: whether the model can stream its answer.
+* *Retry*: whether failed calls are retried, see xref:resilience/retry.adoc[Retry].
+* *Observability*: whether the model reports metrics and traces, see xref:observability/index.adoc[Observability].
+* *Native structured output*: whether the chat options support xref:structured-output/native.adoc[provider-native structured output].
+* *Local*: whether the model can run on your own machine.
+* *OpenAI-compatible*: whether the service also offers an OpenAI-compatible API.
+
+[cols="3,3,1,1,1,1,1,1,1", options="header"]
+|===
+| Provider | Input | Tool calling | Streaming | Retry | Observability | Native structured output | Local | OpenAI-compatible
+
+| xref:integrations/models/anthropic/chat.adoc[Anthropic]
+| text, PDF, image | Yes | Yes | Yes | Yes | Yes | No | No
+
+| xref:integrations/models/bedrock/converse.adoc[Amazon Bedrock Converse]
+| text, image, video, documents | Yes | Yes | Yes | Yes | Yes | No | No
+
+| xref:integrations/models/deepseek.adoc[DeepSeek]
+| text | Yes | Yes | Yes | Yes | No | No | Yes
+
+| xref:integrations/models/google-genai/chat.adoc[Google GenAI]
+| text, PDF, image, audio, video | Yes | Yes | Yes | Yes | Yes | No | No
+
+| xref:integrations/models/mistral-ai/chat.adoc[Mistral AI]
+| text, image | Yes | Yes | Yes | Yes | Yes | No | Yes
+
+| xref:integrations/models/ollama/chat.adoc[Ollama]
+| text, image | Yes | Yes | Yes | Yes | Yes | Yes | Yes
+
+| xref:integrations/models/openai/chat.adoc[OpenAI Chat Completions]
+| text, image, audio; answers with text or audio | Yes | Yes | Yes | Yes | Yes | No | Yes
+
+| xref:integrations/models/openai/responses.adoc[OpenAI Responses API]
+| text, image, PDF; answers with text or images | Yes | Yes | Yes | Yes | Yes | No | -
+
+| xref:integrations/models/anthropic/index.adoc#_anthropic_compatible_endpoints[MiniMax], through the Anthropic module
+| text, image | Yes | Yes | Yes | Yes | Depends on the service | No | Yes
+
+| xref:integrations/models/openai-compatible/groq.adoc[Groq], through the OpenAI module
+| text, image | Yes | Yes | Yes | Yes | Depends on the service | No | Yes
+
+| xref:integrations/models/openai-compatible/nvidia.adoc[NVIDIA], through the OpenAI module
+| text, image | Yes | Yes | Yes | Yes | Depends on the service | No | Yes
+
+| xref:integrations/models/openai-compatible/perplexity.adoc[Perplexity], through the OpenAI module
+| text | No | Yes | Yes | Yes | Depends on the service | No | Yes
+
+| xref:integrations/models/openai-compatible/docker-model-runner.adoc[Docker Model Runner], through the OpenAI module
+| depends on the model | Depends on the model | Yes | Yes | Yes | Depends on the model | Yes | Yes
+
+| xref:integrations/models/jinfer/chat.adoc[Qxotic jinfer] (Community)
+| text, image, audio, video, depending on the model | Yes | Yes | No | Yes | Yes | Yes | No
+|===
+
+Services that are used through another module, such as the OpenAI module, use the chat options of that module.
+Whether they honor native structured output, or an option of the original provider, depends on the service.

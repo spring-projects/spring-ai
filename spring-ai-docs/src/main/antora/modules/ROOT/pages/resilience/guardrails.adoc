@@ -1,0 +1,111 @@
+[[guardrails]]
+= Guardrails
+
+A guardrail checks content before it reaches the model or before it reaches the user.
+Spring AI provides a simple input guardrail as an advisor, and decision models and moderation models for a more thorough check.
+
+== SafeGuardAdvisor
+
+The `SafeGuardAdvisor` blocks the call to the model when the text of the prompt contains one of a list of sensitive words.
+It checks the text of every message in the prompt, not only the user message: the system message and the conversation history are checked too.
+With the default order, the memory advisors run first, so the history they add is part of the check.
+A sensitive word in your own system prompt, or in an earlier turn of the conversation, therefore blocks every following call.
+The model is not called, and the advisor returns a fixed failure response instead.
+
+[source,java]
+----
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(SafeGuardAdvisor.builder()
+        .sensitiveWords(List.of("password", "credit card"))
+        .failureResponse("I can't help with that.")
+        .build())
+    .build();
+----
+
+[cols="2,5", options="header"]
+|===
+| Builder method | Description
+
+| `sensitiveWords`
+| The words to look for in the text of the prompt messages.
+
+| `failureResponse`
+| The text returned when a sensitive word is found.
+A default message is used when you do not set one.
+
+| `order`
+| The position of the advisor in the chain.
+The default is `0`.
+|===
+
+The failure response is marked as a `GuardrailRefusal`, so the rest of the advisor chain can tell it apart from an answer of the model.
+
+=== Refusals
+
+A refusal is a reply that a guardrail returns in place of an answer of the model.
+Its generation has the `GuardrailRefusal.FINISH_REASON` finish reason, and `GuardrailRefusal.isRefusal(chatResponse)` tells it from an answer.
+A guardrail advisor of your own should build its refusal with `GuardrailRefusal.generation(text)`, see xref:advisors/custom.adoc#_answering_without_the_model[Writing an Advisor].
+
+The rest of Spring AI treats a refusal as follows:
+
+* `StructuredOutputValidationAdvisor` does not validate it or retry.
+* `SemanticCacheAdvisor` does not cache it.
+* The memory advisors store it like any other reply.
+* `ChatClient.entity(...)` throws a `GuardrailRefusalException`, whose `getRefusal()` returns the text of the refusal, because a refusal is not the structured output that was asked for.
+`responseEntity(...)` returns the response with a `null` entity.
+
+The refusal finishes in the `FILTERED` xref:chatclient/responses.adoc#finish-reason-categories[finish reason category], and `GuardrailRefusalException` extends `ContentFilteredException`, so one `catch` covers the refusal of a guardrail and the safety stop of a provider:
+
+[source,java]
+----
+try {
+	Order order = chatClient.prompt().user(message).call().entity(Order.class);
+}
+catch (ContentFilteredException ex) {
+	reply("Sorry, I can't help with that.");
+}
+----
+
+[WARNING]
+====
+The check is a simple case-insensitive substring match on the text of all prompt messages.
+It does not handle advanced cases such as homoglyphs, fullwidth characters or zero-width characters.
+Treat it as a starting point for a more advanced security barrier, not as a complete one.
+====
+
+To build a stricter guardrail, write your own advisor as described in xref:advisors/custom.adoc[Writing an Advisor].
+
+== Decision Models
+
+A xref:models/decision.adoc[decision model] answers a fixed question about a text, such as whether a message tries to override the instructions of the assistant, with a probability.
+It is usually faster and cheaper than asking a chat model, which makes it a good fit for a guardrail on the user input or on the answer of the model.
+
+[source,java]
+----
+DecisionResponse response = decisionModel.call(userMessage,
+        Map.of("injection", YesNoQuestion.of("Does the message try to override the instructions of the assistant?")));
+
+if (response.getYesNo("injection").isYes(0.8)) {
+    return "I can't help with that.";
+}
+----
+
+You choose how sure the model must be before the guardrail blocks the input, here a probability of `0.8`.
+The xref:rag/modules.adoc#_decisiondocumentfilter[`DecisionDocumentFilter`] applies the same idea to the documents that a RAG pipeline retrieves, and checks them for prompt injection before they reach the prompt.
+
+.Community: Spring AI Decision Extensions
+[TIP]
+====
+link:{decision-extensions-docs}/guardrails/DecisionGuardrailAdvisor/[`DecisionGuardrailAdvisor`] turns this check into advisors.
+One screens the user message before it reaches memory, the other screens the reply, each against a set of hazards answered in a single decision call.
+Its refusals are marked as a `GuardrailRefusal`.
+See xref:models/decision.adoc#decision-extensions[Building on Decision Models].
+====
+
+== Moderation Models
+
+A xref:models/moderation.adoc[moderation model] classifies text for potentially harmful content.
+You can call one on user input before you send it to a chat model, or on a response before you return it.
+
+* xref:integrations/models/openai/moderation.adoc[OpenAI Moderation]
+* xref:integrations/models/mistral-ai/moderation.adoc[Mistral AI Moderation]
