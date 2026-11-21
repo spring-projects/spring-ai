@@ -716,4 +716,75 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		}
 	}
 
+	@Test
+	void testPortableAttributesThroughChatOptionsBuilder() {
+		ChatOptions.Builder<?> builder = OpenAiChatOptions.builder();
+		ChatOptions options = builder.model("gpt-4o")
+			.seed(42)
+			.choiceCount(2)
+			.reasoningLevel("high")
+			.outputType("json")
+			.build();
+
+		assertThat(options.getModel()).isEqualTo("gpt-4o");
+		assertThat(options.getSeed()).isEqualTo(42);
+		assertThat(options.getChoiceCount()).isEqualTo(2);
+		assertThat(options.getReasoningLevel()).isEqualTo("high");
+		assertThat(options.getOutputType()).isEqualTo("json");
+
+		OpenAiChatOptions openAiOptions = (OpenAiChatOptions) options;
+		assertThat(openAiOptions.getN()).isEqualTo(2);
+		assertThat(openAiOptions.getReasoningEffort()).isEqualTo("high");
+	}
+
+	@Test
+	void testProviderOptionsReflectPortableGetters() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().seed(42).n(2).reasoningEffort("high").build();
+
+		assertThat(options.getN()).isEqualTo(2);
+		assertThat(options.getChoiceCount()).isEqualTo(2);
+		assertThat(options.getReasoningEffort()).isEqualTo("high");
+		assertThat(options.getReasoningLevel()).isEqualTo("high");
+		assertThat(options.getSeed()).isEqualTo(42);
+	}
+
+	@Test
+	void testOutputTypeFromResponseFormat() {
+		OpenAiChatOptions jsonObjectOptions = OpenAiChatOptions.builder()
+			.responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
+			.build();
+		assertThat(jsonObjectOptions.getOutputType()).isEqualTo("json");
+
+		OpenAiChatOptions textOptions = OpenAiChatOptions.builder()
+			.responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.TEXT).build())
+			.build();
+		assertThat(textOptions.getOutputType()).isEqualTo("text");
+
+		OpenAiChatOptions explicitOverrideOptions = OpenAiChatOptions.builder()
+			.outputType("custom")
+			.responseFormat(ResponseFormat.builder().type(ResponseFormat.Type.JSON_OBJECT).build())
+			.build();
+		assertThat(explicitOverrideOptions.getOutputType()).isEqualTo("custom");
+	}
+
+	@Test
+	void testMutatePreservesPortableAttributes() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("gpt-4o")
+			.seed(42)
+			.choiceCount(2)
+			.reasoningLevel("high")
+			.outputType("json")
+			.build();
+
+		OpenAiChatOptions mutated = options.mutate().build();
+		assertThat(mutated.getSeed()).isEqualTo(42);
+		assertThat(mutated.getChoiceCount()).isEqualTo(2);
+		assertThat(mutated.getReasoningLevel()).isEqualTo("high");
+		assertThat(mutated.getOutputType()).isEqualTo("json");
+		assertThat(mutated.getN()).isEqualTo(2);
+		assertThat(mutated.getReasoningEffort()).isEqualTo("high");
+		assertThat(mutated).isEqualTo(options);
+	}
+
 }

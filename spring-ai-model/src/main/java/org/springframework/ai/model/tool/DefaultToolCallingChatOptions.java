@@ -48,7 +48,17 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 			@Nullable Map<String, Object> toolContext, @Nullable String model, @Nullable Double frequencyPenalty,
 			@Nullable Integer maxTokens, @Nullable Double presencePenalty, @Nullable List<String> stopSequences,
 			@Nullable Double temperature, @Nullable Integer topK, @Nullable Double topP) {
-		super(model, frequencyPenalty, maxTokens, presencePenalty, stopSequences, temperature, topK, topP);
+		this(toolCallbacks, toolContext, model, frequencyPenalty, maxTokens, presencePenalty, stopSequences,
+				temperature, topK, topP, null, null, null, null);
+	}
+
+	protected DefaultToolCallingChatOptions(@Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Map<String, Object> toolContext, @Nullable String model, @Nullable Double frequencyPenalty,
+			@Nullable Integer maxTokens, @Nullable Double presencePenalty, @Nullable List<String> stopSequences,
+			@Nullable Double temperature, @Nullable Integer topK, @Nullable Double topP, @Nullable String outputType,
+			@Nullable String reasoningLevel, @Nullable Integer seed, @Nullable Integer choiceCount) {
+		super(model, frequencyPenalty, maxTokens, presencePenalty, stopSequences, temperature, topK, topP, outputType,
+				reasoningLevel, seed, choiceCount);
 		this.toolCallbacks = (toolCallbacks != null ? List.copyOf(toolCallbacks) : null);
 		this.toolContext = (toolContext != null ? Map.copyOf(toolContext) : null);
 	}
@@ -74,6 +84,10 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 			.temperature(getTemperature())
 			.topK(getTopK())
 			.topP(getTopP())
+			.outputType(getOutputType())
+			.reasoningLevel(getReasoningLevel())
+			.seed(getSeed())
+			.choiceCount(getChoiceCount())
 			.toolCallbacks(getToolCallbacks())
 			.toolContext(getToolContext());
 	}
@@ -171,7 +185,7 @@ public class DefaultToolCallingChatOptions extends DefaultChatOptions implements
 		public ToolCallingChatOptions build() {
 			return new DefaultToolCallingChatOptions(this.toolCallbacks, this.toolContext, this.model,
 					this.frequencyPenalty, this.maxTokens, this.presencePenalty, this.stopSequences, this.temperature,
-					this.topK, this.topP);
+					this.topK, this.topP, this.outputType, this.reasoningLevel, this.seed, this.choiceCount);
 		}
 
 		@Override

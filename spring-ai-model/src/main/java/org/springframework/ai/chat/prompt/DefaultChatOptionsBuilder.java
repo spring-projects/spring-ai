@@ -42,6 +42,14 @@ public class DefaultChatOptionsBuilder<B extends DefaultChatOptionsBuilder<B>> i
 
 	protected @Nullable Double topP;
 
+	protected @Nullable String outputType;
+
+	protected @Nullable String reasoningLevel;
+
+	protected @Nullable Integer seed;
+
+	protected @Nullable Integer choiceCount;
+
 	public DefaultChatOptionsBuilder() {
 	}
 
@@ -116,6 +124,30 @@ public class DefaultChatOptionsBuilder<B extends DefaultChatOptionsBuilder<B>> i
 	}
 
 	@Override
+	public B outputType(@Nullable String outputType) {
+		this.outputType = outputType;
+		return self();
+	}
+
+	@Override
+	public B reasoningLevel(@Nullable String reasoningLevel) {
+		this.reasoningLevel = reasoningLevel;
+		return self();
+	}
+
+	@Override
+	public B seed(@Nullable Integer seed) {
+		this.seed = seed;
+		return self();
+	}
+
+	@Override
+	public B choiceCount(@Nullable Integer choiceCount) {
+		this.choiceCount = choiceCount;
+		return self();
+	}
+
+	@Override
 	public B combineWith(ChatOptions.Builder<?> other) {
 		if (other instanceof DefaultChatOptionsBuilder<?> that) {
 			if (that.model != null) {
@@ -149,13 +181,26 @@ public class DefaultChatOptionsBuilder<B extends DefaultChatOptionsBuilder<B>> i
 			if (that.topP != null) {
 				this.topP = that.topP;
 			}
+			if (that.outputType != null) {
+				this.outputType = that.outputType;
+			}
+			if (that.reasoningLevel != null) {
+				this.reasoningLevel = that.reasoningLevel;
+			}
+			if (that.seed != null) {
+				this.seed = that.seed;
+			}
+			if (that.choiceCount != null) {
+				this.choiceCount = that.choiceCount;
+			}
 		}
 		return self();
 	}
 
 	public ChatOptions build() {
 		return new DefaultChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
-				this.stopSequences, this.temperature, this.topK, this.topP);
+				this.stopSequences, this.temperature, this.topK, this.topP, this.outputType, this.reasoningLevel,
+				this.seed, this.choiceCount);
 	}
 
 }

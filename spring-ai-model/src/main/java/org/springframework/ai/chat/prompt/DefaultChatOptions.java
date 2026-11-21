@@ -42,9 +42,25 @@ public class DefaultChatOptions implements ChatOptions {
 
 	private final @Nullable Double topP;
 
+	private final @Nullable String outputType;
+
+	private final @Nullable String reasoningLevel;
+
+	private final @Nullable Integer seed;
+
+	private final @Nullable Integer choiceCount;
+
 	protected DefaultChatOptions(@Nullable String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
 			@Nullable Double presencePenalty, @Nullable List<String> stopSequences, @Nullable Double temperature,
 			@Nullable Integer topK, @Nullable Double topP) {
+		this(model, frequencyPenalty, maxTokens, presencePenalty, stopSequences, temperature, topK, topP, null, null,
+				null, null);
+	}
+
+	protected DefaultChatOptions(@Nullable String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
+			@Nullable Double presencePenalty, @Nullable List<String> stopSequences, @Nullable Double temperature,
+			@Nullable Integer topK, @Nullable Double topP, @Nullable String outputType, @Nullable String reasoningLevel,
+			@Nullable Integer seed, @Nullable Integer choiceCount) {
 		this.model = model;
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxTokens = maxTokens;
@@ -53,6 +69,10 @@ public class DefaultChatOptions implements ChatOptions {
 		this.temperature = temperature;
 		this.topK = topK;
 		this.topP = topP;
+		this.outputType = outputType;
+		this.reasoningLevel = reasoningLevel;
+		this.seed = seed;
+		this.choiceCount = choiceCount;
 	}
 
 	@Override
@@ -96,6 +116,26 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
+	public @Nullable String getOutputType() {
+		return this.outputType;
+	}
+
+	@Override
+	public @Nullable String getReasoningLevel() {
+		return this.reasoningLevel;
+	}
+
+	@Override
+	public @Nullable Integer getSeed() {
+		return this.seed;
+	}
+
+	@Override
+	public @Nullable Integer getChoiceCount() {
+		return this.choiceCount;
+	}
+
+	@Override
 	public ChatOptions.Builder<?> mutate() {
 		return ChatOptions.builder()
 			.model(this.model)
@@ -105,7 +145,11 @@ public class DefaultChatOptions implements ChatOptions {
 			.stopSequences(this.stopSequences)
 			.temperature(this.temperature)
 			.topK(this.topK)
-			.topP(this.topP);
+			.topP(this.topP)
+			.outputType(this.outputType)
+			.reasoningLevel(this.reasoningLevel)
+			.seed(this.seed)
+			.choiceCount(this.choiceCount);
 	}
 
 	@Override
@@ -122,13 +166,16 @@ public class DefaultChatOptions implements ChatOptions {
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
 				&& Objects.equals(this.stopSequences, that.stopSequences)
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topK, that.topK)
-				&& Objects.equals(this.topP, that.topP);
+				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.outputType, that.outputType)
+				&& Objects.equals(this.reasoningLevel, that.reasoningLevel) && Objects.equals(this.seed, that.seed)
+				&& Objects.equals(this.choiceCount, that.choiceCount);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty, this.stopSequences,
-				this.temperature, this.topK, this.topP);
+				this.temperature, this.topK, this.topP, this.outputType, this.reasoningLevel, this.seed,
+				this.choiceCount);
 	}
 
 }

@@ -202,6 +202,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 	private final @Nullable Map<String, Object> toolContext;
 
+	private final @Nullable String outputType;
+
 	protected OpenAiChatOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
 			@Nullable String model, @Nullable String microsoftDeploymentName,
 			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
@@ -218,6 +220,31 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			@Nullable Boolean strict, @Nullable Map<String, String> metadata, @Nullable String reasoningEffort,
 			@Nullable String verbosity, @Nullable String serviceTier, @Nullable String promptCacheKey,
 			@Nullable Boolean replayReasoningContent, @Nullable Map<String, Object> extraBody) {
+		this(baseUrl, apiKey, credential, model, microsoftDeploymentName, microsoftFoundryServiceVersion,
+				organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries, proxy, customHeaders,
+				frequencyPenalty, maxTokens, presencePenalty, stop, temperature, topP, toolCallbacks, toolContext,
+				logitBias, logprobs, topLogprobs, maxCompletionTokens, n, outputModalities, outputAudio, responseFormat,
+				streamOptions, seed, toolChoice, user, parallelToolCalls, store, strict, metadata, reasoningEffort,
+				verbosity, serviceTier, promptCacheKey, replayReasoningContent, extraBody, null);
+	}
+
+	protected OpenAiChatOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
+			@Nullable String model, @Nullable String microsoftDeploymentName,
+			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
+			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
+			@Nullable Double frequencyPenalty, @Nullable Integer maxTokens, @Nullable Double presencePenalty,
+			@Nullable List<String> stop, @Nullable Double temperature, @Nullable Double topP,
+			@Nullable List<ToolCallback> toolCallbacks, @Nullable Map<String, Object> toolContext,
+			@Nullable Map<String, Integer> logitBias, @Nullable Boolean logprobs, @Nullable Integer topLogprobs,
+			@Nullable Integer maxCompletionTokens, @Nullable Integer n, @Nullable List<String> outputModalities,
+			@Nullable AudioParameters outputAudio, OpenAiChatModel.@Nullable ResponseFormat responseFormat,
+			@Nullable StreamOptions streamOptions, @Nullable Integer seed, @Nullable Object toolChoice,
+			@Nullable String user, @Nullable Boolean parallelToolCalls, @Nullable Boolean store,
+			@Nullable Boolean strict, @Nullable Map<String, String> metadata, @Nullable String reasoningEffort,
+			@Nullable String verbosity, @Nullable String serviceTier, @Nullable String promptCacheKey,
+			@Nullable Boolean replayReasoningContent, @Nullable Map<String, Object> extraBody,
+			@Nullable String outputType) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
 		this.credential = credential;
@@ -264,6 +291,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.promptCacheKey = promptCacheKey;
 		this.replayReasoningContent = replayReasoningContent;
 		this.extraBody = (extraBody != null ? Map.copyOf(extraBody) : null);
+		this.outputType = outputType;
 	}
 
 	/**
@@ -382,6 +410,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 */
 	public @Nullable Integer getN() {
 		return this.n;
+	}
+
+	@Override
+	public @Nullable Integer getChoiceCount() {
+		return getN();
 	}
 
 	/**
@@ -512,6 +545,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		return this.reasoningEffort;
 	}
 
+	@Override
+	public @Nullable String getReasoningLevel() {
+		return getReasoningEffort();
+	}
+
 	/**
 	 * Gets the verbosity level.
 	 * @return the verbosity level
@@ -572,6 +610,23 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		return format != null ? format.getJsonSchema() : null;
 	}
 
+	@Override
+	public @Nullable String getOutputType() {
+		if (this.outputType != null) {
+			return this.outputType;
+		}
+		if (this.responseFormat != null) {
+			if (this.responseFormat.getType() == Type.JSON_OBJECT
+					|| this.responseFormat.getType() == Type.JSON_SCHEMA) {
+				return "json";
+			}
+			if (this.responseFormat.getType() == Type.TEXT) {
+				return "text";
+			}
+		}
+		return StructuredOutputChatOptions.super.getOutputType();
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -600,6 +655,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			.stopSequences(this.stop)
 			.temperature(this.temperature)
 			.topP(this.topP)
+			.outputType(this.outputType)
+			.choiceCount(this.getChoiceCount())
+			.reasoningLevel(this.getReasoningLevel())
 			// ToolCallingChatOptions
 			.toolCallbacks(this.getToolCallbacks())
 			.toolContext(this.getToolContext())
@@ -661,7 +719,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				&& Objects.equals(this.replayReasoningContent, options.replayReasoningContent)
 				&& Objects.equals(this.extraBody, options.extraBody)
 				&& Objects.equals(this.toolCallbacks, options.toolCallbacks)
-				&& Objects.equals(this.toolContext, options.toolContext);
+				&& Objects.equals(this.toolContext, options.toolContext)
+				&& Objects.equals(this.outputType, options.outputType);
 	}
 
 	@Override
@@ -671,7 +730,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.presencePenalty, this.responseFormat, this.streamOptions, this.seed, this.stop, this.temperature,
 				this.topP, this.toolChoice, this.user, this.parallelToolCalls, this.store, this.strict, this.metadata,
 				this.reasoningEffort, this.verbosity, this.serviceTier, this.promptCacheKey,
-				this.replayReasoningContent, this.extraBody, this.toolCallbacks, this.toolContext);
+				this.replayReasoningContent, this.extraBody, this.toolCallbacks, this.toolContext, this.outputType);
 	}
 
 	public record AudioParameters(@Nullable Voice voice, @Nullable AudioResponseFormat format) {
@@ -977,7 +1036,15 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			return self();
 		}
 
+		@Override
+		public B choiceCount(@Nullable Integer choiceCount) {
+			super.choiceCount(choiceCount);
+			this.n = choiceCount;
+			return self();
+		}
+
 		public B n(@Nullable Integer n) {
+			super.choiceCount(n);
 			this.n = n;
 			return self();
 		}
@@ -1007,7 +1074,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			return self();
 		}
 
+		@Override
 		public B seed(@Nullable Integer seed) {
+			super.seed(seed);
 			this.seed = seed;
 			return self();
 		}
@@ -1070,8 +1139,22 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			return self();
 		}
 
+		@Override
+		public B reasoningLevel(@Nullable String reasoningLevel) {
+			super.reasoningLevel(reasoningLevel);
+			this.reasoningEffort = reasoningLevel;
+			return self();
+		}
+
 		public B reasoningEffort(@Nullable String reasoningEffort) {
+			super.reasoningLevel(reasoningEffort);
 			this.reasoningEffort = reasoningEffort;
+			return self();
+		}
+
+		@Override
+		public B outputType(@Nullable String outputType) {
+			super.outputType(outputType);
 			return self();
 		}
 
@@ -1251,20 +1334,42 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 					this.maxRetries = that.maxRetries;
 				}
 			}
+			if (this.n == null && this.choiceCount != null) {
+				this.n = this.choiceCount;
+			}
+			else if (this.choiceCount == null && this.n != null) {
+				this.choiceCount = this.n;
+			}
+			if (this.reasoningEffort == null && this.reasoningLevel != null) {
+				this.reasoningEffort = this.reasoningLevel;
+			}
+			else if (this.reasoningLevel == null && this.reasoningEffort != null) {
+				this.reasoningLevel = this.reasoningEffort;
+			}
+			if (this.seed == null && super.seed != null) {
+				this.seed = super.seed;
+			}
+			else if (super.seed == null && this.seed != null) {
+				super.seed(this.seed);
+			}
 			return self();
 		}
 
 		@Override
 		public OpenAiChatOptions build() {
+			Integer nToUse = this.n != null ? this.n : this.choiceCount;
+			String reasoningEffortToUse = this.reasoningEffort != null ? this.reasoningEffort : this.reasoningLevel;
+			Integer seedToUse = this.seed != null ? this.seed : super.seed;
 			return new OpenAiChatOptions(this.baseUrl, this.apiKey, this.credential, this.model,
 					this.microsoftDeploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
 					this.isMicrosoftFoundry, this.isGitHubModels, this.timeout, this.maxRetries, this.proxy,
 					this.customHeaders, this.frequencyPenalty, this.maxTokens, this.presencePenalty, this.stopSequences,
 					this.temperature, this.topP, this.toolCallbacks, this.toolContext, this.logitBias, this.logprobs,
-					this.topLogprobs, this.maxCompletionTokens, this.n, this.outputModalities, this.outputAudio,
-					this.responseFormat, this.streamOptions, this.seed, this.toolChoice, this.user,
-					this.parallelToolCalls, this.store, this.strict, this.metadata, this.reasoningEffort,
-					this.verbosity, this.serviceTier, this.promptCacheKey, this.replayReasoningContent, this.extraBody);
+					this.topLogprobs, this.maxCompletionTokens, nToUse, this.outputModalities, this.outputAudio,
+					this.responseFormat, this.streamOptions, seedToUse, this.toolChoice, this.user,
+					this.parallelToolCalls, this.store, this.strict, this.metadata, reasoningEffortToUse,
+					this.verbosity, this.serviceTier, this.promptCacheKey, this.replayReasoningContent, this.extraBody,
+					this.outputType);
 		}
 
 	}
