@@ -28,10 +28,14 @@ import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.core.OverridingClassLoader;
+import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -50,7 +54,7 @@ class ChatClientAutoConfigurationTests {
 	void autoConfigurationOrdersAfterToolCallingAutoConfiguration() {
 		AutoConfiguration autoConfiguration = ChatClientAutoConfiguration.class.getAnnotation(AutoConfiguration.class);
 
-		assertThat(autoConfiguration.after()).containsExactly(ToolCallingAutoConfiguration.class);
+		assertThat(autoConfiguration.afterName()).containsExactly(ToolCallingAutoConfiguration.class.getName());
 	}
 
 	@Test
@@ -176,6 +180,70 @@ class ChatClientAutoConfigurationTests {
 		this.contextRunner.withBean("customToolCallingManager", ToolCallingManager.class, () -> customManager)
 			.withBean("defaultToolCallingManager", ToolCallingManager.class, () -> defaultManager)
 			.run(context -> assertThat(context).hasFailed());
+	}
+
+	@Test
+	void autoConfigurationCanBeIntrospectedWithoutToolCallingAutoConfiguration() throws Exception {
+		try (var filteredClassLoader = new FilteredClassLoader("org.springframework.ai.model.tool.autoconfigure")) {
+			Class<?> autoConfiguration = loadChatClientAutoConfiguration(filteredClassLoader);
+
+			var annotation = MergedAnnotations.from(autoConfiguration).get(AutoConfiguration.class);
+			assertThat(annotation.isPresent()).isTrue();
+			assertThat(annotation.getStringArray("afterName"))
+				.containsExactly(ToolCallingAutoConfiguration.class.getName());
+		}
+	}
+
+	@Test
+	void chatClientBuilderIsAvailableWithoutToolCallingAutoConfiguration() throws Exception {
+		try (var filteredClassLoader = new FilteredClassLoader("org.springframework.ai.model.tool.autoconfigure")) {
+			Class<?> autoConfiguration = loadChatClientAutoConfiguration(filteredClassLoader);
+
+			new ApplicationContextRunner().withClassLoader(autoConfiguration.getClassLoader())
+				.withConfiguration(AutoConfigurations.of(autoConfiguration))
+				.withBean(ChatModel.class, () -> mock(ChatModel.class))
+				.run(context -> {
+					assertThat(context).hasNotFailed();
+					assertThat(context).doesNotHaveBean(ToolCallingAdvisor.Builder.class);
+					assertThat(context.getBean(ChatClient.Builder.class))
+						.isNotSameAs(context.getBean(ChatClient.Builder.class));
+				});
+		}
+	}
+
+	@Test
+	void customToolCallingManagerIsUsedWithoutToolCallingAutoConfiguration() throws Exception {
+		try (var filteredClassLoader = new FilteredClassLoader("org.springframework.ai.model.tool.autoconfigure")) {
+			Class<?> autoConfiguration = loadChatClientAutoConfiguration(filteredClassLoader);
+			var manager = mock(ToolCallingManager.class);
+
+			new ApplicationContextRunner().withClassLoader(autoConfiguration.getClassLoader())
+				.withConfiguration(AutoConfigurations.of(autoConfiguration))
+				.withBean(ChatModel.class, () -> mock(ChatModel.class))
+				.withBean(ToolCallingManager.class, () -> manager)
+				.run(context -> {
+					assertThat(context).hasNotFailed();
+					var advisorBuilder = context.getBean(ToolCallingAdvisor.Builder.class);
+					assertThat(ReflectionTestUtils.getField(advisorBuilder, "toolCallingManager")).isSameAs(manager);
+					assertThat(context.getBean(ChatClient.Builder.class)).isNotNull();
+				});
+		}
+	}
+
+	private Class<?> loadChatClientAutoConfiguration(ClassLoader parent) throws ClassNotFoundException {
+		// Reload the target and its package companions so annotation resolution uses the
+		// filtered loader, rather than the already-loaded class in the test classloader.
+		var classLoader = new OverridingClassLoader(parent) {
+			@Override
+			protected boolean isEligibleForOverriding(String className) {
+				return className.startsWith(ChatClientAutoConfiguration.class.getPackageName() + ".");
+			}
+		};
+		Class<?> autoConfiguration = classLoader.loadClass(ChatClientAutoConfiguration.class.getName());
+		assertThat(autoConfiguration.getClassLoader()).isSameAs(classLoader);
+		assertThatExceptionOfType(ClassNotFoundException.class)
+			.isThrownBy(() -> classLoader.loadClass(ToolCallingAutoConfiguration.class.getName()));
+		return autoConfiguration;
 	}
 
 }
