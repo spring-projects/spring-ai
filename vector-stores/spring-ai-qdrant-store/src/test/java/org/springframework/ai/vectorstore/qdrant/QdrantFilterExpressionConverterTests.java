@@ -18,11 +18,15 @@ package org.springframework.ai.vectorstore.qdrant;
 
 import java.util.List;
 
+import io.qdrant.client.ConditionFactory;
+import io.qdrant.client.grpc.Common;
 import io.qdrant.client.grpc.Common.Condition;
 import io.qdrant.client.grpc.Common.FieldCondition;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -119,6 +123,78 @@ class QdrantFilterExpressionConverterTests {
 		assertThat(field.hasMatch()).isTrue();
 		assertThat(field.getMatch().hasExceptIntegers()).isTrue();
 		assertThat(field.getMatch().getExceptIntegers().getIntegersList()).containsExactly(2023L, 2024L);
+	}
+
+	@Test
+	void groupOnTheRightOfAndKeepsItsConditions() {
+		var filter = convert("country == 'BG' && (year >= 2020 || genre == 'drama')");
+
+		assertThat(filter)
+			.isEqualTo(and(convert("country == 'BG'"), or(convert("year >= 2020"), convert("genre == 'drama'"))));
+	}
+
+	@Test
+	void groupOnTheLeftOfOrKeepsItsConditions() {
+		var filter = convert("(country == 'BG' && year >= 2020) || genre == 'drama'");
+
+		assertThat(filter)
+			.isEqualTo(or(and(convert("country == 'BG'"), convert("year >= 2020")), convert("genre == 'drama'")));
+	}
+
+	@Test
+	void nestedGroupsKeepTheirConditions() {
+		var filter = convert("genre == 'comedy' && (country == 'NL' || (year < 2019 && country == 'BG'))");
+
+		assertThat(filter).isEqualTo(and(convert("genre == 'comedy'"),
+				or(convert("country == 'NL'"), and(convert("year < 2019"), convert("country == 'BG'")))));
+	}
+
+	@Test
+	void builderGroupKeepsItsConditions() {
+		var b = new FilterExpressionBuilder();
+
+		var filter = this.converter.convertExpression(
+				b.and(b.eq("country", "BG"), b.group(b.or(b.gte("year", 2020), b.eq("genre", "drama")))).build());
+
+		assertThat(filter)
+			.isEqualTo(and(convert("country == 'BG'"), or(convert("year >= 2020"), convert("genre == 'drama'"))));
+	}
+
+	@Test
+	void notOfComparisonIsMustNot() {
+		var b = new FilterExpressionBuilder();
+
+		assertThat(convert("NOT country == 'BG'")).isEqualTo(not(convert("country == 'BG'")));
+		assertThat(this.converter.convertExpression(b.not(b.eq("country", "BG")).build()))
+			.isEqualTo(not(convert("country == 'BG'")));
+	}
+
+	@Test
+	void notOfGroupIsMustNot() {
+		assertThat(convert("NOT (country == 'BG' || year >= 2020)"))
+			.isEqualTo(not(or(convert("country == 'BG'"), convert("year >= 2020"))));
+	}
+
+	private Common.Filter convert(String expression) {
+		return this.converter.convertExpression(new FilterExpressionTextParser().parse(expression));
+	}
+
+	private static Common.Filter and(Common.Filter left, Common.Filter right) {
+		return Common.Filter.newBuilder()
+			.addMust(ConditionFactory.filter(left))
+			.addMust(ConditionFactory.filter(right))
+			.build();
+	}
+
+	private static Common.Filter or(Common.Filter left, Common.Filter right) {
+		return Common.Filter.newBuilder()
+			.addShould(ConditionFactory.filter(left))
+			.addShould(ConditionFactory.filter(right))
+			.build();
+	}
+
+	private static Common.Filter not(Common.Filter negated) {
+		return Common.Filter.newBuilder().addMustNot(ConditionFactory.filter(negated)).build();
 	}
 
 }
