@@ -71,7 +71,8 @@ class DefaultAdvisorObservationConventionTests {
 			.advisorName("MyName")
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(), AiOperationType.FRAMEWORK.value()),
+				KeyValue.of(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
+						AiOperationType.INVOKE_WORKFLOW.value()),
 				KeyValue.of(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.SPRING_AI.value()),
 				KeyValue.of(LowCardinalityKeyNames.ADVISOR_NAME.asString(), "MyName"),
 				KeyValue.of(LowCardinalityKeyNames.SPRING_AI_KIND.asString(), SpringAiKind.ADVISOR.value()));
