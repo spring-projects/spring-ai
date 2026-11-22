@@ -1461,7 +1461,170 @@ public class ToolCallingAdvisorTests {
 		assertThat(executedOptions.getToolCallbacks()).contains(injectedCallback);
 	}
 
+	@Test
+	void callToolExecutionUsesOptionsReturnedByDoPrepareToolExecutionHook() {
+		// A subclass (e.g. ToolSearchToolCallingAdvisor) may make extra tools resolvable
+		// for execution from doPrepareToolExecution. executeToolCalls() must receive what
+		// the hook returns, while the model keeps getting the options without them.
+		ToolCallback executionOnlyCallback = toolCallback("executionOnlyTool");
+		List<String> events = new ArrayList<>();
+		ExecutionPreparingToolCallingAdvisor advisor = new ExecutionPreparingToolCallingAdvisor(this.toolCallingManager,
+				executionOnlyCallback, events);
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		List<ChatClientRequest> modelRequests = new ArrayList<>();
+		TerminalCallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			modelRequests.add(req);
+			return modelRequests.size() == 1 ? responseWithToolCall : finalResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenAnswer(invocation -> {
+				events.add("execute");
+				return toolExecutionResult();
+			});
+
+		advisor.adviseCall(request, realChain);
+
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(this.toolCallingManager).executeToolCalls(promptCaptor.capture(), any(ChatResponse.class));
+
+		assertThat(events).containsExactly("hook", "execute");
+		assertThat(advisor.receivedOptions).isSameAs(modelRequests.get(0).prompt().getOptions());
+		assertThat(advisor.receivedChatResponse).isSameAs(responseWithToolCall.chatResponse());
+		assertThat(promptCaptor.getValue().getOptions()).isSameAs(advisor.returnedOptions);
+		assertThat(advisor.returnedOptions.getToolCallbacks()).contains(executionOnlyCallback);
+		// The model keeps getting the options without the execution-only callback.
+		assertThat(modelRequests).hasSize(2)
+			.extracting(req -> req.prompt().getOptions())
+			.containsOnly(advisor.receivedOptions);
+	}
+
+	@Test
+	void streamToolExecutionUsesOptionsReturnedByDoPrepareToolExecutionHook() {
+		// Streaming counterpart of
+		// callToolExecutionUsesOptionsReturnedByDoPrepareToolExecutionHook.
+		ToolCallback executionOnlyCallback = toolCallback("executionOnlyTool");
+		List<String> events = new ArrayList<>();
+		ExecutionPreparingToolCallingAdvisor advisor = new ExecutionPreparingToolCallingAdvisor(this.toolCallingManager,
+				executionOnlyCallback, events);
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		List<ChatClientRequest> modelRequests = new ArrayList<>();
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			modelRequests.add(req);
+			return Flux.just(modelRequests.size() == 1 ? responseWithToolCall : finalResponse);
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenAnswer(invocation -> {
+				events.add("execute");
+				return toolExecutionResult();
+			});
+
+		advisor.adviseStream(request, realChain).collectList().block();
+
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(this.toolCallingManager).executeToolCalls(promptCaptor.capture(), any(ChatResponse.class));
+
+		assertThat(events).containsExactly("hook", "execute");
+		assertThat(advisor.receivedOptions).isSameAs(modelRequests.get(0).prompt().getOptions());
+		assertThat(advisor.receivedChatResponse.hasToolCalls()).isTrue();
+		assertThat(promptCaptor.getValue().getOptions()).isSameAs(advisor.returnedOptions);
+		assertThat(advisor.returnedOptions.getToolCallbacks()).contains(executionOnlyCallback);
+		// The model keeps getting the options without the execution-only callback.
+		assertThat(modelRequests).hasSize(2)
+			.extracting(req -> req.prompt().getOptions())
+			.containsOnly(advisor.receivedOptions);
+	}
+
+	@Test
+	void callToolExecutionOptionsAreUnchangedWithoutDoPrepareToolExecutionOverride() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		List<ChatClientRequest> modelRequests = new ArrayList<>();
+		TerminalCallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			modelRequests.add(req);
+			return modelRequests.size() == 1 ? responseWithToolCall : finalResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult());
+
+		advisor.adviseCall(request, realChain);
+
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(this.toolCallingManager).executeToolCalls(promptCaptor.capture(), any(ChatResponse.class));
+
+		assertThat(promptCaptor.getValue().getOptions()).isSameAs(modelRequests.get(0).prompt().getOptions());
+	}
+
+	@Test
+	void streamToolExecutionOptionsAreUnchangedWithoutDoPrepareToolExecutionOverride() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		List<ChatClientRequest> modelRequests = new ArrayList<>();
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			modelRequests.add(req);
+			return Flux.just(modelRequests.size() == 1 ? responseWithToolCall : finalResponse);
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult());
+
+		advisor.adviseStream(request, realChain).collectList().block();
+
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(this.toolCallingManager).executeToolCalls(promptCaptor.capture(), any(ChatResponse.class));
+
+		assertThat(promptCaptor.getValue().getOptions()).isSameAs(modelRequests.get(0).prompt().getOptions());
+	}
+
 	// Helper methods
+
+	private static ToolCallback toolCallback(String name) {
+		ToolCallback callback = mock(ToolCallback.class, Mockito.withSettings().strictness(Strictness.LENIENT));
+		when(callback.getToolDefinition())
+			.thenReturn(ToolDefinition.builder().name(name).description("").inputSchema("{}").build());
+		return callback;
+	}
+
+	private static ToolExecutionResult toolExecutionResult() {
+		return ToolExecutionResult.builder()
+			.conversationHistory(List.of(new UserMessage("test"), AssistantMessage.builder().content("").build(),
+					ToolResponseMessage.builder().build()))
+			.build();
+	}
 
 	private ChatClientRequest createMockRequestWithSystemMessage() {
 		SystemMessage systemMessage = new SystemMessage("You are a helpful assistant");
@@ -1743,6 +1906,45 @@ public class ToolCallingAdvisorTests {
 				.prompt(chatClientRequest.prompt().mutate().chatOptions(mutatedOptions).build())
 				.context(chatClientRequest.context())
 				.build();
+		}
+
+	}
+
+	/**
+	 * Test subclass mimicking how {@code ToolSearchToolCallingAdvisor} uses the
+	 * doPrepareToolExecution hook to make an extra tool callback resolvable for execution
+	 * only. Records what the hook received and returned.
+	 */
+	private static class ExecutionPreparingToolCallingAdvisor extends ToolCallingAdvisor {
+
+		private final ToolCallback executionOnlyCallback;
+
+		private final List<String> events;
+
+		private ToolCallingChatOptions receivedOptions;
+
+		private ChatResponse receivedChatResponse;
+
+		private ToolCallingChatOptions returnedOptions;
+
+		ExecutionPreparingToolCallingAdvisor(ToolCallingManager toolCallingManager, ToolCallback executionOnlyCallback,
+				List<String> events) {
+			super(toolCallingManager, DEFAULT_TOOL_EXECUTION_ELIGIBILITY_CHECKER, DEFAULT_ORDER, true);
+			this.executionOnlyCallback = executionOnlyCallback;
+			this.events = events;
+		}
+
+		@Override
+		protected ToolCallingChatOptions doPrepareToolExecution(ToolCallingChatOptions options,
+				ChatResponse chatResponse, Map<String, Object> context) {
+			this.events.add("hook");
+			this.receivedOptions = options;
+			this.receivedChatResponse = chatResponse;
+			List<ToolCallback> callbacks = options.getToolCallbacks() != null
+					? new ArrayList<>(options.getToolCallbacks()) : new ArrayList<>();
+			callbacks.add(this.executionOnlyCallback);
+			this.returnedOptions = options.mutate().toolCallbacks(callbacks).build();
+			return this.returnedOptions;
 		}
 
 	}
