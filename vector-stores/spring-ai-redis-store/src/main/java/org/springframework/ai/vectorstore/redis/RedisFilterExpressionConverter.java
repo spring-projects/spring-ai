@@ -168,19 +168,22 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 	}
 
 	/**
-	 * Escapes characters that have special meaning inside a RediSearch TAG query clause
-	 * ({@code @field:\{value\}}). The following characters are escaped with a backslash:
-	 * {@code $}, {@code \}, {@code |}, {@code {}, {@code }}, {@code (}, {@code )},
-	 * {@code [}, {@code ]}, {@code -}, {@code '} and {@code *}.
+	 * Escapes a value for a RediSearch TAG query clause ({@code @field:\{value\}}).
+	 * RediSearch reads unescaped ASCII punctuation and whitespace in a tag query as
+	 * syntax: some characters (such as {@code .} or {@code ,}) split the value, others
+	 * (such as {@code :} or {@code @}) make the query invalid. Every ASCII character
+	 * other than a letter, a digit or {@code _} is therefore escaped with a backslash.
+	 * Non-ASCII characters are left as they are, because escaping them stops the value
+	 * from matching.
 	 */
 	private String escapeTagValue(String value) {
 		StringBuilder sb = new StringBuilder(value.length());
 		for (int i = 0; i < value.length(); i++) {
 			char c = value.charAt(i);
-			switch (c) {
-				case '\\', '$', '|', '{', '}', '(', ')', '[', ']', '-', '\'', '*' -> sb.append('\\').append(c);
-				default -> sb.append(c);
+			if (c < 128 && !Character.isLetterOrDigit(c) && c != '_') {
+				sb.append('\\');
 			}
+			sb.append(c);
 		}
 		return sb.toString();
 	}
