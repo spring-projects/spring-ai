@@ -101,6 +101,16 @@ class GoogleGenAiFinishReasonCategoryTests {
 	}
 
 	@Test
+	void aCandidateWithoutAFinishReasonHasNoFinishReason() {
+		Candidate candidate = Candidate.builder().build();
+
+		ChatGenerationMetadata metadata = this.chatModel.responseCandidateToGeneration(candidate).get(0).getMetadata();
+
+		assertThat(metadata.getFinishReason()).isNull();
+		assertThat(metadata.getFinishReasonCategory()).isEqualTo(FinishReasonCategory.UNSPECIFIED);
+	}
+
+	@Test
 	void aCandidateThatAsksForAToolIsAToolCall() {
 		Part functionCall = Part.builder()
 			.functionCall(FunctionCall.builder().name("weather").args(Map.of("city", "Paris")).build())

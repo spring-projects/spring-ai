@@ -169,7 +169,11 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 						.build())
 			.build();
 
-		Candidate candidate = Candidate.builder().content(responseContent).index(0).build();
+		Candidate candidate = Candidate.builder()
+			.content(responseContent)
+			.index(0)
+			.finishReason(new FinishReason(FinishReason.Known.STOP))
+			.build();
 
 		GenerateContentResponse mockResponse = GenerateContentResponse.builder()
 			.candidates(List.of(candidate))
@@ -245,7 +249,11 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 					Part.builder().text("This is a final response").build())
 			.build();
 
-		Candidate candidate = Candidate.builder().content(responseContent).index(0).build();
+		Candidate candidate = Candidate.builder()
+			.content(responseContent)
+			.index(0)
+			.finishReason(new FinishReason(FinishReason.Known.STOP))
+			.build();
 
 		GenerateContentResponse mockResponse = GenerateContentResponse.builder()
 			.candidates(List.of(candidate))
@@ -301,7 +309,11 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 					Part.builder().text("This is a final response").build())
 			.build();
 
-		Candidate candidate = Candidate.builder().content(responseContent).index(0).build();
+		Candidate candidate = Candidate.builder()
+			.content(responseContent)
+			.index(0)
+			.finishReason(new FinishReason(FinishReason.Known.STOP))
+			.build();
 
 		GenerateContentResponse mockResponse = GenerateContentResponse.builder()
 			.candidates(List.of(candidate))
@@ -362,7 +374,11 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 						.build())
 			.build();
 
-		Candidate candidate = Candidate.builder().content(responseContent).index(0).build();
+		Candidate candidate = Candidate.builder()
+			.content(responseContent)
+			.index(0)
+			.finishReason(new FinishReason(FinishReason.Known.STOP))
+			.build();
 
 		GenerateContentResponse mockResponse = GenerateContentResponse.builder()
 			.candidates(List.of(candidate))
