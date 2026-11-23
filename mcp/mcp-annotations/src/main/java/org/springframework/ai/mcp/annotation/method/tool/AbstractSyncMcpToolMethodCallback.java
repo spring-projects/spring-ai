@@ -38,6 +38,17 @@ import org.springframework.ai.mcp.annotation.context.McpRequestContextTypes;
 public abstract class AbstractSyncMcpToolMethodCallback<T, RC extends McpRequestContextTypes<?>>
 		extends AbstractAsyncMcpToolMethodCallback<T, RC> {
 
+	protected AbstractSyncMcpToolMethodCallback(ReturnMode returnMode, Method toolMethod, Object toolObject) {
+		super(returnMode, toolMethod, toolObject);
+	}
+
+	/**
+	 * @deprecated use
+	 * {@link #AbstractSyncMcpToolMethodCallback(ReturnMode, Method, Object)}. The
+	 * {@code toolCallExceptionClass} argument is ignored: exception handling now follows
+	 * the {@code @Tool} contract based on the exception type. Will be removed in 2.1.0.
+	 */
+	@Deprecated
 	protected AbstractSyncMcpToolMethodCallback(ReturnMode returnMode, Method toolMethod, Object toolObject,
 			Class<? extends Throwable> toolCallExceptionClass) {
 		super(returnMode, toolMethod, toolObject, toolCallExceptionClass);

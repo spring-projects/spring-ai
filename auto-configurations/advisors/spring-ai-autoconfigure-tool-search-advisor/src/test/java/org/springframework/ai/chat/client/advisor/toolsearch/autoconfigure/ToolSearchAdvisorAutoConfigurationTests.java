@@ -21,11 +21,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.toolsearch.ToolSearchToolCallingAdvisor;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.decision.DecisionModel;
+import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.tool.toolsearch.ToolIndex;
 import org.springframework.ai.tool.toolsearch.eviction.CompositeEvictionStrategy;
 import org.springframework.ai.tool.toolsearch.eviction.LruEvictionStrategy;
+import org.springframework.ai.tool.toolsearch.index.decision.DecisionToolIndex;
 import org.springframework.ai.tool.toolsearch.index.lucene.LuceneToolIndex;
 import org.springframework.ai.tool.toolsearch.index.regex.RegexToolIndex;
 import org.springframework.ai.tool.toolsearch.index.vectorstore.VectorToolIndex;
@@ -107,6 +112,58 @@ class ToolSearchAdvisorAutoConfigurationTests {
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("tool-index-type=vector")
 				.hasMessageContaining("VectorStore"));
+	}
+
+	@Test
+	void decisionToolIndexIsRegisteredWhenPropertySetAndDecisionModelBeanPresent() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.client.tool-search-advisor.enabled=true",
+					"spring.ai.chat.client.tool-search-advisor.tool-index-type=decision")
+			.withBean(DecisionModel.class, () -> mock(DecisionModel.class))
+			.run(context -> assertThat(context.getBean(ToolIndex.class)).isInstanceOf(DecisionToolIndex.class));
+	}
+
+	@Test
+	void decisionToolIndexFailsWithClearMessageWhenNoDecisionModelBeanPresent() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.client.tool-search-advisor.enabled=true",
+					"spring.ai.chat.client.tool-search-advisor.tool-index-type=decision")
+			.run(context -> assertThat(context).hasFailed()
+				.getFailure()
+				.rootCause()
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessageContaining("tool-index-type=decision")
+				.hasMessageContaining("DecisionModel"));
+	}
+
+	@Test
+	void decisionThresholdPropertiesAreApplied() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.client.tool-search-advisor.enabled=true",
+					"spring.ai.chat.client.tool-search-advisor.tool-index-type=decision",
+					"spring.ai.chat.client.tool-search-advisor.decision.applicability-threshold=0.7",
+					"spring.ai.chat.client.tool-search-advisor.decision.minimum-relevance=0.2")
+			.withBean(DecisionModel.class, () -> mock(DecisionModel.class))
+			.run(context -> {
+				var index = context.getBean(ToolIndex.class);
+				assertThat(index).isInstanceOf(DecisionToolIndex.class);
+				assertThat(ReflectionTestUtils.getField(index, "applicabilityThreshold")).isEqualTo(0.7d);
+				assertThat(ReflectionTestUtils.getField(index, "minimumRelevance")).isEqualTo(0.2d);
+			});
+	}
+
+	@Test
+	void decisionThresholdOutOfRangeFailsNamingTheProperty() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.client.tool-search-advisor.enabled=true",
+					"spring.ai.chat.client.tool-search-advisor.tool-index-type=decision",
+					"spring.ai.chat.client.tool-search-advisor.decision.applicability-threshold=1.5")
+			.withBean(DecisionModel.class, () -> mock(DecisionModel.class))
+			.run(context -> assertThat(context).hasFailed()
+				.getFailure()
+				.rootCause()
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("decision.applicability-threshold"));
 	}
 
 	@Test
@@ -241,6 +298,56 @@ class ToolSearchAdvisorAutoConfigurationTests {
 				var builder = context.getBean(ToolCallingAdvisor.Builder.class);
 				assertThat(ReflectionTestUtils.getField(builder, "evictionStrategy"))
 					.isInstanceOf(CompositeEvictionStrategy.class);
+			});
+	}
+
+	// --- Auto-configuration ordering ---
+
+	/**
+	 * Regression test for the auto-configuration ordering: the
+	 * {@code toolCallingAdvisorBuilder} bean is guarded by
+	 * {@code @ConditionalOnBean(ToolCallingManager.class)}, and
+	 * {@link ToolCallingManager} is contributed by {@link ToolCallingAutoConfiguration}.
+	 * Unless this configuration is ordered after {@link ToolCallingAutoConfiguration},
+	 * its condition is evaluated before the manager exists, the tool-search builder backs
+	 * off, and {@link ChatClientAutoConfiguration} contributes the default
+	 * {@link ToolCallingAdvisor.Builder} instead.
+	 * <p>
+	 * All three auto-configurations are loaded together so the {@code @AutoConfiguration}
+	 * before/after metadata actually drives the evaluation order (a single auto-config
+	 * cannot exercise ordering). The runner does not pre-register a
+	 * {@link ToolCallingManager}, so the bean must come from
+	 * {@link ToolCallingAutoConfiguration} exactly as it does at runtime.
+	 */
+	@Test
+	void toolSearchBuilderReplacesDefaultWhenAllAutoConfigurationsAreLoaded() {
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(ToolSearchAdvisorAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class, ChatClientAutoConfiguration.class))
+			.withBean(ChatModel.class, () -> mock(ChatModel.class))
+			.withPropertyValues("spring.ai.chat.client.tool-search-advisor.enabled=true")
+			.run(context -> {
+				assertThat(context).hasSingleBean(ToolCallingAdvisor.Builder.class);
+				assertThat(context.getBean(ToolCallingAdvisor.Builder.class))
+					.isInstanceOf(ToolSearchToolCallingAdvisor.Builder.class);
+			});
+	}
+
+	/**
+	 * When the tool-search advisor is not enabled, the same three-way wiring must fall
+	 * back to the default {@link ChatClientAutoConfiguration} builder (and never the
+	 * tool-search subtype).
+	 */
+	@Test
+	void defaultBuilderIsUsedWhenToolSearchAdvisorDisabled() {
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(ToolSearchAdvisorAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class, ChatClientAutoConfiguration.class))
+			.withBean(ChatModel.class, () -> mock(ChatModel.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(ToolCallingAdvisor.Builder.class);
+				assertThat(context.getBean(ToolCallingAdvisor.Builder.class))
+					.isNotInstanceOf(ToolSearchToolCallingAdvisor.Builder.class);
 			});
 	}
 

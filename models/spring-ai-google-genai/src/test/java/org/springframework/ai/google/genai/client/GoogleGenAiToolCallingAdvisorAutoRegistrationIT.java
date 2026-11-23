@@ -42,7 +42,7 @@ class GoogleGenAiToolCallingAdvisorAutoRegistrationIT extends AbstractToolCallin
 	@Override
 	protected ChatModel getChatModel() {
 
-		GoogleGenAiChatModel.ChatModel model = GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW;
+		GoogleGenAiChatModel.ChatModel model = GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW;
 
 		String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
 		String location = "global";

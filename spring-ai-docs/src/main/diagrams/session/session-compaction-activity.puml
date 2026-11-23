@@ -1,0 +1,42 @@
+@startuml session-compaction-activity
+skinparam shadowing false
+start
+:Split the view:
+pinned = the latest stored system message
+  + the prior summary (no summarizer)
+  + the preamble before the first turn
+turns = the conversation from the first turn on;
+if (any turn?) then (no)
+  :unchanged;
+  stop
+endif
+:Raw cut by the window:
+lastEvents: the last n events
+lastTurns: the start of the n-th newest turn
+tokenBudget: walk newest to oldest,
+  pinned tokens off the budget first;
+if (anything before the cut?) then (no)
+  :unchanged;
+  stop
+endif
+:Move the cut forward to the next turn start;
+if (no later turn start?) then (yes)
+  :Move the cut back to the newest turn start;
+endif
+if (cut at the first turn?) then (yes)
+  :unchanged;
+  stop
+endif
+:covered = the turns before the cut
+  + every superseded stored system message
+preserved = the turns from the cut on;
+if (a summarizer is set?) then (yes)
+  :summarize(prior summary, covered, preserved);
+  if (summary empty?) then (yes)
+    :unchanged;
+    stop
+  endif
+endif
+:CompactionResult(covered, pinned, preserved, summary);
+stop
+@enduml

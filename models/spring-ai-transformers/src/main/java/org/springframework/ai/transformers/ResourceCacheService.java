@@ -19,6 +19,7 @@ package org.springframework.ai.transformers;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +39,7 @@ import org.springframework.util.StringUtils;
  * Service that helps caching remote {@link Resource}s on the local file system.
  *
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 public class ResourceCacheService {
 
@@ -56,7 +58,7 @@ public class ResourceCacheService {
 	private List<String> excludedUriSchemas = new ArrayList<>(List.of("file", "classpath"));
 
 	public ResourceCacheService() {
-		this(new File(System.getProperty("java.io.tmpdir"), "spring-ai-onnx-generative").getAbsolutePath());
+		this(defaultCacheDirectory());
 	}
 
 	public ResourceCacheService(String rootCacheDirectory) {
@@ -71,6 +73,15 @@ public class ResourceCacheService {
 			this.cacheDirectory.mkdirs();
 		}
 		Assert.isTrue(this.cacheDirectory.isDirectory(), "The cache folder must be a directory");
+	}
+
+	private static File defaultCacheDirectory() {
+		try {
+			return Files.createTempDirectory("spring-ai-model-cache").toFile();
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
@@ -123,7 +134,13 @@ public class ResourceCacheService {
 				UUID.nameUUIDFromBytes(pathWithoutLastSegment(originalResource.getURI())).toString());
 		resourceParentFolder.mkdirs();
 		String newFileName = getCacheName(originalResource);
-		return new File(resourceParentFolder, newFileName);
+		File cachedFile = new File(resourceParentFolder, newFileName);
+		String canonicalCache = this.cacheDirectory.getCanonicalPath() + File.separator;
+		if (!cachedFile.getCanonicalPath().startsWith(canonicalCache)) {
+			throw new IllegalArgumentException(
+					"Resource URI resolves outside the cache directory: " + originalResource.getDescription());
+		}
+		return cachedFile;
 	}
 
 	private byte[] pathWithoutLastSegment(URI uri) {

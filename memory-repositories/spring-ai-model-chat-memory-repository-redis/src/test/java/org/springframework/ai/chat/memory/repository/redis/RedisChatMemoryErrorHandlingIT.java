@@ -50,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * @author Yanming Zhou
  */
 @Testcontainers
+@SuppressWarnings("removal")
 class RedisChatMemoryErrorHandlingIT {
 
 	@Container

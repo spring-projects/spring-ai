@@ -20,7 +20,11 @@ package org.springframework.ai.chat.memory.repository.jdbc;
  * H2-specific SQL dialect for chat memory repository.
  *
  * @author Yanming Zhou
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of
+ * {@code H2JdbcSessionRepositoryDialect} in {@code spring-ai-session-jdbc}
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 public class H2ChatMemoryRepositoryDialect implements JdbcChatMemoryRepositoryDialect {
 
 }

@@ -63,6 +63,14 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 
 	private final @Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities;
 
+	private final boolean diarizedJsonWorkaroundEnabled;
+
+	private final TranscriptionCreateParams.@Nullable ChunkingStrategy chunkingStrategy;
+
+	private final @Nullable List<String> knownSpeakerNames;
+
+	private final @Nullable List<String> knownSpeakerReferences;
+
 	protected OpenAiAudioTranscriptionOptions(@Nullable String baseUrl, @Nullable String apiKey,
 			@Nullable Credential credential, @Nullable String model, @Nullable String microsoftDeploymentName,
 			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
@@ -70,7 +78,10 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
 			@Nullable AudioResponseFormat responseFormat, @Nullable String prompt, @Nullable String language,
 			@Nullable Float temperature,
-			@Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities) {
+			@Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities,
+			@Nullable Boolean diarizedJsonWorkaroundEnabled,
+			TranscriptionCreateParams.@Nullable ChunkingStrategy chunkingStrategy,
+			@Nullable List<String> knownSpeakerNames, @Nullable List<String> knownSpeakerReferences) {
 		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_TRANSCRIPTION_MODEL, microsoftDeploymentName,
 				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries,
 				proxy, customHeaders);
@@ -79,6 +90,10 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 		this.language = language;
 		this.temperature = temperature;
 		this.timestampGranularities = timestampGranularities != null ? List.copyOf(timestampGranularities) : null;
+		this.diarizedJsonWorkaroundEnabled = diarizedJsonWorkaroundEnabled == null || diarizedJsonWorkaroundEnabled;
+		this.chunkingStrategy = chunkingStrategy;
+		this.knownSpeakerNames = knownSpeakerNames != null ? List.copyOf(knownSpeakerNames) : null;
+		this.knownSpeakerReferences = knownSpeakerReferences != null ? List.copyOf(knownSpeakerReferences) : null;
 	}
 
 	public static Builder builder() {
@@ -111,6 +126,43 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 		return this.timestampGranularities;
 	}
 
+	/**
+	 * Whether the {@code diarized_json} misclassification workaround is applied. See
+	 * {@link DiarizedJsonMisclassificationRecovery} for background. Defaults to
+	 * {@code true}.
+	 */
+	public boolean isDiarizedJsonWorkaroundEnabled() {
+		return this.diarizedJsonWorkaroundEnabled;
+	}
+
+	/**
+	 * Controls how the audio is cut into chunks when streaming or when the model benefits
+	 * from voice-activity-detection-based chunking. Build one via
+	 * {@link TranscriptionCreateParams.ChunkingStrategy#ofAuto()} or
+	 * {@link TranscriptionCreateParams.ChunkingStrategy#ofVadConfig}.
+	 */
+	public TranscriptionCreateParams.@Nullable ChunkingStrategy getChunkingStrategy() {
+		return this.chunkingStrategy;
+	}
+
+	/**
+	 * Speaker identifiers (up to 4) matching, positionally, the audio samples in
+	 * {@link #getKnownSpeakerReferences()}. Only used with the
+	 * {@code gpt-4o-transcribe-diarize} model.
+	 */
+	public @Nullable List<String> getKnownSpeakerNames() {
+		return this.knownSpeakerNames;
+	}
+
+	/**
+	 * Audio samples (as data URLs, e.g. {@code data:audio/wav;base64,...}) containing
+	 * known speaker references, positionally matching {@link #getKnownSpeakerNames()}.
+	 * Only used with the {@code gpt-4o-transcribe-diarize} model.
+	 */
+	public @Nullable List<String> getKnownSpeakerReferences() {
+		return this.knownSpeakerReferences;
+	}
+
 	@Override
 	public boolean equals(@Nullable Object o) {
 		if (this == o) {
@@ -123,13 +175,18 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 		return Objects.equals(this.getModel(), that.getModel())
 				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.prompt, that.prompt)
 				&& Objects.equals(this.language, that.language) && Objects.equals(this.temperature, that.temperature)
-				&& Objects.equals(this.timestampGranularities, that.timestampGranularities);
+				&& Objects.equals(this.timestampGranularities, that.timestampGranularities)
+				&& this.diarizedJsonWorkaroundEnabled == that.diarizedJsonWorkaroundEnabled
+				&& Objects.equals(this.chunkingStrategy, that.chunkingStrategy)
+				&& Objects.equals(this.knownSpeakerNames, that.knownSpeakerNames)
+				&& Objects.equals(this.knownSpeakerReferences, that.knownSpeakerReferences);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.getModel(), this.responseFormat, this.prompt, this.language, this.temperature,
-				this.timestampGranularities);
+				this.timestampGranularities, this.diarizedJsonWorkaroundEnabled, this.chunkingStrategy,
+				this.knownSpeakerNames, this.knownSpeakerReferences);
 	}
 
 	public static final class Builder extends AbstractBuilder<OpenAiAudioTranscriptionOptions, Builder> {
@@ -143,6 +200,14 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 		private @Nullable Float temperature;
 
 		private @Nullable List<TranscriptionCreateParams.TimestampGranularity> timestampGranularities;
+
+		private @Nullable Boolean diarizedJsonWorkaroundEnabled;
+
+		private TranscriptionCreateParams.@Nullable ChunkingStrategy chunkingStrategy;
+
+		private @Nullable List<String> knownSpeakerNames;
+
+		private @Nullable List<String> knownSpeakerReferences;
 
 		private Builder() {
 		}
@@ -166,6 +231,10 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 			this.language = fromOptions.getLanguage();
 			this.temperature = fromOptions.getTemperature();
 			this.timestampGranularities = fromOptions.getTimestampGranularities();
+			this.diarizedJsonWorkaroundEnabled = fromOptions.isDiarizedJsonWorkaroundEnabled();
+			this.chunkingStrategy = fromOptions.getChunkingStrategy();
+			this.knownSpeakerNames = fromOptions.getKnownSpeakerNames();
+			this.knownSpeakerReferences = fromOptions.getKnownSpeakerReferences();
 			return this;
 		}
 
@@ -233,6 +302,16 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 						this.timestampGranularities = merged;
 					}
 				}
+				this.diarizedJsonWorkaroundEnabled = castFrom.isDiarizedJsonWorkaroundEnabled();
+				if (castFrom.getChunkingStrategy() != null) {
+					this.chunkingStrategy = castFrom.getChunkingStrategy();
+				}
+				if (castFrom.getKnownSpeakerNames() != null) {
+					this.knownSpeakerNames = castFrom.getKnownSpeakerNames();
+				}
+				if (castFrom.getKnownSpeakerReferences() != null) {
+					this.knownSpeakerReferences = castFrom.getKnownSpeakerReferences();
+				}
 			}
 			return this;
 		}
@@ -263,13 +342,56 @@ public class OpenAiAudioTranscriptionOptions extends AbstractOpenAiOptions imple
 			return this;
 		}
 
+		/**
+		 * Enables or disables the {@code diarized_json} misclassification workaround.
+		 * Enabled by default. See {@link DiarizedJsonMisclassificationRecovery} for
+		 * background.
+		 */
+		public Builder diarizedJsonWorkaroundEnabled(boolean diarizedJsonWorkaroundEnabled) {
+			this.diarizedJsonWorkaroundEnabled = diarizedJsonWorkaroundEnabled;
+			return this;
+		}
+
+		/**
+		 * Controls how the audio is cut into chunks. Use
+		 * {@link TranscriptionCreateParams.ChunkingStrategy#ofAuto()} for the default
+		 * server-side auto-chunking, or
+		 * {@link TranscriptionCreateParams.ChunkingStrategy#ofVadConfig} to tune
+		 * voice-activity-detection parameters.
+		 */
+		public Builder chunkingStrategy(TranscriptionCreateParams.@Nullable ChunkingStrategy chunkingStrategy) {
+			this.chunkingStrategy = chunkingStrategy;
+			return this;
+		}
+
+		/**
+		 * Speaker identifiers (up to 4), positionally matching
+		 * {@link #knownSpeakerReferences}. Only used with the
+		 * {@code gpt-4o-transcribe-diarize} model.
+		 */
+		public Builder knownSpeakerNames(@Nullable List<String> knownSpeakerNames) {
+			this.knownSpeakerNames = knownSpeakerNames;
+			return this;
+		}
+
+		/**
+		 * Audio samples (as data URLs) containing known speaker references, positionally
+		 * matching {@link #knownSpeakerNames}. Only used with the
+		 * {@code gpt-4o-transcribe-diarize} model.
+		 */
+		public Builder knownSpeakerReferences(@Nullable List<String> knownSpeakerReferences) {
+			this.knownSpeakerReferences = knownSpeakerReferences;
+			return this;
+		}
+
 		@Override
 		public OpenAiAudioTranscriptionOptions build() {
 			return new OpenAiAudioTranscriptionOptions(this.baseUrl, this.apiKey, this.credential, this.model,
 					this.microsoftDeploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
 					this.isMicrosoftFoundry, this.isGitHubModels, this.timeout, this.maxRetries, this.proxy,
 					this.customHeaders, this.responseFormat, this.prompt, this.language, this.temperature,
-					this.timestampGranularities);
+					this.timestampGranularities, this.diarizedJsonWorkaroundEnabled, this.chunkingStrategy,
+					this.knownSpeakerNames, this.knownSpeakerReferences);
 		}
 
 	}

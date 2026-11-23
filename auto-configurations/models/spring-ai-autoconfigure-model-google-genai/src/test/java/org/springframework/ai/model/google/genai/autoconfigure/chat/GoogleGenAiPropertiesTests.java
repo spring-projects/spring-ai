@@ -18,6 +18,7 @@ package org.springframework.ai.model.google.genai.autoconfigure.chat;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions.ToolChoice;
 import org.springframework.ai.model.google.genai.autoconfigure.embedding.GoogleGenAiEmbeddingConnectionProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -147,6 +148,52 @@ public class GoogleGenAiPropertiesTests {
 			// Should be null when not set
 			assertThat(chatProperties.toOptions().getIncludeThoughts()).isNull();
 		});
+	}
+
+	@Test
+	void toolChoiceModeOnlyBinding() {
+		this.contextRunner.withPropertyValues("spring.ai.google.genai.chat.tool-choice.mode=ANY").run(context -> {
+			GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+			ToolChoice toolChoice = chatProperties.toOptions().getToolChoice();
+			assertThat(toolChoice).isNotNull();
+			assertThat(toolChoice.mode()).isEqualTo(ToolChoice.Mode.ANY);
+			assertThat(toolChoice.allowedFunctionNames()).isNull();
+		});
+	}
+
+	@Test
+	void toolChoiceWithAllowedFunctionNamesBinding() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.google.genai.chat.tool-choice.mode=ANY",
+					"spring.ai.google.genai.chat.tool-choice.allowed-function-names=funcA,funcB")
+			.run(context -> {
+				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+				ToolChoice toolChoice = chatProperties.toOptions().getToolChoice();
+				assertThat(toolChoice).isNotNull();
+				assertThat(toolChoice.mode()).isEqualTo(ToolChoice.Mode.ANY);
+				assertThat(toolChoice.allowedFunctionNames()).containsExactly("funcA", "funcB");
+			});
+	}
+
+	@Test
+	void toolChoiceNotSetByDefault() {
+		this.contextRunner.run(context -> {
+			GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+			assertThat(chatProperties.toOptions().getToolChoice()).isNull();
+		});
+	}
+
+	@Test
+	void toolChoiceAllowedFunctionNamesOnlyBindingDefaultsModeToAuto() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.google.genai.chat.tool-choice.allowed-function-names=funcA,funcB")
+			.run(context -> {
+				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+				ToolChoice toolChoice = chatProperties.toOptions().getToolChoice();
+				assertThat(toolChoice).isNotNull();
+				assertThat(toolChoice.mode()).isEqualTo(ToolChoice.Mode.AUTO);
+				assertThat(toolChoice.allowedFunctionNames()).containsExactly("funcA", "funcB");
+			});
 	}
 
 	@Configuration

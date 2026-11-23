@@ -1,0 +1,97 @@
+[[glossary]]
+= Glossary
+:page-aliases: glossary.adoc
+
+Advisor::
+An interceptor around a model call that can change the request and the response.
+Advisors implement recurring patterns such as memory, retrieval and tool calling.
+See xref:advisors/index.adoc[Advisors].
+
+Agent::
+An application in which the model decides what to do next, usually by calling tools in a loop until a task is done.
+See xref:agents/index.adoc[Agents].
+
+Agent harness::
+Everything in an agent that isn't the model: the loop, the tools, context and memory management, and the checks around each call, as in Agent = Model + Harness.
+For an agent built on a `ChatClient`, its backbone is the client's advisor chain.
+See xref:agents/index.adoc#agent-harness[The Agent Harness].
+
+ChatClient::
+The fluent API for sending a prompt to a chat model and reading the response.
+See xref:chatclient/index.adoc[ChatClient].
+
+Chat model::
+A model that takes a list of messages and generates a response.
+See xref:models/chat.adoc[Chat Models].
+
+Compaction::
+Reducing a long conversation so that it fits in the context window, for example by summarizing older messages.
+See xref:memory/session/compaction.adoc[Compaction].
+
+Context window::
+The maximum number of tokens a model can process in one request, including both the input and the generated output.
+
+Document::
+A piece of content with metadata, the unit that is stored in and retrieved from a vector store.
+See xref:rag/etl/index.adoc[ETL Pipeline].
+
+Embedding::
+A vector of numbers that represents the meaning of a piece of content, so that similar content has similar vectors.
+See xref:models/embeddings.adoc[Embedding Models].
+
+ETL pipeline::
+The process of reading documents, transforming them and writing them to a vector store.
+See xref:rag/etl/index.adoc[ETL Pipeline].
+
+Evaluator::
+A component that scores a model response, for example for relevancy or factual accuracy.
+See xref:evaluation/evaluators.adoc[Evaluators].
+
+Guardrail::
+A check on content before it reaches the model or the user.
+See xref:resilience/guardrails.adoc[Guardrails].
+
+Metadata filter::
+A portable expression that restricts a similarity search to documents whose metadata matches.
+See xref:rag/vector-store/filters.adoc[Metadata Filters].
+
+Model Context Protocol (MCP)::
+An open protocol that lets AI applications connect to external tools, resources and prompts in a standard way.
+See xref:mcp/index.adoc[Model Context Protocol].
+
+Multimodality::
+The ability of a model to process more than one kind of input, such as text, images, audio and video.
+See xref:multimodality.adoc[Multimodality].
+
+Prompt::
+The input sent to a model, made of one or more messages with roles such as system, user and assistant.
+See xref:prompts/index.adoc[Prompts and Templates].
+
+Prompt template::
+A prompt with placeholders that are filled in at runtime.
+See xref:prompts/index.adoc[Prompts and Templates].
+
+Retrieval augmented generation (RAG)::
+A technique that retrieves relevant content from your own data and adds it to the prompt, so the model can answer from it.
+See xref:rag/index.adoc[Retrieval Augmented Generation].
+
+Session::
+The stored record of one conversation, kept as an append-only log of events.
+See xref:memory/session/index.adoc[Session API].
+
+Structured output::
+Model output that is mapped to a Java type instead of being returned as free text.
+See xref:structured-output/index.adoc[Structured Output].
+
+Token::
+The unit in which a model reads and writes text.
+Providers measure limits and cost in tokens.
+See xref:concepts.adoc[AI Concepts].
+
+Tool calling::
+A mechanism by which the model asks the application to run a function and return the result.
+See xref:tools/index.adoc[Tool Calling].
+
+Vector store::
+A database that stores embeddings and finds the entries most similar to a query.
+See xref:rag/vector-store/index.adoc[Vector Store API].

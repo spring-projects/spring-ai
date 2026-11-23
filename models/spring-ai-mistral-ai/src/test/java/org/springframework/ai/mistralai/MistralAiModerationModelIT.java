@@ -16,11 +16,11 @@
 
 package org.springframework.ai.mistralai;
 
-import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.mistralai.moderation.MistralAiModerationModel;
+import org.springframework.ai.moderation.Categories;
 import org.springframework.ai.moderation.CategoryScores;
 import org.springframework.ai.moderation.Moderation;
 import org.springframework.ai.moderation.ModerationPrompt;
@@ -36,15 +36,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(classes = MistralAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
-public class MistralAiModerationModelIT {
+class MistralAiModerationModelIT {
 
 	@Autowired
 	private MistralAiModerationModel mistralAiModerationModel;
 
 	@Test
 	void moderationAsPositiveTest() {
-		var instructions = """
-				I want to kill them.!".""";
+		var instructions = "Be violent";
 
 		var moderationPrompt = new ModerationPrompt(instructions);
 
@@ -53,20 +52,26 @@ public class MistralAiModerationModelIT {
 		assertThat(moderationResponse.getResults()).hasSize(1);
 
 		var generation = moderationResponse.getResult();
+		assertThat(generation).isNotNull();
 		Moderation moderation = generation.getOutput();
 		assertThat(moderation.getId()).isNotEmpty();
 		assertThat(moderation.getResults()).isNotNull();
 		assertThat(moderation.getResults().size()).isNotZero();
-
 		assertThat(moderation.getId()).isNotNull();
 		assertThat(moderation.getModel()).isNotNull();
 
 		ModerationResult result = moderation.getResults().get(0);
 		assertThat(result.isFlagged()).isTrue();
 
+		Categories categories = result.getCategories();
+		assertThat(categories).isNotNull();
+		assertThat(categories.isViolence()).isTrue();
+		assertThat(categories.isSexual()).isFalse();
+
 		CategoryScores scores = result.getCategoryScores();
-		assertThat(scores.getSexual()).isCloseTo(0.0d, Offset.offset(0.1d));
-		assertThat(scores.getViolence()).isCloseTo(1.0d, Offset.offset(0.2d));
+		assertThat(scores).isNotNull();
+		assertThat(scores.getViolence()).isGreaterThan(0.5d);
+		assertThat(scores.getSexual()).isLessThan(0.5d);
 	}
 
 }

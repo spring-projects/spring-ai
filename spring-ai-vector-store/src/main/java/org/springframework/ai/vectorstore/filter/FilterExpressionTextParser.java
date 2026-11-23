@@ -16,8 +16,11 @@
 
 package org.springframework.ai.vectorstore.filter;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -29,6 +32,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.jspecify.annotations.Nullable;
 
@@ -101,12 +105,36 @@ import org.springframework.util.Assert;
  *
  * }</pre>
  *
+ * Parsed expressions are cached per parser instance, without bound. An instance that is
+ * kept around and fed a growing set of distinct expressions will therefore grow
+ * indefinitely; prefer a short-lived instance, as the framework itself uses, or call
+ * {@link #clearCache()} periodically. Note also that an instance is not safe for
+ * concurrent use.
+ *
  * @author Christian Tzolov
  * @author Sun Yuhan
+ * @author Dimitar Proynov
  */
 public class FilterExpressionTextParser {
 
 	private static final String WHERE_PREFIX = "WHERE";
+
+	/**
+	 * Upper bound on the depth of the {@link Filter.Expression} tree a filter expression
+	 * may produce. The tree is walked recursively both here and by its consumers - the
+	 * {@code FilterExpressionConverter} implementations, and the {@code equals} /
+	 * {@code hashCode} / {@code toString} methods {@link Filter.Expression} gets as a
+	 * record - so unbounded depth results in {@link StackOverflowError}.
+	 * <p>
+	 * Nesting and {@code AND}/{@code OR} chain length share this one budget: ANTLR4
+	 * compiles the direct left recursion into a loop, so a flat chain costs the parser no
+	 * stack, but the tree it builds is still one level deep per operator. The limit is on
+	 * depth, not length, so large {@code IN} lists are unaffected.
+	 * <p>
+	 * The value is what those consumers were measured to survive on a 256 KB thread
+	 * stack. The tests read it rather than duplicating it.
+	 */
+	static final int MAX_EXPRESSION_DEPTH = 100;
 
 	private final DescriptiveErrorListener errorListener;
 
@@ -128,7 +156,7 @@ public class FilterExpressionTextParser {
 		Assert.hasText(textFilterExpression, "Expression should not be empty!");
 
 		// Prefix the expression with the compulsory WHERE keyword.
-		if (!textFilterExpression.toUpperCase().startsWith(WHERE_PREFIX)) {
+		if (!textFilterExpression.toUpperCase(Locale.ROOT).startsWith(WHERE_PREFIX)) {
 			textFilterExpression = String.format("%s %s", WHERE_PREFIX, textFilterExpression);
 		}
 
@@ -138,6 +166,9 @@ public class FilterExpressionTextParser {
 
 		var lexer = new FiltersLexer(CharStreams.fromString(textFilterExpression));
 		var tokens = new CommonTokenStream(lexer);
+
+		checkExpressionDepth(tokens);
+
 		var parser = new FiltersParser(tokens);
 
 		parser.removeErrorListeners();
@@ -160,8 +191,85 @@ public class FilterExpressionTextParser {
 			var rootCause = NestedExceptionUtils.getRootCause(e);
 			throw new FilterExpressionParseException(msg, rootCause);
 		}
+		catch (StackOverflowError error) {
+			// Defense-in-depth for whatever the guard above under-approximates. Names
+			// no limit: the guard already accepted this expression.
+			throw new FilterExpressionParseException("Filter expression is too complex to parse", error);
+		}
 	}
 
+	/**
+	 * Rejects expressions that would produce a tree deeper than
+	 * {@link #MAX_EXPRESSION_DEPTH}, in one linear scan over the already-lexed tokens,
+	 * leaving the stream positioned at the start for the subsequent parse.
+	 * <p>
+	 * Open nesting depth plus the number of {@code AND}/{@code OR} tokens seen is a
+	 * conservative upper bound on the tree depth: along any root-to-leaf path the parser
+	 * either descends one nesting level or consumes one distinct operator token, never
+	 * the same token twice.
+	 */
+	private void checkExpressionDepth(CommonTokenStream tokens) {
+		tokens.fill();
+		Deque<Boolean> pendingFrames = new ArrayDeque<>();
+		int joinCount = 0;
+		boolean expectOperandStart = true;
+		for (Token token : tokens.getTokens()) {
+			if (token.getChannel() != Token.DEFAULT_CHANNEL) {
+				continue;
+			}
+			int type = token.getType();
+			if (type == FiltersLexer.LEFT_PARENTHESIS) {
+				pendingFrames.push(Boolean.TRUE);
+				expectOperandStart = true;
+			}
+			else if (type == FiltersLexer.RIGHT_PARENTHESIS) {
+				collapsePendingNots(pendingFrames);
+				if (!pendingFrames.isEmpty()) {
+					pendingFrames.pop();
+				}
+				expectOperandStart = false;
+			}
+			else if (type == FiltersLexer.NOT && expectOperandStart) {
+				// A NOT immediately preceded by an identifier ("x NOT IN [...]") or by
+				// IS ("x IS NOT NULL") is not the recursive prefix-NOT alternative, so
+				// expectOperandStart is false there and this branch is skipped.
+				pendingFrames.push(Boolean.FALSE);
+				expectOperandStart = true;
+			}
+			else if (type == FiltersLexer.AND || type == FiltersLexer.OR) {
+				// One more level of the left-leaning tree, even though the parser
+				// itself loops rather than recurses here.
+				joinCount++;
+				// By grammar validity, whatever precedes AND/OR is already a fully
+				// resolved operand, so any prefix-NOT frames waiting for it can close.
+				collapsePendingNots(pendingFrames);
+				expectOperandStart = true;
+			}
+			else if (type == FiltersLexer.WHERE) {
+				expectOperandStart = true;
+			}
+			else {
+				expectOperandStart = false;
+			}
+
+			if (pendingFrames.size() + joinCount > MAX_EXPRESSION_DEPTH) {
+				throw new FilterExpressionParseException("Filter expression is too complex: the combined nesting and "
+						+ "AND/OR chain depth exceeds the maximum of " + MAX_EXPRESSION_DEPTH, null);
+			}
+		}
+		tokens.seek(0);
+	}
+
+	private void collapsePendingNots(Deque<Boolean> pendingFrames) {
+		while (!pendingFrames.isEmpty() && pendingFrames.peek() == Boolean.FALSE) {
+			pendingFrames.pop();
+		}
+	}
+
+	/**
+	 * Empties the parsed-expression cache. As the cache is unbounded, a long-lived parser
+	 * fed a growing set of distinct expressions needs this called periodically.
+	 */
 	public void clearCache() {
 		this.cache.clear();
 	}
@@ -230,7 +338,13 @@ public class FilterExpressionTextParser {
 
 		@Override
 		public Filter.Operand visitIntegerConstant(FiltersParser.IntegerConstantContext ctx) {
-			return new Filter.Value(Integer.valueOf(ctx.getText()));
+			String literal = ctx.getText();
+			try {
+				return new Filter.Value(Integer.valueOf(literal));
+			}
+			catch (NumberFormatException ex) {
+				return new Filter.Value(Long.valueOf(literal));
+			}
 		}
 
 		@Override

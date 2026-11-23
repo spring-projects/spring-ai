@@ -1,0 +1,420 @@
+[[modules]]
+= Modular RAG
+
+Spring AI implements a Modular RAG architecture inspired by the concept of modularity detailed in the paper
+"https://arxiv.org/abs/2407.21059[Modular RAG: Transforming RAG Systems into LEGO-like Reconfigurable Frameworks]".
+
+== Pre-Retrieval
+
+Pre-Retrieval modules are responsible for processing the user query to achieve the best possible retrieval results.
+
+=== Query Transformation
+
+A component for transforming the input query to make it more effective for retrieval tasks, addressing challenges
+such as poorly formed queries, ambiguous terms, complex vocabulary, or unsupported languages.
+
+IMPORTANT: When using a `QueryTransformer`, it's recommended to configure the `ChatClient.Builder` with a low temperature (e.g., 0.0) to ensure more deterministic and accurate results, improving retrieval quality.
+The default temperature for most chat models is typically too high for optimal query transformation, leading to reduced retrieval effectiveness.
+
+==== CompressionQueryTransformer
+
+A `CompressionQueryTransformer` uses a large language model to compress a conversation history and a follow-up query
+into a standalone query that captures the essence of the conversation.
+
+This transformer is useful when the conversation history is long and the follow-up query is related
+to the conversation context.
+
+[source,java]
+----
+Query query = Query.builder()
+        .text("And what is its second largest city?")
+        .history(new UserMessage("What is the capital of Denmark?"),
+                new AssistantMessage("Copenhagen is the capital of Denmark."))
+        .build();
+
+QueryTransformer queryTransformer = CompressionQueryTransformer.builder()
+        .chatClientBuilder(chatClientBuilder)
+        .build();
+
+Query transformedQuery = queryTransformer.transform(query);
+----
+
+The prompt used by this component can be customized via the `promptTemplate()` method available in the builder.
+
+==== RewriteQueryTransformer
+
+A `RewriteQueryTransformer` uses a large language model to rewrite a user query to provide better results when
+querying a target system, such as a vector store or a web search engine.
+
+This transformer is useful when the user query is verbose, ambiguous, or contains irrelevant information
+that may affect the quality of the search results.
+
+[source,java]
+----
+Query query = new Query("I'm studying machine learning. What is an LLM?");
+
+QueryTransformer queryTransformer = RewriteQueryTransformer.builder()
+        .chatClientBuilder(chatClientBuilder)
+        .build();
+
+Query transformedQuery = queryTransformer.transform(query);
+----
+
+The prompt used by this component can be customized via the `promptTemplate()` method available in the builder.
+
+==== TranslationQueryTransformer
+
+A `TranslationQueryTransformer` uses a large language model to translate a query to a target language that is supported
+by the embedding model used to generate the document embeddings.
+If the query is already in the target language,
+it is returned unchanged.
+If the language of the query is unknown, it is also returned unchanged.
+
+This transformer is useful when the embedding model is trained on a specific language and the user query
+is in a different language.
+
+[source,java]
+----
+Query query = new Query("Hvad er Danmarks hovedstad?");
+
+QueryTransformer queryTransformer = TranslationQueryTransformer.builder()
+        .chatClientBuilder(chatClientBuilder)
+        .targetLanguage("english")
+        .build();
+
+Query transformedQuery = queryTransformer.transform(query);
+----
+
+The prompt used by this component can be customized via the `promptTemplate()` method available in the builder.
+
+=== Query Expansion
+
+A component for expanding the input query into a list of queries, addressing challenges such as poorly formed queries
+by providing alternative query formulations, or by breaking down complex problems into simpler sub-queries.
+
+==== MultiQueryExpander
+
+A `MultiQueryExpander` uses a large language model to expand a query into multiple semantically diverse variations
+to capture different perspectives, useful for retrieving additional contextual information and increasing the chances
+of finding relevant results.
+
+[source,java]
+----
+MultiQueryExpander queryExpander = MultiQueryExpander.builder()
+    .chatClientBuilder(chatClientBuilder)
+    .numberOfQueries(3)
+    .build();
+List<Query> queries = queryExpander.expand(new Query("How to run a Spring Boot app?"));
+----
+
+By default, the `MultiQueryExpander` includes the original query in the list of expanded queries.
+You can disable this behavior
+via the `includeOriginal` method in the builder.
+
+[source,java]
+----
+MultiQueryExpander queryExpander = MultiQueryExpander.builder()
+    .chatClientBuilder(chatClientBuilder)
+    .includeOriginal(false)
+    .build();
+----
+
+The prompt used by this component can be customized via the `promptTemplate()` method available in the builder.
+
+== Retrieval
+
+Retrieval modules are responsible for querying data systems like vector store and retrieving the most relevant documents.
+
+=== Document Search
+
+Component responsible for retrieving `Documents` from an underlying data source, such as a search engine, a vector store,
+a database, or a knowledge graph.
+
+==== VectorStoreDocumentRetriever
+
+A `VectorStoreDocumentRetriever` retrieves documents from a vector store that are semantically similar to the input
+query.
+It supports filtering based on metadata, similarity threshold, and top-k results.
+
+[source,java]
+----
+DocumentRetriever retriever = VectorStoreDocumentRetriever.builder()
+    .vectorStore(vectorStore)
+    .similarityThreshold(0.73)
+    .topK(5)
+    .filterExpression(new FilterExpressionBuilder()
+        .eq("genre", "fairytale")
+        .build())
+    .build();
+List<Document> documents = retriever.retrieve(new Query("What is the main character of the story?"));
+----
+
+The filter expression can be static or dynamic.
+For dynamic filter expressions, you can pass a `Supplier`.
+
+[source,java]
+----
+DocumentRetriever retriever = VectorStoreDocumentRetriever.builder()
+    .vectorStore(vectorStore)
+    .filterExpression(() -> new FilterExpressionBuilder()
+        .eq("tenant", TenantContextHolder.getTenantIdentifier())
+        .build())
+    .build();
+List<Document> documents = retriever.retrieve(new Query("What are the KPIs for the next semester?"));
+----
+
+You can also provide a request-specific filter expression via the `Query` API, using the `FILTER_EXPRESSION` parameter.
+If both the request-specific and the retriever-specific filter expressions are provided, the request-specific filter expression takes precedence.
+
+[source,java]
+----
+Query query = Query.builder()
+    .text("Who is Anacletus?")
+    .context(Map.of(VectorStoreDocumentRetriever.FILTER_EXPRESSION, "location == 'Whispering Woods'"))
+    .build();
+List<Document> retrievedDocuments = documentRetriever.retrieve(query);
+----
+
+=== Document Join
+
+A component for combining documents retrieved based on multiple queries and from multiple data sources into
+a single collection of documents.
+As part of the joining process, it can also handle duplicate documents and reciprocal
+ranking strategies.
+
+==== ConcatenationDocumentJoiner
+
+A `ConcatenationDocumentJoiner` combines documents retrieved based on multiple queries and from multiple data sources
+by concatenating them into a single collection of documents.
+Documents with the same ID are duplicates, and the first occurrence is kept.
+The score of each document is kept as is, and the result is sorted by score in descending order; a document without a score counts as `0.0`.
+
+[source,java]
+----
+Map<Query, List<List<Document>>> documentsForQuery = ...
+DocumentJoiner documentJoiner = new ConcatenationDocumentJoiner();
+List<Document> documents = documentJoiner.join(documentsForQuery);
+----
+
+== Post-Retrieval
+
+Post-Retrieval modules are responsible for processing the retrieved documents to achieve the best possible generation results.
+
+=== Document Post-Processing
+
+A component for post-processing retrieved documents based on a query, addressing challenges such as _lost-in-the-middle_, context length restrictions from the model, and the need to reduce noise and redundancy in the retrieved information.
+
+For example, it could rank documents based on their relevance to the query, remove irrelevant or redundant documents, or compress the content of each document to reduce noise and redundancy.
+
+For example, the xref:integrations/models/jinfer/embeddings.adoc#reranking[Qxotic jinfer] integration provides `JinferDocumentPostProcessor`, which reranks the retrieved documents with a local reranker model.
+
+==== DecisionDocumentReranker
+
+The `DecisionDocumentReranker` reorders the retrieved documents with a xref:models/decision.adoc[decision model], asking one yes/no question about each document: does the passage answer the query?
+Vector search ranks by embedding distance.
+That is a good way to find candidates and a poor way to order them, because a passage can be on the right subject and still not contain the answer.
+Asking the model directly whether each candidate answers the query measures something else, and that is what the final order is based on.
+
+[source,java]
+----
+DocumentPostProcessor reranker = DecisionDocumentReranker.builder(decisionModel)
+        .topK(5)
+        .build();
+----
+
+[cols="2,1,3", stripes=even]
+|====
+| Builder method | Default | Description
+
+| `question(YesNoQuestion)` | a relevance question | Replaces the question. Write it about `query` and `passage`, the two fields of the input.
+| `options(DecisionOptions)` | the model's defaults | Options sent with every prompt, such as the model to use.
+| `topK(int)` | keep all | How many documents to keep after reordering.
+| `minimumScore(double)` | `0.0` | Drops documents scoring below a bar. At zero this is purely a reordering.
+| `timeout(Duration)` | 60 seconds | How long one request may wait for all its documents to be judged. Documents still unjudged when it expires are kept unscored; queued calls are not made.
+| `concurrency(int)` | `4` | How many documents are judged at once, across all requests that pass through this instance.
+| `virtualThreads(boolean)` | `false` | Runs the calls on virtual threads, keeping the concurrency limit. Needs JDK 21 or later.
+| `executor(Executor)` | a pool of `concurrency` threads | Runs the calls on an executor of your own. The concurrency limit then no longer applies, and the timeout holds only if submitting never blocks.
+|====
+
+Each document is judged in its own call, with the query and the passage sent as the `query` and `passage` fields of the input.
+A document that holds media instead of text is sent as a content part, so a multimodal decision model can look at it.
+Reranking twenty candidates means twenty calls, four at a time by default.
+Screening with the `DecisionDocumentFilter` first keeps that number down, since only the survivors are ranked.
+
+The default question asks whether the passage could answer the query.
+Domain-specific rerankings often want something narrower, such as whether a candidate passage could be the precedent a legal query cites.
+
+[source,java]
+----
+DocumentPostProcessor reranker = DecisionDocumentReranker.builder(decisionModel)
+        .question(YesNoQuestion.builder()
+                .text("Could the `passage` be the precedent cited in the `query`? "
+                        + "Judge the holding and posture, not merely similar subject matter.")
+                .whenYes("The passage states the holding the query cites")
+                .whenNo("A different case, or the same case on a different point")
+                .build())
+        .build();
+----
+
+Each scored document carries its score in the `decision.rerank.score` metadata entry, so a later stage or a log can see why the order came out this way.
+
+[source,java]
+----
+reranked.forEach(document -> System.out.printf("%.2f  %s%n",
+        document.getMetadata().get(DecisionDocumentReranker.SCORE_METADATA_KEY),
+        document.getId()));
+----
+
+A document whose call failed or timed out, or that the model refused to judge, is kept rather than dropped, because a failure says nothing about relevance.
+It is placed after all the scored documents, so it can never push a known-good passage out under `topK`.
+Such documents carry no score entry, so a later stage can tell "scored zero" from "never scored".
+Each run with failures logs one warning with the count, such as `Could not score 3 of 20 documents, keeping them unscored after the scored ones`.
+
+==== DecisionDocumentFilter
+
+The `DecisionDocumentFilter` screens the retrieved documents with a xref:models/decision.adoc[decision model] before they reach the prompt, asking four yes/no questions about each one.
+
+[cols="2,3", stripes=even]
+|====
+| Question | Asks
+
+| `contains_prompt_injection` | Does the passage try to instruct the system that reads it?
+| `contradicts_query_premise` | Does the passage conflict with something the query assumes?
+| `is_relevant` | Does the passage address the subject at all?
+| `contains_answer_evidence` | Does the passage state something usable as an answer?
+|====
+
+Similarity search finds the passages closest to the query, which is not the same as the passages the model should be allowed to read.
+A passage can be close to the query and still contradict what the query assumes, or contain instructions meant to hijack the model that reads it.
+These are different problems that need different handling, so each is asked as its own question instead of being folded into one relevance score.
+The prompt-injection check matters most.
+Retrieved text is untrusted input, and similarity search cannot tell an injection from an answer, since both are about the same subject.
+Dropping injected passages here is cheap; undoing the damage later is very hard.
+
+[source,java]
+----
+DocumentPostProcessor filter = DecisionDocumentFilter.builder(decisionModel).build();
+----
+
+[cols="2,1,3", stripes=even]
+|====
+| Builder method | Default | Description
+
+| `policy(Policy)` | the cookbook thresholds | The four thresholds, see below.
+| `options(DecisionOptions)` | the model's defaults | Options sent with every prompt, such as the model to use.
+| `failClosed(boolean)` | `false` | Drops documents the model could not screen instead of passing them through.
+| `timeout(Duration)` | 60 seconds | How long one request may wait for all its documents to be screened. Documents still unscreened when it expires count as not screened; queued calls are not made.
+| `concurrency(int)` | `4` | How many documents are screened at once, across all requests that pass through this instance.
+| `virtualThreads(boolean)` | `false` | Runs the calls on virtual threads, keeping the concurrency limit. Needs JDK 21 or later.
+| `executor(Executor)` | a pool of `concurrency` threads | Runs the calls on an executor of your own. The concurrency limit then no longer applies, and the timeout holds only if submitting never blocks.
+|====
+
+The thresholds are gathered in a `Policy` and applied in order.
+The first match wins, so the safety checks come before the usefulness checks.
+
+[cols="3,2", stripes=even]
+|====
+| Condition | Classification
+
+| `contains_prompt_injection` above 0.70 | Excluded
+| `contradicts_query_premise` above 0.70 | Conflicting, kept
+| `is_relevant` below 0.45 | Excluded
+| `contains_answer_evidence` above 0.55 | Included
+| Otherwise | Excluded
+|====
+
+Keeping the numbers in one record means changing the policy is changing a constant, not rewording a question.
+The default thresholds come from the https://docs.typesafe.ai/cookbooks/classifying_rag_passages[TypeSafe passage-classification cookbook] and were tuned on Jev.
+Other providers may need different numbers.
+
+[source,java]
+----
+DocumentPostProcessor filter = DecisionDocumentFilter.builder(decisionModel)
+        .policy(new DecisionDocumentFilter.Policy(0.70, 0.70, 0.45, 0.55))
+        .concurrency(8)
+        .build();
+----
+
+Passages that contradict the query are kept, not dropped.
+Such a passage is often the most useful one retrieved, because it lets the answer correct a wrong assumption in the question.
+Each surviving document carries its classification, `INCLUDED` or `CONFLICTING`, in the `decision.classification` metadata entry.
+Keep the two apart in your prompt template, so the answer can tell evidence that supports the question from evidence that contradicts it.
+
+[source,java]
+----
+for (Document document : filtered) {
+    String classification = (String) document.getMetadata()
+            .get(DecisionDocumentFilter.CLASSIFICATION_METADATA_KEY); // INCLUDED or CONFLICTING
+}
+----
+
+When the model could not screen a document, because the call failed or timed out or the model refused the injection question, the document is passed through without a classification rather than dropped.
+Not being screened does not make a passage dangerous, and silently dropping context because of an unrelated failure is worse than passing it through.
+Failing open is never silent: each run with failures logs one warning with the count, such as `Could not screen 12 of 12 documents, passing them through unscreened`.
+With a wrong API key or an outage every document is passed through, and that warning is the only sign that the injection screen did not run, so alert on it where the screen matters.
+If the screen must hold even then, `failClosed(true)` drops such documents instead, at the price of an empty context during an outage.
+
+The model may answer some of the four questions and refuse others, and the filter uses what it gets.
+A passage counts as screened as long as the injection question was answered, whatever happened to the other three.
+Those three are then checked in order, and a refused answer only matters if the check gets that far.
+An off-topic passage is excluded even if the evidence question was refused, because relevance is checked first.
+If a refused answer is reached before anything has decided, the passage is kept without a classification, with its own warning.
+
+The `classify(DecisionResponse)` method applies the thresholds to a response you already have, so every branch of a policy can be unit-tested without a model.
+
+[source,java]
+----
+assertThat(filter.classify(response))
+        .isEqualTo(DecisionDocumentFilter.Classification.EXCLUDED);
+----
+
+==== Combining the Decision Post-Processors
+
+Screen first, then rank what survives.
+There is no point spending a call on ordering a passage that is about to be dropped, and an injection should never reach a ranking prompt in the first place.
+
+[source,java]
+----
+Advisor advisor = RetrievalAugmentationAdvisor.builder()
+        .documentRetriever(retriever)
+        .documentPostProcessors(
+                DecisionDocumentFilter.builder(decisionModel).build(),
+                DecisionDocumentReranker.builder(decisionModel).topK(5).build())
+        .build();
+----
+
+Both post-processors fail open, so a provider outage leaves the retriever's own order in place and the context unfiltered, with one warning from each.
+
+== Generation
+
+Generation modules are responsible for generating the final response based on the user query and retrieved documents.
+
+=== Query Augmentation
+
+A component for augmenting an input query with additional data, useful to provide a large language model
+with the necessary context to answer the user query.
+
+==== ContextualQueryAugmenter
+
+The `ContextualQueryAugmenter` augments the user query with contextual data from the content of the provided documents.
+
+[source,java]
+----
+QueryAugmenter queryAugmenter = ContextualQueryAugmenter.builder().build();
+----
+
+By default, the `ContextualQueryAugmenter` does not allow the retrieved context to be empty.
+When that happens,
+it instructs the model not to answer the user query.
+
+You can enable the `allowEmptyContext` option to allow the model to generate a response even when the retrieved context is empty.
+
+[source,java]
+----
+QueryAugmenter queryAugmenter = ContextualQueryAugmenter.builder()
+        .allowEmptyContext(true)
+        .build();
+----
+
+The prompts used by this component can be customized via the `promptTemplate()` and `emptyContextPromptTemplate()` methods
+available in the builder.

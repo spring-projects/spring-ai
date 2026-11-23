@@ -51,7 +51,8 @@ class MilvusContainerConnectionDetailsFactoryIT {
 
 	@Container
 	@ServiceConnection
-	static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE);
+	static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE).withEnv("DEPLOY_MODE",
+			"STANDALONE");
 
 	List<Document> documents = List.of(
 			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),

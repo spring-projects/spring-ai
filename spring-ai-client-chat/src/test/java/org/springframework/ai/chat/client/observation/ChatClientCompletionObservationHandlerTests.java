@@ -68,7 +68,7 @@ class ChatClientCompletionObservationHandlerTests {
 		context.setResponse(response);
 
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.c.c.o.ChatClientCompletionObservationHandler -- Chat Client Completion:
 				[]
 				""");
@@ -81,7 +81,7 @@ class ChatClientCompletionObservationHandlerTests {
 			.build();
 
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.c.c.o.ChatClientCompletionObservationHandler -- Chat Client Completion:
 				[]
 				""");
@@ -100,7 +100,7 @@ class ChatClientCompletionObservationHandlerTests {
 		context.setResponse(response);
 
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.c.c.o.ChatClientCompletionObservationHandler -- Chat Client Completion:
 				["Test message"]
 				""");

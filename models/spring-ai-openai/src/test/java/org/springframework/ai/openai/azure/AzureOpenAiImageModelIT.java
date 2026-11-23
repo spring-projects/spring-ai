@@ -84,12 +84,12 @@ public class AzureOpenAiImageModelIT {
 		public OpenAiImageModel azureOpenAiImageModel() {
 			String apiKey = System.getenv("AZURE_OPENAI_API_KEY");
 			String endpoint = System.getenv("AZURE_OPENAI_ENDPOINT");
-
-			return new OpenAiImageModel(OpenAiImageOptions.builder()
+			OpenAiImageOptions options = OpenAiImageOptions.builder()
 				.baseUrl(endpoint)
 				.apiKey(apiKey)
 				.deploymentName("gpt-image-1-mini")
-				.build());
+				.build();
+			return OpenAiImageModel.builder().options(options).build();
 		}
 
 	}

@@ -16,6 +16,10 @@
 
 package org.springframework.ai.vectorstore.redis.cache.semantic.autoconfigure;
 
+import java.time.Duration;
+
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -50,6 +54,12 @@ public class RedisSemanticCacheProperties {
 	 */
 	private String prefix = "semantic-cache:";
 
+	/**
+	 * Time-to-live of the responses cached by the semantic cache advisor. By default,
+	 * cached responses never expire.
+	 */
+	private @Nullable Duration ttl;
+
 	public boolean isEnabled() {
 		return this.enabled;
 	}
@@ -80,6 +90,14 @@ public class RedisSemanticCacheProperties {
 
 	public void setPrefix(String prefix) {
 		this.prefix = prefix;
+	}
+
+	public @Nullable Duration getTtl() {
+		return this.ttl;
+	}
+
+	public void setTtl(@Nullable Duration ttl) {
+		this.ttl = ttl;
 	}
 
 }

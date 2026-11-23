@@ -17,6 +17,8 @@
 package org.springframework.ai.mcp.annotation.method.prompt;
 
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,7 @@ import java.util.Map;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
 import io.modelcontextprotocol.spec.McpSchema.Prompt;
@@ -292,7 +295,7 @@ public abstract class AbstractMcpPromptMethodCallback {
 		}
 		else if (targetType == Integer.class || targetType == int.class) {
 			if (value instanceof Number) {
-				return ((Number) value).intValue();
+				return this.toIntegerExact((Number) value);
 			}
 			else {
 				return Integer.parseInt(value.toString());
@@ -300,7 +303,7 @@ public abstract class AbstractMcpPromptMethodCallback {
 		}
 		else if (targetType == Long.class || targetType == long.class) {
 			if (value instanceof Number) {
-				return ((Number) value).longValue();
+				return this.toLongExact((Number) value);
 			}
 			else {
 				return Long.parseLong(value.toString());
@@ -327,6 +330,42 @@ public abstract class AbstractMcpPromptMethodCallback {
 		return value;
 	}
 
+	private int toIntegerExact(Number value) {
+		try {
+			return this.toBigDecimal(value).intValueExact();
+		}
+		catch (ArithmeticException | NumberFormatException ex) {
+			throw new IllegalArgumentException("Cannot safely convert numeric value '" + value + "' to int", ex);
+		}
+	}
+
+	private long toLongExact(Number value) {
+		try {
+			return this.toBigDecimal(value).longValueExact();
+		}
+		catch (ArithmeticException | NumberFormatException ex) {
+			throw new IllegalArgumentException("Cannot safely convert numeric value '" + value + "' to long", ex);
+		}
+	}
+
+	private BigDecimal toBigDecimal(Number value) {
+		if (value instanceof BigDecimal bigDecimal) {
+			return bigDecimal;
+		}
+		if (value instanceof BigInteger bigInteger) {
+			return new BigDecimal(bigInteger);
+		}
+		if (value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof Long) {
+			return BigDecimal.valueOf(value.longValue());
+		}
+		if (value instanceof Float || value instanceof Double) {
+			// Use the exact binary floating-point value. The shorter toString()
+			// representation may denote a different integer near large boundaries.
+			return new BigDecimal(value.doubleValue());
+		}
+		return new BigDecimal(value.toString());
+	}
+
 	/**
 	 * Converts a method result to a GetPromptResult.
 	 * @param result The result to convert
@@ -341,28 +380,29 @@ public abstract class AbstractMcpPromptMethodCallback {
 			List<?> list = (List<?>) result;
 			if (!list.isEmpty()) {
 				if (list.get(0) instanceof PromptMessage) {
-					return new GetPromptResult(null, (List<PromptMessage>) list);
+					return GetPromptResult.builder((List<PromptMessage>) list).build();
 				}
 				else if (list.get(0) instanceof String) {
 					// Convert List<String> to List<PromptMessage>
 					List<PromptMessage> messages = ((List<String>) list).stream()
-						.map(text -> new PromptMessage(io.modelcontextprotocol.spec.McpSchema.Role.ASSISTANT,
-								new io.modelcontextprotocol.spec.McpSchema.TextContent(text)))
+						.map(text -> PromptMessage
+							.builder(McpSchema.Role.ASSISTANT, McpSchema.TextContent.builder(text).build())
+							.build())
 						.toList();
-					return new GetPromptResult(null, messages);
+					return GetPromptResult.builder(messages).build();
 				}
 			}
 		}
 		else if (result instanceof PromptMessage) {
 			// If the result is a single PromptMessage, wrap it in a list
-			return new GetPromptResult(null, List.of((PromptMessage) result));
+			return GetPromptResult.builder(List.of((PromptMessage) result)).build();
 		}
 		else if (result instanceof String) {
 			// If the result is a simple string, create a single assistant message with
 			// that content
-			return new GetPromptResult(null,
-					List.of(new PromptMessage(io.modelcontextprotocol.spec.McpSchema.Role.ASSISTANT,
-							new io.modelcontextprotocol.spec.McpSchema.TextContent((String) result))));
+			return GetPromptResult.builder(List.of(PromptMessage
+				.builder(McpSchema.Role.ASSISTANT, McpSchema.TextContent.builder((String) result).build())
+				.build())).build();
 		}
 
 		throw new IllegalArgumentException(

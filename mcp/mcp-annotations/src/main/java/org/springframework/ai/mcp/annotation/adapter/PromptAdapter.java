@@ -32,9 +32,12 @@ import org.springframework.ai.mcp.annotation.McpArg;
 import org.springframework.ai.mcp.annotation.McpMeta;
 import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpPrompt;
+import org.springframework.ai.mcp.annotation.common.IconUtils;
 import org.springframework.ai.mcp.annotation.common.MetaUtils;
+import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
+import org.springframework.util.StringUtils;
 
 /**
  * Utility class for adapting between McpPrompt annotations and McpSchema.Prompt objects.
@@ -55,7 +58,12 @@ public final class PromptAdapter {
 	 */
 	public static McpSchema.Prompt asPrompt(McpPrompt mcpPrompt) {
 		Map<String, Object> meta = MetaUtils.getMeta(mcpPrompt.metaProvider());
-		return new McpSchema.Prompt(mcpPrompt.name(), mcpPrompt.title(), mcpPrompt.description(), List.of(), meta);
+		return McpSchema.Prompt.builder(mcpPrompt.name())
+			.title(mcpPrompt.title())
+			.description(mcpPrompt.description())
+			.icons(IconUtils.toIcons(mcpPrompt.icons()))
+			.meta(meta)
+			.build();
 	}
 
 	/**
@@ -68,8 +76,13 @@ public final class PromptAdapter {
 	public static McpSchema.Prompt asPrompt(McpPrompt mcpPrompt, Method method) {
 		List<McpSchema.PromptArgument> arguments = extractPromptArguments(method);
 		Map<String, Object> meta = MetaUtils.getMeta(mcpPrompt.metaProvider());
-		return new McpSchema.Prompt(getName(mcpPrompt, method), mcpPrompt.title(), mcpPrompt.description(), arguments,
-				meta);
+		return McpSchema.Prompt.builder(getName(mcpPrompt, method))
+			.title(mcpPrompt.title())
+			.description(mcpPrompt.description())
+			.arguments(arguments)
+			.icons(IconUtils.toIcons(mcpPrompt.icons()))
+			.meta(meta)
+			.build();
 	}
 
 	private static String getName(McpPrompt promptAnnotation, Method method) {
@@ -97,6 +110,8 @@ public final class PromptAdapter {
 					|| McpSyncRequestContext.class.isAssignableFrom(parameter.getType())
 					|| McpAsyncRequestContext.class.isAssignableFrom(parameter.getType())
 					|| McpSchema.GetPromptRequest.class.isAssignableFrom(parameter.getType())
+					|| ModernMethodSupport.isInfrastructureParameter(parameter.getType(),
+							io.modelcontextprotocol.modern.McpSchema.GetPromptRequest.class)
 					|| java.util.Map.class.isAssignableFrom(parameter.getType())
 					|| McpMeta.class.isAssignableFrom(parameter.getType())
 					|| parameter.isAnnotationPresent(McpProgressToken.class)) {
@@ -107,12 +122,18 @@ public final class PromptAdapter {
 			McpArg mcpArg = parameter.getAnnotation(McpArg.class);
 			if (mcpArg != null) {
 				String name = !mcpArg.name().isEmpty() ? mcpArg.name() : parameter.getName();
-				arguments.add(new McpSchema.PromptArgument(name, mcpArg.description(), mcpArg.required()));
+				arguments.add(McpSchema.PromptArgument.builder(name)
+					.title(StringUtils.hasText(mcpArg.title()) ? mcpArg.title() : null)
+					.description(mcpArg.description())
+					.required(mcpArg.required())
+					.build());
 			}
 			else {
 				// Use parameter name and default values if no annotation
-				arguments.add(new McpSchema.PromptArgument(parameter.getName(),
-						"Parameter of type " + parameter.getType().getSimpleName(), false));
+				arguments.add(McpSchema.PromptArgument.builder(parameter.getName())
+					.description("Parameter of type " + parameter.getType().getSimpleName())
+					.required(false)
+					.build());
 			}
 		}
 

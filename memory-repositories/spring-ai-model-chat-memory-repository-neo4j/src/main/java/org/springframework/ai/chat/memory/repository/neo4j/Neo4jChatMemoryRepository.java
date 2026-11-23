@@ -46,8 +46,15 @@ import org.springframework.util.MimeType;
  *
  * @author Enrico Rampazzo
  * @author Michael J. Simons
+ * @author Soby Chacko
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of session memory:
+ * {@code org.springframework.ai.session.SessionRepository} in {@code spring-ai-session},
+ * with a JDBC store in {@code spring-ai-session-jdbc}. There is no session store for
+ * Neo4j yet; one is planned before 3.0.0, when this module is removed.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 
 public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 
@@ -138,30 +145,29 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 
 	@Override
 	public void deleteByConversationId(String conversationId) {
-		// First delete all messages and related nodes
 		String deleteMessagesStatement = """
-				MATCH (s:%s {id:$conversationId})-[r:HAS_MESSAGE]->(m:%s)
-				OPTIONAL MATCH (m)-[:HAS_METADATA]->(metadata:%s)
-				OPTIONAL MATCH (m)-[:HAS_MEDIA]->(media:%s)
-				OPTIONAL MATCH (m)-[:HAS_TOOL_RESPONSE]-(tr:%s)
-				OPTIONAL MATCH (m)-[:HAS_TOOL_CALL]->(tc:%s)
+				MATCH (s:$($sessionLabel) {id:$conversationId})-[r:HAS_MESSAGE]->(m:$($messageLabel))
+				OPTIONAL MATCH (m)-[:HAS_METADATA]->(metadata:$($metadataLabel))
+				OPTIONAL MATCH (m)-[:HAS_MEDIA]->(media:$($mediaLabel))
+				OPTIONAL MATCH (m)-[:HAS_TOOL_RESPONSE]-(tr:$($toolResponseLabel))
+				OPTIONAL MATCH (m)-[:HAS_TOOL_CALL]->(tc:$($toolCallLabel))
 				DETACH DELETE m, metadata, media, tr, tc
-				""".formatted(this.config.getSessionLabel(), this.config.getMessageLabel(),
-				this.config.getMetadataLabel(), this.config.getMediaLabel(), this.config.getToolResponseLabel(),
-				this.config.getToolCallLabel());
+				""";
 
-		// Then delete the conversation node itself
 		String deleteConversationStatement = """
-				MATCH (s:%s {id:$conversationId})
+				MATCH (s:$($sessionLabel) {id:$conversationId})
 				DETACH DELETE s
-				""".formatted(this.config.getSessionLabel());
+				""";
+
+		Map<String, Object> params = Map.of("conversationId", conversationId, "sessionLabel",
+				this.config.getSessionLabel(), "messageLabel", this.config.getMessageLabel(), "metadataLabel",
+				this.config.getMetadataLabel(), "mediaLabel", this.config.getMediaLabel(), "toolResponseLabel",
+				this.config.getToolResponseLabel(), "toolCallLabel", this.config.getToolCallLabel());
 
 		try (Session s = this.config.getDriver().session()) {
 			try (Transaction t = s.beginTransaction()) {
-				// First delete messages
-				t.run(deleteMessagesStatement, Map.of("conversationId", conversationId));
-				// Then delete the conversation node
-				t.run(deleteConversationStatement, Map.of("conversationId", conversationId));
+				t.run(deleteMessagesStatement, params);
+				t.run(deleteConversationStatement, params);
 				t.commit();
 			}
 		}
@@ -226,8 +232,8 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 			if (data instanceof String stringData) {
 				mediaBuilder.data(URI.create(stringData));
 			}
-			else if (data.getClass().isArray()) {
-				mediaBuilder.data(data);
+			else if (data instanceof byte[] bytes) {
+				mediaBuilder.data(bytes);
 			}
 			return mediaBuilder.build();
 

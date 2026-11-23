@@ -34,9 +34,9 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -133,7 +133,7 @@ class ToolSearchToolCallingAdvisorStreamTests {
 				List.of(new SystemMessage("System message"), new UserMessage("test"), toolResponseMessage),
 				new TestToolCallingChatOptions());
 		Map<String, Object> extractContext = new ConcurrentHashMap<>();
-		extractContext.put(ChatMemory.CONVERSATION_ID, "test-session-id");
+		extractContext.put(MemoryAdvisor.CONVERSATION_ID, "test-session-id");
 		ChatClientRequest request = ChatClientRequest.builder()
 			.prompt(prompt)
 			.build()
@@ -160,7 +160,7 @@ class ToolSearchToolCallingAdvisorStreamTests {
 		when(this.toolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of());
 
 		Map<String, Object> ctx = new ConcurrentHashMap<>();
-		ctx.put(ChatMemory.CONVERSATION_ID, conversationId);
+		ctx.put(MemoryAdvisor.CONVERSATION_ID, conversationId);
 		ChatClientRequest request = createRequest().mutate().context(ctx).build();
 
 		StreamAdvisorChain chain = buildChain(advisor, (req, ch) -> Flux.just(withContext(response(false), req)));
@@ -203,7 +203,7 @@ class ToolSearchToolCallingAdvisorStreamTests {
 
 	private ChatClientRequest createRequest() {
 		Map<String, Object> context = new ConcurrentHashMap<>();
-		context.put(ChatMemory.CONVERSATION_ID, "test-session-id");
+		context.put(MemoryAdvisor.CONVERSATION_ID, "test-session-id");
 		return ChatClientRequest.builder()
 			.prompt(new Prompt(List.of(new SystemMessage("System message"), new UserMessage("test")),
 					new TestToolCallingChatOptions()))

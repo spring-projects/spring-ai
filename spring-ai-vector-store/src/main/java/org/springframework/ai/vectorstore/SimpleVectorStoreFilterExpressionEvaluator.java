@@ -106,12 +106,12 @@ final class SimpleVectorStoreFilterExpressionEvaluator {
 			case IN -> {
 				Object metaVal = metadataValue(left(expression), metadata);
 				List<?> list = asList(filterValue(right(expression)), expression);
-				yield list.stream().anyMatch(item -> compare(metaVal, item) == 0);
+				yield list.stream().anyMatch(item -> compare(metaVal, normalizeFilterValue(item)) == 0);
 			}
 			case NIN -> {
 				Object metaVal = metadataValue(left(expression), metadata);
 				List<?> list = asList(filterValue(right(expression)), expression);
-				yield list.stream().noneMatch(item -> compare(metaVal, item) == 0);
+				yield list.stream().noneMatch(item -> compare(metaVal, normalizeFilterValue(item)) == 0);
 			}
 			// Unary operators: only the left operand (the key) is used.
 			// A non-null right operand is silently ignored here.
@@ -162,10 +162,13 @@ final class SimpleVectorStoreFilterExpressionEvaluator {
 	 */
 	private Object filterValue(Filter.Operand operand) {
 		if (operand instanceof Filter.Value filterValue) {
-			Object value = filterValue.value();
-			return (value instanceof Date date) ? DATE_FORMATTER.format(date.toInstant()) : value;
+			return normalizeFilterValue(filterValue.value());
 		}
 		throw new IllegalArgumentException("Expected a Value operand but got: " + operand.getClass().getName());
+	}
+
+	private Object normalizeFilterValue(Object value) {
+		return (value instanceof Date date) ? DATE_FORMATTER.format(date.toInstant()) : value;
 	}
 
 	/**

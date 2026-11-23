@@ -139,7 +139,7 @@ class GemFireVectorStoreAutoConfigurationAuthenticationIT {
 			Map<String, Object> indexDetails = new HashMap<>();
 			if (rootNode.isObject()) {
 				if (rootNode.has("name")) {
-					indexDetails.put("name", rootNode.get("name").asText());
+					indexDetails.put("name", rootNode.get("name").asString());
 				}
 				if (rootNode.has("beam-width")) {
 					indexDetails.put("beam-width", rootNode.get("beam-width").asInt());
@@ -148,7 +148,8 @@ class GemFireVectorStoreAutoConfigurationAuthenticationIT {
 					indexDetails.put("max-connections", rootNode.get("max-connections").asInt());
 				}
 				if (rootNode.has("vector-similarity-function")) {
-					indexDetails.put("vector-similarity-function", rootNode.get("vector-similarity-function").asText());
+					indexDetails.put("vector-similarity-function",
+							rootNode.get("vector-similarity-function").asString());
 				}
 				if (rootNode.has("buckets")) {
 					indexDetails.put("buckets", rootNode.get("buckets").asInt());

@@ -1,0 +1,17 @@
+[[jinfer]]
+= Qxotic jinfer
+:community-project: The jinfer Spring AI integration
+:community-docs: https://github.com/qxoticai/qxotic/tree/main/jinfer/jinfer-spring-ai
+:community-issues: https://github.com/qxoticai/qxotic/issues
+
+include::partial$community-note.adoc[]
+
+https://github.com/qxoticai/qxotic/tree/main/jinfer[jinfer] ("JVM inference") is a pure-JVM inference engine from the https://qxotic.ai[Qxotic AI] project.
+It runs GGUF models inside your application's JVM, without a separate inference server.
+
+The integration is maintained by the Qxotic AI project, and its artifacts are published to Maven Central under the `com.qxotic` group.
+
+* xref:integrations/models/jinfer/chat.adoc[Chat]
+* xref:integrations/models/jinfer/embeddings.adoc[Embeddings]
+* xref:integrations/models/jinfer/speech.adoc[Text to Speech]
+* xref:integrations/models/jinfer/transcription.adoc[Transcription]

@@ -31,7 +31,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Mick Semb Wever
  * @author Jihoon Kim
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of the session memory
+ * auto-configuration, {@code SessionServiceAutoConfiguration} in
+ * {@code spring-ai-autoconfigure-model-session}. There is no session store for Cassandra
+ * yet; one is planned before 3.0.0, when this module is removed.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 @ConfigurationProperties(CassandraChatMemoryRepositoryProperties.CONFIG_PREFIX)
 public class CassandraChatMemoryRepositoryProperties {
 

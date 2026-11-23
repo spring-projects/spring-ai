@@ -17,10 +17,12 @@
 package org.springframework.ai.reader.pdf.config;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageTree;
@@ -40,6 +42,8 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  */
 public class ParagraphManager {
+
+	private static final int REASONABLE_DEPTH = 64;
 
 	/**
 	 * Root of the paragraphs tree.
@@ -62,9 +66,7 @@ public class ParagraphManager {
 
 			this.rootParagraph = this.generateParagraphs(
 					new Paragraph(null, "root", -1, 1, this.document.getNumberOfPages(), 0),
-					this.document.getDocumentCatalog().getDocumentOutline(), 0);
-
-			printParagraph(this.rootParagraph, System.out);
+					this.document.getDocumentCatalog().getDocumentOutline(), 0, new HashSet<>());
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -75,22 +77,18 @@ public class ParagraphManager {
 	public List<Paragraph> flatten() {
 		List<Paragraph> paragraphs = new ArrayList<>();
 		for (var child : this.rootParagraph.children()) {
-			flatten(child, paragraphs);
+			flatten(child, paragraphs, 0);
 		}
 		return paragraphs;
 	}
 
-	private void flatten(Paragraph current, List<Paragraph> paragraphs) {
+	private void flatten(Paragraph current, List<Paragraph> paragraphs, int depth) {
+		if (depth > REASONABLE_DEPTH) {
+			throw new IllegalStateException("Unreasonable pdf paragraph depth");
+		}
 		paragraphs.add(current);
 		for (var child : current.children()) {
-			flatten(child, paragraphs);
-		}
-	}
-
-	private void printParagraph(Paragraph paragraph, PrintStream printStream) {
-		printStream.println(paragraph);
-		for (Paragraph childParagraph : paragraph.children()) {
-			printParagraph(childParagraph, printStream);
+			flatten(child, paragraphs, depth + 1);
 		}
 	}
 
@@ -103,13 +101,17 @@ public class ParagraphManager {
 	 * added to.
 	 * @param bookmark TOC paragraphs to process.
 	 * @param level Current TOC deepness level.
+	 * @param visited used to prevent infinite recursion
 	 * @return Returns a tree of {@link Paragraph}s that represent the PDF document TOC.
 	 * @throws IOException
 	 */
-	protected Paragraph generateParagraphs(Paragraph parentParagraph, PDOutlineNode bookmark, Integer level)
-			throws IOException {
+	protected Paragraph generateParagraphs(Paragraph parentParagraph, PDOutlineNode bookmark, Integer level,
+			Set<COSDictionary> visited) throws IOException {
 
 		PDOutlineItem current = bookmark.getFirstChild();
+		if (level > REASONABLE_DEPTH || (current != null && !visited.add(current.getCOSObject()))) {
+			throw new IllegalStateException("pdf containing circular reference or unreasonable nesting level");
+		}
 
 		while (current != null) {
 
@@ -129,7 +131,7 @@ public class ParagraphManager {
 
 			// Recursive call to go the current paragraph's children paragraphs.
 			// E.g. go one level deeper.
-			this.generateParagraphs(currentParagraph, current, level + 1);
+			this.generateParagraphs(currentParagraph, current, level + 1, visited);
 
 			current = current.getNextSibling();
 		}

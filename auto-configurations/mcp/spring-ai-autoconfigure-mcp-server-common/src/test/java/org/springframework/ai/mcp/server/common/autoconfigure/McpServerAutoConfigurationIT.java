@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
@@ -27,6 +28,7 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.json.TypeRef;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
+import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncPromptSpecification;
@@ -54,6 +56,8 @@ import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.customizer.McpAsyncServerCustomizer;
+import org.springframework.ai.mcp.customizer.McpServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
@@ -62,8 +66,10 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -121,6 +127,37 @@ public class McpServerAutoConfigurationIT {
 				assertThat(properties.getInstructions()).isEqualTo("My MCP Server");
 				assertThat(properties.getType()).isEqualTo(McpServerProperties.ApiType.ASYNC);
 				assertThat(properties.getRequestTimeout().getSeconds()).isEqualTo(30);
+			});
+	}
+
+	@Test
+	void multipleSyncServerCustomizersInvokedInOrder() {
+		this.contextRunner.withUserConfiguration(OrderedSyncServerCustomizersConfiguration.class).run(context -> {
+			assertThat(context).hasSingleBean(McpSyncServer.class);
+			assertThat(context.getBean("customizerInvocations", List.class)).containsExactly("first", "second");
+		});
+	}
+
+	@Test
+	void syncServerCustomizerOverridesServletCustomizer() {
+		new WebApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
+					McpServerJsonMapperAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class))
+			.withUserConfiguration(DisableImmediateExecutionConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasBean("servletMcpSyncServerCustomizer");
+				McpSyncServer server = context.getBean(McpSyncServer.class);
+				assertThat(ReflectionTestUtils.getField(server, "immediateExecution")).isEqualTo(false);
+			});
+	}
+
+	@Test
+	void multipleAsyncServerCustomizersInvokedInOrder() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withUserConfiguration(OrderedAsyncServerCustomizersConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasSingleBean(McpAsyncServer.class);
+				assertThat(context.getBean("customizerInvocations", List.class)).containsExactly("first", "second");
 			});
 	}
 
@@ -491,7 +528,8 @@ public class McpServerAutoConfigurationIT {
 			Mockito.when(mockTool.name()).thenReturn("test-tool");
 			Mockito.when(mockTool.description()).thenReturn("Test Tool");
 			Mockito.when(mockClient.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult);
-			when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+			when(mockClient.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 
 			return List.of(SyncMcpToolCallback.builder()
 				.mcpClient(mockClient)
@@ -513,7 +551,8 @@ public class McpServerAutoConfigurationIT {
 
 				Mockito.when(mockTool.name()).thenReturn("provider-tool");
 				Mockito.when(mockTool.description()).thenReturn("Provider Tool");
-				when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+				when(mockClient.getClientInfo())
+					.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 
 				return new ToolCallback[] { SyncMcpToolCallback.builder()
 					.mcpClient(mockClient)
@@ -536,7 +575,7 @@ public class McpServerAutoConfigurationIT {
 							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false));
 
 			return List.of(new McpServerFeatures.SyncCompletionSpecification(
-					new McpSchema.PromptReference("ref/prompt", "code_review", "Code review"), completionHandler));
+					McpSchema.PromptReference.builder("code_review").title("Code review").build(), completionHandler));
 		}
 
 	}
@@ -551,7 +590,7 @@ public class McpServerAutoConfigurationIT {
 							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false)));
 
 			return List.of(new McpServerFeatures.AsyncCompletionSpecification(
-					new McpSchema.PromptReference("ref/prompt", "code_review", "Code review"), completionHandler));
+					McpSchema.PromptReference.builder("code_review").title("Code review").build(), completionHandler));
 		}
 
 	}
@@ -576,6 +615,63 @@ public class McpServerAutoConfigurationIT {
 			return (exchange, roots) -> {
 				// Test implementation
 			};
+		}
+
+	}
+
+	@Configuration
+	static class OrderedSyncServerCustomizersConfiguration {
+
+		@Bean
+		List<String> customizerInvocations() {
+			return new CopyOnWriteArrayList<>();
+		}
+
+		// Declared before "first" so that only @Order can make it run last.
+		@Bean
+		@Order(2)
+		McpServerCustomizer<McpServer.SyncSpecification<?>> secondCustomizer(List<String> customizerInvocations) {
+			return serverBuilder -> customizerInvocations.add("second");
+		}
+
+		@Bean
+		@Order(1)
+		McpServerCustomizer<McpServer.SyncSpecification<?>> firstCustomizer(List<String> customizerInvocations) {
+			return serverBuilder -> customizerInvocations.add("first");
+		}
+
+	}
+
+	@Configuration
+	static class DisableImmediateExecutionConfiguration {
+
+		// Deliberately unordered: it must still run after the servlet customizer.
+		@Bean
+		McpServerCustomizer<McpServer.SyncSpecification<?>> disableImmediateExecution() {
+			return serverBuilder -> serverBuilder.immediateExecution(false);
+		}
+
+	}
+
+	@Configuration
+	static class OrderedAsyncServerCustomizersConfiguration {
+
+		@Bean
+		List<String> customizerInvocations() {
+			return new CopyOnWriteArrayList<>();
+		}
+
+		// Declared before "first" so that only @Order can make it run last.
+		@Bean
+		@Order(2)
+		McpAsyncServerCustomizer secondCustomizer(List<String> customizerInvocations) {
+			return serverBuilder -> customizerInvocations.add("second");
+		}
+
+		@Bean
+		@Order(1)
+		McpAsyncServerCustomizer firstCustomizer(List<String> customizerInvocations) {
+			return serverBuilder -> customizerInvocations.add("first");
 		}
 
 	}
@@ -641,14 +737,15 @@ public class McpServerAutoConfigurationIT {
 
 			String message = "Hello, " + name + "! How can I help you today?";
 
-			return new McpSchema.GetPromptResult("Greeting",
-					List.of(new McpSchema.PromptMessage(McpSchema.Role.ASSISTANT, new McpSchema.TextContent(message))));
+			return McpSchema.GetPromptResult.builder(List.of(McpSchema.PromptMessage
+				.builder(McpSchema.Role.ASSISTANT, McpSchema.TextContent.builder(message).build())
+				.build())).description("Greeting").build();
 		}
 
 		@McpComplete(prompt = "city-search")
 		public List<String> completeCityName(String prefix) {
 			return Stream.of("New York", "Los Angeles", "Chicago", "Houston", "Phoenix")
-				.filter(city -> city.toLowerCase().startsWith(prefix.toLowerCase()))
+				.filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT)))
 				.limit(10)
 				.toList();
 		}
@@ -682,14 +779,15 @@ public class McpServerAutoConfigurationIT {
 
 			String message = "Hello, " + name + "! How can I help you today?";
 
-			return Mono.just(new McpSchema.GetPromptResult("Greeting", List
-				.of(new McpSchema.PromptMessage(McpSchema.Role.ASSISTANT, new McpSchema.TextContent(message)))));
+			return Mono.just(McpSchema.GetPromptResult.builder(List.of(McpSchema.PromptMessage
+				.builder(McpSchema.Role.ASSISTANT, McpSchema.TextContent.builder(message).build())
+				.build())).description("Greeting").build());
 		}
 
 		@McpComplete(prompt = "city-search")
 		public Mono<List<String>> completeCityName(String prefix) {
 			return Mono.just(Stream.of("New York", "Los Angeles", "Chicago", "Houston", "Phoenix")
-				.filter(city -> city.toLowerCase().startsWith(prefix.toLowerCase()))
+				.filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT)))
 				.limit(10)
 				.toList());
 		}

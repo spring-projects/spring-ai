@@ -261,4 +261,72 @@ class RedisFilterExpressionConverterTests {
 			.hasMessageContaining("Numeric value must be a Number");
 	}
 
+	// Value escaping
+
+	@Test
+	void tagValueEscapesWildcard() {
+		// '*' is reserved inside a TAG clause and must not survive as query syntax.
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("tenant_id"))
+			.convertExpression(new Expression(EQ, new Key("tenant_id"), new Value("aa*")));
+
+		assertThat(vectorExpr).isEqualTo("@tenant_id:{aa\\*}");
+	}
+
+	@Test
+	void tagValueEscapesBackslash() {
+		// "BG\}" - the backslash is escaped before the '}' that follows it, so both
+		// stay part of the value.
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("country"))
+			.convertExpression(new Expression(EQ, new Key("country"), new Value("BG\\}")));
+
+		assertThat(vectorExpr).isEqualTo("@country:{BG\\\\\\}}");
+		assertThat(stripEscapedCharacters(vectorExpr)).isEqualTo("@country:{BG}");
+	}
+
+	@Test
+	void textValueEscapesBackslash() {
+		// "a\)" - RediSearchUtil.escapeQuery() leaves the backslash alone, so the
+		// converter escapes it before delegating.
+		String vectorExpr = converter(RedisVectorStore.MetadataField.text("note"))
+			.convertExpression(new Expression(EQ, new Key("note"), new Value("a\\)")));
+
+		assertThat(vectorExpr).isEqualTo("@note:(a\\\\\\))");
+		assertThat(stripEscapedCharacters(vectorExpr)).isEqualTo("@note:(a)");
+	}
+
+	@Test
+	void textValueEscapesTrailingBackslash() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.text("note"))
+			.convertExpression(new Expression(EQ, new Key("note"), new Value("note\\")));
+
+		assertThat(stripEscapedCharacters(vectorExpr)).isEqualTo("@note:(note)");
+	}
+
+	@Test
+	void textValueEscapesReservedCharacters() {
+		// Values combining backslashes with characters that are reserved inside a
+		// TEXT clause.
+		for (String value : List.of("x\\)\\|\\(other", "x\\) \\| \\(other", "x\\)\\|\\(shared")) {
+			String vectorExpr = converter(RedisVectorStore.MetadataField.text("note"))
+				.convertExpression(new Expression(EQ, new Key("note"), new Value(value)));
+
+			String unescaped = stripEscapedCharacters(vectorExpr);
+			assertThat(unescaped).as("value %s", value).startsWith("@note:(").endsWith(")");
+			assertThat(unescaped.substring("@note:(".length(), unescaped.length() - 1)).as("value %s", value)
+				.doesNotContain("(", ")", "|", "{", "}", "$", "\\");
+		}
+	}
+
+	/**
+	 * Deletes every backslash-escaped character pair, pairing left to right as the
+	 * RediSearch lexer does. This is not a model of the lexer: escaped characters are
+	 * dropped rather than turned into literals, and whether a surviving character is
+	 * actually significant depends on the enclosing clause and the query dialect. It is
+	 * only a conservative detector - a metacharacter that survives was definitely not
+	 * escaped by the converter.
+	 */
+	private static String stripEscapedCharacters(String query) {
+		return query.replaceAll("\\\\.", "");
+	}
+
 }

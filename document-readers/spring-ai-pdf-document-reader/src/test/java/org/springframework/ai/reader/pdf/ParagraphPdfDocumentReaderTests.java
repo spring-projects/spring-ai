@@ -17,9 +17,11 @@
 package org.springframework.ai.reader.pdf;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -42,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 /**
  * @author Christian Tzolov
  * @author Heonwoo Kim
+ * @author Vinay Reddy Kalluri
  */
 public class ParagraphPdfDocumentReaderTests {
 
@@ -65,6 +68,16 @@ public class ParagraphPdfDocumentReaderTests {
 			.hasMessageContaining(
 					"Document outline (e.g. TOC) is null. Make sure the PDF document has a table of contents (TOC). If not, consider the PagePdfDocumentReader or the TikaDocumentReader instead.");
 
+	}
+
+	@Test
+	void testPageRangesAreRejected() {
+		// ParagraphPdfDocumentReader does not support page ranges; it must fail fast
+		// instead of silently ignoring the configuration.
+		assertThatThrownBy(() -> new ParagraphPdfDocumentReader("classpath:/sample3.pdf",
+				PdfDocumentReaderConfig.builder().addPageRange(1, 2).build()))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Page ranges are not supported by ParagraphPdfDocumentReader");
 	}
 
 	@Test
@@ -102,6 +115,28 @@ public class ParagraphPdfDocumentReaderTests {
 		assertThat(documents).hasSize(2);
 		assertThat(documents.get(0).getMetadata().get("title")).isEqualTo("Chapter 1");
 		assertThat(documents.get(1).getMetadata().get("title")).isEqualTo("Chapter 3");
+	}
+
+	@Test
+	void closesTheResourceInputStream() throws IOException {
+
+		AtomicBoolean closed = new AtomicBoolean();
+		Resource resource = new ByteArrayResource(new ClassPathResource("sample3.pdf").getContentAsByteArray()) {
+			@Override
+			public InputStream getInputStream() throws IOException {
+				return new FilterInputStream(super.getInputStream()) {
+					@Override
+					public void close() throws IOException {
+						closed.set(true);
+						super.close();
+					}
+				};
+			}
+		};
+
+		new ParagraphPdfDocumentReader(resource, PdfDocumentReaderConfig.defaultConfig());
+
+		assertThat(closed).isTrue();
 	}
 
 }

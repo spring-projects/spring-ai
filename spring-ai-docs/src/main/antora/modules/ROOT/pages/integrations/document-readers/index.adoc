@@ -1,0 +1,17 @@
+= Document Readers
+
+[WARNING]
+====
+Most `DocumentReader` and `DocumentWriter` implementations described below
+are constructed using a `Resource` or resource pattern and internally use a
+`DefaultResourceLoader` or variation of it to access storage.
+Care should be taken not to construct such instances using directly user supplied URLs, as there are security implications to this.
+====
+
+== In This Section
+
+* xref:integrations/document-readers/pdf.adoc[PDF]
+* xref:integrations/document-readers/tika.adoc[Tika (DOCX, PPTX and More)]
+* xref:integrations/document-readers/html.adoc[HTML (jsoup)]
+* xref:integrations/document-readers/markdown.adoc[Markdown]
+* xref:integrations/document-readers/json-text.adoc[JSON and Plain Text]

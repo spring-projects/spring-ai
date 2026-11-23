@@ -25,6 +25,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfigurationUtil.ResolvedConnectionProperties;
 import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.setup.OpenAiSetup;
@@ -34,6 +35,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 /**
  * Image {@link AutoConfiguration Auto-configuration} for OpenAI.
@@ -46,35 +48,42 @@ import org.springframework.context.annotation.Bean;
  * @author Issam El-atif
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 @AutoConfiguration
 @ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
 @EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiImageProperties.class })
+@Import(OpenAiConnectionDetailsConfiguration.class)
 public class OpenAiImageAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiImageModel openAiImageModel(OpenAiCommonProperties commonProperties,
-			OpenAiImageProperties imageProperties, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<MeterRegistry> meterRegistry,
+	public OpenAiImageModel openAiImageModel(OpenAiConnectionDetails connectionDetails,
+			OpenAiCommonProperties commonProperties, OpenAiImageProperties imageProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<ImageModelObservationConvention> observationConvention,
 			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
-		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties, imageProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(connectionDetails,
+				commonProperties, imageProperties);
 
 		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
 
-		var imageModel = new OpenAiImageModel(
-				openAiClient(resolvedProperties, observationRegistry, meterRegistry, customizers),
-				imageProperties.toOptions(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var openAiClient = this.openAiClient(resolvedProperties, observationRegistry, meterRegistry, customizers);
+
+		var imageModel = OpenAiImageModel.builder()
+			.openAiClient(openAiClient)
+			.options(imageProperties.toOptions())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.build();
 
 		observationConvention.ifAvailable(imageModel::setObservationConvention);
 
 		return imageModel;
 	}
 
-	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties,
+	private OpenAIClient openAiClient(ResolvedConnectionProperties commonProperties,
 			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 

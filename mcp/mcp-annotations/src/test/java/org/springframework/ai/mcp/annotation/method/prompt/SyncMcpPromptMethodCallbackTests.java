@@ -17,13 +17,17 @@
 package org.springframework.ai.mcp.annotation.method.prompt;
 
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpError;
+import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
 import io.modelcontextprotocol.spec.McpSchema.Prompt;
@@ -53,8 +57,11 @@ import static org.mockito.Mockito.mock;
 public class SyncMcpPromptMethodCallbackTests {
 
 	private Prompt createTestPrompt(String name, String description) {
-		return new Prompt(name, description, List.of(new PromptArgument("name", "User's name", true),
-				new PromptArgument("age", "User's age", false)));
+		return Prompt.builder(name)
+			.description(description)
+			.arguments(List.of(PromptArgument.builder("name").description("User's name").required(true).build(),
+					PromptArgument.builder("age").description("User's age").required(false).build()))
+			.build();
 	}
 
 	@Test
@@ -74,7 +81,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("failing-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("failing-prompt").arguments(args).build();
 
 		// The new error handling should throw McpError instead of
 		// McpPromptMethodException
@@ -99,7 +106,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("greeting", args);
+		GetPromptRequest request = GetPromptRequest.builder("greeting").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -129,7 +136,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("exchange-greeting", args);
+		GetPromptRequest request = GetPromptRequest.builder("exchange-greeting").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -158,7 +165,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("arguments-greeting", args);
+		GetPromptRequest request = GetPromptRequest.builder("arguments-greeting").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -188,7 +195,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
 		args.put("age", 30);
-		GetPromptRequest request = new GetPromptRequest("individual-args", args);
+		GetPromptRequest request = GetPromptRequest.builder("individual-args").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -198,6 +205,157 @@ public class SyncMcpPromptMethodCallbackTests {
 		PromptMessage message = result.messages().get(0);
 		assertThat(message.role()).isEqualTo(Role.ASSISTANT);
 		assertThat(((TextContent) message.content()).text()).isEqualTo("Hello John, you are 30 years old");
+	}
+
+	@Test
+	public void testCallbackRejectsUnsafeIntegerConversions() throws Exception {
+		TestPromptProvider provider = new TestPromptProvider();
+
+		assertInvalidNumericArgument(provider, "getPromptWithIntegerArgument", int.class, 1.5);
+		assertThat(provider.integerArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithIntegerArgument", int.class, (long) Integer.MAX_VALUE + 1);
+		assertThat(provider.integerArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithIntegerArgument", int.class, Double.NaN);
+		assertThat(provider.integerArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithIntegerArgument", int.class, Double.POSITIVE_INFINITY);
+		assertThat(provider.integerArgument).isNull();
+	}
+
+	@Test
+	public void testCallbackRejectsUnsafeLongConversions() throws Exception {
+		TestPromptProvider provider = new TestPromptProvider();
+
+		assertInvalidNumericArgument(provider, "getPromptWithLongArgument", long.class, 1.5);
+		assertThat(provider.longArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithLongArgument", long.class,
+				BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE));
+		assertThat(provider.longArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithLongArgument", long.class,
+				BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.ONE));
+		assertThat(provider.longArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithLongArgument", long.class, new BigDecimal("42.001"));
+		assertThat(provider.longArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithLongArgument", long.class, Double.NEGATIVE_INFINITY);
+		assertThat(provider.longArgument).isNull();
+	}
+
+	@Test
+	public void testCallbackAcceptsExactNumericConversions() throws Exception {
+		TestPromptProvider provider = new TestPromptProvider();
+
+		BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> integerCallback = createNumericCallback(
+				provider, "getPromptWithIntegerArgument", int.class);
+		GetPromptRequest integerRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", 1.0))
+			.build();
+		integerCallback.apply(mock(McpSyncServerExchange.class), integerRequest);
+		assertThat(provider.integerArgument).isEqualTo(1);
+
+		integerRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", (float) Integer.MIN_VALUE))
+			.build();
+		integerCallback.apply(mock(McpSyncServerExchange.class), integerRequest);
+		assertThat(provider.integerArgument).isEqualTo(Integer.MIN_VALUE);
+
+		integerRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", BigInteger.valueOf(Integer.MAX_VALUE)))
+			.build();
+		integerCallback.apply(mock(McpSyncServerExchange.class), integerRequest);
+		assertThat(provider.integerArgument).isEqualTo(Integer.MAX_VALUE);
+
+		BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> longCallback = createNumericCallback(
+				provider, "getPromptWithLongArgument", long.class);
+		GetPromptRequest longRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", new BigDecimal("42.000")))
+			.build();
+		longCallback.apply(mock(McpSyncServerExchange.class), longRequest);
+		assertThat(provider.longArgument).isEqualTo(42L);
+
+		longRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", (double) Long.MIN_VALUE))
+			.build();
+		longCallback.apply(mock(McpSyncServerExchange.class), longRequest);
+		assertThat(provider.longArgument).isEqualTo(Long.MIN_VALUE);
+
+		double largeExactInteger = Math.nextDown(Math.scalb(1.0, 63));
+		longRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", largeExactInteger))
+			.build();
+		longCallback.apply(mock(McpSyncServerExchange.class), longRequest);
+		assertThat(provider.longArgument).isEqualTo((long) largeExactInteger);
+
+		longRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", new BigDecimal("1E3")))
+			.build();
+		longCallback.apply(mock(McpSyncServerExchange.class), longRequest);
+		assertThat(provider.longArgument).isEqualTo(1000L);
+
+		longRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", new BigDecimal("1.5E1")))
+			.build();
+		longCallback.apply(mock(McpSyncServerExchange.class), longRequest);
+		assertThat(provider.longArgument).isEqualTo(15L);
+	}
+
+	@Test
+	public void testCallbackWithDeserializedNumericArguments() throws Exception {
+		TestPromptProvider provider = new TestPromptProvider();
+		BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> integerCallback = createNumericCallback(
+				provider, "getPromptWithIntegerArgument", int.class);
+		BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> longCallback = createNumericCallback(
+				provider, "getPromptWithLongArgument", long.class);
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+
+		GetPromptRequest fractionalRequest = deserializeNumericRequest("1.5");
+		assertInvalidNumericRequest(integerCallback, exchange, fractionalRequest);
+		assertThat(provider.integerArgument).isNull();
+
+		GetPromptRequest largeExactIntegerRequest = deserializeNumericRequest("9223372036854774784.0");
+		longCallback.apply(exchange, largeExactIntegerRequest);
+		assertThat(provider.longArgument).isEqualTo(9223372036854774784L);
+
+		provider.longArgument = null;
+		GetPromptRequest outOfRangeRequest = deserializeNumericRequest("9223372036854775808");
+		assertInvalidNumericRequest(longCallback, exchange, outOfRangeRequest);
+		assertThat(provider.longArgument).isNull();
+	}
+
+	private void assertInvalidNumericArgument(TestPromptProvider provider, String methodName, Class<?> parameterType,
+			Number value) throws Exception {
+		BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> callback = createNumericCallback(provider,
+				methodName, parameterType);
+		GetPromptRequest request = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", value))
+			.build();
+
+		assertInvalidNumericRequest(callback, mock(McpSyncServerExchange.class), request);
+	}
+
+	private void assertInvalidNumericRequest(
+			BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> callback,
+			McpSyncServerExchange exchange, GetPromptRequest request) {
+		assertThatThrownBy(() -> callback.apply(exchange, request)).isInstanceOfSatisfying(McpError.class,
+				error -> assertThat(error.getJsonRpcError().code()).isEqualTo(ErrorCodes.INVALID_PARAMS));
+	}
+
+	private GetPromptRequest deserializeNumericRequest(String value) throws Exception {
+		return McpJsonDefaults.getMapper()
+			.readValue("{\"name\":\"numeric-argument\",\"arguments\":{\"value\":" + value + "}}",
+					GetPromptRequest.class);
+	}
+
+	private BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> createNumericCallback(
+			TestPromptProvider provider, String methodName, Class<?> parameterType) throws Exception {
+		Method method = TestPromptProvider.class.getMethod(methodName, parameterType);
+		Prompt prompt = createTestPrompt("numeric-argument", "A prompt with a numeric argument");
+		return SyncMcpPromptMethodCallback.builder().method(method).bean(provider).prompt(prompt).build();
 	}
 
 	@Test
@@ -219,7 +377,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
 		args.put("age", 30);
-		GetPromptRequest request = new GetPromptRequest("mixed-args", args);
+		GetPromptRequest request = GetPromptRequest.builder("mixed-args").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -249,7 +407,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("list-messages", args);
+		GetPromptRequest request = GetPromptRequest.builder("list-messages").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -281,7 +439,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("string-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("string-prompt").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -309,7 +467,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("single-message", args);
+		GetPromptRequest request = GetPromptRequest.builder("single-message").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -338,7 +496,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("string-list", args);
+		GetPromptRequest request = GetPromptRequest.builder("string-list").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -452,7 +610,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		args.put("name", "John");
 		// Note: GetPromptRequest doesn't have progressToken in current spec, so it will
 		// be null
-		GetPromptRequest request = new GetPromptRequest("progress-token", args);
+		GetPromptRequest request = GetPromptRequest.builder("progress-token").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -483,7 +641,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("mixed-with-progress", args);
+		GetPromptRequest request = GetPromptRequest.builder("mixed-with-progress").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -563,7 +721,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		args.put("name", "John");
 
 		// Create request without meta
-		GetPromptRequest request = new GetPromptRequest("meta-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("meta-prompt").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -639,7 +797,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("sync-request-context-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("sync-request-context-prompt").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -670,7 +828,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("sync-context-with-args", args);
+		GetPromptRequest request = GetPromptRequest.builder("sync-context-with-args").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
 
@@ -714,6 +872,10 @@ public class SyncMcpPromptMethodCallbackTests {
 
 	private static class TestPromptProvider {
 
+		private Integer integerArgument;
+
+		private Long longArgument;
+
 		@McpPrompt(name = "failing-prompt", description = "A prompt that throws an exception")
 		public GetPromptResult getFailingPrompt(GetPromptRequest request) {
 			throw new RuntimeException("Test exception");
@@ -721,43 +883,75 @@ public class SyncMcpPromptMethodCallbackTests {
 
 		@McpPrompt(name = "greeting", description = "A simple greeting prompt")
 		public GetPromptResult getPromptWithRequest(GetPromptRequest request) {
-			return new GetPromptResult("Greeting prompt",
-					List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Hello from " + request.name()))));
+			return GetPromptResult
+				.builder(List
+					.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Hello from " + request.name()).build())))
+				.description("Greeting prompt")
+				.build();
 		}
 
 		@McpPrompt(name = "exchange-greeting", description = "A greeting prompt with exchange")
 		public GetPromptResult getPromptWithExchange(McpSyncServerExchange exchange, GetPromptRequest request) {
-			return new GetPromptResult("Greeting with exchange", List
-				.of(new PromptMessage(Role.ASSISTANT, new TextContent("Hello with exchange from " + request.name()))));
+			return GetPromptResult
+				.builder(List.of(new PromptMessage(Role.ASSISTANT,
+						TextContent.builder("Hello with exchange from " + request.name()).build())))
+				.description("Greeting with exchange")
+				.build();
 		}
 
 		@McpPrompt(name = "arguments-greeting", description = "A greeting prompt with arguments")
 		public GetPromptResult getPromptWithArguments(Map<String, Object> arguments) {
 			String name = arguments.containsKey("name") ? arguments.get("name").toString() : "unknown";
-			return new GetPromptResult("Greeting with arguments",
-					List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Hello " + name + " from arguments"))));
+			return GetPromptResult
+				.builder(List.of(new PromptMessage(Role.ASSISTANT,
+						TextContent.builder("Hello " + name + " from arguments").build())))
+				.description("Greeting with arguments")
+				.build();
 		}
 
 		@McpPrompt(name = "individual-args", description = "A prompt with individual arguments")
 		public GetPromptResult getPromptWithIndividualArgs(
 				@McpArg(name = "name", description = "The user's name", required = true) String name,
 				@McpArg(name = "age", description = "The user's age", required = true) Integer age) {
-			return new GetPromptResult("Individual arguments prompt", List.of(new PromptMessage(Role.ASSISTANT,
-					new TextContent("Hello " + name + ", you are " + age + " years old"))));
+			return GetPromptResult
+				.builder(List.of(new PromptMessage(Role.ASSISTANT,
+						TextContent.builder("Hello " + name + ", you are " + age + " years old").build())))
+				.description("Individual arguments prompt")
+				.build();
+		}
+
+		@McpPrompt(name = "integer-argument", description = "A prompt with an integer argument")
+		public GetPromptResult getPromptWithIntegerArgument(
+				@McpArg(name = "value", description = "An integer value", required = true) int value) {
+			this.integerArgument = value;
+			return GetPromptResult.builder(List.of()).description("Integer argument prompt").build();
+		}
+
+		@McpPrompt(name = "long-argument", description = "A prompt with a long argument")
+		public GetPromptResult getPromptWithLongArgument(
+				@McpArg(name = "value", description = "A long value", required = true) long value) {
+			this.longArgument = value;
+			return GetPromptResult.builder(List.of()).description("Long argument prompt").build();
 		}
 
 		@McpPrompt(name = "mixed-args", description = "A prompt with mixed argument types")
 		public GetPromptResult getPromptWithMixedArgs(McpSyncServerExchange exchange,
 				@McpArg(name = "name", description = "The user's name", required = true) String name,
 				@McpArg(name = "age", description = "The user's age", required = true) Integer age) {
-			return new GetPromptResult("Mixed arguments prompt", List.of(new PromptMessage(Role.ASSISTANT,
-					new TextContent("Hello " + name + ", you are " + age + " years old (with exchange)"))));
+			return GetPromptResult
+				.builder(
+						List.of(new PromptMessage(Role.ASSISTANT,
+								TextContent.builder("Hello " + name + ", you are " + age + " years old (with exchange)")
+									.build())))
+				.description("Mixed arguments prompt")
+				.build();
 		}
 
 		@McpPrompt(name = "list-messages", description = "A prompt returning a list of messages")
 		public List<PromptMessage> getPromptMessagesList(GetPromptRequest request) {
-			return List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Message 1 for " + request.name())),
-					new PromptMessage(Role.ASSISTANT, new TextContent("Message 2 for " + request.name())));
+			return List.of(
+					new PromptMessage(Role.ASSISTANT, TextContent.builder("Message 1 for " + request.name()).build()),
+					new PromptMessage(Role.ASSISTANT, TextContent.builder("Message 2 for " + request.name()).build()));
 		}
 
 		@McpPrompt(name = "string-prompt", description = "A prompt returning a string")
@@ -767,7 +961,8 @@ public class SyncMcpPromptMethodCallbackTests {
 
 		@McpPrompt(name = "single-message", description = "A prompt returning a single message")
 		public PromptMessage getSingleMessage(GetPromptRequest request) {
-			return new PromptMessage(Role.ASSISTANT, new TextContent("Single message for " + request.name()));
+			return new PromptMessage(Role.ASSISTANT,
+					TextContent.builder("Single message for " + request.name()).build());
 		}
 
 		@McpPrompt(name = "string-list", description = "A prompt returning a list of strings")
@@ -782,23 +977,26 @@ public class SyncMcpPromptMethodCallbackTests {
 
 		public GetPromptResult duplicateExchangeParameters(McpSyncServerExchange exchange1,
 				McpSyncServerExchange exchange2) {
-			return new GetPromptResult("Invalid", List.of());
+			return GetPromptResult.builder(List.of()).description("Invalid").build();
 		}
 
 		public GetPromptResult duplicateRequestParameters(GetPromptRequest request1, GetPromptRequest request2) {
-			return new GetPromptResult("Invalid", List.of());
+			return GetPromptResult.builder(List.of()).description("Invalid").build();
 		}
 
 		public GetPromptResult duplicateMapParameters(Map<String, Object> args1, Map<String, Object> args2) {
-			return new GetPromptResult("Invalid", List.of());
+			return GetPromptResult.builder(List.of()).description("Invalid").build();
 		}
 
 		@McpPrompt(name = "progress-token", description = "A prompt with progress token")
 		public GetPromptResult getPromptWithProgressToken(@McpProgressToken String progressToken,
 				@McpArg(name = "name", description = "The user's name", required = true) String name) {
 			String tokenInfo = progressToken != null ? " (token: " + progressToken + ")" : " (no token)";
-			return new GetPromptResult("Progress token prompt",
-					List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Hello " + name + tokenInfo))));
+			return GetPromptResult
+				.builder(List
+					.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Hello " + name + tokenInfo).build())))
+				.description("Progress token prompt")
+				.build();
 		}
 
 		@McpPrompt(name = "mixed-with-progress", description = "A prompt with mixed args and progress token")
@@ -807,21 +1005,27 @@ public class SyncMcpPromptMethodCallbackTests {
 				@McpArg(name = "name", description = "The user's name", required = true) String name,
 				GetPromptRequest request) {
 			String tokenInfo = progressToken != null ? " (token: " + progressToken + ")" : " (no token)";
-			return new GetPromptResult("Mixed with progress prompt", List.of(new PromptMessage(Role.ASSISTANT,
-					new TextContent("Hello " + name + " from " + request.name() + tokenInfo))));
+			return GetPromptResult
+				.builder(List.of(new PromptMessage(Role.ASSISTANT,
+						TextContent.builder("Hello " + name + " from " + request.name() + tokenInfo).build())))
+				.description("Mixed with progress prompt")
+				.build();
 		}
 
 		public GetPromptResult duplicateProgressTokenParameters(@McpProgressToken String token1,
 				@McpProgressToken String token2) {
-			return new GetPromptResult("Invalid", List.of());
+			return GetPromptResult.builder(List.of()).description("Invalid").build();
 		}
 
 		@McpPrompt(name = "meta-prompt", description = "A prompt with meta parameter")
 		public GetPromptResult getPromptWithMeta(
 				@McpArg(name = "name", description = "The user's name", required = true) String name, McpMeta meta) {
 			String metaInfo = meta != null && meta.meta() != null ? meta.meta().toString() : "null";
-			return new GetPromptResult("Meta prompt", List
-				.of(new PromptMessage(Role.ASSISTANT, new TextContent("Hello " + name + ", Meta: " + metaInfo))));
+			return GetPromptResult
+				.builder(List.of(new PromptMessage(Role.ASSISTANT,
+						TextContent.builder("Hello " + name + ", Meta: " + metaInfo).build())))
+				.description("Meta prompt")
+				.build();
 		}
 
 		@McpPrompt(name = "mixed-with-meta", description = "A prompt with mixed args and meta")
@@ -829,40 +1033,51 @@ public class SyncMcpPromptMethodCallbackTests {
 				@McpArg(name = "name", description = "The user's name", required = true) String name, McpMeta meta,
 				GetPromptRequest request) {
 			String metaInfo = meta != null && meta.meta() != null ? meta.meta().toString() : "null";
-			return new GetPromptResult("Mixed with meta prompt", List.of(new PromptMessage(Role.ASSISTANT,
-					new TextContent("Hello " + name + " from " + request.name() + ", Meta: " + metaInfo))));
+			return GetPromptResult
+				.builder(
+						List.of(new PromptMessage(Role.ASSISTANT,
+								TextContent.builder("Hello " + name + " from " + request.name() + ", Meta: " + metaInfo)
+									.build())))
+				.description("Mixed with meta prompt")
+				.build();
 		}
 
 		public GetPromptResult duplicateMetaParameters(McpMeta meta1, McpMeta meta2) {
-			return new GetPromptResult("Invalid", List.of());
+			return GetPromptResult.builder(List.of()).description("Invalid").build();
 		}
 
 		@McpPrompt(name = "sync-request-context-prompt", description = "A prompt with sync request context")
 		public GetPromptResult getPromptWithSyncRequestContext(McpSyncRequestContext context) {
 			GetPromptRequest request = (GetPromptRequest) context.request();
-			return new GetPromptResult("Sync request context prompt", List.of(new PromptMessage(Role.ASSISTANT,
-					new TextContent("Hello with sync context from " + request.name()))));
+			return GetPromptResult
+				.builder(List.of(new PromptMessage(Role.ASSISTANT,
+						TextContent.builder("Hello with sync context from " + request.name()).build())))
+				.description("Sync request context prompt")
+				.build();
 		}
 
 		@McpPrompt(name = "sync-context-with-args", description = "A prompt with sync context and arguments")
 		public GetPromptResult getPromptWithSyncContextAndArgs(McpSyncRequestContext context,
 				@McpArg(name = "name", description = "The user's name", required = true) String name) {
 			GetPromptRequest request = (GetPromptRequest) context.request();
-			return new GetPromptResult("Sync context with args prompt", List.of(new PromptMessage(Role.ASSISTANT,
-					new TextContent("Hello " + name + " with sync context from " + request.name()))));
+			return GetPromptResult
+				.builder(List.of(new PromptMessage(Role.ASSISTANT,
+						TextContent.builder("Hello " + name + " with sync context from " + request.name()).build())))
+				.description("Sync context with args prompt")
+				.build();
 		}
 
 		public GetPromptResult duplicateSyncRequestContextParameters(McpSyncRequestContext context1,
 				McpSyncRequestContext context2) {
-			return new GetPromptResult("Invalid", List.of());
+			return GetPromptResult.builder(List.of()).description("Invalid").build();
 		}
 
 		public GetPromptResult invalidAsyncRequestContextInSyncMethod(McpAsyncRequestContext context) {
-			return new GetPromptResult("Invalid", List.of());
+			return GetPromptResult.builder(List.of()).description("Invalid").build();
 		}
 
 		public Mono<GetPromptResult> invalidSyncRequestContextInAsyncMethod(McpSyncRequestContext context) {
-			return Mono.just(new GetPromptResult("Invalid", List.of()));
+			return Mono.just(GetPromptResult.builder(List.of()).description("Invalid").build());
 		}
 
 	}

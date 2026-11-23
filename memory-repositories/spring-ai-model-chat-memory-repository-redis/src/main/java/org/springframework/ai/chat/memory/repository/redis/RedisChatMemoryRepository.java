@@ -24,6 +24,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -72,10 +73,20 @@ import org.springframework.util.MimeType;
  *
  * @author Brian Sam-Bodden
  * @author Yanming Zhou
+ * @author Soby Chacko
+ * @author Dimitar Proynov
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of session memory:
+ * {@code org.springframework.ai.session.SessionRepository} in {@code spring-ai-session},
+ * with a JDBC store in {@code spring-ai-session-jdbc}. There is no session store for
+ * Redis yet; one is planned before 3.0.0, when this module is removed.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 public final class RedisChatMemoryRepository implements ChatMemoryRepository, AdvancedRedisChatMemoryRepository {
 
 	private static final Log logger = LogFactory.getLog(RedisChatMemoryRepository.class);
+
+	private static final String REDIS_SPECIAL_SYNTAX_CHARS = "\\(){}|@:\"-~$";
 
 	private static final Gson gson = new Gson();
 
@@ -113,8 +124,10 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 			}
 		}
 
-		// Get the next available timestamp for the first message
-		long nextTimestamp = getNextTimestampForConversation(conversationId);
+		// Atomically reserve a contiguous block of timestamps, one per message, so
+		// that concurrent add() calls for the same conversation never claim the same
+		// slot.
+		long nextTimestamp = reserveTimestampsForConversation(conversationId, messages.size());
 		final AtomicLong timestampSequence = new AtomicLong(nextTimestamp);
 
 		try (Pipeline pipeline = this.jedisClient.pipelined()) {
@@ -154,7 +167,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		}
 
 		// Get the current highest timestamp for this conversation
-		long timestamp = getNextTimestampForConversation(conversationId);
+		long timestamp = reserveTimestampsForConversation(conversationId, 1);
 
 		String key = createKey(conversationId, timestamp);
 		Map<String, Object> documentMap = createMessageDocument(conversationId, message);
@@ -176,28 +189,33 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 	}
 
 	/**
-	 * Gets the next available timestamp for a conversation to ensure proper ordering.
-	 * Uses Redis Lua script for atomic operations to ensure thread safety when multiple
-	 * threads access the same conversation.
+	 * Atomically reserves a contiguous block of {@code count} timestamps for a
+	 * conversation and returns the first one. Uses a Redis Lua script so that the entire
+	 * block is reserved server-side in a single round-trip, ensuring that concurrent
+	 * callers (e.g. multiple application instances appending to the same conversation)
+	 * never end up with overlapping timestamp ranges, even when adding more than one
+	 * message at a time.
 	 * @param conversationId the conversation ID
-	 * @return the next timestamp to use
+	 * @param count the number of consecutive timestamps to reserve
+	 * @return the first timestamp of the reserved block; the caller owns
+	 * {@code [result, result + count - 1]}
 	 */
-	private long getNextTimestampForConversation(String conversationId) {
+	private long reserveTimestampsForConversation(String conversationId, int count) {
 		// Create a Redis key specifically for tracking the sequence
 		String sequenceKey = String.format("%scounter:%s", this.config.getKeyPrefix(), escapeKey(conversationId));
 
 		try {
 			// Get the current time as base timestamp
 			long baseTimestamp = Instant.now().toEpochMilli();
-			// Using a Lua script for atomic operation ensures that multiple threads
-			// will always get unique and increasing timestamps
+			// Using a Lua script for atomic operation ensures that concurrent callers
+			// always reserve disjoint blocks of unique and increasing timestamps
 			String script = "local exists = redis.call('EXISTS', KEYS[1]) " + "if exists == 0 then "
-					+ "  redis.call('SET', KEYS[1], ARGV[1]) " + "  return ARGV[1] " + "end "
-					+ "return redis.call('INCR', KEYS[1])";
+					+ "  redis.call('SET', KEYS[1], ARGV[1] + ARGV[2] - 1) " + "  return ARGV[1] " + "end "
+					+ "return redis.call('INCRBY', KEYS[1], ARGV[2]) - ARGV[2] + 1";
 
 			// Execute the script atomically
-			Object result = this.jedisClient.eval(script, java.util.Collections.singletonList(sequenceKey),
-					java.util.Collections.singletonList(String.valueOf(baseTimestamp)));
+			Object result = this.jedisClient.eval(script, Collections.singletonList(sequenceKey),
+					List.of(String.valueOf(baseTimestamp), String.valueOf(count)));
 
 			long nextTimestamp = Long.parseLong(result.toString());
 
@@ -207,7 +225,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 			}
 
 			if (logger.isDebugEnabled()) {
-				logger.debug("Generated atomic timestamp " + nextTimestamp + " for conversation " + conversationId);
+				logger.debug("Reserved " + count + " timestamp(s) starting at " + nextTimestamp + " for conversation "
+						+ conversationId);
 			}
 
 			return nextTimestamp;
@@ -216,8 +235,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		catch (Exception e) {
 			// Log error and fall back to current timestamp with nanoTime for uniqueness
 			if (logger.isWarnEnabled()) {
-				logger.warn("Error getting atomic timestamp for conversation " + conversationId + ", using fallback: "
-						+ e.getMessage());
+				logger.warn("Error reserving atomic timestamps for conversation " + conversationId
+						+ ", using fallback: " + e.getMessage());
 			}
 			// Add nanoseconds to ensure uniqueness even in fallback scenario
 			return Instant.now().toEpochMilli() * 1000 + (System.nanoTime() % 1000);
@@ -362,13 +381,20 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		// Use QueryBuilders to create a tag field query
 		QueryNode queryNode = QueryBuilders.intersect("conversation_id",
 				Values.tags(RediSearchUtil.escape(conversationId)));
-		Query query = new Query(queryNode.toString());
-		SearchResult result = this.jedisClient.ftSearch(this.config.getIndexName(), query);
 
-		try (Pipeline pipeline = this.jedisClient.pipelined()) {
-			result.getDocuments().forEach(doc -> pipeline.del(doc.getId()));
-			pipeline.sync();
+		// FT.SEARCH defaults to LIMIT 0 10, so page through the matching documents,
+		// deleting each batch, until none remain.
+		SearchResult result;
+		do {
+			Query query = new Query(queryNode.toString());
+			result = this.jedisClient.ftSearch(this.config.getIndexName(), query);
+
+			try (Pipeline pipeline = this.jedisClient.pipelined()) {
+				result.getDocuments().forEach(doc -> pipeline.del(doc.getId()));
+				pipeline.sync();
+			}
 		}
+		while (!result.getDocuments().isEmpty());
 	}
 
 	private void initializeSchema() {
@@ -391,7 +417,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 						String jsonPath = "$.metadata." + fieldName;
 						String indexedName = "metadata_" + fieldName;
 
-						switch (fieldType.toLowerCase()) {
+						switch (fieldType.toLowerCase(Locale.ROOT)) {
 							case "numeric":
 								schemaFields.add(new NumericField(jsonPath).as(indexedName));
 								break;
@@ -601,9 +627,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		Assert.isTrue(limit > 0, "Limit must be greater than 0");
 
 		// Use QueryBuilders to create a text field query
-		// Note: We don't escape the contentPattern here because Redis full-text search
-		// should handle the special characters appropriately in text fields
-		QueryNode queryNode = QueryBuilders.intersect("content", Values.value(contentPattern));
+		final String contentPatternStr = escapeContentQuerySyntax(contentPattern);
+		QueryNode queryNode = QueryBuilders.intersect("content", Values.value(contentPatternStr));
 		Query query = new Query(queryNode.toString()).setSortBy("timestamp", true).limit(0, limit);
 
 		if (logger.isDebugEnabled()) {
@@ -694,7 +719,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		QueryNode queryNode;
 		if (isFieldIndexed) {
 			// Field is explicitly indexed - use proper query based on type
-			switch (fieldType.toLowerCase()) {
+			switch (fieldType.toLowerCase(Locale.ROOT)) {
 				case "numeric":
 					if (metadataValue instanceof Number) {
 						queryNode = QueryBuilders.intersect(indexedFieldName,
@@ -710,14 +735,15 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 						catch (NumberFormatException e) {
 							// Fall back to text search in general metadata
-							String searchPattern = metadataKey + " " + metadataValue;
+							String searchPattern = RediSearchUtil.escape(metadataKey) + " "
+									+ RediSearchUtil.escape(metadataValue.toString());
 							queryNode = QueryBuilders.intersect("metadata", Values.value(searchPattern));
 						}
 					}
 					break;
 				case "tag":
-					// For tag fields, we don't need to escape the value
-					queryNode = QueryBuilders.intersect(indexedFieldName, Values.tags(metadataValue.toString()));
+					queryNode = QueryBuilders.intersect(indexedFieldName,
+							Values.tags(RediSearchUtil.escape(metadataValue.toString())));
 					break;
 				case "text":
 				default:
@@ -729,7 +755,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 		else {
 			// Field not explicitly indexed - search in general metadata field
-			String searchPattern = metadataKey + " " + metadataValue;
+			String searchPattern = RediSearchUtil.escape(metadataKey) + " "
+					+ RediSearchUtil.escape(metadataValue.toString());
 			queryNode = QueryBuilders.intersect("metadata", Values.value(searchPattern));
 		}
 
@@ -766,6 +793,48 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		}
 
 		return executeSearchQuery(redisQuery);
+	}
+
+	/**
+	 * Escapes only the RedisSearch characters that carry query-syntax meaning ({@code ( )
+	 * | @ { } : " - ~ $ \}), so a caller-supplied content pattern cannot break out of the
+	 * surrounding {@code @content:(...)} clause. Unlike {@link RediSearchUtil#escape},
+	 * this deliberately leaves other punctuation (such as {@code + .}) untouched, since
+	 * the default tokenizer strips it from both indexed content and query terms, and
+	 * escaping it would make those characters match literally instead, breaking ordinary
+	 * full-text search.
+	 * <p>
+	 * Wildcards such as {@code prog*} remain supported. Only a token made up solely of
+	 * {@code *} characters is escaped, because RediSearch rejects it with a syntax error.
+	 * </p>
+	 * Use this method only to escape content, not {@link RediSearchUtil#escape}!
+	 */
+	private static String escapeContentQuerySyntax(String value) {
+		StringBuilder escaped = new StringBuilder(value.length());
+		for (int i = 0; i < value.length(); i++) {
+			char c = value.charAt(i);
+			if (c == '*' && isStandaloneWildcard(value, i)) {
+				escaped.append('\\');
+			}
+			else if (REDIS_SPECIAL_SYNTAX_CHARS.indexOf(c) >= 0) {
+				escaped.append('\\');
+			}
+			escaped.append(c);
+		}
+		return escaped.toString();
+	}
+
+	private static boolean isStandaloneWildcard(String value, int index) {
+		int start = index;
+		while (start > 0 && value.charAt(start - 1) == '*') {
+			start--;
+		}
+		int end = index;
+		while (end < value.length() - 1 && value.charAt(end + 1) == '*') {
+			end++;
+		}
+		return (start == 0 || Character.isWhitespace(value.charAt(start - 1)))
+				&& (end == value.length() - 1 || Character.isWhitespace(value.charAt(end + 1)));
 	}
 
 	/**

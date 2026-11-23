@@ -18,6 +18,7 @@ package org.springframework.ai.openai.transformer;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -84,7 +85,7 @@ public class MetadataTransformerIT {
 		assertThat(keywords2).containsKeys("excerpt_keywords");
 
 		assertThat((String) keywords1.get("excerpt_keywords")).contains("Andes", "Aymara");
-		assertThat(((String) keywords2.get("excerpt_keywords")).toLowerCase()).containsAnyOf("spring mvc",
+		assertThat(((String) keywords2.get("excerpt_keywords")).toLowerCase(Locale.ROOT)).containsAnyOf("spring mvc",
 				"dependency injection");
 	}
 

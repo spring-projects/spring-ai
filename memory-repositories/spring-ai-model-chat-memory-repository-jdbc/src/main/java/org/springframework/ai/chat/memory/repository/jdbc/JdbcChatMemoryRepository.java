@@ -55,8 +55,14 @@ import org.springframework.util.Assert;
  * @author Mark Pollack
  * @author Yanming Zhou
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of
+ * {@code JdbcSessionRepository} in {@code spring-ai-session-jdbc}
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
+
+	private static final Log logger = LogFactory.getLog(JdbcChatMemoryRepository.class);
 
 	/**
 	 * Metadata key under which each message's creation timestamp (an {@link Instant}) is
@@ -111,6 +117,11 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			.filter(m -> !(m instanceof ToolResponseMessage)
 					&& !(m instanceof AssistantMessage am && am.hasToolCalls()))
 			.toList();
+		if (logger.isWarnEnabled() && persistableMessages.size() < messages.size()) {
+			logger.warn(
+					"JdbcChatMemoryRepository does not support tool call messages. Some messages were filtered out for conversation: "
+							+ conversationId);
+		}
 
 		this.transactionTemplate.executeWithoutResult(status -> {
 			deleteByConversationId(conversationId);

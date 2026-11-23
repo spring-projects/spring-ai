@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -40,9 +41,12 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -81,6 +85,8 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 	private static final String ADDITIONAL_MODEL = "tinyllama";
 
+	private static final String THINKING_MODEL = OllamaModel.QWEN_3_06B.getName();
+
 	@Autowired
 	private OllamaChatModel chatModel;
 
@@ -115,7 +121,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		UserMessage userMessage = new UserMessage("Tell me about 5 famous pirates from the Golden Age of Piracy.");
 
 		// portable/generic options
-		var portableOptions = OllamaChatOptions.builder().temperature(0.7).build();
+		var portableOptions = OllamaChatOptions.builder().model(MODEL).temperature(0.0).build();
 
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage), portableOptions);
 
@@ -123,7 +129,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		verifyMostFamousPiratePresence(response);
 
 		// ollama specific options
-		var ollamaOptions = OllamaChatOptions.builder().lowVRAM(true).build();
+		var ollamaOptions = OllamaChatOptions.builder().model(MODEL).lowVRAM(true).build();
 
 		response = this.chatModel.call(new Prompt(List.of(systemMessage, userMessage), ollamaOptions));
 		verifyMostFamousPiratePresence(response);
@@ -277,7 +283,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 				""");
 		Map<String, Object> model = Map.of("country", "denmark");
 		var prompt = userPromptTemplate.create(model,
-				OllamaChatOptions.builder().format(outputConverter.getJsonSchemaMap()).build());
+				OllamaChatOptions.builder().model(MODEL).format(outputConverter.getJsonSchemaMap()).build());
 
 		var chatResponse = this.chatModel.call(prompt);
 
@@ -292,7 +298,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 	@Test
 	void jsonStructuredOutputWithOutputSchemaOption() {
 		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
-		var chatOptions = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+		var chatOptions = OllamaChatOptions.builder().model(MODEL).outputSchema(jsonSchemaAsText).build();
 		var prompt = new Prompt("Tell me about Canada.", chatOptions);
 
 		var chatResponse = this.chatModel.call(prompt);
@@ -402,7 +408,10 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
 		String conversationId = UUID.randomUUID().toString();
 
-		var chatOptions = OllamaChatOptions.builder().toolCallbacks(ToolCallbacks.from(new MathTools())).build();
+		var chatOptions = OllamaChatOptions.builder()
+			.model(MODEL)
+			.toolCallbacks(ToolCallbacks.from(new MathTools()))
+			.build();
 		Prompt prompt = new Prompt(
 				List.of(new SystemMessage("You are a helpful assistant."), new UserMessage("What is 6 * 8?")),
 				chatOptions);
@@ -432,6 +441,92 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		assertThat(newResponse).isNotNull();
 		assertThat(newResponse.getResult().getOutput().getText()).contains("6").contains("8");
+	}
+
+	@Test
+	void thinkingIsAReasoningPartBeforeTheAnswerText() {
+		var options = thinkingOptions();
+
+		ChatResponse response = this.chatModel.call(new Prompt("What is 17 * 23?", options));
+
+		AssistantMessage message = response.getResult().getOutput();
+		assertThat(message.getParts()).hasSize(2);
+		assertThat(message.getParts().get(0)).isInstanceOf(ReasoningPart.class);
+		assertThat(message.getParts().get(1)).isInstanceOf(TextPart.class);
+		String reasoning = message.getReasoning().get(0).text();
+		assertThat(reasoning).isNotBlank();
+		assertThat(message.getText()).isNotBlank();
+		// The deprecated metadata key still holds the same thinking
+		assertThat(message.getMetadata()).containsEntry("thinking", reasoning);
+	}
+
+	@Test
+	void streamedThinkingAggregatesToAReasoningPartBeforeTheAnswerText() {
+		var options = thinkingOptions();
+		Prompt prompt = new Prompt("What is 17 * 23?", options);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		List<ChatResponse> chunks = new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		assertThat(chunks).isNotEmpty();
+		String streamedReasoning = chunks.stream()
+			.flatMap(chunk -> chunk.getResult().getOutput().getReasoning().stream())
+			.map(ReasoningPart::text)
+			.collect(Collectors.joining());
+		String streamedText = chunks.stream()
+			.map(chunk -> chunk.getResult().getOutput().getText())
+			.collect(Collectors.joining());
+
+		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
+		assertThat(aggregated.getParts()).first().isInstanceOf(ReasoningPart.class);
+		assertThat(aggregated.getParts()).last().isInstanceOf(TextPart.class);
+		assertThat(aggregated.getReasoning().stream().map(ReasoningPart::text).collect(Collectors.joining()))
+			.isEqualTo(streamedReasoning);
+		assertThat(aggregated.getText()).isEqualTo(streamedText);
+		assertThat(streamedReasoning).isNotBlank();
+		assertThat(streamedText).isNotBlank();
+	}
+
+	@Test
+	void reasoningIsReplayedFromChatMemory() {
+		var options = thinkingOptions();
+		ChatMemory memory = MessageWindowChatMemory.builder().build();
+		String conversationId = UUID.randomUUID().toString();
+
+		memory.add(conversationId, new UserMessage("What is 17 * 23?"));
+		AssistantMessage first = this.chatModel.call(new Prompt(memory.get(conversationId), options))
+			.getResult()
+			.getOutput();
+		assertThat(first.getReasoning()).isNotEmpty();
+		memory.add(conversationId, first);
+
+		memory.add(conversationId, new UserMessage("Add 9 to that number."));
+		AssistantMessage second = this.chatModel.call(new Prompt(memory.get(conversationId), options))
+			.getResult()
+			.getOutput();
+
+		// The request carries the first turn's thinking, which Ollama must accept
+		assertThat(second.getReasoning()).isNotEmpty();
+		assertThat(second.getText()).isNotBlank();
+	}
+
+	/**
+	 * Qwen3 recommends against greedy decoding in thinking mode, as it can make the model
+	 * repeat itself endlessly, so these options use its recommended sampling instead of a
+	 * zero temperature, and cap the output so that such a loop fails the test rather than
+	 * running until the context window is full.
+	 */
+	private static OllamaChatOptions thinkingOptions() {
+		return OllamaChatOptions.builder()
+			.model(THINKING_MODEL)
+			.temperature(0.6)
+			.topP(0.95)
+			.topK(20)
+			.numPredict(4096)
+			.enableThinking()
+			.build();
 	}
 
 	private static void verifyMostFamousPiratePresence(ChatResponse chatResponse) {
@@ -464,7 +559,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		@Bean
 		OllamaApi ollamaApi() {
-			return initializeOllama(MODEL);
+			return initializeOllama(MODEL, THINKING_MODEL);
 		}
 
 		@Bean

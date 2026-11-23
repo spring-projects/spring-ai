@@ -17,6 +17,7 @@
 package org.springframework.ai.integration.tests.client.advisor;
 
 import java.util.List;
+import java.util.Locale;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -166,7 +167,7 @@ class RetrievalAugmentationAdvisorIT {
 
 		assertThat(chatResponse2).isNotNull();
 		String response2 = chatResponse2.getResult().getOutput().getText();
-		assertThat(response2.toLowerCase()).containsIgnoringCase("Fergus");
+		assertThat(response2.toLowerCase(Locale.ROOT)).containsIgnoringCase("Fergus");
 	}
 
 	@Test
@@ -221,7 +222,7 @@ class RetrievalAugmentationAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		assertThat(response.toLowerCase()).containsAnyOf("highlands", "højland");
+		assertThat(response.toLowerCase(Locale.ROOT)).containsAnyOf("highlands", "højland");
 
 		evaluateRelevancy(question, chatResponse);
 	}

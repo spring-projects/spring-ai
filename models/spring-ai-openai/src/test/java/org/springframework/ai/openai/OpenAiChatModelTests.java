@@ -16,22 +16,36 @@
 
 package org.springframework.ai.openai;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
+import com.openai.core.http.Headers;
+import com.openai.core.http.HttpResponseFor;
+import com.openai.models.FunctionDefinition;
+import com.openai.models.FunctionParameters;
+import com.openai.models.ReasoningEffort;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
 import com.openai.models.chat.completions.ChatCompletionChunk;
+import com.openai.models.chat.completions.ChatCompletionContentPart;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import com.openai.models.chat.completions.ChatCompletionFunctionTool;
 import com.openai.models.chat.completions.ChatCompletionMessage;
 import com.openai.models.chat.completions.ChatCompletionMessageFunctionToolCall;
 import com.openai.models.chat.completions.ChatCompletionMessageParam;
@@ -45,25 +59,42 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.EmptyRateLimit;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat;
+import org.springframework.ai.openai.metadata.OpenAiRateLimit;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link OpenAiChatModel}.
+ *
+ * @author Jewoo Shin
+ * @author Dimitar Proynov
+ * @author Raphael Vullriede
  */
 @ExtendWith(MockitoExtension.class)
 class OpenAiChatModelTests {
@@ -86,11 +117,7 @@ class OpenAiChatModelTests {
 		additionalProperties.put("object_field", JsonValue.from(Map.of("key1", 1, "key2", 2)));
 		additionalProperties.put("null_field", null);
 
-		ChatService chatService = mock(ChatService.class);
-		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
-		when(this.openAiClient.chat()).thenReturn(chatService);
-		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+		givenChatCompletion(ChatCompletion.builder()
 			.id("gen-1888888888-XYZabc123NewId")
 			.created(1777799928)
 			.model("moonshotai/kimi-k2.5-0127")
@@ -131,11 +158,7 @@ class OpenAiChatModelTests {
 
 	@Test
 	void preserveUnmappedToolCallAdditionalProperties() {
-		ChatService chatService = mock(ChatService.class);
-		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
-		when(this.openAiClient.chat()).thenReturn(chatService);
-		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+		givenChatCompletion(ChatCompletion.builder()
 			.id("chatcmpl-test")
 			.created(1777799928)
 			.model("gemini-3.5-flash")
@@ -188,7 +211,8 @@ class OpenAiChatModelTests {
 		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
 		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
 		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
-		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class)))
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class),
+				any(RequestOptions.class)))
 			.thenReturn(asyncStreamResponse(
 					ChatCompletionChunk.builder()
 						.id("chatcmpl-stream-test")
@@ -258,6 +282,124 @@ class OpenAiChatModelTests {
 		});
 		assertThat(toolCallProperties(assistantMessage, "call_1")).containsEntry("extra_content",
 				Map.of("google", Map.of("thought_signature", "signature-123")));
+	}
+
+	@Test
+	void mergeStreamToolCallWhenIdNameAndArgumentsArriveInSeparateChunks() {
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class),
+				any(RequestOptions.class)))
+			.thenReturn(asyncStreamResponse(ChatCompletionChunk.builder()
+				.id("chatcmpl-stream-test")
+				.created(1777799928)
+				.model("test-model")
+				.addChoice(ChatCompletionChunk.Choice.builder()
+					.index(0)
+					.finishReason(Optional.empty())
+					.delta(ChatCompletionChunk.Choice.Delta.builder()
+						.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder().index(0).id("call_1").build())
+						.build())
+					.build())
+				.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("test-model")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(Optional.empty())
+							.delta(ChatCompletionChunk.Choice.Delta.builder()
+								.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+									.index(0)
+									.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+										.name("get_current_weather")
+										.build())
+									.build())
+								.build())
+							.build())
+						.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("test-model")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(Optional.empty())
+							.delta(ChatCompletionChunk.Choice.Delta.builder()
+								.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+									.index(0)
+									.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+										.arguments("{\"location\":\"Seoul\"}")
+										.build())
+									.build())
+								.build())
+							.build())
+						.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("test-model")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(ChatCompletionChunk.Choice.FinishReason.TOOL_CALLS)
+							.delta(ChatCompletionChunk.Choice.Delta.builder().build())
+							.build())
+						.build()));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.stream(new Prompt("hi", options)).blockLast();
+
+		assertThat(response).isNotNull();
+		AssistantMessage assistantMessage = response.getResult().getOutput();
+		assertThat(assistantMessage.getToolCalls()).singleElement().satisfies(toolCall -> {
+			assertThat(toolCall.id()).isEqualTo("call_1");
+			assertThat(toolCall.name()).isEqualTo("get_current_weather");
+			assertThat(toolCall.arguments()).isEqualTo("{\"location\":\"Seoul\"}");
+		});
+	}
+
+	@Test
+	void closesAsyncStreamResponseOnCancellation() {
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		AtomicBoolean closed = new AtomicBoolean();
+		AsyncStreamResponse<ChatCompletionChunk> streamResponse = asyncStreamResponse(closed, false,
+				ChatCompletionChunk.builder()
+					.id("chatcmpl-stream-test")
+					.created(1777799928)
+					.model("test-model")
+					.addChoice(ChatCompletionChunk.Choice.builder()
+						.index(0)
+						.finishReason(ChatCompletionChunk.Choice.FinishReason.STOP)
+						.delta(ChatCompletionChunk.Choice.Delta.builder().content("hello").build())
+						.build())
+					.build());
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class),
+				any(RequestOptions.class)))
+			.thenReturn(streamResponse);
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.stream(new Prompt("hi", options)).take(1).blockLast();
+
+		assertThat(response).isNotNull();
+		assertThat(closed).isTrue();
 	}
 
 	@Test
@@ -345,6 +487,11 @@ class OpenAiChatModelTests {
 	}
 
 	private AsyncStreamResponse<ChatCompletionChunk> asyncStreamResponse(ChatCompletionChunk... chunks) {
+		return asyncStreamResponse(new AtomicBoolean(), true, chunks);
+	}
+
+	private AsyncStreamResponse<ChatCompletionChunk> asyncStreamResponse(AtomicBoolean closed, boolean complete,
+			ChatCompletionChunk... chunks) {
 		return new AsyncStreamResponse<>() {
 			private final CompletableFuture<Void> completion = new CompletableFuture<>();
 
@@ -355,8 +502,10 @@ class OpenAiChatModelTests {
 					for (ChatCompletionChunk chunk : chunks) {
 						handler.onNext(chunk);
 					}
-					handler.onComplete(Optional.empty());
-					this.completion.complete(null);
+					if (complete) {
+						handler.onComplete(Optional.empty());
+						this.completion.complete(null);
+					}
 				}
 				catch (Throwable throwable) {
 					handler.onComplete(Optional.of(throwable));
@@ -379,6 +528,7 @@ class OpenAiChatModelTests {
 
 			@Override
 			public void close() {
+				closed.set(true);
 			}
 		};
 	}
@@ -484,12 +634,7 @@ class OpenAiChatModelTests {
 
 	@Test
 	void reasoningContentFromReasoningContentProperty() {
-		ChatService chatService = mock(ChatService.class);
-		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
-
-		when(this.openAiClient.chat()).thenReturn(chatService);
-		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+		givenChatCompletion(ChatCompletion.builder()
 			.id("gen-1888888888-XYZabc123NewId")
 			.created(1777799928)
 			.model("deepseek-reasoner")
@@ -524,12 +669,7 @@ class OpenAiChatModelTests {
 
 	@Test
 	void reasoningContentFromReasoningProperty() {
-		ChatService chatService = mock(ChatService.class);
-		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
-
-		when(this.openAiClient.chat()).thenReturn(chatService);
-		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+		givenChatCompletion(ChatCompletion.builder()
 			.id("gen-1888888888-XYZabc123NewId")
 			.created(1777799928)
 			.model("test-reasoner")
@@ -564,12 +704,7 @@ class OpenAiChatModelTests {
 
 	@Test
 	void reasoningContentEmptyWhenNeitherPropertyPresent() {
-		ChatService chatService = mock(ChatService.class);
-		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
-
-		when(this.openAiClient.chat()).thenReturn(chatService);
-		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+		givenChatCompletion(ChatCompletion.builder()
 			.id("gen-1888888888-XYZabc123NewId")
 			.created(1777799928)
 			.model("test-model")
@@ -601,12 +736,51 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
+	void usageCountsBeyondIntRangeFailClearlyInsteadOfBareArithmeticException() {
+		// A hostile or misbehaving OpenAI-compatible endpoint could return usage counts
+		// beyond Integer range. Such a response can't be trusted, so it should fail
+		// clearly instead of silently truncating the count into a plausible-looking but
+		// wrong number, or propagating a bare ArithmeticException("integer overflow").
+		long promptTokens = Integer.MAX_VALUE + 1L;
+		givenChatCompletion(ChatCompletion.builder()
+			.id("test-id")
+			.created(1777799928)
+			.model("test-model")
+			.usage(CompletionUsage.builder()
+				.promptTokens(promptTokens)
+				.completionTokens(0)
+				.totalTokens(promptTokens)
+				.build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content("hello")
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List.of())
+					.build())
+				.build())
+			.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		assertThatThrownBy(() -> chatModel.call(new Prompt("hi", options))).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("promptTokens")
+			.hasMessageContaining(String.valueOf(promptTokens))
+			.hasCauseInstanceOf(ArithmeticException.class);
+	}
+
+	@Test
 	void createdFieldPassedThroughInMetadata() {
-		ChatService chatService = mock(ChatService.class);
-		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
-		when(this.openAiClient.chat()).thenReturn(chatService);
-		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+		givenChatCompletion(ChatCompletion.builder()
 			.id("test-id")
 			.created(1234567890L)
 			.model("test-model")
@@ -649,6 +823,7 @@ class OpenAiChatModelTests {
 
 		AssistantMessage assistantMessage = AssistantMessage.builder()
 			.content("100")
+			.toolCalls(List.of(new AssistantMessage.ToolCall("call_1", "function", "getCurrentTime", "{}")))
 			.properties(Map.of("reasoningContent", "25 * 4 = 100."))
 			.build();
 		Prompt prompt = new Prompt(
@@ -665,6 +840,230 @@ class OpenAiChatModelTests {
 			.orElseThrow();
 		assertThat(assistantParam._additionalProperties()).containsEntry("reasoning_content",
 				JsonValue.from("25 * 4 = 100."));
+	}
+
+	@Test
+	void reasoningContentNotReplayedWhenOptedOut() {
+		// Groq returns reasoning_content on the response but rejects the property on a
+		// subsequent request, so providers in that position opt out of the replay.
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.replayReasoningContent(false)
+			.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("100")
+			.properties(Map.of("reasoningContent", "25 * 4 = 100."))
+			.build();
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage("What's 25 * 4?"), assistantMessage, new UserMessage("Now divide that by 5")),
+				options);
+
+		ChatCompletionCreateParams request = chatModel.createRequest(prompt, false);
+
+		ChatCompletionAssistantMessageParam assistantParam = request.messages()
+			.stream()
+			.filter(ChatCompletionMessageParam::isAssistant)
+			.map(ChatCompletionMessageParam::asAssistant)
+			.findFirst()
+			.orElseThrow();
+		assertThat(assistantParam._additionalProperties()).doesNotContainKey("reasoning_content");
+		// Only the replay is dropped; the assistant turn itself still goes out.
+		assertThat(assistantParam.content().orElseThrow().text()).hasValue("100");
+	}
+
+	@Test
+	void replayReasoningContentIsCarriedOverByTheBuilder() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.replayReasoningContent(false)
+			.build();
+
+		assertThat(options.mutate().build().getReplayReasoningContent()).isFalse();
+		assertThat(OpenAiChatOptions.builder().combineWith(options.mutate()).build().getReplayReasoningContent())
+			.isFalse();
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "reasoning_content", "reasoning" })
+	void streamingReasoningContentSurvivesAggregationWithToolCalls(String reasoningKey) {
+		// DeepSeek-style ("reasoning_content") or OpenRouter-style ("reasoning")
+		// stream: reasoning deltas first, then a tool call split across chunks, then
+		// finish_reason=tool_calls.
+		List<ChatCompletionChunk> chunks = List.of(
+				streamingChunk(delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT)
+					.putAdditionalProperty(reasoningKey, JsonValue.from("Think step one. ")), null),
+				streamingChunk(delta -> delta.putAdditionalProperty(reasoningKey, JsonValue.from("Now call the tool.")),
+						null),
+				streamingChunk(delta -> delta.toolCalls(List.of(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+					.index(0L)
+					.id("call_1")
+					.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+						.name("getWeather")
+						.arguments("{\"city\":")
+						.build())
+					.build())), null),
+				streamingChunk(delta -> delta.toolCalls(List.of(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+					.index(0L)
+					.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+						.arguments("\"Seoul\"}")
+						.build())
+					.build())).putAdditionalProperty(reasoningKey, JsonValue.from(" One more thought.")), null),
+				streamingChunk(delta -> {
+				}, ChatCompletionChunk.Choice.FinishReason.TOOL_CALLS));
+
+		AssistantMessage aggregated = aggregateStreaming(chunks);
+
+		assertThat(aggregated.getToolCalls()).hasSize(1);
+		assertThat(aggregated.getToolCalls().get(0).name()).isEqualTo("getWeather");
+		assertThat(aggregated.getToolCalls().get(0).arguments()).isEqualTo("{\"city\":\"Seoul\"}");
+		assertThat(aggregated.getMetadata().get("reasoningContent"))
+			.isEqualTo("Think step one. Now call the tool. One more thought.");
+
+		// Replaying the aggregated message on the next turn must re-attach the wire
+		// field that providers like DeepSeek require on assistant tool-call messages.
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("deepseek-reasoner").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+		Prompt replayPrompt = new Prompt(List.of(new UserMessage("What's the weather in Seoul?"), aggregated,
+				ToolResponseMessage.builder()
+					.responses(List.of(new ToolResponseMessage.ToolResponse("call_1", "getWeather", "{\"temp\":20}")))
+					.build()),
+				options);
+
+		ChatCompletionAssistantMessageParam assistantParam = chatModel.createRequest(replayPrompt, false)
+			.messages()
+			.stream()
+			.filter(ChatCompletionMessageParam::isAssistant)
+			.map(ChatCompletionMessageParam::asAssistant)
+			.findFirst()
+			.orElseThrow();
+		assertThat(assistantParam._additionalProperties()).containsEntry("reasoning_content",
+				JsonValue.from("Think step one. Now call the tool. One more thought."));
+	}
+
+	@Test
+	void streamingReasoningContentSurvivesAggregationWithoutToolCalls() {
+		List<ChatCompletionChunk> chunks = List.of(
+				streamingChunk(delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT)
+					.putAdditionalProperty("reasoning_content", JsonValue.from("Quick thought. ")), null),
+				streamingChunk(
+						delta -> delta.putAdditionalProperty("reasoning_content", JsonValue.from("Another thought.")),
+						null),
+				streamingChunk(delta -> delta.content("Hello"), null),
+				streamingChunk(delta -> delta.content("!"), ChatCompletionChunk.Choice.FinishReason.STOP));
+
+		AssistantMessage aggregated = aggregateStreaming(chunks);
+
+		assertThat(aggregated.getText()).isEqualTo("Hello!");
+		assertThat(aggregated.getMetadata().get("reasoningContent")).isEqualTo("Quick thought. Another thought.");
+	}
+
+	@Test
+	void streamingReasoningContentAccumulatesAcrossIntermediateResponses() {
+		List<ChatCompletionChunk> chunks = List.of(
+				streamingChunk(delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT)
+					.putAdditionalProperty("reasoning_content", JsonValue.from("Think step one. ")), null),
+				streamingChunk(
+						delta -> delta.putAdditionalProperty("reasoning_content", JsonValue.from("Think step two.")),
+						null),
+				streamingChunk(delta -> delta.content("Hello"), ChatCompletionChunk.Choice.FinishReason.STOP));
+
+		List<ChatResponse> responses = streamResponses(chunks).collectList().block();
+
+		assertThat(responses).hasSize(3);
+		assertThat(responses.get(0).getResult().getOutput().getMetadata().get("reasoningContent"))
+			.isEqualTo("Think step one. ");
+		assertThat(responses.get(1).getResult().getOutput().getMetadata().get("reasoningContent"))
+			.isEqualTo("Think step one. Think step two.");
+		assertThat(responses.get(2).getResult().getOutput().getMetadata().get("reasoningContent"))
+			.isEqualTo("Think step one. Think step two.");
+	}
+
+	private AssistantMessage aggregateStreaming(List<ChatCompletionChunk> chunks) {
+		Flux<ChatResponse> responses = streamResponses(chunks);
+
+		// Aggregate the way ChatClient advisors (e.g. ToolCallingAdvisor) do before
+		// re-injecting the assistant message into the next request.
+		AtomicReference<ChatResponse> aggregatedResponse = new AtomicReference<>();
+		new MessageAggregator().aggregate(responses, aggregatedResponse::set).blockLast();
+
+		assertThat(aggregatedResponse.get()).isNotNull();
+		return aggregatedResponse.get().getResult().getOutput();
+	}
+
+	private Flux<ChatResponse> streamResponses(List<ChatCompletionChunk> chunks) {
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class),
+				any(RequestOptions.class)))
+			.thenReturn(asyncStreamResponseOf(chunks));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("deepseek-reasoner").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		return chatModel.stream(new Prompt("Preserve reasoning metadata while streaming", options));
+	}
+
+	private static ChatCompletionChunk streamingChunk(
+			Consumer<ChatCompletionChunk.Choice.Delta.Builder> deltaCustomizer,
+			ChatCompletionChunk.Choice.FinishReason finishReason) {
+		ChatCompletionChunk.Choice.Delta.Builder deltaBuilder = ChatCompletionChunk.Choice.Delta.builder();
+		deltaCustomizer.accept(deltaBuilder);
+		return ChatCompletionChunk.builder()
+			.id("chatcmpl-123")
+			.created(1777799928L)
+			.model("deepseek-reasoner")
+			.addChoice(ChatCompletionChunk.Choice.builder()
+				.index(0L)
+				.delta(deltaBuilder.build())
+				.finishReason(finishReason)
+				.build())
+			.build();
+	}
+
+	private static AsyncStreamResponse<ChatCompletionChunk> asyncStreamResponseOf(List<ChatCompletionChunk> chunks) {
+		CompletableFuture<Void> onComplete = new CompletableFuture<>();
+		return new AsyncStreamResponse<>() {
+
+			@Override
+			public AsyncStreamResponse<ChatCompletionChunk> subscribe(Handler<? super ChatCompletionChunk> handler) {
+				chunks.forEach(handler::onNext);
+				handler.onComplete(Optional.empty());
+				onComplete.complete(null);
+				return this;
+			}
+
+			@Override
+			public AsyncStreamResponse<ChatCompletionChunk> subscribe(Handler<? super ChatCompletionChunk> handler,
+					Executor executor) {
+				return subscribe(handler);
+			}
+
+			@Override
+			public CompletableFuture<Void> onCompleteFuture() {
+				return onComplete;
+			}
+
+			@Override
+			public void close() {
+			}
+
+		};
 	}
 
 	@Test
@@ -706,6 +1105,805 @@ class OpenAiChatModelTests {
 
 		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("hi", options), false);
 		assertThat(request.promptCacheKey()).contains("my-cache-key");
+	}
+
+	@Test
+	void userMessagePdfMediaMapsToFileContentPart() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		UserMessage userMessage = UserMessage.builder()
+			.text("Summarize the attached document.")
+			.media(Media.builder()
+				.mimeType(Media.Format.DOC_PDF)
+				.data("%PDF-1.7".getBytes(StandardCharsets.UTF_8))
+				.name("sample.pdf")
+				.build())
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt(List.<Message>of(userMessage), options),
+				false);
+
+		List<ChatCompletionContentPart> parts = request.messages()
+			.get(0)
+			.user()
+			.orElseThrow()
+			.content()
+			.arrayOfContentParts()
+			.orElseThrow();
+		assertThat(parts).hasSize(2);
+		assertThat(parts.get(0).text().orElseThrow().text()).isEqualTo("Summarize the attached document.");
+		ChatCompletionContentPart.File.FileObject file = parts.get(1).file().orElseThrow().file();
+		assertThat(file.filename()).contains("sample.pdf");
+		assertThat(file.fileData()).contains("data:application/pdf;base64,JVBERi0xLjc=");
+	}
+
+	@Test
+	void userMessagePdfMediaWithStringDataPassesItThroughAsFileData() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		UserMessage userMessage = UserMessage.builder()
+			.text("Summarize the attached document.")
+			.media(Media.builder()
+				.mimeType(Media.Format.DOC_PDF)
+				.data("data:application/pdf;base64,JVBERi0xLjc=")
+				.name("sample.pdf")
+				.build())
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt(List.<Message>of(userMessage), options),
+				false);
+
+		ChatCompletionContentPart.File.FileObject file = request.messages()
+			.get(0)
+			.user()
+			.orElseThrow()
+			.content()
+			.arrayOfContentParts()
+			.orElseThrow()
+			.get(1)
+			.file()
+			.orElseThrow()
+			.file();
+		assertThat(file.fileData()).contains("data:application/pdf;base64,JVBERi0xLjc=");
+	}
+
+	@Test
+	void metadataDoesNotContainOptionalValues() {
+		givenChatCompletion(ChatCompletion.builder()
+			.id("test-id")
+			.created(1777799928)
+			.model("test-model")
+			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content("hello")
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List.of())
+					.build())
+				.build())
+			.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt("hi", options));
+		Generation generation = response.getResult();
+		assertThat(generation).isNotNull();
+
+		// Verify no Optional values leak into generation metadata
+		generation.getMetadata()
+			.entrySet()
+			.forEach(entry -> assertThat(entry.getValue()).isNotInstanceOf(Optional.class));
+
+		// Verify no Optional values leak into assistant message metadata
+		generation.getOutput().getMetadata().forEach((key, value) -> assertThat(value).isNotInstanceOf(Optional.class));
+	}
+
+	@Test
+	void outputModalitiesUseRootLocaleRegardlessOfDefaultLocale() {
+		Locale original = Locale.getDefault();
+		Locale.setDefault(new Locale("tr", "TR"));
+		try {
+			// "AUDIO" contains an uppercase I; under tr_TR, toLowerCase() without
+			// Locale.ROOT turns it into "audıo" (dotless ı), which Modality.of(...)
+			// won't recognize as the AUDIO modality.
+			OpenAiChatOptions options = OpenAiChatOptions.builder()
+				.model("test-model")
+				.outputModalities(List.of("TEXT", "AUDIO"))
+				.build();
+			OpenAiChatModel chatModel = OpenAiChatModel.builder()
+				.openAiClient(this.openAiClient)
+				.openAiClientAsync(this.openAiClientAsync)
+				.options(options)
+				.build();
+
+			ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+			assertThat(request.modalities())
+				.contains(List.of(ChatCompletionCreateParams.Modality.TEXT, ChatCompletionCreateParams.Modality.AUDIO));
+		}
+		finally {
+			Locale.setDefault(original);
+		}
+	}
+
+	@Test
+	void reasoningEffortUsesRootLocaleRegardlessOfDefaultLocale() {
+		Locale original = Locale.getDefault();
+		try {
+			Locale.setDefault(new Locale("tr", "TR"));
+			// "MINIMAL" contains an uppercase I; under tr_TR it lowers to "mınımal",
+			// which ReasoningEffort.of(...) won't match to the MINIMAL constant.
+			OpenAiChatOptions options = OpenAiChatOptions.builder()
+				.model("test-model")
+				.reasoningEffort("MINIMAL")
+				.build();
+			OpenAiChatModel chatModel = OpenAiChatModel.builder()
+				.openAiClient(this.openAiClient)
+				.openAiClientAsync(this.openAiClientAsync)
+				.options(options)
+				.build();
+
+			ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+			assertThat(request.reasoningEffort()).contains(ReasoningEffort.MINIMAL);
+		}
+		finally {
+			Locale.setDefault(original);
+		}
+	}
+
+	@Test
+	void audioVoiceUsesRootLocaleRegardlessOfDefaultLocale() {
+		Locale original = Locale.getDefault();
+		try {
+			Locale.setDefault(new Locale("tr", "TR"));
+			// SHIMMER contains an uppercase I; under tr_TR it lowers to "shımmer"
+			// instead of the wire-correct "shimmer". The fix lives in
+			// OpenAiChatOptions.AudioParameters#toChatCompletionAudioParam(),
+			// but it's only reachable through OpenAiChatModel#createRequest.
+			OpenAiChatOptions options = OpenAiChatOptions.builder()
+				.model("test-model")
+				.outputAudio(new OpenAiChatOptions.AudioParameters(OpenAiChatOptions.AudioParameters.Voice.SHIMMER,
+						OpenAiChatOptions.AudioParameters.AudioResponseFormat.WAV))
+				.build();
+			OpenAiChatModel chatModel = OpenAiChatModel.builder()
+				.openAiClient(this.openAiClient)
+				.openAiClientAsync(this.openAiClientAsync)
+				.options(options)
+				.build();
+
+			ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+			assertThat(request.audio()).isPresent();
+			assertThat(request.audio().get().voice().string().get().equals("shimmer"));
+		}
+		finally {
+			Locale.setDefault(original);
+		}
+	}
+
+	@Test
+	void streamingFinishReasonSurvivesRoundTripUnderTurkishLocale() {
+		Locale original = Locale.getDefault();
+		Locale.setDefault(new Locale("tr", "TR"));
+		try {
+			// CONTENT_FILTER contains an uppercase I; under tr_TR the chunk-merging
+			// round trip lowers it to "content_fılter", which
+			// ChatCompletion.Choice.FinishReason.of(...) treats as unknown.
+			List<ChatCompletionChunk> chunks = List.of(streamingChunk(
+					delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT).content("Blocked"),
+					ChatCompletionChunk.Choice.FinishReason.CONTENT_FILTER));
+
+			ChatResponse response = streamResponses(chunks).blockLast();
+
+			assertThat(response).isNotNull();
+			assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("CONTENT_FILTER");
+		}
+		finally {
+			Locale.setDefault(original);
+		}
+	}
+
+	@Test
+	void toolStrictDefaultsToFalseWhenUnset() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		// Model options with model set, relying on the fallback default logic of
+		// strict(false) - JsonSchemaGenerator omits optional properties from
+		// "required" instead of the nullable-type pattern OpenAI's strict mode expects,
+		// so defaulting to strict(true) would reject any tool with an optional
+		// parameter.
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		// Current behavior: createRequest processes Prompt's options down to
+		// getChatCompletionTools
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		var tools = request.tools().orElseThrow();
+		assertThat(tools).hasSize(1);
+
+		ChatCompletionFunctionTool functionTool = tools.get(0).function().orElseThrow();
+		FunctionDefinition functionDef = functionTool.function();
+
+		assertThat(functionDef.strict()).contains(false);
+
+		FunctionParameters parameters = functionDef.parameters().orElseThrow();
+		assertThat(parameters._additionalProperties()).doesNotContainKey("strict");
+	}
+
+	@Test
+	void toolStrictTrueOverrideAtRequestLevel() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		// Model configured with strict(false) by default (implicitly, nothing set)
+		OpenAiChatOptions modelOptions = OpenAiChatOptions.builder().model("gpt-4.1").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(modelOptions)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		// Prompt requests strict(true) override
+		OpenAiChatOptions requestOptions = OpenAiChatOptions.builder().strict(true).build();
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", requestOptions), false);
+
+		var tools = request.tools().orElseThrow();
+		assertThat(tools).hasSize(1);
+
+		ChatCompletionFunctionTool functionTool = tools.get(0).function().orElseThrow();
+		FunctionDefinition functionDef = functionTool.function();
+
+		// Verify that prompt-level option overrides the false default
+		assertThat(functionDef.strict()).contains(true);
+	}
+
+	@Test
+	void toolStrictTrueWidensOptionalPropertiesToNullableAndBackfillsRequired() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		// "unit" is optional (absent from "required"), matching what
+		// JsonSchemaGenerator produces for a @ToolParam(required = false) parameter.
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema(
+					"{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"},\"unit\":{\"type\":\"string\"}},\"required\":[\"location\"]}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		FunctionDefinition functionDef = request.tools().orElseThrow().get(0).function().orElseThrow().function();
+		assertThat(functionDef.strict()).contains(true);
+
+		Map<String, JsonValue> additionalProperties = functionDef.parameters().orElseThrow()._additionalProperties();
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> properties = additionalProperties.get("properties").convert(Map.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> unitSchema = (Map<String, Object>) properties.get("unit");
+		// OpenAI strict mode requires every property in "required"; optionality is
+		// expressed by widening the type to also accept null instead.
+		assertThat(unitSchema.get("type")).isEqualTo(List.of("string", "null"));
+
+		@SuppressWarnings("unchecked")
+		List<String> required = additionalProperties.get("required").convert(List.class);
+		assertThat(required).containsExactlyInAnyOrder("location", "unit");
+	}
+
+	@Test
+	void toolStrictTrueBackfillsAdditionalPropertiesFalseAtEveryObjectLevel() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		// Schemas from MCP servers or hand-written inputSchema JSON typically lack
+		// "additionalProperties", which OpenAI strict mode requires to be false on
+		// every object level.
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("""
+					{
+						"type": "object",
+						"$defs": {
+							"Address": {
+								"type": "object",
+								"properties": { "city": { "type": "string" } },
+								"required": ["city"]
+							}
+						},
+						"properties": {
+							"location": { "type": "string" },
+							"details": {
+								"type": "object",
+								"properties": { "zip": { "type": "string" } },
+								"required": ["zip"]
+							},
+							"tags": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": { "name": { "type": "string" } },
+									"required": ["name"]
+								}
+							}
+						},
+						"required": ["location", "details", "tags"]
+					}
+					""")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		FunctionDefinition functionDef = request.tools().orElseThrow().get(0).function().orElseThrow().function();
+		Map<String, JsonValue> parameters = functionDef.parameters().orElseThrow()._additionalProperties();
+
+		assertThat(parameters.get("additionalProperties").convert(Boolean.class)).isFalse();
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> properties = parameters.get("properties").convert(Map.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> detailsSchema = (Map<String, Object>) properties.get("details");
+		assertThat(detailsSchema.get("additionalProperties")).isEqualTo(false);
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> tagsSchema = (Map<String, Object>) properties.get("tags");
+		@SuppressWarnings("unchecked")
+		Map<String, Object> tagsItemsSchema = (Map<String, Object>) tagsSchema.get("items");
+		assertThat(tagsItemsSchema.get("additionalProperties")).isEqualTo(false);
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> defs = parameters.get("$defs").convert(Map.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> addressSchema = (Map<String, Object>) defs.get("Address");
+		assertThat(addressSchema.get("additionalProperties")).isEqualTo(false);
+	}
+
+	@Test
+	void toolStrictTruePreservesExplicitAdditionalProperties() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		// A Map<K,V>-style schema declares "additionalProperties" as a type reference;
+		// the strict-mode rewrite must not clobber an explicit value.
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema(
+					"{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}},\"required\":[\"location\"],\"additionalProperties\":{\"type\":\"string\"}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		FunctionDefinition functionDef = request.tools().orElseThrow().get(0).function().orElseThrow().function();
+		Map<String, JsonValue> parameters = functionDef.parameters().orElseThrow()._additionalProperties();
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> explicitAdditionalProperties = parameters.get("additionalProperties").convert(Map.class);
+		assertThat(explicitAdditionalProperties).isEqualTo(Map.of("type", "string"));
+	}
+
+	@Test
+	void toolStrictFalseLeavesAdditionalPropertiesAbsent() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").strict(false).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		FunctionDefinition functionDef = request.tools().orElseThrow().get(0).function().orElseThrow().function();
+		Map<String, JsonValue> parameters = functionDef.parameters().orElseThrow()._additionalProperties();
+
+		assertThat(parameters).doesNotContainKey("additionalProperties");
+	}
+
+	@Test
+	void toolStrictFalseOverrideAtRequestLevel() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		// Model configured with strict(true) by default
+		OpenAiChatOptions modelOptions = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(modelOptions)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		// Prompt requests strict(false) override
+		OpenAiChatOptions requestOptions = OpenAiChatOptions.builder().strict(false).build();
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", requestOptions), false);
+
+		var tools = request.tools().orElseThrow();
+		assertThat(tools).hasSize(1);
+
+		ChatCompletionFunctionTool functionTool = tools.get(0).function().orElseThrow();
+		FunctionDefinition functionDef = functionTool.function();
+
+		// Verify that prompt-level option overrides model default to false
+		assertThat(functionDef.strict()).contains(false);
+	}
+
+	@Test
+	void toolStrictMaintainsIsolationPerRequest() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions modelOptions = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(modelOptions)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		// Request A explicitly disables strict mode
+		OpenAiChatOptions requestOptionsA = OpenAiChatOptions.builder().strict(false).build();
+		ChatCompletionCreateParams requestA = chatModel.createRequest(new Prompt("test A", requestOptionsA), false);
+
+		// Request B explicitly enables strict mode
+		OpenAiChatOptions requestOptionsB = OpenAiChatOptions.builder().strict(true).build();
+		ChatCompletionCreateParams requestB = chatModel.createRequest(new Prompt("test B", requestOptionsB), false);
+
+		// Extract tool evaluations for Request A
+		com.openai.models.FunctionDefinition functionDefA = requestA.tools()
+			.orElseThrow()
+			.get(0)
+			.function()
+			.orElseThrow()
+			.function();
+
+		// Extract tool evaluations for Request B
+		com.openai.models.FunctionDefinition functionDefB = requestB.tools()
+			.orElseThrow()
+			.get(0)
+			.function()
+			.orElseThrow()
+			.function();
+
+		// Verify isolation across execution payloads
+		assertThat(functionDefA.strict()).contains(false);
+		assertThat(functionDefB.strict()).contains(true);
+	}
+
+	@Test
+	void jsonSchemaResponseFormatStrictDefaultsToTrue() {
+		String jsonSchema = """
+				{
+					"type": "object",
+					"properties": {
+						"name": { "type": "string" }
+					}
+				}
+				""";
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.responseFormat(ResponseFormat.builder().jsonSchema(jsonSchema).build())
+			.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		assertThat(request.responseFormat()).isPresent();
+		assertThat(request.responseFormat().get().isJsonSchema()).isTrue();
+		assertThat(request.responseFormat().get().jsonSchema().get().jsonSchema().strict()).contains(true);
+	}
+
+	@Test
+	void jsonSchemaResponseFormatStrictCanBeDisabled() {
+		String jsonSchema = """
+				{
+					"type": "object",
+					"properties": {
+						"name": { "type": "string" }
+					}
+				}
+				""";
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.responseFormat(ResponseFormat.builder().jsonSchema(jsonSchema).strict(false).build())
+			.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		assertThat(request.responseFormat()).isPresent();
+		assertThat(request.responseFormat().get().isJsonSchema()).isTrue();
+		assertThat(request.responseFormat().get().jsonSchema().get().jsonSchema().strict()).contains(false);
+	}
+
+	@Test
+	void intermediateStreamingChunksHaveNullFinishReason() {
+		List<ChatCompletionChunk> chunks = List.of(
+				streamingChunk(delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT).content("Hello"),
+						null),
+				streamingChunk(delta -> delta.content(", "), null),
+				streamingChunk(delta -> delta.content("world!"), ChatCompletionChunk.Choice.FinishReason.STOP));
+
+		List<ChatResponse> responses = streamResponses(chunks).collectList().block();
+
+		assertThat(responses).hasSize(3);
+		assertThat(responses.get(0).getResult().getMetadata().getFinishReason()).isNull();
+		assertThat(responses.get(1).getResult().getMetadata().getFinishReason()).isNull();
+		assertThat(responses.get(2).getResult().getMetadata().getFinishReason()).isEqualTo("STOP");
+	}
+
+	@Test
+	void testPropagatesTimeoutFromRequestOptions() {
+		Duration expectedTimeout = Duration.ofSeconds(30);
+
+		ChatCompletionService.WithRawResponse chatCompletions = givenChatCompletion(ChatCompletion.builder()
+			.id("test-id")
+			.created(1777799928)
+			.model("test-model")
+			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content("hello")
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List.of())
+					.build())
+				.build())
+			.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").timeout(expectedTimeout).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		chatModel.call(new Prompt("hi", options));
+
+		ArgumentCaptor<RequestOptions> argumentCaptor = ArgumentCaptor.forClass(RequestOptions.class);
+		verify(chatCompletions).create(any(ChatCompletionCreateParams.class), argumentCaptor.capture());
+		RequestOptions value = argumentCaptor.getValue();
+		assertThat(value.getTimeout()).isNotNull();
+		assertThat(value.getTimeout().request()).isEqualTo(expectedTimeout);
+	}
+
+	@Test
+	void unsetTimeoutIsNotPropagatedToRequestOptions() {
+		ChatCompletionService.WithRawResponse chatCompletions = givenChatCompletion(ChatCompletion.builder()
+			.id("test-id")
+			.created(1777799928)
+			.model("test-model")
+			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content("hello")
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List.of())
+					.build())
+				.build())
+			.build());
+
+		// No timeout set: the request must not override the timeout configured on the
+		// OpenAI client, otherwise long streaming turns are cut short by OkHttp's
+		// callTimeout.
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		assertThat(options.getTimeout()).isNull();
+
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		chatModel.call(new Prompt("hi", options));
+
+		ArgumentCaptor<RequestOptions> argumentCaptor = ArgumentCaptor.forClass(RequestOptions.class);
+		verify(chatCompletions).create(any(ChatCompletionCreateParams.class), argumentCaptor.capture());
+		assertThat(argumentCaptor.getValue().getTimeout()).isNull();
+	}
+
+	@Test
+	void rateLimitHeadersArePopulatedInMetadata() {
+		Headers rateLimitHeaders = Headers.builder()
+			.put("x-ratelimit-limit-requests", "4000")
+			.put("x-ratelimit-remaining-requests", "999")
+			.put("x-ratelimit-reset-requests", "2d16h15m29s")
+			.put("x-ratelimit-limit-tokens", "725000")
+			.put("x-ratelimit-remaining-tokens", "112358")
+			.put("x-ratelimit-reset-tokens", "27h55s451ms")
+			.build();
+
+		givenChatCompletion(chatCompletion("test-model", "hello"), rateLimitHeaders);
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt("hi", options));
+
+		RateLimit rateLimit = response.getMetadata().getRateLimit();
+		assertThat(rateLimit).isInstanceOf(OpenAiRateLimit.class);
+		assertThat(rateLimit.getRequestsLimit()).isEqualTo(4000L);
+		assertThat(rateLimit.getRequestsRemaining()).isEqualTo(999L);
+		assertThat(rateLimit.getRequestsReset())
+			.isEqualTo(Duration.ofDays(2).plusHours(16).plusMinutes(15).plusSeconds(29));
+		assertThat(rateLimit.getTokensLimit()).isEqualTo(725000L);
+		assertThat(rateLimit.getTokensRemaining()).isEqualTo(112358L);
+		assertThat(rateLimit.getTokensReset()).isEqualTo(Duration.ofHours(27).plusSeconds(55).plusMillis(451));
+	}
+
+	@Test
+	void rateLimitIsEmptyWhenResponseCarriesNoRateLimitHeaders() {
+		givenChatCompletion(chatCompletion("test-model", "hello"));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt("hi", options));
+
+		assertThat(response.getMetadata().getRateLimit()).isInstanceOf(EmptyRateLimit.class);
+	}
+
+	private static ChatCompletion chatCompletion(String model, String content) {
+		return ChatCompletion.builder()
+			.id("test-id")
+			.created(1777799928)
+			.model(model)
+			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content(content)
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List.of())
+					.build())
+				.build())
+			.build();
+	}
+
+	private ChatCompletionService.WithRawResponse givenChatCompletion(ChatCompletion chatCompletion) {
+		return givenChatCompletion(chatCompletion, Headers.builder().build());
+	}
+
+	@SuppressWarnings("unchecked")
+	private ChatCompletionService.WithRawResponse givenChatCompletion(ChatCompletion chatCompletion, Headers headers) {
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		ChatCompletionService.WithRawResponse chatCompletions = mock(ChatCompletionService.WithRawResponse.class);
+		HttpResponseFor<ChatCompletion> rawResponse = mock(HttpResponseFor.class);
+
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		when(chatCompletionService.withRawResponse()).thenReturn(chatCompletions);
+		when(chatCompletions.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(rawResponse);
+		when(rawResponse.parse()).thenReturn(chatCompletion);
+		when(rawResponse.headers()).thenReturn(headers);
+
+		return chatCompletions;
 	}
 
 }

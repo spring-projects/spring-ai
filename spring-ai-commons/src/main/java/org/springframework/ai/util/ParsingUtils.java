@@ -19,6 +19,7 @@ package org.springframework.ai.util;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 import org.springframework.util.Assert;
@@ -86,7 +87,7 @@ public abstract class ParsingUtils {
 		List<String> result = new ArrayList<>(parts.length);
 
 		for (String part : parts) {
-			result.add(toLower ? part.toLowerCase() : part);
+			result.add(toLower ? part.toLowerCase(Locale.ROOT) : part);
 		}
 
 		return Collections.unmodifiableList(result);

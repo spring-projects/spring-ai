@@ -20,8 +20,8 @@ import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.observation.ObservabilityHelper;
@@ -107,7 +107,7 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 			return keyValues;
 		}
 
-		var conversationIdValue = context.getRequest().context().get(ChatMemory.CONVERSATION_ID);
+		var conversationIdValue = context.getRequest().context().get(MemoryAdvisor.CONVERSATION_ID);
 
 		if (!(conversationIdValue instanceof String conversationId) || !StringUtils.hasText(conversationId)) {
 			return keyValues;

@@ -32,7 +32,36 @@ public enum DocumentMetadata {
 	 * The lower the distance, the more they are similar.
 	 * It's the opposite of the similarity score.
 	 */
-	DISTANCE("distance");
+	DISTANCE("distance"),
+
+	/**
+	 * Metadata key holding a pointer to content kept outside the vector store.
+	 * <p>
+	 * Use it when a row's embedding was computed from something that isn't stored
+	 * in the row itself &mdash; an image, a video frame, an audio clip, or a
+	 * document too large to inline. The vector is stored and stays searchable, but
+	 * in place of the content the row keeps a reference to where the content really
+	 * lives (for example an S3 URI, a CDN URL, or a database key). The store treats
+	 * this reference as an opaque string and never resolves it; after a search
+	 * returns the row, the application follows the pointer to fetch the content.
+	 * <p>
+	 * Such a row is created with an empty-text {@link Document} plus this key, and
+	 * written with a caller-supplied embedding through {@code VectorStore.upsert}
+	 * (which stores the vector as given and never embeds). Note the empty text only
+	 * exists to satisfy the document's text-or-media rule; it is not content, so a
+	 * document carrying this key is a reference row even though {@code isText()}
+	 * reports true.
+	 * <p>
+	 * Nothing in the framework reads or validates this key. It is an ordinary
+	 * metadata entry that the application writes and later resolves, and keeping the
+	 * pointer non-empty is up to the caller. A row that still has real text of its own
+	 * can be written with {@code VectorStore.add}, which is how a summary or a chunk
+	 * keeps a pointer back to the full article. A row with empty text has to go
+	 * through {@code upsert}, because {@code add} embeds the text and there is nothing
+	 * there to embed.
+	 * @since 2.1.0
+	 */
+	CONTENT_REF("content_ref");
 
 	private final String value;
 

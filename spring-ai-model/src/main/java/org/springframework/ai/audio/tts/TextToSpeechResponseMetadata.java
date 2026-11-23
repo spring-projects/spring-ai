@@ -16,6 +16,8 @@
 
 package org.springframework.ai.audio.tts;
 
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.model.MutableResponseMetadata;
 
 /**
@@ -24,5 +26,26 @@ import org.springframework.ai.model.MutableResponseMetadata;
  * @author Alexandros Pappas
  */
 public class TextToSpeechResponseMetadata extends MutableResponseMetadata {
+
+	private Usage usage = new EmptyUsage();
+
+	/**
+	 * Returns AI provider specific metadata on API usage.
+	 * @return AI provider specific metadata on API usage.
+	 * @see Usage
+	 * @since 2.0.2
+	 */
+	public Usage getUsage() {
+		return this.usage;
+	}
+
+	/**
+	 * Sets the AI provider specific metadata on API usage.
+	 * @param usage the API usage metadata
+	 * @since 2.0.2
+	 */
+	public void setUsage(Usage usage) {
+		this.usage = usage;
+	}
 
 }

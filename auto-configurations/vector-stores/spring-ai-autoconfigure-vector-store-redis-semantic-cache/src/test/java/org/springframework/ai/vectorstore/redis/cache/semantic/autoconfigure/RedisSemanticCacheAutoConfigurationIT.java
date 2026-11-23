@@ -16,9 +16,10 @@
 
 package org.springframework.ai.vectorstore.redis.cache.semantic.autoconfigure;
 
+import java.time.Duration;
+
 import com.redis.testcontainers.RedisStackContainer;
 import io.micrometer.observation.tck.TestObservationRegistry;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Container;
@@ -26,6 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.chat.cache.semantic.SemanticCache;
 import org.springframework.ai.chat.cache.semantic.SemanticCacheAdvisor;
+import org.springframework.ai.chat.cache.semantic.SemanticCacheScopeResolver;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
@@ -53,10 +55,6 @@ class RedisSemanticCacheAutoConfigurationIT {
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG))
 		.withExposedPorts(6379);
 
-	@BeforeAll
-	static void setup() {
-	}
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(
 				AutoConfigurations.of(DataRedisAutoConfiguration.class, RedisSemanticCacheAutoConfiguration.class))
@@ -66,7 +64,7 @@ class RedisSemanticCacheAutoConfigurationIT {
 
 	@Test
 	void autoConfigurationRegistersExpectedBeans() {
-		this.contextRunner.run(context -> {
+		this.contextRunner.withUserConfiguration(ScopeResolverConfig.class).run(context -> {
 			assertThat(context).hasSingleBean(SemanticCache.class);
 			assertThat(context).hasSingleBean(DefaultSemanticCache.class);
 			assertThat(context).hasSingleBean(SemanticCacheAdvisor.class);
@@ -83,6 +81,28 @@ class RedisSemanticCacheAutoConfigurationIT {
 			assertThat(CallAdvisor.class.isAssignableFrom(advisor.getClass())).isTrue();
 			assertThat(StreamAdvisor.class.isAssignableFrom(advisor.getClass())).isTrue();
 		});
+	}
+
+	@Test
+	void advisorNotRegisteredWithoutScopeResolver() {
+		this.contextRunner.run(context -> {
+			assertThat(context).hasSingleBean(SemanticCache.class);
+			assertThat(context).doesNotHaveBean(SemanticCacheAdvisor.class);
+		});
+	}
+
+	@Test
+	void advisorHasNoTtlByDefault() {
+		this.contextRunner.withUserConfiguration(ScopeResolverConfig.class)
+			.run(context -> assertThat(context.getBean(SemanticCacheAdvisor.class)).extracting("ttl").isNull());
+	}
+
+	@Test
+	void ttlPropertyIsAppliedToAdvisor() {
+		this.contextRunner.withUserConfiguration(ScopeResolverConfig.class)
+			.withPropertyValues("spring.ai.vectorstore.redis.semantic-cache.ttl=10m")
+			.run(context -> assertThat(context.getBean(SemanticCacheAdvisor.class)).extracting("ttl")
+				.isEqualTo(Duration.ofMinutes(10)));
 	}
 
 	@Test
@@ -120,10 +140,22 @@ class RedisSemanticCacheAutoConfigurationIT {
 		public EmbeddingModel embeddingModel() {
 			// Get API key from environment variable
 			String apiKey = System.getenv("OPENAI_API_KEY");
-			return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
 				.apiKey(apiKey)
 				.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
-				.build());
+				.build();
+			return OpenAiEmbeddingModel.builder().options(options).build();
+
+		}
+
+	}
+
+	@Configuration
+	static class ScopeResolverConfig {
+
+		@Bean
+		public SemanticCacheScopeResolver semanticCacheScopeResolver() {
+			return request -> "test-scope";
 		}
 
 	}

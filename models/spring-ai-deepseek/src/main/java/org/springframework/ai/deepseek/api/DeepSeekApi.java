@@ -52,6 +52,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Geng Rong
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public class DeepSeekApi {
 
@@ -147,7 +148,10 @@ public class DeepSeekApi {
 	}
 
 	/**
-	 * Creates a streaming chat response for the given chat conversation.
+	 * Creates a streaming chat response for the given chat conversation. The chunks of a
+	 * streamed tool call are merged into one chunk, see
+	 * {@link #chatCompletionStreamRaw(ChatCompletionRequest)} for the chunks as the
+	 * server sends them.
 	 * @param chatRequest The chat completion request. Must have the stream property set
 	 * to true.
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
@@ -157,33 +161,23 @@ public class DeepSeekApi {
 	}
 
 	/**
-	 * Creates a streaming chat response for the given chat conversation.
+	 * Creates a streaming chat response for the given chat conversation. The chunks of a
+	 * streamed tool call are merged into one chunk, see
+	 * {@link #chatCompletionStreamRaw(ChatCompletionRequest, HttpHeaders)} for the chunks
+	 * as the server sends them.
 	 * @param chatRequest The chat completion request. Must have the stream property set
 	 * to true.
 	 * @param additionalHttpHeader Optional, additional HTTP headers to be added to the
 	 * request.
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
-	@SuppressWarnings("NullAway")
+	@Deprecated(forRemoval = true, since = "2.1.0")
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
 			HttpHeaders additionalHttpHeader) {
 
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(Boolean.TRUE.equals(chatRequest.stream()), "Request must set the stream property to true.");
-
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
-		return this.webClient.post()
-			.uri(this.getEndpoint(chatRequest))
-			.headers(headers -> headers.addAll(HttpHeaders.readOnlyHttpHeaders(additionalHttpHeader)))
-			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-			.retrieve()
-			.bodyToFlux(String.class)
-			// cancels the flux stream after the "[DONE]" is received.
-			.takeUntil(SSE_DONE_PREDICATE)
-			// filters out the "[DONE]" message.
-			.filter(SSE_DONE_PREDICATE.negate())
-			.mapNotNull(content -> jsonHelper.fromJson(content, ChatCompletionChunk.class))
+		return chatCompletionStreamRaw(chatRequest, additionalHttpHeader)
 			// Detect is the chunk is part of a streaming function call.
 			.map(chunk -> {
 				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
@@ -210,6 +204,53 @@ public class DeepSeekApi {
 			})
 			// Flux<Mono<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>
 			.flatMap(mono -> mono);
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation, returning the
+	 * chunks as the server sends them. Unlike
+	 * {@link #chatCompletionStream(ChatCompletionRequest)}, the chunks of a streamed tool
+	 * call are not merged, so the caller sees every tool call argument delta.
+	 * @param chatRequest The chat completion request. Must have the stream property set
+	 * to true.
+	 * @return Returns a {@link Flux} stream of the chat completion chunks.
+	 * @since 2.1.0
+	 */
+	public Flux<ChatCompletionChunk> chatCompletionStreamRaw(ChatCompletionRequest chatRequest) {
+		return chatCompletionStreamRaw(chatRequest, new HttpHeaders());
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation, returning the
+	 * chunks as the server sends them. Unlike
+	 * {@link #chatCompletionStream(ChatCompletionRequest, HttpHeaders)}, the chunks of a
+	 * streamed tool call are not merged, so the caller sees every tool call argument
+	 * delta.
+	 * @param chatRequest The chat completion request. Must have the stream property set
+	 * to true.
+	 * @param additionalHttpHeader Optional, additional HTTP headers to be added to the
+	 * request.
+	 * @return Returns a {@link Flux} stream of the chat completion chunks.
+	 * @since 2.1.0
+	 */
+	@SuppressWarnings("NullAway")
+	public Flux<ChatCompletionChunk> chatCompletionStreamRaw(ChatCompletionRequest chatRequest,
+			HttpHeaders additionalHttpHeader) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(Boolean.TRUE.equals(chatRequest.stream()), "Request must set the stream property to true.");
+
+		return this.webClient.post()
+			.uri(this.getEndpoint(chatRequest))
+			.headers(headers -> headers.addAll(HttpHeaders.readOnlyHttpHeaders(additionalHttpHeader)))
+			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+			.retrieve()
+			.bodyToFlux(String.class)
+			// cancels the flux stream after the "[DONE]" is received.
+			.takeUntil(SSE_DONE_PREDICATE)
+			// filters out the "[DONE]" message.
+			.filter(SSE_DONE_PREDICATE.negate())
+			.mapNotNull(content -> jsonHelper.fromJson(content, ChatCompletionChunk.class));
 	}
 
 	private String getEndpoint(ChatCompletionRequest request) {
@@ -496,11 +537,13 @@ public class DeepSeekApi {
 	 * "my_function"}} forces the model to call that function. none is the default when no
 	 * functions are present. auto is the default if functions are present. Use the
 	 * {@link ToolChoiceBuilder} to create the tool choice value.
+	 * @param thinking Controls the switch between thinking mode and non-thinking mode.
+	 * @param reasoningEffort Controls the reasoning effort level for the DeepSeek model.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(// @formatter:off
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
-			@JsonProperty("model") String model,
+			@JsonProperty("model") @Nullable String model,
 			@JsonProperty("frequency_penalty") @Nullable Double frequencyPenalty,
 			@JsonProperty("max_tokens") @Nullable Integer maxTokens, // Use maxCompletionTokens instead
 			@JsonProperty("presence_penalty") @Nullable Double presencePenalty,
@@ -512,8 +555,17 @@ public class DeepSeekApi {
 			@JsonProperty("logprobs") @Nullable Boolean logprobs,
 			@JsonProperty("top_logprobs") @Nullable Integer topLogprobs,
 			@JsonProperty("tools") @Nullable List<FunctionTool> tools,
-			@JsonProperty("tool_choice") @Nullable Object toolChoice) {
+			@JsonProperty("tool_choice") @Nullable Object toolChoice,
+			@JsonProperty("thinking") @Nullable Thinking thinking,
+			@JsonProperty("reasoning_effort") @Nullable ReasoningEffort reasoningEffort) {
 
+		/**
+		 * Create a new {@link ChatCompletionRequest} builder.
+		 * @return a new {@link Builder} instance.
+		 */
+		public static Builder builder() {
+			return new Builder();
+		}
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages for streaming.
@@ -522,10 +574,10 @@ public class DeepSeekApi {
 		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
-		@SuppressWarnings("NullAway") // Model nullable here due to streaming
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null,
-					null, stream, null, null, null, null, null, null);
+					null, stream, null, null, null, null, null,
+					null, null, null);
 		}
 
 		/**
@@ -538,7 +590,7 @@ public class DeepSeekApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null,
 		null, null, null, null,  false,  temperature, null,
-			null, null, null, null);
+			null, null, null, null, null, null);
 		}
 
 		/**
@@ -553,7 +605,7 @@ public class DeepSeekApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null,
 					null, null, null, null,  stream,  temperature, null,
-				null, null, null, null);
+				null, null, null, null, null, null);
 		}
 
 		/**
@@ -577,12 +629,280 @@ public class DeepSeekApi {
 			}
 		}
 
+		/**
+		 * Controls the reasoning effort level for the DeepSeek model.
+		 * For normal requests,
+		 * {@link ReasoningEffort#HIGH} is the default;
+		 * for complex Agent-style requests
+		 * (such as Claude Code, OpenCode), {@link ReasoningEffort#MAX} is used automatically.
+		 */
+		public enum ReasoningEffort {
+
+			@JsonProperty("high")
+			HIGH,
+
+			@JsonProperty("max")
+			MAX
+
+		}
+
+		/**
+		 * Controls the switch between thinking mode and non-thinking mode.
+		 *
+		 * @param type The thinking mode type. When set to {@link Type#ENABLED}, the thinking
+		 * mode is used; when set to {@link Type#DISABLED}, the non-thinking mode is used.
+		 * Defaults to {@link Type#ENABLED} when not specified.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record Thinking(@JsonProperty("type") @Nullable Type type) {
+
+			/**
+			 * Use the thinking mode.
+			 */
+			public static final Thinking ENABLED = new Thinking(Type.ENABLED);
+
+			/**
+			 * Use the non-thinking mode.
+			 */
+			public static final Thinking DISABLED = new Thinking(Type.DISABLED);
+
+			/**
+			 * The thinking mode type.
+			 */
+			public enum Type {
+
+				/**
+				 * Use the thinking mode.
+				 */
+				@JsonProperty("enabled")
+				ENABLED,
+
+				/**
+				 * Use the non-thinking mode.
+				 */
+				@JsonProperty("disabled")
+				DISABLED
+
+			}
+		}
+
+		/**
+		 * Builder for creating {@link ChatCompletionRequest} instances.
+		 */
+		public static class Builder {
+
+			private @Nullable List<ChatCompletionMessage> messages;
+
+			private @Nullable String model;
+
+			private @Nullable Double frequencyPenalty;
+
+			private @Nullable Integer maxTokens;
+
+			private @Nullable Double presencePenalty;
+
+			private @Nullable ResponseFormat responseFormat;
+
+			private @Nullable List<String> stop;
+
+			private @Nullable Boolean stream;
+
+			private @Nullable Double temperature;
+
+			private @Nullable Double topP;
+
+			private @Nullable Boolean logprobs;
+
+			private @Nullable Integer topLogprobs;
+
+			private @Nullable List<FunctionTool> tools;
+
+			private @Nullable Object toolChoice;
+
+			private @Nullable ReasoningEffort reasoningEffort;
+
+			private @Nullable Thinking thinking;
+
+			/**
+			 * Set the messages comprising the conversation so far.
+			 * @param messages the messages.
+			 * @return this builder.
+			 */
+			public Builder messages(List<ChatCompletionMessage> messages) {
+				this.messages = messages;
+				return this;
+			}
+
+			/**
+			 * Set the ID of the model to use.
+			 * @param model the model id.
+			 * @return this builder.
+			 */
+			public Builder model(@Nullable String model) {
+				this.model = model;
+				return this;
+			}
+
+			/**
+			 * Set the frequency penalty.
+			 * @param frequencyPenalty the frequency penalty.
+			 * @return this builder.
+			 */
+			public Builder frequencyPenalty(@Nullable Double frequencyPenalty) {
+				this.frequencyPenalty = frequencyPenalty;
+				return this;
+			}
+
+			/**
+			 * Set the maximum number of tokens that can be generated.
+			 * @param maxTokens the max tokens.
+			 * @return this builder.
+			 */
+			public Builder maxTokens(@Nullable Integer maxTokens) {
+				this.maxTokens = maxTokens;
+				return this;
+			}
+
+			/**
+			 * Set the presence penalty.
+			 * @param presencePenalty the presence penalty.
+			 * @return this builder.
+			 */
+			public Builder presencePenalty(@Nullable Double presencePenalty) {
+				this.presencePenalty = presencePenalty;
+				return this;
+			}
+
+			/**
+			 * Set the response format.
+			 * @param responseFormat the response format.
+			 * @return this builder.
+			 */
+			public Builder responseFormat(@Nullable ResponseFormat responseFormat) {
+				this.responseFormat = responseFormat;
+				return this;
+			}
+
+			/**
+			 * Set the stop sequences.
+			 * @param stop the stop sequences.
+			 * @return this builder.
+			 */
+			public Builder stop(@Nullable List<String> stop) {
+				this.stop = stop;
+				return this;
+			}
+
+			/**
+			 * Set whether to stream the response.
+			 * @param stream whether to stream.
+			 * @return this builder.
+			 */
+			public Builder stream(@Nullable Boolean stream) {
+				this.stream = stream;
+				return this;
+			}
+
+			/**
+			 * Set the sampling temperature.
+			 * @param temperature the temperature.
+			 * @return this builder.
+			 */
+			public Builder temperature(@Nullable Double temperature) {
+				this.temperature = temperature;
+				return this;
+			}
+
+			/**
+			 * Set the top_p value.
+			 * @param topP the top_p value.
+			 * @return this builder.
+			 */
+			public Builder topP(@Nullable Double topP) {
+				this.topP = topP;
+				return this;
+			}
+
+			/**
+			 * Set whether to return log probabilities.
+			 * @param logprobs whether to return log probabilities.
+			 * @return this builder.
+			 */
+			public Builder logprobs(@Nullable Boolean logprobs) {
+				this.logprobs = logprobs;
+				return this;
+			}
+
+			/**
+			 * Set the number of most likely tokens to return log probabilities for.
+			 * @param topLogprobs the top logprobs.
+			 * @return this builder.
+			 */
+			public Builder topLogprobs(@Nullable Integer topLogprobs) {
+				this.topLogprobs = topLogprobs;
+				return this;
+			}
+
+			/**
+			 * Set the tools the model may call.
+			 * @param tools the tools.
+			 * @return this builder.
+			 */
+			public Builder tools(@Nullable List<FunctionTool> tools) {
+				this.tools = tools;
+				return this;
+			}
+
+			/**
+			 * Set the tool choice.
+			 * @param toolChoice the tool choice.
+			 * @return this builder.
+			 */
+			public Builder toolChoice(@Nullable Object toolChoice) {
+				this.toolChoice = toolChoice;
+				return this;
+			}
+
+			/**
+			 * Set the reasoning effort level.
+			 * @param reasoningEffort the reasoning effort.
+			 * @return this builder.
+			 */
+			public Builder reasoningEffort(@Nullable ReasoningEffort reasoningEffort) {
+				this.reasoningEffort = reasoningEffort;
+				return this;
+			}
+
+			/**
+			 * Set the thinking mode configuration.
+			 * @param thinking the thinking configuration.
+			 * @return this builder.
+			 */
+			public Builder thinking(@Nullable Thinking thinking) {
+				this.thinking = thinking;
+				return this;
+			}
+
+			/**
+			 * Build the {@link ChatCompletionRequest}.
+			 * @return a new {@link ChatCompletionRequest}.
+			 */
+			public ChatCompletionRequest build() {
+				Assert.notNull(this.messages, "Messages must not be null");
+				return new ChatCompletionRequest(this.messages, this.model, this.frequencyPenalty, this.maxTokens,
+						this.presencePenalty, this.responseFormat, this.stop, this.stream, this.temperature, this.topP,
+						this.logprobs, this.topLogprobs, this.tools, this.toolChoice, this.thinking,
+						this.reasoningEffort);
+			}
+
+		}
+
 	} // @formatter:on
 
 	/**
 	 * Message comprising the conversation.
 	 *
-	 * @param rawContent The contents of the message. The message content is always a
+	 * @param content The contents of the message. The message content is always a
 	 * {@link String}.
 	 * @param role The role of the messages author. Could be one of the {@link Role}
 	 * types.

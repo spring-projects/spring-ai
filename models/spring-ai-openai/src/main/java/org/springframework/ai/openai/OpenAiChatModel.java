@@ -18,14 +18,13 @@ package org.springframework.ai.openai;
 
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -35,6 +34,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.ObjectMappers;
+import com.openai.core.RequestOptions;
+import com.openai.core.http.AsyncStreamResponse;
+import com.openai.core.http.HttpResponseFor;
 import com.openai.errors.OpenAIInvalidDataException;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
@@ -44,6 +47,7 @@ import com.openai.models.ResponseFormatJsonSchema;
 import com.openai.models.ResponseFormatText;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
+import com.openai.models.chat.completions.ChatCompletionAudio;
 import com.openai.models.chat.completions.ChatCompletionChunk;
 import com.openai.models.chat.completions.ChatCompletionChunk.Choice;
 import com.openai.models.chat.completions.ChatCompletionChunk.Choice.Delta;
@@ -78,13 +82,25 @@ import reactor.core.publisher.Flux;
 import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingPartIndexer;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -100,12 +116,11 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
+import org.springframework.ai.openai.metadata.OpenAiRateLimit;
 import org.springframework.ai.openai.setup.OpenAiSetup;
-import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeTypeUtils;
@@ -113,6 +128,24 @@ import org.springframework.util.StringUtils;
 
 /**
  * Chat Model implementation using the OpenAI Java SDK.
+ * <p>
+ * The assistant message of each choice is built from ordered {@link MessagePart}s:
+ * <ul>
+ * <li>the {@code reasoning_content} (or {@code reasoning}) field that some
+ * OpenAI-compatible servers return becomes a {@link ReasoningPart} without a
+ * payload;</li>
+ * <li>the {@code content} becomes a {@link TextPart};</li>
+ * <li>each {@code function} tool call becomes a {@link ToolCallPart}, and the extra
+ * fields of the tool call, if any, become its
+ * {@link #PAYLOAD_TOOL_CALL_ADDITIONAL_PROPERTIES} payload;</li>
+ * <li>the audio output becomes a {@link MediaPart}.</li>
+ * </ul>
+ * Chat Completions has no way to interleave these items on the wire, so an assistant
+ * message is replayed as one message: the text parts are joined into the {@code content},
+ * the reasoning parts are joined into {@code reasoning_content}, unless another provider
+ * signed some of them, and the tool call parts become the {@code tool_calls}. Media and
+ * other parts are not replayed. User message parts are sent in their order, so text and
+ * media can interleave.
  *
  * @author Julien Dubois
  * @author Christian Tzolov
@@ -121,20 +154,55 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Eric Bottard
  * @author Taewoong Kim
+ * @author Jewoo Shin
+ * @author guan xu
+ * @author Raphael Vullriede
+ * @author Dimitar Proynov
  */
 public final class OpenAiChatModel implements ChatModel {
 
+	/**
+	 * The {@link OpaquePayload#provider() provider} of the payloads this model produces.
+	 * Only payloads of this provider are replayed by this model.
+	 * @since 2.1.0
+	 */
+	public static final String CHAT_COMPLETIONS_PROVIDER = "openai.chat.completions";
+
+	/**
+	 * The {@link OpaquePayload#kind() kind} of a {@link ToolCallPart} payload that holds
+	 * the extra fields an OpenAI-compatible server returned on that tool call, as a JSON
+	 * object string. The fields are sent back verbatim when the tool call is replayed.
+	 * @since 2.1.0
+	 */
+	public static final String PAYLOAD_TOOL_CALL_ADDITIONAL_PROPERTIES = "tool_call_additional_properties";
+
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
+	/**
+	 * Message metadata key holding the reasoning content as a single string. Superseded
+	 * by the {@link ReasoningPart}s of the message: still written for one release, and
+	 * read on replay only for a message that has no reasoning part, such as one persisted
+	 * by an earlier version.
+	 */
 	private static final String REASONING_CONTENT = "reasoningContent";
 
+	/**
+	 * Message metadata key holding a map from tool call id to the JSON string of the
+	 * extra fields of that tool call. Superseded by the
+	 * {@link #PAYLOAD_TOOL_CALL_ADDITIONAL_PROPERTIES} payload of the
+	 * {@link ToolCallPart}: still written for one release, and read on replay only for a
+	 * tool call part without that payload.
+	 */
 	static final String TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY = "openai.tool_calls.additional_properties";
 
 	private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
 	};
 
-	// Jackson 2 required due to OpenAI deserializers
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	/**
+	 * The OpenAI SDK's own Jackson 2 mapper, the one the SDK (de)serializes its types
+	 * with: its types need Jackson 2, and this configuration round-trips them exactly.
+	 */
+	private static final ObjectMapper objectMapper = ObjectMappers.jsonMapper();
 
 	private final Log logger = LogFactory.getLog(OpenAiChatModel.class);
 
@@ -191,64 +259,7 @@ public final class OpenAiChatModel implements ChatModel {
 	public ChatResponse call(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
 		verifyPromptChatOptions(requestPrompt);
-		return this.internalCall(requestPrompt, null);
-	}
-
-	/**
-	 * Internal method to handle chat completion calls with tool execution support.
-	 * @param prompt the prompt for the chat completion
-	 * @param previousChatResponse the previous chat response for accumulating usage
-	 * @return the chat response
-	 */
-	private ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
-
-		ChatCompletionCreateParams request = createRequest(prompt, false);
-
-		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-			.prompt(prompt)
-			.provider(AiProvider.OPENAI.value())
-			.build();
-
-		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry)
-			.observe(() -> {
-
-				ChatCompletion chatCompletion = this.openAiClient.chat().completions().create(request);
-
-				List<ChatCompletion.Choice> choices = chatCompletion.choices();
-				if (choices.isEmpty()) {
-					if (logger.isWarnEnabled()) {
-						logger.warn("No choices returned for prompt: " + prompt);
-					}
-					return new ChatResponse(List.of());
-				}
-
-				List<Generation> generations = choices.stream().map(choice -> {
-					Map<String, Object> metadata = Map.of("id", chatCompletion.id(), "role",
-							choice.message()._role().asString().isPresent() ? choice.message()._role().asStringOrThrow()
-									: "",
-							"index", choice.index(), "finishReason", choice.finishReason().value().toString(),
-							"refusal", choice.message().refusal().orElse(""), "annotations",
-							choice.message().annotations().orElse((List) List.of(Map.of())), REASONING_CONTENT,
-							getReasoningContent(choice));
-					return buildGeneration(choice, metadata, request);
-				}).toList();
-
-				// Current usage
-				CompletionUsage usage = chatCompletion.usage().orElse(null);
-				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
-				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
-						previousChatResponse);
-				ChatResponse chatResponse = new ChatResponse(generations, from(chatCompletion, accumulatedUsage));
-
-				observationContext.setResponse(chatResponse);
-
-				return chatResponse;
-
-			});
-
-		return response;
+		return this.internalCall(requestPrompt);
 	}
 
 	@Override
@@ -259,6 +270,68 @@ public final class OpenAiChatModel implements ChatModel {
 	}
 
 	/**
+	 * Internal method to handle chat completion calls with tool execution support.
+	 * @param prompt the prompt for the chat completion
+	 * @return the chat response
+	 */
+	private ChatResponse internalCall(Prompt prompt) {
+		ChatCompletionCreateParams request = this.createRequest(prompt, false);
+		RequestOptions requestOptions = this.buildRequestOptions(prompt);
+
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(prompt)
+			.provider(AiProvider.OPENAI.value())
+			.build();
+
+		return ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+
+				// The raw response carries the x-ratelimit-* headers alongside the parsed
+				// body; the plain create(...) call discards them.
+				HttpResponseFor<ChatCompletion> rawResponse = this.openAiClient.chat()
+					.completions()
+					.withRawResponse()
+					.create(request, requestOptions);
+				ChatCompletion chatCompletion = rawResponse.parse();
+				RateLimit rateLimit = OpenAiRateLimit.from(rawResponse.headers());
+
+				if (chatCompletion.choices().isEmpty()) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("No choices returned for prompt: " + prompt);
+					}
+					return new ChatResponse(List.of());
+				}
+
+				ChatResponse chatResponse = toChatResponse(chatCompletion, request, rateLimit);
+				observationContext.setResponse(chatResponse);
+				return chatResponse;
+			});
+	}
+
+	private ChatResponse toChatResponse(ChatCompletion chatCompletion, ChatCompletionCreateParams request,
+			RateLimit rateLimit) {
+		List<Generation> generations = chatCompletion.choices()
+			.stream()
+			.map(choice -> buildGeneration(choice, choiceMetadata(chatCompletion.id(), choice), request, null))
+			.toList();
+		return new ChatResponse(generations,
+				chatResponseMetadataFrom(chatCompletion, currentUsage(chatCompletion), rateLimit));
+	}
+
+	private static Map<String, Object> choiceMetadata(String id, ChatCompletion.Choice choice) {
+		ChatCompletionMessage message = choice.message();
+		return Map.of("id", id, "role", roleOf(message), "index", choice.index(), "finishReason",
+				choice.finishReason().value().toString(), "refusal", message.refusal().orElse(""), "annotations",
+				message.annotations().orElse((List) List.of(Map.of())), REASONING_CONTENT, getReasoningContent(choice));
+	}
+
+	private static String roleOf(ChatCompletionMessage message) {
+		return (String) message._role().asString().orElse("");
+	}
+
+	/**
 	 * Internal method to handle streaming chat completion calls with tool execution
 	 * support.
 	 * @param prompt the prompt for the chat completion
@@ -266,148 +339,350 @@ public final class OpenAiChatModel implements ChatModel {
 	 */
 	private Flux<ChatResponse> internalStream(Prompt prompt) {
 		return Flux.deferContextual(contextView -> {
-			ChatCompletionCreateParams request = createRequest(prompt, true);
-			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
+			ChatCompletionCreateParams request = this.createRequest(prompt, true);
+			RequestOptions requestOptions = this.buildRequestOptions(prompt);
+			StreamAccumulator streamAccumulator = new StreamAccumulator();
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(AiProvider.OPENAI.value())
 				.streaming(true)
 				.build();
-			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
-					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry);
 			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
-			observation.parentObservation(parentObservation);
-			// Briefly make the parent observation current while starting this one, so
-			// Micrometer tracing derives the span's parent from the parent observation
-			// rather
-			// than from whatever scope happens to be open on the current thread (e.g. the
-			// servlet HTTP span). This keeps span parenting correct without relying on
-			// automatic context propagation.
-			try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
-					: Observation.Scope.NOOP) {
-				observation.start();
-			}
+			Observation observation = startStreamObservation(observationContext, parentObservation);
 
-			// Convert from AsyncStreamResponse<ChatCompletionChunk> to Flux<CCC>
-			Flux<ChatCompletionChunk> chunks = Flux.<ChatCompletionChunk>create(sink -> this.openAiClientAsync.chat()
-				.completions()
-				.createStreaming(request)
-				.subscribe(sink::next)
-				.onCompleteFuture()
-				.whenComplete((unused, throwable) -> {
-					if (throwable != null) {
-						sink.error(throwable);
-					}
-					else {
-						sink.complete();
-					}
-				}));
-
-			// Next, aggregate CCCs that deal with tool calls together
-			AtomicBoolean isInsideTool = new AtomicBoolean(false);
-			Flux<ChatCompletion> aggregatedChatCompletions = chunks.doOnNext(chunk -> {
-				if (ChunkMerger.hasToolCall(chunk)) {
-					isInsideTool.set(true);
-				}
-			}).bufferUntil(chunk -> {
-				if (isInsideTool.get() && ChunkMerger.toolCallsDone(chunk)) {
-					isInsideTool.set(false);
-					return true;
-				}
-				return !isInsideTool.get();
-			}).map(ChunkMerger::mergeChunks).map(ChunkMerger::chunkToChatCompletion);
-
-			Flux<ChatResponse> chatResponses = aggregatedChatCompletions.map(chatCompletion -> {
-				String id = chatCompletion.id();
-				List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-					roleMap.putIfAbsent(id, choice.message()._role().asString().isPresent()
-							? choice.message()._role().asStringOrThrow() : "");
-
-					Map<String, Object> metadata = Map.of("id", id, //
-							"role", roleMap.getOrDefault(id, ""), //
-							"index", choice.index(), //
-							"finishReason", choice.finishReason().value(), //
-							"refusal", choice.message().refusal().orElse(""), //
-							"annotations", choice.message().annotations().orElseGet(List::of), //
-							REASONING_CONTENT, getReasoningContent(choice) //
-					);
-
-					return buildGeneration(choice, metadata, request);
-				}).toList();
-				Optional<CompletionUsage> usage = chatCompletion.usage();
-				CompletionUsage usageVal = usage.orElse(null);
-				Usage currentUsage = usageVal != null ? getDefaultUsage(usageVal) : new EmptyUsage();
-				Usage accumulated = UsageCalculator.getCumulativeUsage(currentUsage, null);
-				return new ChatResponse(generations, from(chatCompletion, accumulated));
-
-			});
+			Flux<ChatResponse> chatResponses = toStreamedChatResponses(streamChunks(request, requestOptions), request,
+					streamAccumulator);
 
 			Flux<ChatResponse> observedResponses = chatResponses.doOnError(observation::error)
 				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
 			return new MessageAggregator().aggregate(observedResponses, observationContext::setResponse);
-
 		});
 	}
 
-	private Generation buildGeneration(ChatCompletion.Choice choice, Map<String, Object> metadata,
-			ChatCompletionCreateParams request) {
-		ChatCompletionMessage message = choice.message();
-		Map<String, Object> assistantMessageMetadata = new LinkedHashMap<>(metadata);
-		Map<String, String> toolCallAdditionalProperties = extractToolCallAdditionalProperties(message);
-		if (!toolCallAdditionalProperties.isEmpty()) {
-			assistantMessageMetadata.put(TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY, toolCallAdditionalProperties);
+	/**
+	 * Creates the observation of a streaming call and starts it as a child of the given
+	 * parent observation, if any.
+	 */
+	private Observation startStreamObservation(ChatModelObservationContext observationContext,
+			@Nullable Observation parentObservation) {
+		Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+				this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+				this.observationRegistry);
+		observation.parentObservation(parentObservation);
+		// Briefly make the parent observation current while starting this one, so
+		// Micrometer tracing derives the span's parent from the parent observation rather
+		// than from whatever scope happens to be open on the current thread (e.g. the
+		// servlet HTTP span). This keeps span parenting correct without relying on
+		// automatic context propagation.
+		try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
+				: Observation.Scope.NOOP) {
+			observation.start();
 		}
-		List<AssistantMessage.ToolCall> toolCalls = message.toolCalls()
-			.map(list -> list.stream().filter(tc -> tc.function().isPresent()).map(tc -> {
-				var opt = tc.function();
-				if (opt.isEmpty()) {
-					return null;
+		return observation;
+	}
+
+	/**
+	 * Converts the SDK's {@link AsyncStreamResponse} of chunks to a {@link Flux}.
+	 */
+	private Flux<ChatCompletionChunk> streamChunks(ChatCompletionCreateParams request, RequestOptions requestOptions) {
+		return Flux.<ChatCompletionChunk>create(sink -> {
+			AsyncStreamResponse<ChatCompletionChunk> response = this.openAiClientAsync.chat()
+				.completions()
+				.createStreaming(request, requestOptions);
+			sink.onDispose(response::close);
+			response.subscribe(sink::next).onCompleteFuture().whenComplete((unused, throwable) -> {
+				if (throwable != null) {
+					sink.error(throwable);
 				}
-				var funcCall = opt.get();
-				var functionDef = funcCall.function();
-				String id = funcCall.id();
-				String name = functionDef.name();
-				String arguments = functionDef.arguments();
-				return new AssistantMessage.ToolCall(id, "function", name, arguments);
-			}).filter(Objects::nonNull).toList())
-			.orElse(List.of());
+				else {
+					sink.complete();
+				}
+			});
+		});
+	}
 
-		var generationMetadataBuilder = ChatGenerationMetadata.builder()
-			.finishReason(choice.finishReason().value().name());
-
-		String textContent = message.content().orElse("");
-
-		List<Media> media = new ArrayList<>();
-
-		if (message.audio().isPresent() && StringUtils.hasText(message.audio().get().data())
-				&& request.audio().isPresent()) {
-			var audioOutput = message.audio().get();
-			String mimeType = String.format("audio/%s", request.audio().get().format().value().name().toLowerCase());
-			byte[] audioData = Base64.getDecoder().decode(audioOutput.data());
-			Resource resource = new ByteArrayResource(audioData);
-			Media.builder().mimeType(MimeTypeUtils.parseMimeType(mimeType)).data(resource).id(audioOutput.id()).build();
-			media.add(Media.builder()
-				.mimeType(MimeTypeUtils.parseMimeType(mimeType))
-				.data(resource)
-				.id(audioOutput.id())
-				.build());
-			if (!StringUtils.hasText(textContent)) {
-				textContent = audioOutput.transcript();
+	/**
+	 * Converts the streamed chunks to chat responses. The chunks that stream a tool call
+	 * are buffered until the tool calls are done, so that each tool call reaches the
+	 * caller merged into a single chat response, as a complete {@link ToolCallPart}. Each
+	 * of those chunks is also converted right away to a chat response holding its
+	 * argument deltas, see {@link #toolCallDeltaResponse}. Any other chunk is converted
+	 * on its own.
+	 */
+	private Flux<ChatResponse> toStreamedChatResponses(Flux<ChatCompletionChunk> chunks,
+			ChatCompletionCreateParams request, StreamAccumulator streamAccumulator) {
+		List<ChatCompletionChunk> toolCallChunks = new ArrayList<>();
+		return chunks.concatMapIterable(chunk -> {
+			if (toolCallChunks.isEmpty() && !ChunkMerger.hasToolCall(chunk)) {
+				return List
+					.of(toStreamedChatResponse(ChunkMerger.chunkToChatCompletion(chunk), request, streamAccumulator));
 			}
-			generationMetadataBuilder.metadata("audioId", audioOutput.id());
-			generationMetadataBuilder.metadata("audioExpiresAt", audioOutput.expiresAt());
+			toolCallChunks.add(chunk);
+			List<ChatResponse> responses = new ArrayList<>(2);
+			ChatResponse deltaResponse = toolCallDeltaResponse(chunk, streamAccumulator);
+			if (deltaResponse != null) {
+				responses.add(deltaResponse);
+			}
+			if (ChunkMerger.toolCallsDone(chunk)) {
+				responses.add(mergeToolCallChunks(toolCallChunks, request, streamAccumulator));
+			}
+			return responses;
+		})
+			// A stream that ends inside a tool call, for instance on finish reason
+			// "length", still yields the merged tool call chunks.
+			.concatWith(Flux.defer(() -> toolCallChunks.isEmpty() ? Flux.empty()
+					: Flux.just(mergeToolCallChunks(toolCallChunks, request, streamAccumulator))));
+	}
+
+	private ChatResponse mergeToolCallChunks(List<ChatCompletionChunk> toolCallChunks,
+			ChatCompletionCreateParams request, StreamAccumulator streamAccumulator) {
+		ChatCompletion merged = ChunkMerger.chunkToChatCompletion(ChunkMerger.mergeChunks(toolCallChunks));
+		toolCallChunks.clear();
+		return toStreamedChatResponse(merged, request, streamAccumulator);
+	}
+
+	/**
+	 * Converts the tool-call deltas of a streamed chunk to a chat response holding them
+	 * as partial {@link ToolCallPart}s, see {@link StreamingParts}. Such a response has
+	 * no text and no tool call, the complete call follows once the tool calls are done.
+	 * @return the response, or {@code null} when the chunk carries no delta that can be
+	 * attributed to a call yet, see {@link StreamAccumulator#toolCallDelta}
+	 */
+	private static @Nullable ChatResponse toolCallDeltaResponse(ChatCompletionChunk chunk,
+			StreamAccumulator streamAccumulator) {
+		String id = chunk.id();
+		StreamingPartIndexer partIndexer = streamAccumulator.partIndexer(id);
+		List<Generation> generations = new ArrayList<>();
+		for (Choice choice : chunk.choices()) {
+			List<MessagePart> parts = new ArrayList<>();
+			for (ToolCall toolCall : choice.delta().toolCalls().orElse(List.of())) {
+				ToolCallPart delta = streamAccumulator.toolCallDelta(id, choice.index(), toolCall);
+				if (delta != null) {
+					parts.add(partIndexer.stampToolCallDelta(delta));
+				}
+			}
+			if (!parts.isEmpty()) {
+				generations.add(new Generation(AssistantMessage.builder()
+					.parts(parts)
+					.properties(Map.of("id", id, "index", choice.index()))
+					.build()));
+			}
 		}
+		return generations.isEmpty() ? null
+				: new ChatResponse(generations, ChatResponseMetadata.builder().id(id).build());
+	}
+
+	private ChatResponse toStreamedChatResponse(ChatCompletion chatCompletion, ChatCompletionCreateParams request,
+			StreamAccumulator streamAccumulator) {
+		String id = chatCompletion.id();
+		List<Generation> generations = chatCompletion.choices()
+			.stream()
+			.map(choice -> buildGeneration(choice, streamedChoiceMetadata(id, choice, streamAccumulator), request,
+					streamAccumulator.partIndexer(id)))
+			.toList();
+		// Reading the rate limit here would mean the raw streaming call, whose
+		// blocking StreamResponse would hold a worker for the whole stream.
+		return new ChatResponse(generations,
+				chatResponseMetadataFrom(chatCompletion, currentUsage(chatCompletion), new EmptyRateLimit()));
+	}
+
+	private static Map<String, Object> streamedChoiceMetadata(String id, ChatCompletion.Choice choice,
+			StreamAccumulator streamAccumulator) {
+		ChatCompletionMessage message = choice.message();
+		String role = streamAccumulator.role(id, message);
+		String accumulatedReasoning = streamAccumulator.accumulateReasoning(id, choice);
+		return Map.of("id", id, //
+				"role", role, //
+				"index", choice.index(), //
+				"finishReason", choice.finishReason().value(), //
+				"refusal", message.refusal().orElse(""), //
+				"annotations", message.annotations().orElseGet(List::of), //
+				REASONING_CONTENT, accumulatedReasoning //
+		);
+	}
+
+	/**
+	 * Builds the generation of one choice. When {@code partIndexer} is not {@code null}
+	 * the choice is a streamed chunk, and its parts are stamped with their stream index,
+	 * see {@link StreamingPartIndexer}.
+	 */
+	private Generation buildGeneration(ChatCompletion.Choice choice, Map<String, Object> metadata,
+			ChatCompletionCreateParams request, @Nullable StreamingPartIndexer partIndexer) {
+		ChatCompletionMessage message = choice.message();
+		Map<String, String> toolCallAdditionalProperties = extractToolCallAdditionalProperties(message);
+		ChatCompletionAudio audioOutput = audioOutput(message, request);
 
 		var assistantMessage = AssistantMessage.builder()
-			.content(textContent)
-			.properties(assistantMessageMetadata)
-			.toolCalls(toolCalls)
-			.media(media)
+			.parts(assistantParts(choice, audioOutput, request, toolCallAdditionalProperties, partIndexer))
+			.properties(assistantMessageMetadata(metadata, toolCallAdditionalProperties))
 			.build();
-		return new Generation(assistantMessage, generationMetadataBuilder.build());
+		return new Generation(assistantMessage, generationMetadata(choice, audioOutput));
+	}
+
+	/**
+	 * The parts of the assistant message of one choice, in order: reasoning, text, tool
+	 * calls, then the audio output.
+	 */
+	private static List<MessagePart> assistantParts(ChatCompletion.Choice choice,
+			@Nullable ChatCompletionAudio audioOutput, ChatCompletionCreateParams request,
+			Map<String, String> toolCallAdditionalProperties, @Nullable StreamingPartIndexer partIndexer) {
+		List<MessagePart> parts = new ArrayList<>();
+		String reasoning = getReasoningContent(choice);
+		// hasLength, not hasText: a streamed reasoning delta is often a single
+		// whitespace or newline token that must be kept.
+		if (StringUtils.hasLength(reasoning)) {
+			parts.add(ReasoningPart.of(reasoning));
+		}
+		// An empty content has no text part: a tool-call answer or a reasoning-only
+		// chunk carries none, and the "" some servers stream next to every reasoning
+		// delta must not open a text part between two reasoning deltas.
+		String text = assistantText(choice.message(), audioOutput);
+		if (StringUtils.hasLength(text)) {
+			parts.add(TextPart.of(text));
+		}
+		parts.addAll(toolCallParts(choice.message(), toolCallAdditionalProperties));
+		if (audioOutput != null) {
+			parts.add(MediaPart.of(audioMedia(audioOutput, request)));
+		}
+		if (partIndexer != null) {
+			// Media is not indexed: the aggregator does not carry unindexed media, which
+			// is how streamed media was handled before message parts.
+			parts.replaceAll(part -> (part instanceof MediaPart) ? part : partIndexer.stamp(part));
+		}
+		if (parts.isEmpty()) {
+			// A message without any part, such as a refusal or the role-only first
+			// chunk of a stream, keeps the empty text it always had, so that getText()
+			// is not null and streamed chunk texts can be joined without a null check.
+			parts.add(TextPart.of(""));
+		}
+		return parts;
+	}
+
+	/**
+	 * The content of the message, or the transcript of its audio output when the content
+	 * is empty.
+	 */
+	private static String assistantText(ChatCompletionMessage message, @Nullable ChatCompletionAudio audioOutput) {
+		String text = message.content().orElse("");
+		if (audioOutput != null && !StringUtils.hasText(text)) {
+			return audioOutput.transcript();
+		}
+		return text;
+	}
+
+	/**
+	 * Builds the metadata of the assistant message: the choice metadata, plus the extra
+	 * fields of the tool calls, if any. Optional values are unwrapped so downstream
+	 * repositories (Neo4j, MongoDB, JDBC, etc.) can serialize the metadata map without
+	 * failing on java.util.Optional.
+	 */
+	private static Map<String, Object> assistantMessageMetadata(Map<String, Object> choiceMetadata,
+			Map<String, String> toolCallAdditionalProperties) {
+		Map<String, Object> metadata = new LinkedHashMap<>(choiceMetadata);
+		if (!toolCallAdditionalProperties.isEmpty()) {
+			metadata.put(TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY, toolCallAdditionalProperties);
+		}
+		metadata.replaceAll((key, value) -> value instanceof Optional<?> optional ? optional.orElse(null) : value);
+		return metadata;
+	}
+
+	/**
+	 * The finish reason of a choice as it is reported: the name of the value for one that
+	 * the API defines, and the value as it was sent for another one, such as an
+	 * OpenAI-compatible provider may send. {@code null} when there is none.
+	 */
+	static @Nullable String finishReason(ChatCompletion.Choice choice) {
+		ChatCompletion.Choice.FinishReason finishReason = choice.finishReason();
+		if (finishReason.value() != ChatCompletion.Choice.FinishReason.Value._UNKNOWN) {
+			return finishReason.value().name();
+		}
+		String sent = finishReason._value().asString().orElse(null);
+		return StringUtils.hasText(sent) ? sent : null;
+	}
+
+	/**
+	 * Classifies why a choice ended. A refusal of the model is reported in its own field
+	 * of the message while the finish reason is an ordinary stop, so it is looked at
+	 * first.
+	 */
+	static FinishReasonCategory finishReasonCategory(ChatCompletion.Choice choice) {
+		if (StringUtils.hasText(choice.message().refusal().orElse(null))) {
+			return FinishReasonCategory.FILTERED;
+		}
+		return switch (choice.finishReason().value()) {
+			case STOP -> FinishReasonCategory.COMPLETED;
+			case LENGTH -> FinishReasonCategory.TRUNCATED;
+			case TOOL_CALLS, FUNCTION_CALL -> FinishReasonCategory.TOOL_CALL;
+			case CONTENT_FILTER -> FinishReasonCategory.FILTERED;
+			// No finish reason, or one that the API does not define: by its common name
+			case _UNKNOWN -> FinishReasonCategory.categorize(finishReason(choice));
+			// A value that a newer version of the SDK adds
+			default -> FinishReasonCategory.OTHER;
+		};
+	}
+
+	private static ChatGenerationMetadata generationMetadata(ChatCompletion.Choice choice,
+			@Nullable ChatCompletionAudio audioOutput) {
+		ChatGenerationMetadata.Builder builder = ChatGenerationMetadata.builder()
+			.finishReason(finishReason(choice))
+			.finishReasonCategory(finishReasonCategory(choice));
+		if (audioOutput != null) {
+			builder.metadata("audioId", audioOutput.id());
+			builder.metadata("audioExpiresAt", audioOutput.expiresAt());
+		}
+		return builder.build();
+	}
+
+	/**
+	 * Returns the audio output of the message, or {@code null} when no audio output was
+	 * requested or the message carries no audio data.
+	 */
+	private static @Nullable ChatCompletionAudio audioOutput(ChatCompletionMessage message,
+			ChatCompletionCreateParams request) {
+		if (request.audio().isEmpty()) {
+			return null;
+		}
+		return message.audio().filter(audio -> StringUtils.hasText(audio.data())).orElse(null);
+	}
+
+	private static Media audioMedia(ChatCompletionAudio audioOutput, ChatCompletionCreateParams request) {
+		String mimeType = "audio/" + request.audio().orElseThrow().format().value().name().toLowerCase(Locale.ROOT);
+		byte[] audioData = Base64.getDecoder().decode(audioOutput.data());
+		return Media.builder()
+			.mimeType(MimeTypeUtils.parseMimeType(mimeType))
+			.data(new ByteArrayResource(audioData))
+			.id(audioOutput.id())
+			.build();
+	}
+
+	/**
+	 * Converts the {@code function} tool calls of the message. Tool calls of any other
+	 * type, such as {@code custom} tool calls, cannot be executed by a tool callback and
+	 * are dropped.
+	 */
+	private static List<MessagePart> toolCallParts(ChatCompletionMessage message,
+			Map<String, String> toolCallAdditionalProperties) {
+		return message.toolCalls()
+			.orElse(List.of())
+			.stream()
+			.flatMap(toolCall -> toolCall.function().stream())
+			.map(functionToolCall -> toolCallPart(functionToolCall, toolCallAdditionalProperties))
+			.toList();
+	}
+
+	/**
+	 * A {@code function} tool call becomes a {@link ToolCallPart} whose payload holds the
+	 * extra fields of the call, if any.
+	 */
+	private static MessagePart toolCallPart(ChatCompletionMessageFunctionToolCall call,
+			Map<String, String> toolCallAdditionalProperties) {
+		String additionalProperties = toolCallAdditionalProperties.get(call.id());
+		OpaquePayload payload = additionalProperties != null ? new OpaquePayload(CHAT_COMPLETIONS_PROVIDER,
+				PAYLOAD_TOOL_CALL_ADDITIONAL_PROPERTIES, additionalProperties) : null;
+		return new ToolCallPart(new AssistantMessage.ToolCall(call.id(), "function", call.function().name(),
+				call.function().arguments()), payload, Map.of());
 	}
 
 	private Map<String, String> extractToolCallAdditionalProperties(ChatCompletionMessage message) {
@@ -427,30 +702,40 @@ public final class OpenAiChatModel implements ChatModel {
 		return result;
 	}
 
-	private ChatResponseMetadata from(ChatCompletion result, Usage usage) {
+	private ChatResponseMetadata chatResponseMetadataFrom(ChatCompletion result, Usage usage, RateLimit rateLimit) {
 		Assert.notNull(result, "OpenAI ChatCompletion must not be null");
-		result.model();
-		result.id();
 		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
 			.id(result.id())
 			.usage(usage)
 			.model(result.model())
+			.rateLimit(rateLimit)
 			.keyValue("created", getCreated(result));
 
-		result._additionalProperties().forEach((key, jsonValue) -> {
-			try {
-				Object value = JacksonUtils.getDefaultJsonMapper().convertValue(jsonValue, Object.class);
-				metadataBuilder.keyValue(key, value);
-			}
-			catch (Exception e) {
-				if (logger.isErrorEnabled()) {
-					logger.error("Error parsing JSON value for key '" + key + "': " + jsonValue, e);
-				}
-				metadataBuilder.keyValue(key, jsonValue);
-			}
-		});
+		result._additionalProperties()
+			.forEach((key, jsonValue) -> metadataBuilder.keyValue(key, toMetadataValue(key, jsonValue)));
 
 		return metadataBuilder.build();
+	}
+
+	/**
+	 * Converts an extra field of the response to a plain Java value, or keeps the JSON
+	 * value when it cannot be converted.
+	 */
+	private @Nullable Object toMetadataValue(String key, JsonValue jsonValue) {
+		try {
+			return JacksonUtils.getDefaultJsonMapper().convertValue(jsonValue, Object.class);
+		}
+		catch (Exception e) {
+			if (logger.isErrorEnabled()) {
+				logger.error("Error parsing JSON value for key '" + key + "': " + jsonValue, e);
+			}
+			return jsonValue;
+		}
+	}
+
+	private Usage currentUsage(ChatCompletion chatCompletion) {
+		CompletionUsage usage = chatCompletion.usage().orElse(null);
+		return usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 	}
 
 	/**
@@ -469,8 +754,31 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private DefaultUsage getDefaultUsage(CompletionUsage usage) {
 		Long cacheRead = usage.promptTokensDetails().flatMap(details -> details.cachedTokens()).orElse(null);
-		return new DefaultUsage(Math.toIntExact(usage.promptTokens()), Math.toIntExact(usage.completionTokens()),
-				Math.toIntExact(usage.totalTokens()), usage, cacheRead, null);
+		return new DefaultUsage(toIntTokenCount("promptTokens", usage.promptTokens()),
+				toIntTokenCount("completionTokens", usage.completionTokens()),
+				toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, null);
+	}
+
+	/**
+	 * Narrows a server-supplied token count to an {@code int}. Usage counts come from the
+	 * deserialised upstream response, so an out-of-range value means the response is not
+	 * trustworthy; fail clearly with the offending field and value rather than either
+	 * silently truncating the count (which would corrupt downstream cost/usage tracking
+	 * with a plausible-looking but wrong number) or letting a bare
+	 * {@link ArithmeticException} propagate.
+	 * @param fieldName the name of the usage field being converted, for diagnostics
+	 * @param value the upstream token count
+	 * @return the value narrowed to an {@code int}
+	 * @throws IllegalStateException if {@code value} is outside the {@code int} range
+	 */
+	private static int toIntTokenCount(String fieldName, long value) {
+		try {
+			return Math.toIntExact(value);
+		}
+		catch (ArithmeticException ex) {
+			throw new IllegalStateException(
+					"OpenAI-compatible provider returned an out-of-range " + fieldName + " value: " + value, ex);
+		}
 	}
 
 	private void verifyPromptChatOptions(Prompt prompt) {
@@ -489,218 +797,398 @@ public final class OpenAiChatModel implements ChatModel {
 	 */
 	ChatCompletionCreateParams createRequest(Prompt prompt, boolean stream) {
 
-		List<ChatCompletionMessageParam> chatCompletionMessageParams = prompt.getInstructions()
-			.stream()
-			.map(message -> {
-				if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-					// Handle simple text content for user and system messages
-					ChatCompletionUserMessageParam.Builder builder = ChatCompletionUserMessageParam.builder();
-
-					if (message instanceof UserMessage userMessage
-							&& !CollectionUtils.isEmpty(userMessage.getMedia())) {
-						// Handle media content (images, audio, files)
-						List<ChatCompletionContentPart> parts = new ArrayList<>();
-
-						String messageText = message.getText();
-						if (messageText != null && !messageText.isEmpty()) {
-							parts.add(ChatCompletionContentPart
-								.ofText(ChatCompletionContentPartText.builder().text(messageText).build()));
-						}
-
-						// Add media content parts
-						userMessage.getMedia().forEach(media -> {
-							String mimeType = media.getMimeType().toString();
-							if (mimeType.startsWith("image/")) {
-								if (media.getData() instanceof java.net.URI uri) {
-									parts.add(ChatCompletionContentPart
-										.ofImageUrl(ChatCompletionContentPartImage.builder()
-											.imageUrl(ChatCompletionContentPartImage.ImageUrl.builder()
-												.url(uri.toString())
-												.build())
-											.build()));
-								}
-								else if (media.getData() instanceof String text) {
-									// The org.springframework.ai.content.Media object
-									// should store the URL as a java.net.URI but it
-									// transforms it to String somewhere along the way,
-									// for example in its Builder class. So, we accept
-									// String as well here for image URLs.
-									parts.add(ChatCompletionContentPart
-										.ofImageUrl(ChatCompletionContentPartImage.builder()
-											.imageUrl(
-													ChatCompletionContentPartImage.ImageUrl.builder().url(text).build())
-											.build()));
-								}
-								else if (media.getData() instanceof byte[] bytes) {
-									// Assume the bytes are an image. So, convert the
-									// bytes to a base64 encoded
-									ChatCompletionContentPartImage.ImageUrl.Builder imageUrlBuilder = ChatCompletionContentPartImage.ImageUrl
-										.builder();
-
-									imageUrlBuilder.url("data:" + mimeType + ";base64,"
-											+ Base64.getEncoder().encodeToString(bytes));
-									parts.add(ChatCompletionContentPart
-										.ofImageUrl(ChatCompletionContentPartImage.builder()
-											.imageUrl(imageUrlBuilder.build())
-											.build()));
-								}
-								else {
-									if (logger.isInfoEnabled()) {
-										logger.info("Could not process image media with data of type: "
-												+ media.getData().getClass().getSimpleName()
-												+ ". Only java.net.URI is supported for image URLs.");
-									}
-								}
-							}
-							else if (mimeType.startsWith("audio/")) {
-								parts.add(ChatCompletionContentPart
-									.ofInputAudio(ChatCompletionContentPartInputAudio.builder()
-										.inputAudio(ChatCompletionContentPartInputAudio.builder()
-											.inputAudio(ChatCompletionContentPartInputAudio.InputAudio.builder()
-												.data(fromAudioData(media.getData()))
-												.format(mimeType.contains("mp3")
-														? ChatCompletionContentPartInputAudio.InputAudio.Format.MP3
-														: ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
-												.build())
-											.build()
-											.inputAudio())
-										.build()));
-							}
-							else {
-								// Assume it's a file or other media type represented as a
-								// data URL
-								parts.add(ChatCompletionContentPart.ofText(ChatCompletionContentPartText.builder()
-									.text(fromMediaData(media.getMimeType(), media.getData()))
-									.build()));
-							}
-						});
-						builder.contentOfArrayOfContentParts(parts);
-					}
-					else {
-						// Simple text message
-						String messageText = message.getText();
-						if (messageText != null) {
-							builder.content(ChatCompletionContentPartText.builder().text(messageText).build().text());
-						}
-					}
-
-					if (message.getMessageType() == MessageType.USER) {
-						builder.role(JsonValue.from(MessageType.USER.getValue()));
-					}
-					else {
-						builder.role(JsonValue.from(MessageType.SYSTEM.getValue()));
-					}
-
-					return List.of(ChatCompletionMessageParam.ofUser(builder.build()));
-				}
-				else if (message.getMessageType() == MessageType.ASSISTANT) {
-					var assistantMessage = (AssistantMessage) message;
-					ChatCompletionAssistantMessageParam.Builder builder = ChatCompletionAssistantMessageParam.builder()
-						.role(JsonValue.from(MessageType.ASSISTANT.getValue()));
-
-					if (assistantMessage.getText() != null) {
-						builder.content(ChatCompletionAssistantMessageParam.builder()
-							.content(assistantMessage.getText())
-							.build()
-							.content());
-					}
-
-					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-						Map<String, String> toolCallAdditionalProperties = toolCallAdditionalPropertiesFromMetadata(
-								assistantMessage);
-
-						List<ChatCompletionMessageToolCall> toolCalls = assistantMessage.getToolCalls()
-							.stream()
-							.map(toolCall -> {
-								ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
-									.builder()
-									.id(toolCall.id())
-									.function(ChatCompletionMessageFunctionToolCall.Function.builder()
-										.name(toolCall.name())
-										.arguments(toolCall.arguments())
-										.build());
-
-								String jsonProps = toolCallAdditionalProperties.get(toolCall.id());
-								if (StringUtils.hasText(jsonProps)) {
-									Map<String, JsonValue> additionalProperties = new LinkedHashMap<>();
-									try {
-										objectMapper.readValue(jsonProps, MAP_TYPE_REF)
-											.forEach((k, v) -> additionalProperties.put(k, JsonValue.from(v)));
-									}
-									catch (JsonProcessingException ex) {
-										throw new IllegalStateException("Conversion from JSON to %s failed"
-											.formatted(MAP_TYPE_REF.getType().getTypeName()), ex);
-									}
-									toolCallBuilder.putAllAdditionalProperties(additionalProperties);
-								}
-								return ChatCompletionMessageToolCall.ofFunction(toolCallBuilder.build());
-							})
-							.toList();
-
-						builder.toolCalls(toolCalls);
-					}
-
-					// Replay reasoning content only when present - plain OpenAI is
-					// unaffected
-					Object reasoningContent = assistantMessage.getMetadata().get(REASONING_CONTENT);
-					if (reasoningContent instanceof String reasoning && StringUtils.hasText(reasoning)) {
-						// "reasoning_content" is the wire field; REASONING_CONTENT is the
-						// metadata key
-						builder.putAdditionalProperty("reasoning_content", JsonValue.from(reasoning));
-					}
-
-					return List.of(ChatCompletionMessageParam.ofAssistant(builder.build()));
-				}
-				else if (message.getMessageType() == MessageType.TOOL) {
-					ToolResponseMessage toolMessage = (ToolResponseMessage) message;
-
-					ChatCompletionToolMessageParam.Builder builder = ChatCompletionToolMessageParam.builder();
-					builder.content(toolMessage.getText() != null ? toolMessage.getText() : "");
-					builder.role(JsonValue.from(MessageType.TOOL.getValue()));
-
-					if (toolMessage.getResponses().isEmpty()) {
-						return List.of(ChatCompletionMessageParam.ofTool(builder.build()));
-					}
-					return toolMessage.getResponses().stream().map(response -> {
-						String callId = response.id();
-						String callResponse = response.responseData();
-
-						return ChatCompletionMessageParam
-							.ofTool(builder.toolCallId(callId).content(callResponse).build());
-					}).toList();
-				}
-				else {
-					throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
-				}
-			})
-			.flatMap(List::stream)
-			.toList();
-
-		ChatCompletionCreateParams.Builder builder = ChatCompletionCreateParams.builder();
-
-		chatCompletionMessageParams.forEach(builder::addMessage);
-
 		OpenAiChatOptions requestOptions = (OpenAiChatOptions) prompt.getOptions();
 		Assert.state(requestOptions != null, "ChatOptions must not be null");
 
-		// Use deployment name if available (for Microsoft Foundry), otherwise use model
-		// name
+		ChatCompletionCreateParams.Builder builder = ChatCompletionCreateParams.builder();
+
+		toMessageParams(prompt.getInstructions(), shouldReplayReasoningContent(requestOptions))
+			.forEach(builder::addMessage);
+
+		applyModel(builder, requestOptions);
+		applySamplingOptions(builder, requestOptions);
+		applyLogprobsOptions(builder, requestOptions);
+		applyOutputOptions(builder, requestOptions);
+		applyResponseFormat(builder, requestOptions.getResponseFormat());
+		applyServiceOptions(builder, requestOptions);
+		if (stream) {
+			builder.streamOptions(streamOptions(requestOptions.getStreamOptions()));
+		}
+		applyTools(builder, requestOptions);
+		applyExtraBody(builder, requestOptions.getExtraBody());
+
+		return builder.build();
+	}
+
+	/**
+	 * Replaying reasoning content is what OpenAI-compatible reasoning endpoints such as
+	 * DeepSeek's thinking mode require, and what Groq rejects outright, so it can be
+	 * turned off per request. Absent an explicit opt-out the content is replayed whenever
+	 * present, which is the behavior plain OpenAI is unaffected by.
+	 */
+	private static boolean shouldReplayReasoningContent(OpenAiChatOptions requestOptions) {
+		return !Boolean.FALSE.equals(requestOptions.getReplayReasoningContent());
+	}
+
+	private List<ChatCompletionMessageParam> toMessageParams(List<Message> messages, boolean replayReasoningContent) {
+		return messages.stream().flatMap(message -> toMessageParams(message, replayReasoningContent).stream()).toList();
+	}
+
+	private List<ChatCompletionMessageParam> toMessageParams(Message message, boolean replayReasoningContent) {
+		return switch (message.getMessageType()) {
+			case USER, SYSTEM -> List.of(ChatCompletionMessageParam.ofUser(userMessageParam(message)));
+			case ASSISTANT -> List.of(ChatCompletionMessageParam
+				.ofAssistant(assistantMessageParam((AssistantMessage) message, replayReasoningContent)));
+			case TOOL -> toolMessageParams((ToolResponseMessage) message);
+		};
+	}
+
+	/**
+	 * Converts a user or a system message. A user message with media is sent as content
+	 * parts, in the order of its message parts, so that text and media can interleave. A
+	 * message built with the constructors or the text() and media() setters has its text
+	 * part first, then its media. Any other message is sent as simple text content.
+	 */
+	private ChatCompletionUserMessageParam userMessageParam(Message message) {
+		ChatCompletionUserMessageParam.Builder builder = ChatCompletionUserMessageParam.builder()
+			.role(JsonValue.from(message.getMessageType().getValue()));
+
+		String messageText = message.getText();
+		if (message instanceof UserMessage userMessage && hasMediaPart(userMessage)) {
+			builder.contentOfArrayOfContentParts(userContentParts(userMessage));
+		}
+		else if (messageText != null) {
+			builder.content(messageText);
+		}
+		return builder.build();
+	}
+
+	private static boolean hasMediaPart(UserMessage userMessage) {
+		return userMessage.getParts().stream().anyMatch(MediaPart.class::isInstance);
+	}
+
+	private List<ChatCompletionContentPart> userContentParts(UserMessage userMessage) {
+		List<ChatCompletionContentPart> contentParts = new ArrayList<>();
+		for (MessagePart part : userMessage.getParts()) {
+			ChatCompletionContentPart contentPart = userContentPart(part);
+			if (contentPart != null) {
+				contentParts.add(contentPart);
+			}
+		}
+		return contentParts;
+	}
+
+	/**
+	 * Converts one part of a user message to a content part. Returns {@code null} for an
+	 * empty text part, for media that cannot be converted, and for a part this API has no
+	 * content part for.
+	 */
+	private @Nullable ChatCompletionContentPart userContentPart(MessagePart part) {
+		if (part instanceof TextPart textPart) {
+			return textPart.text().isEmpty() ? null : textContentPart(textPart.text());
+		}
+		if (part instanceof MediaPart mediaPart) {
+			return toContentPart(mediaPart.media());
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("Skipping a user message part the OpenAI Chat Completions API has no content part for: "
+					+ part.getClass().getSimpleName());
+		}
+		return null;
+	}
+
+	/**
+	 * Converts one media to a content part: an image to an image URL, audio to input
+	 * audio, a PDF to a file, and anything else to a text part holding the data URL.
+	 * Returns {@code null} for an image whose data type is not supported.
+	 */
+	private @Nullable ChatCompletionContentPart toContentPart(Media media) {
+		String mimeType = media.getMimeType().toString();
+		if (mimeType.startsWith("image/")) {
+			return imageContentPart(media);
+		}
+		if (mimeType.startsWith("audio/")) {
+			return inputAudioContentPart(media, mimeType);
+		}
+		if ("application/pdf".equals(mimeType)) {
+			return fileContentPart(media);
+		}
+		// Assume it's a file or other media type represented as a data URL
+		return textContentPart(fromMediaData(media.getMimeType(), media.getData()));
+	}
+
+	private @Nullable ChatCompletionContentPart imageContentPart(Media media) {
+		String url = imageUrl(media);
+		if (url == null) {
+			return null;
+		}
+		return ChatCompletionContentPart.ofImageUrl(ChatCompletionContentPartImage.builder()
+			.imageUrl(ChatCompletionContentPartImage.ImageUrl.builder().url(url).build())
+			.build());
+	}
+
+	/**
+	 * Returns the URL of an image: the URL it holds, or a base64 encoded data URL for its
+	 * bytes. Returns {@code null} when the data type is not supported.
+	 */
+	private @Nullable String imageUrl(Media media) {
+		Object data = media.getData();
+		if (data instanceof java.net.URI uri) {
+			return uri.toString();
+		}
+		if (data instanceof String text) {
+			// The org.springframework.ai.content.Media object should store the URL as a
+			// java.net.URI, but it transforms it to String somewhere along the way, for
+			// example in its Builder class. So, we accept String as well here for image
+			// URLs.
+			return text;
+		}
+		if (data instanceof byte[] bytes) {
+			// Assume the bytes are an image. So, convert the bytes to a base64 encoded
+			// data URL.
+			return "data:" + media.getMimeType() + ";base64," + Base64.getEncoder().encodeToString(bytes);
+		}
+		if (logger.isInfoEnabled()) {
+			logger.info("Could not process image media with data of type: " + data.getClass().getSimpleName()
+					+ ". Only java.net.URI is supported for image URLs.");
+		}
+		return null;
+	}
+
+	private ChatCompletionContentPart inputAudioContentPart(Media media, String mimeType) {
+		ChatCompletionContentPartInputAudio.InputAudio.Format format = mimeType.contains("mp3")
+				? ChatCompletionContentPartInputAudio.InputAudio.Format.MP3
+				: ChatCompletionContentPartInputAudio.InputAudio.Format.WAV;
+		return ChatCompletionContentPart.ofInputAudio(ChatCompletionContentPartInputAudio.builder()
+			.inputAudio(ChatCompletionContentPartInputAudio.InputAudio.builder()
+				.data(fromAudioData(media.getData()))
+				.format(format)
+				.build())
+			.build());
+	}
+
+	private ChatCompletionContentPart fileContentPart(Media media) {
+		return ChatCompletionContentPart.ofFile(ChatCompletionContentPart.File.builder()
+			.file(ChatCompletionContentPart.File.FileObject.builder()
+				.filename(media.getName())
+				.fileData(fromMediaData(media.getMimeType(), media.getData()))
+				.build())
+			.build());
+	}
+
+	private static ChatCompletionContentPart textContentPart(String text) {
+		return ChatCompletionContentPart.ofText(ChatCompletionContentPartText.builder().text(text).build());
+	}
+
+	/**
+	 * Converts an assistant message to a {@link ChatCompletionAssistantMessageParam}.
+	 * <p>
+	 * Unlike the {@link MessagePart}s of the message, the SDK type has no ordered list of
+	 * content blocks: it has one field per kind of content. So the parts are not sent one
+	 * by one but folded into those fields:
+	 * <ul>
+	 * <li>the text of the {@link TextPart}s, joined, becomes its {@code content};</li>
+	 * <li>the {@link ToolCallPart}s become its {@code tool_calls}, in part order;</li>
+	 * <li>the text of the {@link ReasoningPart}s, joined, becomes its
+	 * {@code reasoning_content} additional property, unless
+	 * {@code replayReasoningContent} is {@code false} (see
+	 * {@link OpenAiChatOptions#getReplayReasoningContent()}) or the reasoning cannot be
+	 * replayed (see {@link #reasoningContent(AssistantMessage)}).</li>
+	 * </ul>
+	 * Any other part, such as a {@link MediaPart} holding the audio output of an earlier
+	 * turn, has no field and is not sent.
+	 */
+	private ChatCompletionAssistantMessageParam assistantMessageParam(AssistantMessage assistantMessage,
+			boolean replayReasoningContent) {
+		ChatCompletionAssistantMessageParam.Builder builder = ChatCompletionAssistantMessageParam.builder()
+			.role(JsonValue.from(MessageType.ASSISTANT.getValue()));
+
+		String messageText = assistantMessage.getText();
+		if (messageText != null) {
+			builder.content(messageText);
+		}
+
+		List<ChatCompletionMessageToolCall> toolCalls = messageToolCalls(assistantMessage);
+		if (!toolCalls.isEmpty()) {
+			builder.toolCalls(toolCalls);
+		}
+
+		// Replay reasoning content only when present and not opted out - plain OpenAI is
+		// unaffected
+		String reasoningContent = reasoningContent(assistantMessage);
+		if (replayReasoningContent && StringUtils.hasText(reasoningContent)) {
+			// "reasoning_content" is the wire field; REASONING_CONTENT is the metadata
+			// key
+			builder.putAdditionalProperty("reasoning_content", JsonValue.from(reasoningContent));
+		}
+
+		return builder.build();
+	}
+
+	/**
+	 * The tool calls of an assistant message, one per complete {@link ToolCallPart}, in
+	 * part order.
+	 */
+	private List<ChatCompletionMessageToolCall> messageToolCalls(AssistantMessage assistantMessage) {
+		// Messages persisted before the parts model carry the extra tool call fields in
+		// the metadata.
+		Map<String, String> legacyToolCallAdditionalProperties = toolCallAdditionalPropertiesFromMetadata(
+				assistantMessage);
+		return assistantMessage.getParts()
+			.stream()
+			.filter(ToolCallPart.class::isInstance)
+			// A partial part is a tool-call argument delta of a stream, not a tool call
+			.filter(part -> !StreamingParts.isPartial(part))
+			.map(ToolCallPart.class::cast)
+			.map(part -> functionToolCall(part.toolCall(),
+					additionalPropertiesJson(part, legacyToolCallAdditionalProperties)))
+			.toList();
+	}
+
+	/**
+	 * The extra fields of a tool call: the payload of the part when this model produced
+	 * it, or else the legacy metadata of the message.
+	 */
+	private static @Nullable String additionalPropertiesJson(ToolCallPart part,
+			Map<String, String> legacyToolCallAdditionalProperties) {
+		OpaquePayload payload = part.payload();
+		if (payload != null && CHAT_COMPLETIONS_PROVIDER.equals(payload.provider())
+				&& PAYLOAD_TOOL_CALL_ADDITIONAL_PROPERTIES.equals(payload.kind())) {
+			return payload.data();
+		}
+		return legacyToolCallAdditionalProperties.get(part.toolCall().id());
+	}
+
+	/**
+	 * Rebuilds a {@code function} tool call, with the extra fields an OpenAI-compatible
+	 * server returned on it, if any.
+	 * @param toolCall the tool call to rebuild
+	 * @param additionalPropertiesJson the extra fields of the tool call, as a JSON object
+	 * string, or {@code null} if it has none
+	 */
+	private static ChatCompletionMessageToolCall functionToolCall(AssistantMessage.ToolCall toolCall,
+			@Nullable String additionalPropertiesJson) {
+		ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall.builder()
+			.id(toolCall.id())
+			.function(ChatCompletionMessageFunctionToolCall.Function.builder()
+				.name(toolCall.name())
+				.arguments(toolCall.arguments())
+				.build());
+		if (StringUtils.hasText(additionalPropertiesJson)) {
+			toolCallBuilder.putAllAdditionalProperties(parseAdditionalProperties(additionalPropertiesJson));
+		}
+		return ChatCompletionMessageToolCall.ofFunction(toolCallBuilder.build());
+	}
+
+	private static Map<String, JsonValue> parseAdditionalProperties(String json) {
+		Map<String, JsonValue> additionalProperties = new LinkedHashMap<>();
+		try {
+			objectMapper.readValue(json, MAP_TYPE_REF)
+				.forEach((k, v) -> additionalProperties.put(k, JsonValue.from(v)));
+		}
+		catch (JsonProcessingException ex) {
+			throw new IllegalStateException(
+					"Conversion from JSON to %s failed".formatted(MAP_TYPE_REF.getType().getTypeName()), ex);
+		}
+		return additionalProperties;
+	}
+
+	/**
+	 * The reasoning of an assistant message, joined from its reasoning parts. A message
+	 * without reasoning parts, such as one persisted by an earlier version, falls back to
+	 * the metadata key. A message in which another provider signed some of the reasoning
+	 * has none replayed: signed reasoning is only valid with its payload, which this API
+	 * has no field for, and the unsigned parts of a provider that signs only some of its
+	 * reasoning parts are only a fragment of it.
+	 */
+	private @Nullable String reasoningContent(AssistantMessage assistantMessage) {
+		List<ReasoningPart> reasoningParts = assistantMessage.getReasoning();
+		if (reasoningParts.isEmpty()) {
+			return assistantMessage.getMetadata().get(REASONING_CONTENT) instanceof String reasoning ? reasoning : null;
+		}
+		if (reasoningParts.stream().anyMatch(OpenAiChatModel::isSignedByAnotherProvider)) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Not replaying reasoning signed by another provider");
+			}
+			return null;
+		}
+		return reasoningParts.stream().map(ReasoningPart::text).filter(Objects::nonNull).collect(Collectors.joining());
+	}
+
+	private static boolean isSignedByAnotherProvider(ReasoningPart part) {
+		OpaquePayload payload = part.payload();
+		return payload != null && !CHAT_COMPLETIONS_PROVIDER.equals(payload.provider());
+	}
+
+	/**
+	 * Converts a tool response message to one tool message per tool response, or to a
+	 * single tool message without a tool call id when it holds no responses.
+	 */
+	private static List<ChatCompletionMessageParam> toolMessageParams(ToolResponseMessage toolMessage) {
+		ChatCompletionToolMessageParam.Builder builder = ChatCompletionToolMessageParam.builder();
+		builder.content(toolMessage.getText());
+		builder.role(JsonValue.from(MessageType.TOOL.getValue()));
+
+		if (toolMessage.getResponses().isEmpty()) {
+			return List.of(ChatCompletionMessageParam.ofTool(builder.build()));
+		}
+		return toolMessage.getResponses()
+			.stream()
+			.map(response -> ChatCompletionMessageParam
+				.ofTool(builder.toolCallId(response.id()).content(response.responseData()).build()))
+			.toList();
+	}
+
+	/**
+	 * Uses the deployment name if available (for Microsoft Foundry), otherwise the model
+	 * name.
+	 */
+	private static void applyModel(ChatCompletionCreateParams.Builder builder, OpenAiChatOptions requestOptions) {
 		if (requestOptions.getDeploymentName() != null) {
 			builder.model(requestOptions.getDeploymentName());
 		}
 		else if (requestOptions.getModel() != null) {
 			builder.model(requestOptions.getModel());
 		}
+	}
 
+	/**
+	 * Applies the options that steer token sampling: the frequency and presence
+	 * penalties, the seed, the stop sequences, the temperature and top-p.
+	 */
+	private static void applySamplingOptions(ChatCompletionCreateParams.Builder builder,
+			OpenAiChatOptions requestOptions) {
 		if (requestOptions.getFrequencyPenalty() != null) {
 			builder.frequencyPenalty(requestOptions.getFrequencyPenalty());
 		}
+		if (requestOptions.getPresencePenalty() != null) {
+			builder.presencePenalty(requestOptions.getPresencePenalty());
+		}
+		if (requestOptions.getSeed() != null) {
+			builder.seed(requestOptions.getSeed());
+		}
+		List<String> stop = requestOptions.getStop();
+		if (!CollectionUtils.isEmpty(stop)) {
+			builder.stop(stop.size() == 1 ? ChatCompletionCreateParams.Stop.ofString(stop.get(0))
+					: ChatCompletionCreateParams.Stop.ofStrings(stop));
+		}
+		if (requestOptions.getTemperature() != null) {
+			builder.temperature(requestOptions.getTemperature());
+		}
+		if (requestOptions.getTopP() != null) {
+			builder.topP(requestOptions.getTopP());
+		}
+	}
+
+	/**
+	 * Applies the options on token probabilities: the logit bias, and whether and how
+	 * many log probabilities to return.
+	 */
+	private static void applyLogprobsOptions(ChatCompletionCreateParams.Builder builder,
+			OpenAiChatOptions requestOptions) {
 		if (requestOptions.getLogitBias() != null) {
 			builder.logitBias(ChatCompletionCreateParams.LogitBias.builder()
-				.putAllAdditionalProperties(requestOptions.getLogitBias()
-					.entrySet()
-					.stream()
-					.collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonValue.from(entry.getValue()))))
+				.putAllAdditionalProperties(toJsonValues(requestOptions.getLogitBias()))
 				.build());
 		}
 		if (requestOptions.getLogprobs() != null) {
@@ -709,6 +1197,14 @@ public final class OpenAiChatModel implements ChatModel {
 		if (requestOptions.getTopLogprobs() != null) {
 			builder.topLogprobs(requestOptions.getTopLogprobs());
 		}
+	}
+
+	/**
+	 * Applies the options that shape the generated output: the token limits, the number
+	 * of choices, the output modalities and audio, the reasoning effort and verbosity.
+	 */
+	private static void applyOutputOptions(ChatCompletionCreateParams.Builder builder,
+			OpenAiChatOptions requestOptions) {
 		if (requestOptions.getMaxTokens() != null) {
 			builder.maxTokens(requestOptions.getMaxTokens());
 		}
@@ -721,173 +1217,182 @@ public final class OpenAiChatModel implements ChatModel {
 		if (requestOptions.getOutputModalities() != null) {
 			builder.modalities(requestOptions.getOutputModalities()
 				.stream()
-				.map(modality -> ChatCompletionCreateParams.Modality.of(modality.toLowerCase()))
+				.map(modality -> ChatCompletionCreateParams.Modality.of(modality.toLowerCase(Locale.ROOT)))
 				.toList());
 		}
 		if (requestOptions.getOutputAudio() != null) {
 			builder.audio(requestOptions.getOutputAudio().toChatCompletionAudioParam());
 		}
-		if (requestOptions.getPresencePenalty() != null) {
-			builder.presencePenalty(requestOptions.getPresencePenalty());
-		}
-		if (requestOptions.getResponseFormat() != null) {
-			ResponseFormat responseFormat = requestOptions.getResponseFormat();
-			if (responseFormat.getType().equals(ResponseFormat.Type.TEXT)) {
-				builder.responseFormat(ResponseFormatText.builder().build());
-			}
-			else if (responseFormat.getType().equals(ResponseFormat.Type.JSON_OBJECT)) {
-				builder.responseFormat(ResponseFormatJsonObject.builder().build());
-			}
-			else if (responseFormat.getType().equals(ResponseFormat.Type.JSON_SCHEMA)) {
-				String jsonSchemaString = responseFormat.getJsonSchema() != null ? responseFormat.getJsonSchema() : "";
-				try {
-
-					ResponseFormatJsonSchema.JsonSchema.Builder jsonSchemaBuilder = ResponseFormatJsonSchema.JsonSchema
-						.builder();
-					jsonSchemaBuilder.name("json_schema");
-					jsonSchemaBuilder.strict(true);
-
-					ResponseFormatJsonSchema.JsonSchema.Schema schema = objectMapper.readValue(jsonSchemaString,
-							ResponseFormatJsonSchema.JsonSchema.Schema.class);
-
-					jsonSchemaBuilder.schema(schema);
-
-					builder.responseFormat(
-							ResponseFormatJsonSchema.builder().jsonSchema(jsonSchemaBuilder.build()).build());
-				}
-				catch (Exception e) {
-					throw new IllegalArgumentException("Failed to parse JSON schema: " + jsonSchemaString, e);
-				}
-			}
-			else {
-				throw new IllegalArgumentException("Unsupported response format type: " + responseFormat.getType());
-			}
-		}
-		if (requestOptions.getSeed() != null) {
-			builder.seed(requestOptions.getSeed());
-		}
-		if (requestOptions.getStop() != null && !requestOptions.getStop().isEmpty()) {
-			if (requestOptions.getStop().size() == 1) {
-				builder.stop(ChatCompletionCreateParams.Stop.ofString(requestOptions.getStop().get(0)));
-			}
-			else {
-				builder.stop(ChatCompletionCreateParams.Stop.ofStrings(requestOptions.getStop()));
-			}
-		}
-		if (requestOptions.getTemperature() != null) {
-			builder.temperature(requestOptions.getTemperature());
-		}
-		if (requestOptions.getTopP() != null) {
-			builder.topP(requestOptions.getTopP());
-		}
-		if (requestOptions.getUser() != null) {
-			builder.user(requestOptions.getUser());
-		}
-		if (requestOptions.getParallelToolCalls() != null) {
-			builder.parallelToolCalls(requestOptions.getParallelToolCalls());
-		}
 		if (requestOptions.getReasoningEffort() != null) {
-			builder.reasoningEffort(ReasoningEffort.of(requestOptions.getReasoningEffort().toLowerCase()));
+			builder.reasoningEffort(ReasoningEffort.of(requestOptions.getReasoningEffort().toLowerCase(Locale.ROOT)));
 		}
 		if (requestOptions.getVerbosity() != null) {
 			builder.verbosity(ChatCompletionCreateParams.Verbosity.of(requestOptions.getVerbosity()));
 		}
+	}
 
+	private static void applyResponseFormat(ChatCompletionCreateParams.Builder builder,
+			@Nullable ResponseFormat responseFormat) {
+		if (responseFormat == null) {
+			return;
+		}
+		switch (responseFormat.getType()) {
+			case TEXT -> builder.responseFormat(ResponseFormatText.builder().build());
+			case JSON_OBJECT -> builder.responseFormat(ResponseFormatJsonObject.builder().build());
+			case JSON_SCHEMA -> builder.responseFormat(jsonSchemaResponseFormat(responseFormat));
+			default ->
+				throw new IllegalArgumentException("Unsupported response format type: " + responseFormat.getType());
+		}
+	}
+
+	private static ResponseFormatJsonSchema jsonSchemaResponseFormat(ResponseFormat responseFormat) {
+		String jsonSchemaString = responseFormat.getJsonSchema() != null ? responseFormat.getJsonSchema() : "";
+		try {
+			Boolean strict = responseFormat.getStrict();
+			ResponseFormatJsonSchema.JsonSchema jsonSchema = ResponseFormatJsonSchema.JsonSchema.builder()
+				.name("json_schema")
+				.strict(strict != null ? strict : true)
+				.schema(objectMapper.readValue(jsonSchemaString, ResponseFormatJsonSchema.JsonSchema.Schema.class))
+				.build();
+			return ResponseFormatJsonSchema.builder().jsonSchema(jsonSchema).build();
+		}
+		catch (Exception e) {
+			throw new IllegalArgumentException("Failed to parse JSON schema: " + jsonSchemaString, e);
+		}
+	}
+
+	/**
+	 * Applies the options on how the API handles the request: the end-user id, storage
+	 * and metadata, the service tier, the prompt cache key and the custom headers.
+	 */
+	private static void applyServiceOptions(ChatCompletionCreateParams.Builder builder,
+			OpenAiChatOptions requestOptions) {
+		if (requestOptions.getUser() != null) {
+			builder.user(requestOptions.getUser());
+		}
 		if (requestOptions.getStore() != null) {
 			builder.store(requestOptions.getStore());
 		}
-		if (requestOptions.getMetadata() != null && !requestOptions.getMetadata().isEmpty()) {
+		Map<String, String> metadata = requestOptions.getMetadata();
+		if (!CollectionUtils.isEmpty(metadata)) {
 			builder.metadata(ChatCompletionCreateParams.Metadata.builder()
-				.putAllAdditionalProperties(requestOptions.getMetadata()
-					.entrySet()
-					.stream()
-					.collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonValue.from(entry.getValue()))))
+				.putAllAdditionalProperties(toJsonValues(metadata))
 				.build());
 		}
 		if (requestOptions.getServiceTier() != null) {
 			builder.serviceTier(ChatCompletionCreateParams.ServiceTier.of(requestOptions.getServiceTier()));
 		}
-
 		if (requestOptions.getPromptCacheKey() != null) {
 			builder.promptCacheKey(requestOptions.getPromptCacheKey());
 		}
-
-		if (requestOptions.getCustomHeaders() != null && !requestOptions.getCustomHeaders().isEmpty()) {
-			requestOptions.getCustomHeaders().forEach(builder::putAdditionalHeader);
+		Map<String, String> customHeaders = requestOptions.getCustomHeaders();
+		if (!CollectionUtils.isEmpty(customHeaders)) {
+			customHeaders.forEach(builder::putAdditionalHeader);
 		}
+	}
 
-		if (stream) {
-			if (requestOptions.getStreamOptions() != null) {
-				ChatCompletionStreamOptions.Builder streamOptionsBuilder = ChatCompletionStreamOptions.builder();
-
-				var ops = requestOptions.getStreamOptions();
-
-				streamOptionsBuilder.includeObfuscation(ops.includeObfuscation() != null && ops.includeObfuscation());
-				streamOptionsBuilder.includeUsage(ops.includeUsage() != null && ops.includeUsage());
-
-				if (!CollectionUtils.isEmpty(ops.additionalProperties())) {
-					Map<String, com.openai.core.JsonValue> nativeParams = ops.additionalProperties()
-						.entrySet()
-						.stream()
-						.map(e -> Map.entry(e.getKey(), com.openai.core.JsonValue.from(e.getValue())))
-						.collect(HashMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), HashMap::putAll);
-
-					streamOptionsBuilder.putAllAdditionalProperties(nativeParams);
-				}
-				builder.streamOptions(streamOptionsBuilder.build());
-			}
-			else {
-				builder.streamOptions(ChatCompletionStreamOptions.builder()
-					.includeUsage(true) // Include usage by default for streaming
-					.build());
-			}
+	/**
+	 * Converts the stream options, which include usage by default for streaming.
+	 */
+	private static ChatCompletionStreamOptions streamOptions(OpenAiChatOptions.@Nullable StreamOptions options) {
+		if (options == null) {
+			return ChatCompletionStreamOptions.builder().includeUsage(true).build();
 		}
+		ChatCompletionStreamOptions.Builder streamOptionsBuilder = ChatCompletionStreamOptions.builder()
+			.includeObfuscation(Boolean.TRUE.equals(options.includeObfuscation()))
+			.includeUsage(Boolean.TRUE.equals(options.includeUsage()));
+		Map<String, Object> additionalProperties = options.additionalProperties();
+		if (!CollectionUtils.isEmpty(additionalProperties)) {
+			streamOptionsBuilder.putAllAdditionalProperties(toJsonValues(additionalProperties));
+		}
+		return streamOptionsBuilder.build();
+	}
 
-		// Add the tool definitions to the request's tools parameter.
+	/**
+	 * Adds the tool definitions to the request's tools parameter, with the tool choice
+	 * and whether tools may be called in parallel.
+	 */
+	private void applyTools(ChatCompletionCreateParams.Builder builder, OpenAiChatOptions requestOptions) {
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
-			builder.tools(getChatCompletionTools(toolDefinitions));
+			builder.tools(getChatCompletionTools(toolDefinitions, requestOptions));
 		}
-
-		if (requestOptions.getToolChoice() != null) {
-			if (requestOptions.getToolChoice() instanceof ChatCompletionToolChoiceOption toolChoiceOption) {
-				builder.toolChoice(toolChoiceOption);
-			}
-			else if (requestOptions.getToolChoice() instanceof String json) {
-				if (json.equals("auto")) {
-					builder.toolChoice(ChatCompletionToolChoiceOption.ofAuto(ChatCompletionToolChoiceOption.Auto.AUTO));
-				}
-				else if (json.equals("none")) {
-					builder.toolChoice(ChatCompletionToolChoiceOption.ofAuto(ChatCompletionToolChoiceOption.Auto.NONE));
-				}
-				else if (json.equals("required")) {
-					builder.toolChoice(
-							ChatCompletionToolChoiceOption.ofAuto(ChatCompletionToolChoiceOption.Auto.REQUIRED));
-				}
-				else {
-					try {
-						var node = JacksonUtils.getDefaultJsonMapper().readTree(json);
-						builder.toolChoice(parseToolChoice(node));
-					}
-					catch (Exception e) {
-						throw new IllegalArgumentException("Failed to parse toolChoice JSON: " + json, e);
-					}
-				}
-			}
+		ChatCompletionToolChoiceOption toolChoice = toolChoice(requestOptions.getToolChoice());
+		if (toolChoice != null) {
+			builder.toolChoice(toolChoice);
 		}
-
-		// Add extraBody parameters as additional body properties for OpenAI-compatible
-		// providers
-		if (requestOptions.getExtraBody() != null && !requestOptions.getExtraBody().isEmpty()) {
-			Map<String, com.openai.core.JsonValue> extraParams = requestOptions.getExtraBody()
-				.entrySet()
-				.stream()
-				.collect(java.util.stream.Collectors.toMap(Map.Entry::getKey,
-						entry -> com.openai.core.JsonValue.from(entry.getValue())));
-			builder.additionalBodyProperties(extraParams);
+		if (requestOptions.getParallelToolCalls() != null) {
+			builder.parallelToolCalls(requestOptions.getParallelToolCalls());
 		}
+	}
 
-		return builder.build();
+	/**
+	 * Converts the tool choice option, which is either an SDK tool choice, or a string
+	 * holding {@code auto}, {@code none}, {@code required} or a tool choice JSON object.
+	 * Returns {@code null} for any other value.
+	 */
+	private static @Nullable ChatCompletionToolChoiceOption toolChoice(@Nullable Object toolChoice) {
+		if (toolChoice instanceof ChatCompletionToolChoiceOption toolChoiceOption) {
+			return toolChoiceOption;
+		}
+		if (toolChoice instanceof String toolChoiceString) {
+			return parseToolChoiceString(toolChoiceString);
+		}
+		return null;
+	}
+
+	private static ChatCompletionToolChoiceOption parseToolChoiceString(String toolChoice) {
+		return switch (toolChoice) {
+			case "auto" -> ChatCompletionToolChoiceOption.ofAuto(ChatCompletionToolChoiceOption.Auto.AUTO);
+			case "none" -> ChatCompletionToolChoiceOption.ofAuto(ChatCompletionToolChoiceOption.Auto.NONE);
+			case "required" -> ChatCompletionToolChoiceOption.ofAuto(ChatCompletionToolChoiceOption.Auto.REQUIRED);
+			default -> parseToolChoiceJson(toolChoice);
+		};
+	}
+
+	private static ChatCompletionToolChoiceOption parseToolChoiceJson(String json) {
+		try {
+			// Jackson 3 rather than the Jackson 2 objectMapper field: the public
+			// parseToolChoice(JsonNode) takes a tools.jackson tree.
+			return parseToolChoice(JacksonUtils.getDefaultJsonMapper().readTree(json));
+		}
+		catch (Exception e) {
+			throw new IllegalArgumentException("Failed to parse toolChoice JSON: " + json, e);
+		}
+	}
+
+	/**
+	 * Adds the extraBody parameters as additional body properties for OpenAI-compatible
+	 * providers.
+	 */
+	private static void applyExtraBody(ChatCompletionCreateParams.Builder builder,
+			@Nullable Map<String, Object> extraBody) {
+		if (!CollectionUtils.isEmpty(extraBody)) {
+			builder.additionalBodyProperties(toJsonValues(extraBody));
+		}
+	}
+
+	private static Map<String, JsonValue> toJsonValues(Map<String, ?> values) {
+		return values.entrySet()
+			.stream()
+			.collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonValue.from(entry.getValue())));
+	}
+
+	/**
+	 * Creates a RequestOptions instance from the given prompt.
+	 * @param prompt the prompt containing messages and options
+	 * @return a RequestOptions instance
+	 */
+	private RequestOptions buildRequestOptions(Prompt prompt) {
+		Assert.notNull(prompt, "Prompt cannot be null");
+		Assert.isInstanceOf(OpenAiChatOptions.class, prompt.getOptions(),
+				"Prompt options must be OpenAiChatOptions type");
+		OpenAiChatOptions chatOptions = (OpenAiChatOptions) prompt.getOptions();
+		RequestOptions.Builder requestOptionsBuilder = RequestOptions.builder();
+		if (chatOptions.getTimeout() != null) {
+			requestOptionsBuilder.timeout(chatOptions.getTimeout());
+		}
+		return requestOptionsBuilder.build();
 	}
 
 	private Map<String, String> toolCallAdditionalPropertiesFromMetadata(AssistantMessage assistantMessage) {
@@ -950,54 +1455,183 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 	}
 
-	private List<ChatCompletionTool> getChatCompletionTools(List<ToolDefinition> toolDefinitions) {
-		return toolDefinitions.stream().map(toolDefinition -> {
-			FunctionParameters.Builder parametersBuilder = FunctionParameters.builder();
-
-			if (!toolDefinition.inputSchema().isEmpty()) {
-				// Parse the schema and add its properties directly
-				try {
-					@SuppressWarnings("unchecked")
-					Map<String, Object> schemaMap = objectMapper.readValue(toolDefinition.inputSchema(), Map.class);
-
-					// Add each property from the schema to the parameters
-					schemaMap
-						.forEach((key, value) -> parametersBuilder.putAdditionalProperty(key, JsonValue.from(value)));
-
-					// Add strict mode
-					parametersBuilder.putAdditionalProperty("strict", JsonValue.from(true)); // TODO
-																								// allow
-																								// non-strict
-																								// mode
-				}
-				catch (Exception e) {
-					logger.error("Failed to parse tool schema", e);
-				}
-			}
-
-			FunctionDefinition functionDefinition = FunctionDefinition.builder()
-				.name(toolDefinition.name())
-				.description(toolDefinition.description())
-				.parameters(parametersBuilder.build())
-				.build();
-
-			return ChatCompletionTool
-				.ofFunction(ChatCompletionFunctionTool.builder().function(functionDefinition).build());
-		}).toList();
+	private List<ChatCompletionTool> getChatCompletionTools(List<ToolDefinition> toolDefinitions,
+			@Nullable OpenAiChatOptions requestOptions) {
+		boolean strictMode = isStrictMode(requestOptions);
+		return toolDefinitions.stream()
+			.map(toolDefinition -> toChatCompletionTool(toolDefinition, strictMode))
+			.toList();
 	}
 
-	private String getReasoningContent(ChatCompletion.Choice choice) {
-		String reasoningContent = "";
-		Map<String, JsonValue> additionalProperties = choice.message()._additionalProperties();
-		if (additionalProperties.get("reasoning_content") != null) {
-			reasoningContent = (String) additionalProperties.get("reasoning_content").asString().orElse("");
+	/**
+	 * Defaults to false: OpenAI's strict mode requires every schema property to appear in
+	 * "required" (optionality is expressed via nullable types, not omission), which
+	 * JsonSchemaGenerator does not produce by default. When a caller opts in via
+	 * OpenAiChatOptions#strict, applyStrictModeRequirements rewrites the schema to
+	 * satisfy that contract.
+	 */
+	private boolean isStrictMode(@Nullable OpenAiChatOptions requestOptions) {
+		if (requestOptions != null && requestOptions.getStrict() != null) {
+			return Boolean.TRUE.equals(requestOptions.getStrict());
 		}
-		else {
-			if (additionalProperties.get("reasoning") != null) {
-				reasoningContent = (String) additionalProperties.get("reasoning").asString().orElse("");
+		return Boolean.TRUE.equals(this.options.getStrict());
+	}
+
+	private ChatCompletionTool toChatCompletionTool(ToolDefinition toolDefinition, boolean strictMode) {
+		FunctionDefinition functionDefinition = FunctionDefinition.builder()
+			.name(toolDefinition.name())
+			.description(toolDefinition.description())
+			.parameters(functionParameters(toolDefinition.inputSchema(), strictMode))
+			.strict(strictMode)
+			.build();
+
+		return ChatCompletionTool.ofFunction(ChatCompletionFunctionTool.builder().function(functionDefinition).build());
+	}
+
+	/**
+	 * Converts the input schema of a tool to function parameters, rewritten to satisfy
+	 * strict mode when enabled. A schema that cannot be parsed is logged and skipped.
+	 */
+	private FunctionParameters functionParameters(String inputSchema, boolean strictMode) {
+		FunctionParameters.Builder parametersBuilder = FunctionParameters.builder();
+		if (inputSchema.isEmpty()) {
+			return parametersBuilder.build();
+		}
+		// Parse the schema and add its properties directly
+		try {
+			@SuppressWarnings("unchecked")
+			Map<String, Object> schemaMap = objectMapper.readValue(inputSchema, Map.class);
+
+			if (strictMode) {
+				applyStrictModeRequirements(schemaMap);
+			}
+
+			// Add each property from the schema to the parameters
+			schemaMap.forEach((key, value) -> parametersBuilder.putAdditionalProperty(key, JsonValue.from(value)));
+		}
+		catch (Exception e) {
+			logger.error("Failed to parse tool schema", e);
+		}
+		return parametersBuilder.build();
+	}
+
+	/**
+	 * A JSON Schema fragment representing exactly the {@code null} type, used as the
+	 * extra {@code anyOf} branch when widening a {@code $ref}/{@code anyOf}-based
+	 * property to accept {@code null}.
+	 */
+	private static final Map<String, Object> NULL_TYPE_SCHEMA = Map.of("type", "null");
+
+	/**
+	 * Rewrites an object schema in place to satisfy OpenAI's strict function-calling
+	 * mode: every property must be listed in "required", with optionality expressed via a
+	 * nullable type rather than omission from "required", and every object level must pin
+	 * {@code "additionalProperties"} to {@code false}. {@link JsonSchemaGenerator}
+	 * produces conventional JSON Schema instead - it omits
+	 * {@code @ToolParam(required = false)} properties from "required" - so this widens
+	 * the type of each such property to also accept {@code null} and backfills "required"
+	 * with every property key. Schemas from other sources (MCP servers, hand-written
+	 * inputSchema JSON) may also lack "additionalProperties", so it is backfilled with
+	 * {@code false} wherever absent; an explicit value is preserved. Recurses into nested
+	 * object/array-item schemas and {@code $defs} definitions so their own optional
+	 * properties are fixed up too.
+	 */
+	@SuppressWarnings("unchecked")
+	private static void applyStrictModeRequirements(Map<String, Object> schema) {
+		if (schema.get("$defs") instanceof Map<?, ?> defs) {
+			for (Object definition : defs.values()) {
+				if (definition instanceof Map<?, ?> definitionSchema) {
+					applyStrictModeRequirements((Map<String, Object>) definitionSchema);
+				}
 			}
 		}
-		return reasoningContent;
+
+		if (!(schema.get("properties") instanceof Map<?, ?> properties)) {
+			return;
+		}
+
+		schema.putIfAbsent("additionalProperties", false);
+
+		if (properties.isEmpty()) {
+			return;
+		}
+
+		List<?> alreadyRequired = schema.get("required") instanceof List<?> required ? required : List.of();
+
+		for (Object propertySchemaValue : properties.values()) {
+			if (!(propertySchemaValue instanceof Map<?, ?> propertySchema)) {
+				continue;
+			}
+			applyStrictModeRequirements((Map<String, Object>) propertySchema);
+			if (propertySchema.get("items") instanceof Map<?, ?> itemsSchema) {
+				applyStrictModeRequirements((Map<String, Object>) itemsSchema);
+			}
+		}
+
+		for (Map.Entry<?, ?> property : properties.entrySet()) {
+			if (alreadyRequired.contains(property.getKey())
+					|| !(property.getValue() instanceof Map<?, ?> propertySchema)) {
+				continue;
+			}
+			widenToNullable((Map<String, Object>) propertySchema);
+		}
+
+		schema.put("required", new ArrayList<>(properties.keySet()));
+	}
+
+	/**
+	 * Widens a property schema's "type" to also accept {@code null}. Properties defined
+	 * purely via {@code $ref} or {@code anyOf} (no "type" key of their own - typically a
+	 * complex object parameter) are instead wrapped in an {@code anyOf} alongside a null
+	 * branch, since there is no "type" value to widen directly.
+	 */
+	private static void widenToNullable(Map<String, Object> propertySchema) {
+		Object type = propertySchema.get("type");
+		if (type instanceof String typeName) {
+			if (!"null".equals(typeName)) {
+				propertySchema.put("type", new ArrayList<>(List.of(typeName, "null")));
+			}
+			return;
+		}
+		if (type instanceof List<?> typeList) {
+			if (!typeList.contains("null")) {
+				List<Object> widened = new ArrayList<>(typeList);
+				widened.add("null");
+				propertySchema.put("type", widened);
+			}
+			return;
+		}
+		if (propertySchema.get("anyOf") instanceof List<?> anyOf) {
+			if (!anyOf.contains(NULL_TYPE_SCHEMA)) {
+				List<Object> widened = new ArrayList<>(anyOf);
+				widened.add(NULL_TYPE_SCHEMA);
+				propertySchema.put("anyOf", widened);
+			}
+			return;
+		}
+		if (propertySchema.containsKey("$ref")) {
+			Map<String, Object> refBranch = new LinkedHashMap<>(propertySchema);
+			Object description = refBranch.remove("description");
+			propertySchema.clear();
+			if (description != null) {
+				propertySchema.put("description", description);
+			}
+			propertySchema.put("anyOf", new ArrayList<>(List.of(refBranch, NULL_TYPE_SCHEMA)));
+		}
+	}
+
+	/**
+	 * Returns the {@code reasoning_content}, or else the {@code reasoning}, field that
+	 * some OpenAI-compatible servers return on the message, or an empty string if it has
+	 * neither.
+	 */
+	private static String getReasoningContent(ChatCompletion.Choice choice) {
+		Map<String, JsonValue> additionalProperties = choice.message()._additionalProperties();
+		JsonValue reasoningContent = additionalProperties.get("reasoning_content");
+		if (reasoningContent == null) {
+			reasoningContent = additionalProperties.get("reasoning");
+		}
+		return reasoningContent != null ? (String) reasoningContent.asString().orElse("") : "";
 	}
 
 	/**
@@ -1023,10 +1657,95 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 	}
 
-	private static final class ChunkMerger {
+	/**
+	 * The state of a streaming call that outlives a single chunk: the role, which only
+	 * the first chunk of a response carries, the reasoning fragments of each choice, the
+	 * {@link StreamingPartIndexer} of each response, and the id and name of each streamed
+	 * tool call, which only its first delta carries. The fragments are accumulated so
+	 * that the final response of the stream carries the full reasoning content, surviving
+	 * last-wins metadata aggregation (e.g. {@link MessageAggregator}).
+	 */
+	private static final class StreamAccumulator {
+
+		private final Map<String, String> roleByResponseId = new ConcurrentHashMap<>();
+
+		private final Map<String, String> reasoningByChoice = new ConcurrentHashMap<>();
+
+		private final Map<String, StreamingPartIndexer> partIndexerByResponseId = new ConcurrentHashMap<>();
+
+		private final Map<String, AssistantMessage.ToolCall> toolCallByDeltaKey = new ConcurrentHashMap<>();
+
+		String role(String responseId, ChatCompletionMessage message) {
+			this.roleByResponseId.putIfAbsent(responseId, roleOf(message));
+			return this.roleByResponseId.getOrDefault(responseId, "");
+		}
+
+		String accumulateReasoning(String responseId, ChatCompletion.Choice choice) {
+			return this.reasoningByChoice.merge(responseId + ":" + choice.index(), getReasoningContent(choice),
+					String::concat);
+		}
+
+		/**
+		 * The part indexer of a response, shared by all its choices. The aggregator
+		 * groups indexed parts by response id alone, so separate indices per choice would
+		 * make the parts of two choices ({@code n > 1}) overwrite each other at the same
+		 * index. With a shared instance, parts of different choices never share an index
+		 * unless they form a run of the same kind, in which case their deltas are
+		 * concatenated in arrival order and nothing is lost.
+		 */
+		StreamingPartIndexer partIndexer(String responseId) {
+			return this.partIndexerByResponseId.computeIfAbsent(responseId, key -> new StreamingPartIndexer());
+		}
+
+		/**
+		 * The partial {@link ToolCallPart} of one streamed tool-call delta. The deltas of
+		 * one call share its {@code index}; the first one carries the id and name of the
+		 * call, which the part of every later delta repeats next to its own arguments
+		 * fragment.
+		 * @param responseId the id of the streamed response
+		 * @param choiceIndex the index of the choice the delta belongs to
+		 * @param delta the tool-call delta
+		 * @return the part, or {@code null} while the id and name of the call are not
+		 * known, for a later delta without arguments, or for a delta without an
+		 * {@code index}, which some OpenAI-compatible servers omit on a call sent in one
+		 * chunk
+		 */
+		@Nullable ToolCallPart toolCallDelta(String responseId, long choiceIndex, ToolCall delta) {
+			// The OpenAI API requires the index, and the SDK throws when index() reads a
+			// missing one, but some OpenAI-compatible servers omit it, such as the Gemini
+			// endpoint, which sends each tool call whole in one chunk. Such a call is
+			// merged without reading its index, and streaming no delta for it keeps the
+			// stream from failing.
+			Optional<Long> index = delta._index().asKnown();
+			if (index.isEmpty()) {
+				return null;
+			}
+			String key = responseId + ":" + choiceIndex + ":" + index.get();
+			String id = delta.id().orElse("");
+			String name = delta.function().flatMap(Function::name).orElse("");
+			String arguments = delta.function().flatMap(Function::arguments).orElse("");
+			if (StringUtils.hasText(id) && StringUtils.hasText(name)) {
+				// putIfAbsent: the merged call keeps the first id, should a server repeat
+				// a different one on later deltas.
+				this.toolCallByDeltaKey.putIfAbsent(key, new AssistantMessage.ToolCall(id, "function", name, ""));
+			}
+			else if (arguments.isEmpty()) {
+				return null;
+			}
+			AssistantMessage.ToolCall toolCall = this.toolCallByDeltaKey.get(key);
+			return (toolCall != null)
+					? ToolCallPart
+						.of(new AssistantMessage.ToolCall(toolCall.id(), toolCall.type(), toolCall.name(), arguments))
+					: null;
+		}
+
+	}
+
+	static final class ChunkMerger {
 
 		static boolean hasToolCall(ChatCompletionChunk chunk) {
-			return !chunk.choices().isEmpty() && chunk.choices().get(0).delta().toolCalls().isPresent();
+			return !chunk.choices().isEmpty()
+					&& chunk.choices().get(0).delta().toolCalls().filter(toolCalls -> !toolCalls.isEmpty()).isPresent();
 		}
 
 		static boolean toolCallsDone(ChatCompletionChunk chunk) {
@@ -1060,82 +1779,68 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 
 		private static Delta mergeDeltas(Delta left, Delta right) {
+			// Deltas of the same logical tool call share the required 'index' field.
+			// Some OpenAI-compatible providers (e.g. DeepSeek) send an empty-string id
+			// on continuation deltas instead of omitting it, so id presence cannot be
+			// used to detect the start of a new tool call.
 			var tcs = Stream.of(left.toolCalls(), right.toolCalls()).flatMap(Optional::stream).reduce((tcs1, tcs2) -> {
-				Assert.isTrue(tcs2.size() <= 1, "no more than one tool call per message currently supported");
-				ToolCall toolCall = tcs2.get(0);
-				if (toolCall.id().isPresent()) {
-					List<ToolCall> result = new ArrayList<>(tcs1);
-					result.add(toolCall);
-					return result;
+				if (tcs2.isEmpty()) {
+					return tcs1;
 				}
-				else {
-					ToolCall lastFromTc1 = tcs1.get(tcs1.size() - 1);
-					Function lastFromTc1F = lastFromTc1.function().get();
-
-					var concatenatedArgs = Stream
-						.of(lastFromTc1F.arguments(), toolCall.function().flatMap(Function::arguments))
-						.flatMap(Optional::stream)
-						.reduce((args1, args2) -> args1 + args2)
-						.orElse("");
-
-					List<ToolCall> result = new ArrayList<>(tcs1);
-					result.set(tcs1.size() - 1,
-							lastFromTc1.toBuilder()
-								.putAllAdditionalProperties(toolCall._additionalProperties())
-								.function(lastFromTc1F.toBuilder().arguments(concatenatedArgs).build())
-								.build());
-					return result;
-				}
+				Map<Long, ToolCall> mergedByIndex = new LinkedHashMap<>();
+				tcs1.forEach(tc -> mergedByIndex.merge(tc.index(), tc, ChunkMerger::mergeToolCalls));
+				tcs2.forEach(tc -> mergedByIndex.merge(tc.index(), tc, ChunkMerger::mergeToolCalls));
+				return List.copyOf(mergedByIndex.values());
 			}).orElse(List.of());
 
-			return left.toBuilder().toolCalls(tcs).build();
+			Delta.Builder deltaBuilder = left.toBuilder().toolCalls(tcs);
+			// Concatenate text fragments too: some servers stream text next to or after
+			// the tool call deltas, and only the first chunk's text was kept otherwise.
+			right.content()
+				.filter(StringUtils::hasLength)
+				.ifPresent(rightFragment -> deltaBuilder.content(left.content().orElse("") + rightFragment));
+			// Concatenate reasoning fragments (e.g. DeepSeek "reasoning_content") so
+			// they survive the tool-call chunk merge instead of keeping only the first
+			// chunk's value.
+			for (String reasoningKey : List.of("reasoning_content", "reasoning")) {
+				stringProperty(right, reasoningKey).filter(StringUtils::hasLength)
+					.ifPresent(rightFragment -> deltaBuilder.putAdditionalProperty(reasoningKey,
+							JsonValue.from(stringProperty(left, reasoningKey).orElse("") + rightFragment)));
+			}
+			return deltaBuilder.build();
+		}
+
+		private static Optional<String> stringProperty(Delta delta, String key) {
+			return Optional.ofNullable(delta._additionalProperties().get(key)).flatMap(JsonValue::asString);
+		}
+
+		private static ToolCall mergeToolCalls(ToolCall previous, ToolCall current) {
+			String arguments = Stream
+				.of(previous.function().flatMap(Function::arguments), current.function().flatMap(Function::arguments))
+				.flatMap(Optional::stream)
+				.collect(Collectors.joining());
+			return previous.toBuilder()
+				.id(firstWithText(previous.id(), current.id()))
+				.putAllAdditionalProperties(current._additionalProperties())
+				.function(previous.function()
+					.map(Function::toBuilder)
+					.orElseGet(Function::builder)
+					.name(firstWithText(previous.function().flatMap(Function::name),
+							current.function().flatMap(Function::name)))
+					.arguments(arguments)
+					.build())
+				.build();
+		}
+
+		private static String firstWithText(Optional<String> first, Optional<String> second) {
+			return first.filter(StringUtils::hasText).or(() -> second.filter(StringUtils::hasText)).orElse("");
 		}
 
 		/**
 		 * Convert a ChatCompletionChunk into a ChatCompletion.
 		 */
 		static ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
-			List<ChatCompletion.Choice> choices = chunk.choices().stream().map(cccc -> {
-				ChatCompletion.Choice.Builder choiceBuilder = ChatCompletion.Choice.builder();
-
-				choiceBuilder.index(cccc.index());
-
-				choiceBuilder.finishReason(ChatCompletion.Choice.FinishReason.of(""));
-				cccc.finishReason()
-					.ifPresent(finishReason -> choiceBuilder.finishReason(
-							ChatCompletion.Choice.FinishReason.of(finishReason.value().name().toLowerCase())));
-
-				if (cccc.logprobs().isPresent()) {
-					var logprobs = cccc.logprobs().get();
-					choiceBuilder.logprobs(ChatCompletion.Choice.Logprobs.builder()
-						.content(logprobs.content())
-						.refusal(logprobs.refusal())
-						.build());
-				}
-				else {
-					choiceBuilder.logprobs(
-							ChatCompletion.Choice.Logprobs.builder().content(List.of()).refusal(List.of()).build());
-				}
-
-				ChatCompletionMessage.Builder msgBuilder = ChatCompletionMessage.builder()
-					.content(cccc.delta().content())
-					.refusal(cccc.delta().refusal());
-				cccc.delta().toolCalls().ifPresent(ccctcs -> {
-					msgBuilder.toolCalls(ccctcs.stream().map(tc -> {
-						ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
-							.builder();
-						toolCallBuilder.putAllAdditionalProperties(tc._additionalProperties());
-						toolCallBuilder.id(tc.id().get());
-						toolCallBuilder.function(ChatCompletionMessageFunctionToolCall.Function.builder()
-							.name(tc.function().get().name().get())
-							.arguments(tc.function().get().arguments().get())
-							.build());
-						return ChatCompletionMessageToolCall.ofFunction(toolCallBuilder.build());
-					}).toList());
-				});
-				choiceBuilder.message(msgBuilder.build());
-				return choiceBuilder.build();
-			}).toList();
+			List<ChatCompletion.Choice> choices = chunk.choices().stream().map(ChunkMerger::toChoice).toList();
 
 			return ChatCompletion.builder()
 				.id(chunk.id())
@@ -1146,6 +1851,64 @@ public final class OpenAiChatModel implements ChatModel {
 					.orElse(CompletionUsage.builder().promptTokens(0).completionTokens(0).totalTokens(0).build()))
 				.putAllAdditionalProperties(chunk._additionalProperties())
 				.build();
+		}
+
+		private static ChatCompletion.Choice toChoice(Choice choice) {
+			return ChatCompletion.Choice.builder()
+				.index(choice.index())
+				.finishReason(toFinishReason(choice))
+				.logprobs(toLogprobs(choice))
+				.message(toMessage(choice.delta()))
+				.build();
+		}
+
+		private static ChatCompletion.Choice.FinishReason toFinishReason(Choice choice) {
+			// As it was sent, so that a value the API does not define is not lost
+			return ChatCompletion.Choice.FinishReason
+				.of(choice.finishReason().flatMap(finishReason -> finishReason._value().asString()).orElse(""));
+		}
+
+		private static ChatCompletion.Choice.Logprobs toLogprobs(Choice choice) {
+			if (choice.logprobs().isEmpty()) {
+				return ChatCompletion.Choice.Logprobs.builder().content(List.of()).refusal(List.of()).build();
+			}
+			var logprobs = choice.logprobs().get();
+			return ChatCompletion.Choice.Logprobs.builder()
+				.content(logprobs.content())
+				.refusal(logprobs.refusal())
+				.build();
+		}
+
+		private static ChatCompletionMessage toMessage(Delta delta) {
+			ChatCompletionMessage.Builder messageBuilder = ChatCompletionMessage.builder()
+				.content(delta.content())
+				.refusal(delta.refusal())
+				// Carry over provider-specific delta fields (e.g. reasoning_content)
+				// so they are readable on the message, as in the non-streaming path.
+				.putAllAdditionalProperties(delta._additionalProperties());
+			delta.toolCalls()
+				.ifPresent(toolCalls -> messageBuilder
+					.toolCalls(toolCalls.stream().map(ChunkMerger::toFunctionToolCall).toList()));
+			return messageBuilder.build();
+		}
+
+		private static ChatCompletionMessageToolCall toFunctionToolCall(ToolCall toolCall) {
+			Function function = toolCall.function()
+				.orElseThrow(() -> new IllegalStateException("Tool call function is missing"));
+			String id = toolCall.id()
+				.filter(StringUtils::hasText)
+				.orElseThrow(() -> new IllegalStateException("Tool call id is missing"));
+			String name = function.name()
+				.filter(StringUtils::hasText)
+				.orElseThrow(() -> new IllegalStateException("Tool call function name is missing"));
+			return ChatCompletionMessageToolCall.ofFunction(ChatCompletionMessageFunctionToolCall.builder()
+				.putAllAdditionalProperties(toolCall._additionalProperties())
+				.id(id)
+				.function(ChatCompletionMessageFunctionToolCall.Function.builder()
+					.name(name)
+					.arguments(function.arguments().orElse(""))
+					.build())
+				.build());
 		}
 
 		/**
@@ -1180,12 +1943,15 @@ public final class OpenAiChatModel implements ChatModel {
 	 * @author Hyunjoon Choi
 	 * @author Jonghoon Park
 	 * @author Sebastien Deleuze
+	 * @author Bishen Yu
 	 */
 	public static class ResponseFormat {
 
 		private Type type = Type.TEXT;
 
 		private @Nullable String jsonSchema;
+
+		private @Nullable Boolean strict;
 
 		public Type getType() {
 			return this.type;
@@ -1201,6 +1967,41 @@ public final class OpenAiChatModel implements ChatModel {
 
 		public void setJsonSchema(@Nullable String jsonSchema) {
 			this.jsonSchema = jsonSchema;
+		}
+
+		/**
+		 * Whether to enable strict schema adherence for JSON schema response format.
+		 * Defaults to {@code true} when unset.
+		 * <p>
+		 * This applies only to the JSON schema response format and is distinct from
+		 * {@link OpenAiChatOptions.Builder#strict(Boolean)}, which controls strict mode
+		 * for tool/function calling.
+		 * @return the strict flag, or {@code null} if not configured
+		 */
+		public @Nullable Boolean getStrict() {
+			return this.strict;
+		}
+
+		public void setStrict(@Nullable Boolean strict) {
+			this.strict = strict;
+		}
+
+		@Override
+		public boolean equals(@Nullable Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			ResponseFormat that = (ResponseFormat) o;
+			return this.type == that.type && Objects.equals(this.jsonSchema, that.jsonSchema)
+					&& Objects.equals(this.strict, that.strict);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(this.type, this.jsonSchema, this.strict);
 		}
 
 		public static Builder builder() {
@@ -1222,6 +2023,19 @@ public final class OpenAiChatModel implements ChatModel {
 			public Builder jsonSchema(String jsonSchema) {
 				this.responseFormat.setType(Type.JSON_SCHEMA);
 				this.responseFormat.setJsonSchema(jsonSchema);
+				return this;
+			}
+
+			/**
+			 * Whether to enable strict schema adherence for JSON schema response format.
+			 * <p>
+			 * Not to be confused with {@link OpenAiChatOptions.Builder#strict(Boolean)},
+			 * which applies to tool/function calling rather than response format.
+			 * @param strict the strict flag
+			 * @return this builder
+			 */
+			public Builder strict(@Nullable Boolean strict) {
+				this.responseFormat.setStrict(strict);
 				return this;
 			}
 
@@ -1365,8 +2179,8 @@ public final class OpenAiChatModel implements ChatModel {
 		 * @return the configured chat model
 		 */
 		public OpenAiChatModel build() {
-			OpenAiChatOptions resolvedOptions = this.options != null ? this.options
-					: OpenAiChatOptions.builder().build();
+			OpenAiChatOptions resolvedOptions = Objects.requireNonNullElseGet(this.options,
+					() -> OpenAiChatOptions.builder().build());
 			ObservationRegistry resolvedObservationRegistry = Objects.requireNonNullElse(this.observationRegistry,
 					ObservationRegistry.NOOP);
 
@@ -1375,18 +2189,24 @@ public final class OpenAiChatModel implements ChatModel {
 							resolvedOptions.getCredential(), resolvedOptions.getMicrosoftDeploymentName(),
 							resolvedOptions.getMicrosoftFoundryServiceVersion(), resolvedOptions.getOrganizationId(),
 							resolvedOptions.isMicrosoftFoundry(), resolvedOptions.isGitHubModels(),
-							resolvedOptions.getModel(), resolvedOptions.getTimeout(), resolvedOptions.getMaxRetries(),
-							resolvedOptions.getProxy(), resolvedOptions.getCustomHeaders(), resolvedObservationRegistry,
-							this.meterRegistry, this.httpClientCustomizers));
+							resolvedOptions.getModel(),
+							Objects.requireNonNullElse(resolvedOptions.getTimeout(),
+									AbstractOpenAiOptions.DEFAULT_TIMEOUT),
+							resolvedOptions.getMaxRetries(), resolvedOptions.getProxy(),
+							resolvedOptions.getCustomHeaders(), resolvedObservationRegistry, this.meterRegistry,
+							this.httpClientCustomizers));
 
 			OpenAIClientAsync resolvedClientAsync = Objects.requireNonNullElseGet(this.openAiClientAsync,
 					() -> OpenAiSetup.setupAsyncClient(resolvedOptions.getBaseUrl(), resolvedOptions.getApiKey(),
 							resolvedOptions.getCredential(), resolvedOptions.getMicrosoftDeploymentName(),
 							resolvedOptions.getMicrosoftFoundryServiceVersion(), resolvedOptions.getOrganizationId(),
 							resolvedOptions.isMicrosoftFoundry(), resolvedOptions.isGitHubModels(),
-							resolvedOptions.getModel(), resolvedOptions.getTimeout(), resolvedOptions.getMaxRetries(),
-							resolvedOptions.getProxy(), resolvedOptions.getCustomHeaders(), resolvedObservationRegistry,
-							this.meterRegistry, this.httpClientCustomizers));
+							resolvedOptions.getModel(),
+							Objects.requireNonNullElse(resolvedOptions.getTimeout(),
+									AbstractOpenAiOptions.DEFAULT_TIMEOUT),
+							resolvedOptions.getMaxRetries(), resolvedOptions.getProxy(),
+							resolvedOptions.getCustomHeaders(), resolvedObservationRegistry, this.meterRegistry,
+							this.httpClientCustomizers));
 
 			ToolCallingManager resolvedToolCallingManager = Objects.requireNonNullElse(this.toolCallingManager,
 					ToolCallingManager.builder().observationRegistry(resolvedObservationRegistry).build());

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.image;
 
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.model.MutableResponseMetadata;
 
 /**
@@ -31,16 +33,45 @@ public class ImageResponseMetadata extends MutableResponseMetadata {
 
 	private final Long created;
 
+	private Usage usage;
+
 	public ImageResponseMetadata() {
-		this(System.currentTimeMillis());
+		this(System.currentTimeMillis(), new EmptyUsage());
 	}
 
 	public ImageResponseMetadata(Long created) {
+		this(created, new EmptyUsage());
+	}
+
+	/**
+	 * Create a new {@code ImageResponseMetadata}.
+	 * @param created the creation timestamp
+	 * @param usage the token usage associated with the image response
+	 * @since 2.0.1
+	 */
+	public ImageResponseMetadata(Long created, Usage usage) {
 		this.created = created;
+		this.usage = usage;
 	}
 
 	public Long getCreated() {
 		return this.created;
+	}
+
+	/**
+	 * Return the token usage associated with the image response.
+	 * @since 2.0.1
+	 */
+	public Usage getUsage() {
+		return this.usage;
+	}
+
+	/**
+	 * Set the token usage associated with the image response.
+	 * @since 2.0.1
+	 */
+	public void setUsage(Usage usage) {
+		this.usage = usage;
 	}
 
 }

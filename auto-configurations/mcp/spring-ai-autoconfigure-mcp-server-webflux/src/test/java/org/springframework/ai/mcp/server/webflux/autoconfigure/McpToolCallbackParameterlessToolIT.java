@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -105,21 +106,19 @@ class McpToolCallbackParameterlessToolIT {
 				JsonMapper jsonMapper = serverContext.getBean(JsonMapper.class);
 
 				String incompleteSchemaJson = "{\"type\":\"object\",\"additionalProperties\":false}";
-				McpSchema.JsonSchema incompleteSchema = jsonMapper.readValue(incompleteSchemaJson,
-						McpSchema.JsonSchema.class);
 
 				// Build the tool using the builder pattern
-				McpSchema.Tool parameterlessTool = McpSchema.Tool.builder()
-					.name("getCurrentTime")
+				McpSchema.Tool parameterlessTool = McpSchema.Tool
+					.builder("getCurrentTime", new JacksonMcpJsonMapper(jsonMapper), incompleteSchemaJson)
 					.description("Get the current server time")
-					.inputSchema(incompleteSchema)
 					.build();
 
 				// Create a tool specification that returns a simple response
 				McpServerFeatures.SyncToolSpecification toolSpec = new McpServerFeatures.SyncToolSpecification(
 						parameterlessTool, (exchange, request) -> {
-							McpSchema.TextContent content = new McpSchema.TextContent(
-									"Current time: " + Instant.now().toString());
+							McpSchema.TextContent content = McpSchema.TextContent
+								.builder("Current time: " + Instant.now().toString())
+								.build();
 							return McpSchema.CallToolResult.builder().content(List.of(content)).isError(false).build();
 						});
 

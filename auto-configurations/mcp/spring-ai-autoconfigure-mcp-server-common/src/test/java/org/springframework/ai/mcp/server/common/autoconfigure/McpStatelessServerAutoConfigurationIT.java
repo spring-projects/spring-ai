@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
@@ -25,6 +26,7 @@ import java.util.stream.Stream;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpStatelessAsyncServer;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncCompletionSpecification;
@@ -51,6 +53,8 @@ import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.customizer.McpStatelessAsyncServerCustomizer;
+import org.springframework.ai.mcp.customizer.McpStatelessSyncServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.StatelessServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
@@ -61,6 +65,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -209,6 +214,36 @@ public class McpStatelessServerAutoConfigurationIT {
 			assertThat(context).hasSingleBean(McpSchema.ServerCapabilities.Builder.class);
 			assertThat(context.getBean(McpSchema.ServerCapabilities.Builder.class))
 				.isInstanceOf(CustomCapabilitiesBuilder.class);
+		});
+	}
+
+	@Test
+	void syncServerCustomizerConfiguration() {
+		this.contextRunner.withUserConfiguration(SyncServerCustomizerConfiguration.class).run(context -> {
+			assertThat(context).hasSingleBean(McpStatelessSyncServer.class);
+			RecordingSyncServerCustomizer customizer = context.getBean(RecordingSyncServerCustomizer.class);
+			assertThat(customizer.invoked).isTrue();
+		});
+	}
+
+	@Test
+	void asyncServerCustomizerConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withUserConfiguration(AsyncServerCustomizerConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasSingleBean(McpStatelessAsyncServer.class);
+				RecordingAsyncServerCustomizer customizer = context.getBean(RecordingAsyncServerCustomizer.class);
+				assertThat(customizer.invoked).isTrue();
+			});
+	}
+
+	@Test
+	void multipleSyncServerCustomizersInvokedInOrder() {
+		this.contextRunner.withUserConfiguration(OrderedSyncServerCustomizersConfiguration.class).run(context -> {
+			assertThat(context).hasSingleBean(McpStatelessSyncServer.class);
+			@SuppressWarnings("unchecked")
+			List<String> invocations = context.getBean("customizerInvocations", List.class);
+			assertThat(invocations).containsExactly("first", "second");
 		});
 	}
 
@@ -430,6 +465,70 @@ public class McpStatelessServerAutoConfigurationIT {
 	}
 
 	@Configuration
+	static class SyncServerCustomizerConfiguration {
+
+		@Bean
+		RecordingSyncServerCustomizer syncServerCustomizer() {
+			return new RecordingSyncServerCustomizer();
+		}
+
+	}
+
+	static class RecordingSyncServerCustomizer implements McpStatelessSyncServerCustomizer {
+
+		private boolean invoked;
+
+		@Override
+		public void customize(McpServer.StatelessSyncSpecification serverBuilder) {
+			this.invoked = true;
+		}
+
+	}
+
+	@Configuration
+	static class OrderedSyncServerCustomizersConfiguration {
+
+		@Bean
+		List<String> customizerInvocations() {
+			return new CopyOnWriteArrayList<>();
+		}
+
+		@Bean
+		@Order(1)
+		McpStatelessSyncServerCustomizer firstCustomizer(List<String> customizerInvocations) {
+			return serverBuilder -> customizerInvocations.add("first");
+		}
+
+		@Bean
+		@Order(2)
+		McpStatelessSyncServerCustomizer secondCustomizer(List<String> customizerInvocations) {
+			return serverBuilder -> customizerInvocations.add("second");
+		}
+
+	}
+
+	@Configuration
+	static class AsyncServerCustomizerConfiguration {
+
+		@Bean
+		RecordingAsyncServerCustomizer asyncServerCustomizer() {
+			return new RecordingAsyncServerCustomizer();
+		}
+
+	}
+
+	static class RecordingAsyncServerCustomizer implements McpStatelessAsyncServerCustomizer {
+
+		private boolean invoked;
+
+		@Override
+		public void customize(McpServer.StatelessAsyncSpecification serverBuilder) {
+			this.invoked = true;
+		}
+
+	}
+
+	@Configuration
 	static class TestToolConfiguration {
 
 		@Bean
@@ -441,7 +540,8 @@ public class McpStatelessServerAutoConfigurationIT {
 			Mockito.when(mockTool.name()).thenReturn("test-tool");
 			Mockito.when(mockTool.description()).thenReturn("Test Tool");
 			Mockito.when(mockClient.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult);
-			when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+			when(mockClient.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 
 			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build());
 		}
@@ -459,7 +559,8 @@ public class McpStatelessServerAutoConfigurationIT {
 
 				Mockito.when(mockTool.name()).thenReturn("provider-tool");
 				Mockito.when(mockTool.description()).thenReturn("Provider Tool");
-				when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+				when(mockClient.getClientInfo())
+					.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 
 				return new ToolCallback[] {
 						SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build() };
@@ -479,7 +580,7 @@ public class McpStatelessServerAutoConfigurationIT {
 							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false));
 
 			return List.of(new McpStatelessServerFeatures.SyncCompletionSpecification(
-					new McpSchema.PromptReference("ref/prompt", "code_review", "Code review"), completionHandler));
+					McpSchema.PromptReference.builder("code_review").title("Code review").build(), completionHandler));
 		}
 
 	}
@@ -494,7 +595,7 @@ public class McpStatelessServerAutoConfigurationIT {
 							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false)));
 
 			return List.of(new McpStatelessServerFeatures.AsyncCompletionSpecification(
-					new McpSchema.PromptReference("ref/prompt", "code_review", "Code review"), completionHandler));
+					McpSchema.PromptReference.builder("code_review").title("Code review").build(), completionHandler));
 		}
 
 	}
@@ -562,14 +663,15 @@ public class McpStatelessServerAutoConfigurationIT {
 
 			String message = "Hello, " + name + "! How can I help you today?";
 
-			return new McpSchema.GetPromptResult("Greeting",
-					List.of(new McpSchema.PromptMessage(McpSchema.Role.ASSISTANT, new McpSchema.TextContent(message))));
+			return McpSchema.GetPromptResult.builder(List.of(McpSchema.PromptMessage
+				.builder(McpSchema.Role.ASSISTANT, McpSchema.TextContent.builder(message).build())
+				.build())).description("Greeting").build();
 		}
 
 		@McpComplete(prompt = "city-search")
 		public List<String> completeCityName(String prefix) {
 			return Stream.of("New York", "Los Angeles", "Chicago", "Houston", "Phoenix")
-				.filter(city -> city.toLowerCase().startsWith(prefix.toLowerCase()))
+				.filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT)))
 				.limit(10)
 				.toList();
 		}
@@ -603,14 +705,15 @@ public class McpStatelessServerAutoConfigurationIT {
 
 			String message = "Hello, " + name + "! How can I help you today?";
 
-			return Mono.just(new McpSchema.GetPromptResult("Greeting", List
-				.of(new McpSchema.PromptMessage(McpSchema.Role.ASSISTANT, new McpSchema.TextContent(message)))));
+			return Mono.just(McpSchema.GetPromptResult.builder(List.of(McpSchema.PromptMessage
+				.builder(McpSchema.Role.ASSISTANT, McpSchema.TextContent.builder(message).build())
+				.build())).description("Greeting").build());
 		}
 
 		@McpComplete(prompt = "city-search")
 		public Mono<List<String>> completeCityName(String prefix) {
 			return Mono.just(Stream.of("New York", "Los Angeles", "Chicago", "Houston", "Phoenix")
-				.filter(city -> city.toLowerCase().startsWith(prefix.toLowerCase()))
+				.filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT)))
 				.limit(10)
 				.toList());
 		}

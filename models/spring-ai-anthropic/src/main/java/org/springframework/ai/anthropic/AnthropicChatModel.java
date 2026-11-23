@@ -16,19 +16,26 @@
 
 package org.springframework.ai.anthropic;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
+import com.anthropic.core.ObjectMappers;
+import com.anthropic.core.RequestOptions;
+import com.anthropic.core.http.HttpResponse;
 import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.core.http.StreamResponse;
 import com.anthropic.models.messages.Base64ImageSource;
@@ -46,12 +53,16 @@ import com.anthropic.models.messages.DocumentBlockParam;
 import com.anthropic.models.messages.ImageBlockParam;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
+import com.anthropic.models.messages.MessageDeltaUsage;
 import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.RedactedThinkingBlock;
+import com.anthropic.models.messages.RedactedThinkingBlockParam;
+import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.TextBlockParam;
 import com.anthropic.models.messages.TextCitation;
 import com.anthropic.models.messages.ThinkingBlock;
+import com.anthropic.models.messages.ThinkingBlockParam;
 import com.anthropic.models.messages.Tool;
 import com.anthropic.models.messages.ToolChoice;
 import com.anthropic.models.messages.ToolChoiceAuto;
@@ -75,6 +86,8 @@ import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.anthropic.http.okhttp.AnthropicHttpClientBuilderCustomizer;
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
@@ -83,11 +96,21 @@ import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
+import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -125,10 +148,8 @@ import org.springframework.util.MimeType;
  * metadata, and request parameters), and an {@code okhttp.requests} span per outbound
  * HTTP attempt (with HTTP method, URI, status code, and {@code traceparent} propagation).
  * Optional OkHttp connection-pool gauges are bound to the
- * {@link io.micrometer.core.instrument.MeterRegistry} when supplied. For synchronous
- * calls the HTTP span nests under the chat-model span; for streaming calls the HTTP span
- * fires but is not parented under the chat-model span due to an SDK-internal thread
- * boundary — see {@link #stream(org.springframework.ai.chat.prompt.Prompt)}.
+ * {@link io.micrometer.core.instrument.MeterRegistry} when supplied. For both synchronous
+ * and streaming calls the HTTP span nests under the chat-model span.
  *
  * @author Christian Tzolov
  * @author luocongqiu
@@ -141,6 +162,9 @@ import org.springframework.util.MimeType;
  * @author Austin Dase
  * @author Sebastien Deleuze
  * @author Ilayaperumal Gopinathan
+ * @author Jewoo Shin
+ * @author Seeun Kim
+ * @author guan xu
  * @since 1.0.0
  * @see AnthropicChatOptions
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
@@ -157,11 +181,57 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	private static final String BETA_FILES_API = "files-api-2025-04-14";
 
+	/**
+	 * The {@link OpaquePayload#provider()} of parts produced by this model.
+	 * @since 2.1.0
+	 */
+	public static final String ANTHROPIC_PROVIDER = "anthropic";
+
+	/**
+	 * The {@link OpaquePayload#kind()} of a thinking block signature; the payload data is
+	 * the signature, replayed unmodified.
+	 * @since 2.1.0
+	 */
+	public static final String PAYLOAD_SIGNATURE = "signature";
+
+	/**
+	 * The {@link OpaquePayload#kind()} of a redacted thinking block, whose reasoning
+	 * Anthropic withheld: the {@link ReasoningPart} has no text and the payload data is
+	 * the opaque block data, replayed unmodified.
+	 * @since 2.1.0
+	 */
+	public static final String PAYLOAD_REDACTED_THINKING = "redacted_thinking";
+
+	/**
+	 * Metadata key set to {@code true} on streaming {@link AssistantMessage} chunks that
+	 * carry incremental thinking (reasoning) text from a thinking-enabled model.
+	 * @since 2.0.2
+	 * @see #THINKING_TEXT_METADATA_KEY
+	 * @deprecated since 2.1.0; a thinking chunk holds a {@link ReasoningPart}, see
+	 * {@link AssistantMessage#getReasoning()}
+	 */
+	@Deprecated(since = "2.1.0", forRemoval = true)
+	public static final String THINKING_METADATA_KEY = "thinking";
+
+	/**
+	 * Metadata key holding the incremental thinking text on streaming
+	 * {@link AssistantMessage} chunks where {@link #THINKING_METADATA_KEY} is
+	 * {@code true}.
+	 * @since 2.0.2
+	 * @see #THINKING_METADATA_KEY
+	 * @deprecated since 2.1.0; read the text of the chunk's {@link ReasoningPart}, see
+	 * {@link AssistantMessage#getReasoning()}
+	 */
+	@Deprecated(since = "2.1.0", forRemoval = true)
+	public static final String THINKING_TEXT_METADATA_KEY = "thinkingText";
+
 	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
 
 	private final AnthropicClient anthropicClient;
 
 	private final AnthropicClientAsync anthropicClientAsync;
+
+	private final boolean streamWithAsyncClient;
 
 	private final AnthropicChatOptions options;
 
@@ -198,6 +268,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		else {
 			this.options = options;
 		}
+		warnOnIgnoredSamplingOptions(this.options);
 
 		// Must precede the AnthropicSetup calls below so the HTTP client gets the user's
 		// registries and dispatcher.
@@ -211,6 +282,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
 						this.dispatcherExecutor, httpClientCustomizers));
 
+		// An async client supplied by the user keeps being used for streaming, as before.
+		this.streamWithAsyncClient = anthropicClientAsync != null;
 		this.anthropicClientAsync = Objects.requireNonNullElseGet(anthropicClientAsync,
 				() -> AnthropicSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
@@ -256,16 +329,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	/**
 	 * Streams the chat completion as a {@link Flux} of {@link ChatResponse} events.
-	 *
-	 * <p>
-	 * <b>Observability note.</b> The outbound HTTP attempt is observed as
-	 * {@code okhttp.requests} with timer + {@code traceparent}, but for streaming calls
-	 * the HTTP span is not parented under the chat-model's
-	 * {@code gen_ai.client.operation} span. The SDK's async path internally schedules the
-	 * HTTP call on {@code ForkJoinPool.commonPool()} before Spring AI's HTTP client runs,
-	 * which drops the calling thread's observation context. Filter by
-	 * {@code okhttp.requests} + host {@code api.anthropic.com} and correlate by trace ID
-	 * or timestamp if you need to join the spans in your tracing UI.
 	 * @param prompt the prompt
 	 * @return a {@link Flux} of streamed {@link ChatResponse} events
 	 */
@@ -323,15 +386,20 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			// Use the raw streaming response so rate-limit headers (available once at
 			// stream start) can be captured. The SDK exposes this as a blocking
-			// StreamResponse, so events are pulled on a boundedElastic worker.
-			Flux<ChatResponse> chatResponseFlux = Mono
-				.fromFuture(() -> this.anthropicClientAsync.messages().withRawResponse().createStreaming(request))
+			// StreamResponse, so its events are pulled on a boundedElastic worker.
+			// If the subscriber cancels while the stream is still opening, an error
+			// caused by the cancel is not reported, and a response that arrives
+			// afterwards is closed (see PendingResponse).
+			PendingResponse pendingResponse = new PendingResponse();
+			Flux<ChatResponse> chatResponseFlux = openStream(request, prompt, observation, pendingResponse)
+				.doOnCancel(pendingResponse::cancel)
+				.onErrorResume(e -> pendingResponse.isCancelled(), e -> Mono.empty())
 				.flatMapMany(rawResponse -> {
 					streamingState.setRateLimit(AnthropicRateLimit.from(rawResponse.headers()));
 					StreamResponse<RawMessageStreamEvent> streamResponse = rawResponse.parse();
 					return Flux.fromStream(streamResponse.stream())
-						.doFinally(signal -> streamResponse.close())
-						.subscribeOn(Schedulers.boundedElastic());
+						.subscribeOn(Schedulers.boundedElastic())
+						.doFinally(signal -> streamResponse.close());
 				})
 				.<ChatResponse>handle((event, sink) -> {
 					ChatResponse chatResponse = convertStreamEventToChatResponse(event, previousChatResponse,
@@ -355,6 +423,33 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
+	 * Opens a streaming request while the chat observation is the current one, so the
+	 * HTTP observation and the {@code traceparent} header it writes become its children.
+	 * This uses the sync client on purpose. The sync client sends the request on the
+	 * calling thread, while the async client hands it to another thread inside the SDK,
+	 * where the current observation is lost. Both return the same blocking
+	 * {@link StreamResponse}, so the async client would add nothing else here.
+	 * <p>
+	 * An async client set on the builder is still used, so existing setups keep working,
+	 * but then the HTTP observation is not a child of the chat observation.
+	 */
+	private Mono<HttpResponseFor<StreamResponse<RawMessageStreamEvent>>> openStream(MessageCreateParams request,
+			Prompt prompt, Observation observation, PendingResponse pendingResponse) {
+		if (this.streamWithAsyncClient) {
+			return Mono.fromFuture(() -> this.anthropicClientAsync.messages()
+				.withRawResponse()
+				.createStreaming(request, requestOptionsFor(prompt)));
+		}
+		return Mono.fromCallable(() -> {
+			try (Observation.Scope ignored = observation.openScope()) {
+				return pendingResponse.opened(this.anthropicClient.messages()
+					.withRawResponse()
+					.createStreaming(request, requestOptionsFor(prompt)));
+			}
+		}).subscribeOn(Schedulers.boundedElastic());
+	}
+
+	/**
 	 * Converts a streaming event to a ChatResponse. Handles message_start, content_block
 	 * events (text and tool_use), and message_delta for final response with usage.
 	 * @param event the raw message stream event
@@ -366,87 +461,98 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			@Nullable ChatResponse previousChatResponse, StreamingState streamingState) {
 
 		// -- Event: message_start --
-		// Captures message ID, model, and input tokens from the first event.
+		// Captures message ID, model, and input usage from the first event.
 		if (event.messageStart().isPresent()) {
 			var startEvent = event.messageStart().get();
 			var message = startEvent.message();
-			streamingState.setMessageInfo(message.id(), message.model().asString(), message.usage().inputTokens());
+			streamingState.setMessageInfo(message.id(), message.model().asString(), message.usage());
 			return null;
 		}
 
 		// -- Event: content_block_start --
-		// Initializes tool call tracking or emits redacted thinking blocks.
+		// Starts tracking a tool use block and announces it as a partial tool call part,
+		// emits redacted thinking as a complete part, starts tracking any block type not
+		// modeled as a part, and accumulates web search results for the final response
+		// metadata.
 		if (event.contentBlockStart().isPresent()) {
 			var startEvent = event.contentBlockStart().get();
 			var contentBlock = startEvent.contentBlock();
-			if (contentBlock.toolUse().isPresent()) {
+			int index = Math.toIntExact(startEvent.index());
+			if (contentBlock.isToolUse()) {
 				var toolUseBlock = contentBlock.asToolUse();
-				streamingState.startToolUse(toolUseBlock.id(), toolUseBlock.name());
+				streamingState.startToolUse(index, toolUseBlock.id(), toolUseBlock.name());
+				return toolCallDeltaChunk(streamingState, index, "");
 			}
 			else if (contentBlock.isRedactedThinking()) {
-				// Emit redacted thinking block immediately
 				RedactedThinkingBlock redactedBlock = contentBlock.asRedactedThinking();
-				Map<String, Object> redactedProperties = new HashMap<>();
-				redactedProperties.put("data", redactedBlock.data());
-				AssistantMessage assistantMessage = AssistantMessage.builder().properties(redactedProperties).build();
-				return new ChatResponse(List.of(new Generation(assistantMessage)));
+				// The "data" metadata key is deprecated; use the ReasoningPart payload.
+				Map<String, Object> legacyProperties = new HashMap<>();
+				legacyProperties.put("data", redactedBlock.data());
+				return partChunk(streamingState,
+						StreamingParts.complete(redactedReasoningPart(redactedBlock.data()), index), legacyProperties);
 			}
-			else if (contentBlock.isWebSearchToolResult()) {
-				// Accumulate web search results for final response metadata
-				WebSearchToolResultBlock wsBlock = contentBlock.asWebSearchToolResult();
-				if (wsBlock.content().isResultBlocks()) {
-					for (WebSearchResultBlock r : wsBlock.content().asResultBlocks()) {
-						streamingState.addWebSearchResult(
-								new AnthropicWebSearchResult(r.title(), r.url(), r.pageAge().orElse(null)));
+			else if (!contentBlock.isText() && !contentBlock.isThinking()) {
+				if (contentBlock.isWebSearchToolResult()) {
+					WebSearchToolResultBlock wsBlock = contentBlock.asWebSearchToolResult();
+					if (wsBlock.content().isResultBlocks()) {
+						for (WebSearchResultBlock r : wsBlock.content().asResultBlocks()) {
+							streamingState.addWebSearchResult(
+									new AnthropicWebSearchResult(r.title(), r.url(), r.pageAge().orElse(null)));
+						}
 					}
 				}
+				// server_tool_use, server tool results, container upload, future types:
+				// emitted as an UnknownPart once the block stops, since a server tool
+				// use still receives its input as deltas.
+				streamingState.startUnknownBlock(index,
+						contentBlock._json().orElseGet(() -> JsonValue.from(contentBlock)));
 			}
 			return null;
 		}
 
 		// -- Event: content_block_delta --
-		// Handles incremental text, tool argument JSON, thinking, and citation deltas.
+		// Text, thinking, signature and tool argument deltas are emitted as indexed
+		// partial parts; tool arguments are also accumulated for the complete call, and
+		// citations for the final response metadata.
 		if (event.contentBlockDelta().isPresent()) {
 			var deltaEvent = event.contentBlockDelta().get();
 			var delta = deltaEvent.delta();
+			int index = Math.toIntExact(deltaEvent.index());
 
-			// Text chunk — emit immediately
-			if (delta.text().isPresent()) {
-				String text = delta.asText().text();
-				AssistantMessage assistantMessage = AssistantMessage.builder().content(text).build();
-				Generation generation = new Generation(assistantMessage);
-				return new ChatResponse(List.of(generation));
+			if (delta.isText()) {
+				return partChunk(streamingState, StreamingParts.partial(TextPart.of(delta.asText().text()), index),
+						Map.of());
 			}
 
-			// Tool argument JSON chunk — accumulate for later
-			if (delta.inputJson().isPresent()) {
+			if (delta.isInputJson()) {
 				String partialJson = delta.asInputJson().partialJson();
-				streamingState.appendToolJson(partialJson);
-				return null;
+				streamingState.appendInputJson(index, partialJson);
+				return toolCallDeltaChunk(streamingState, index, partialJson);
 			}
 
-			// Thinking chunk — emit with thinking metadata
 			if (delta.isThinking()) {
 				String thinkingText = delta.asThinking().thinking();
-				Map<String, Object> thinkingProperties = new HashMap<>();
-				thinkingProperties.put("thinking", Boolean.TRUE);
-				AssistantMessage assistantMessage = AssistantMessage.builder()
-					.content(thinkingText)
-					.properties(thinkingProperties)
-					.build();
-				return new ChatResponse(List.of(new Generation(assistantMessage)));
+				// The thinking metadata keys are deprecated; use the ReasoningPart.
+				Map<String, Object> legacyProperties = new HashMap<>();
+				legacyProperties.put(THINKING_METADATA_KEY, Boolean.TRUE);
+				legacyProperties.put(THINKING_TEXT_METADATA_KEY, thinkingText);
+				return partChunk(streamingState, StreamingParts.partial(ReasoningPart.of(thinkingText), index),
+						legacyProperties);
 			}
 
-			// Thinking signature — emit with signature metadata
 			if (delta.isSignature()) {
 				String signature = delta.asSignature().signature();
-				Map<String, Object> signatureProperties = new HashMap<>();
-				signatureProperties.put("signature", signature);
-				AssistantMessage assistantMessage = AssistantMessage.builder().properties(signatureProperties).build();
-				return new ChatResponse(List.of(new Generation(assistantMessage)));
+				// The "signature" metadata key is deprecated; use the ReasoningPart
+				// payload.
+				Map<String, Object> legacyProperties = new HashMap<>();
+				legacyProperties.put("signature", signature);
+				// An empty text so that a thinking block streamed without any thinking
+				// delta (display omitted) still aggregates to a replayable part.
+				ReasoningPart signaturePart = new ReasoningPart("", null,
+						new OpaquePayload(ANTHROPIC_PROVIDER, PAYLOAD_SIGNATURE, signature), Map.of());
+				return partChunk(streamingState, StreamingParts.partial(signaturePart, index), legacyProperties);
 			}
 
-			// Citation — accumulate for final response metadata
 			if (delta.isCitations()) {
 				CitationsDelta citationsDelta = delta.asCitations();
 				Citation citation = convertStreamingCitation(citationsDelta.citation());
@@ -458,38 +564,47 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		// -- Event: content_block_stop --
-		// Finalizes the current tool call if one was being tracked.
+		// Finalizes the tool call at this index, or emits the block not modeled as a part
+		// as a complete UnknownPart.
 		if (event.contentBlockStop().isPresent()) {
-			if (streamingState.isTrackingToolUse()) {
-				streamingState.finishToolUse();
+			int index = Math.toIntExact(event.contentBlockStop().get().index());
+			streamingState.finishToolUse(index);
+			UnknownPart unknownPart = streamingState.finishUnknownBlock(index);
+			if (unknownPart != null) {
+				return partChunk(streamingState, StreamingParts.complete(unknownPart, index), Map.of());
 			}
 			return null;
 		}
 
 		// -- Event: message_delta --
-		// Final event with stop_reason and usage. Triggers tool execution if needed.
+		// Final event with stop_reason and usage. Carries the completed tool calls as
+		// indexed complete parts so the aggregator places them in block order.
 		Optional<ChatResponse> messageDeltaResponse = event.messageDelta().map(deltaEvent -> {
 			String stopReason = deltaEvent.delta().stopReason().map(r -> r.toString()).orElse("");
-			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder().finishReason(stopReason).build();
+			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder()
+				.finishReason(stopReason)
+				.finishReasonCategory(finishReasonCategory(deltaEvent.delta().stopReason()))
+				.build();
 
-			// Build assistant message with any accumulated tool calls
-			AssistantMessage.Builder assistantMessageBuilder = AssistantMessage.builder().content("");
-			List<ToolCall> toolCalls = streamingState.getCompletedToolCalls();
-			if (!toolCalls.isEmpty()) {
-				assistantMessageBuilder.toolCalls(toolCalls);
-			}
+			// The final chunk keeps an empty text, as it always had, so a streamed chunk
+			// never reports a null text and chunk texts can be joined as before.
+			AssistantMessage.Builder<?> messageBuilder = AssistantMessage.builder();
+			streamingState.getCompletedToolCalls()
+				.forEach((index, toolCall) -> messageBuilder
+					.part(StreamingParts.complete(ToolCallPart.of(toolCall), index)));
+			messageBuilder.part(TextPart.of(""));
+			Generation generation = new Generation(messageBuilder.build(), metadata);
 
-			Generation generation = new Generation(assistantMessageBuilder.build(), metadata);
-
-			// Combine input tokens from message_start with output tokens from
-			// message_delta
+			// Usage counts are cumulative. Retain input counts when a delta omits them.
+			streamingState.updateUsage(deltaEvent.usage());
 			long inputTokens = streamingState.getInputTokens();
 			long outputTokens = deltaEvent.usage().outputTokens();
-			Long cacheRead = deltaEvent.usage().cacheReadInputTokens().orElse(null);
-			Long cacheWrite = deltaEvent.usage().cacheCreationInputTokens().orElse(null);
-			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+			Long cacheRead = streamingState.getCacheReadInputTokens();
+			Long cacheWrite = streamingState.getCacheCreationInputTokens();
+			long promptTokens = promptTokens(inputTokens, cacheRead, cacheWrite);
+			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(promptTokens)),
 					Integer.valueOf(Math.toIntExact(outputTokens)),
-					Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), deltaEvent.usage(), cacheRead,
+					Integer.valueOf(Math.toIntExact(promptTokens + outputTokens)), deltaEvent.usage(), cacheRead,
 					cacheWrite);
 
 			Usage accumulatedUsage = previousChatResponse != null
@@ -515,6 +630,36 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		});
 
 		return messageDeltaResponse.orElse(null);
+	}
+
+	/**
+	 * Builds the chunk of a tool-call argument delta, see {@link StreamingParts}, or
+	 * returns {@code null} when the block at the index is not a tool use, such as a
+	 * server tool use whose input also streams as deltas.
+	 */
+	private static @Nullable ChatResponse toolCallDeltaChunk(StreamingState streamingState, int index,
+			String argumentsDelta) {
+		ToolCall delta = streamingState.toolCallDelta(index, argumentsDelta);
+		return (delta != null)
+				? partChunk(streamingState, StreamingParts.partial(ToolCallPart.of(delta), index), Map.of()) : null;
+	}
+
+	/**
+	 * Builds a streamed chunk holding one indexed part. Every chunk carries the response
+	 * id and model so that {@link MessageAggregator} can group the parts of one response.
+	 * @param streamingState the streaming state holding the message id and model
+	 * @param part the indexed part, see {@link StreamingParts}
+	 * @param legacyProperties deprecated metadata kept for one release
+	 * @return the chunk
+	 */
+	private static ChatResponse partChunk(StreamingState streamingState, MessagePart part,
+			Map<String, Object> legacyProperties) {
+		AssistantMessage message = AssistantMessage.builder().part(part).properties(legacyProperties).build();
+		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
+			.id(streamingState.getMessageId())
+			.model(streamingState.getModel())
+			.build();
+		return new ChatResponse(List.of(new Generation(message)), metadata);
 	}
 
 	/**
@@ -544,14 +689,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 				HttpResponseFor<Message> rawResponse = this.anthropicClient.messages()
 					.withRawResponse()
-					.create(request);
+					.create(request, requestOptionsFor(prompt));
 				Message message = rawResponse.parse();
 				RateLimit rateLimit = AnthropicRateLimit.from(rawResponse.headers());
 
 				List<ContentBlock> contentBlocks = message.content();
 				if (contentBlocks.isEmpty()) {
-					if (logger.isWarnEnabled()) {
-						logger.warn("No content blocks returned for prompt: " + prompt);
+					if (logger.isDebugEnabled()) {
+						logger.debug("No content blocks returned for prompt: " + prompt);
 					}
 					return new ChatResponse(List.of());
 				}
@@ -578,6 +723,28 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return response;
 	}
 
+	private static AnthropicChatOptions resolveAnthropicOptions(Prompt prompt) {
+		ChatOptions options = prompt.getOptions();
+		return options instanceof AnthropicChatOptions anthropicOptions ? anthropicOptions
+				: AnthropicChatOptions.builder().build();
+	}
+
+	private static void warnOnIgnoredSamplingOptions(ChatOptions options) {
+		if ((options.getTemperature() != null || options.getTopP() != null || options.getTopK() != null)
+				&& logger.isWarnEnabled()) {
+			logger.warn("Anthropic API 2026-10-21 does not support temperature, topP or topK; ignoring temperature="
+					+ options.getTemperature() + ", topP=" + options.getTopP() + ", topK=" + options.getTopK());
+		}
+	}
+
+	private static RequestOptions requestOptionsFor(Prompt prompt) {
+		// Carry the resolved timeout as per-call RequestOptions; the SDK only honors a
+		// timeout supplied here, so otherwise AnthropicChatOptions#getTimeout() is
+		// ignored.
+		Duration timeout = resolveAnthropicOptions(prompt).getTimeout();
+		return timeout != null ? RequestOptions.builder().timeout(timeout).build() : RequestOptions.none();
+	}
+
 	/**
 	 * Creates a {@link MessageCreateParams} request from a Spring AI {@link Prompt}. Maps
 	 * message types to Anthropic format: TOOL messages become user messages with
@@ -591,9 +758,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		MessageCreateParams.Builder builder = MessageCreateParams.builder();
 
-		ChatOptions options = prompt.getOptions();
-		AnthropicChatOptions requestOptions = options instanceof AnthropicChatOptions anthropicOptions
-				? anthropicOptions : AnthropicChatOptions.builder().build();
+		if (prompt.getOptions() != null) {
+			warnOnIgnoredSamplingOptions(prompt.getOptions());
+		}
+		AnthropicChatOptions requestOptions = resolveAnthropicOptions(prompt);
 
 		// Set required fields
 		builder.model(requestOptions.getModel()).maxTokens(requestOptions.getMaxTokens());
@@ -659,29 +827,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 		}
 
-		// Pre-compute last user message index for CONVERSATION_HISTORY strategy
-		int lastUserIndex = -1;
-		if (cacheResolver.isCachingEnabled()) {
-			for (int i = nonSystemMessages.size() - 1; i >= 0; i--) {
-				if (nonSystemMessages.get(i).getMessageType() == MessageType.USER) {
-					lastUserIndex = i;
-					break;
-				}
-			}
-		}
+		boolean thinkingEnabled = requestOptions.getThinking() != null
+				&& (requestOptions.getThinking().isEnabled() || requestOptions.getThinking().isAdaptive());
 
-		// Pre-compute last tool result message index for tool result caching. A
-		// breakpoint on the final tool result of the request caches the prior tool
-		// outputs so they are read from cache on subsequent tool-calling rounds.
-		int lastToolIndex = -1;
-		if (cacheResolver.isCachingEnabled() && requestOptions.getCacheOptions().isCacheToolResults()) {
-			for (int i = nonSystemMessages.size() - 1; i >= 0; i--) {
-				if (nonSystemMessages.get(i).getMessageType() == MessageType.TOOL) {
-					lastToolIndex = i;
-					break;
-				}
-			}
-		}
+		// Citation documents are attached once, to the first user message. Repeating
+		// them on every user turn would re-send the source material on each request
+		// and place it after any cache breakpoint set on the previous turn.
+		int firstUserIndex = firstIndexOf(nonSystemMessages, MessageType.USER);
 
 		// Process non-system messages
 		for (int i = 0; i < nonSystemMessages.size(); i++) {
@@ -689,45 +841,73 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			if (message.getMessageType() == MessageType.USER) {
 				UserMessage userMessage = (UserMessage) message;
-				boolean hasCitationDocs = !CollectionUtils.isEmpty(citationDocuments);
-				boolean hasMedia = !CollectionUtils.isEmpty(userMessage.getMedia());
-				boolean isLastUserMessage = (i == lastUserIndex);
-				boolean applyCacheToUser = isLastUserMessage && cacheResolver.isCachingEnabled();
+				boolean hasCitationDocs = !CollectionUtils.isEmpty(citationDocuments) && i == firstUserIndex;
+				boolean hasMedia = userMessage.getParts().stream().anyMatch(MediaPart.class::isInstance);
+				// The CONVERSATION_HISTORY strategy caches up to the last user message
+				boolean applyCacheToUser = cacheResolver.isCachingEnabled()
+						&& i == lastIndexOf(nonSystemMessages, MessageType.USER);
 
 				// Compute cache control for last user message
 				CacheControlEphemeral userCacheControl = null;
 				if (applyCacheToUser) {
-					String combinedText = combineEligibleMessagesText(nonSystemMessages, lastUserIndex);
+					String combinedText = combineEligibleMessagesText(nonSystemMessages, i);
 					userCacheControl = cacheResolver.resolve(MessageType.USER, combinedText);
 				}
 
 				if (hasCitationDocs || hasMedia || userCacheControl != null) {
 					List<ContentBlockParam> contentBlocks = new ArrayList<>();
 
-					// Prepend citation document blocks to the first user message
+					// Prepend citation documents to the first user message. The cache
+					// breakpoint goes on the last document to cover the whole set.
 					if (hasCitationDocs) {
-						for (AnthropicCitationDocument doc : Objects.requireNonNull(citationDocuments)) {
-							contentBlocks.add(ContentBlockParam.ofDocument(doc.toDocumentBlockParam()));
+						List<AnthropicCitationDocument> documents = Objects.requireNonNull(citationDocuments);
+						CacheControlEphemeral documentCacheControl = cacheResolver
+							.resolveCitationDocumentCacheControl();
+						for (int d = 0; d < documents.size(); d++) {
+							DocumentBlockParam.Builder documentBuilder = documents.get(d)
+								.toDocumentBlockParam()
+								.toBuilder();
+							if (documentCacheControl != null && d == documents.size() - 1) {
+								documentBuilder.cacheControl(documentCacheControl);
+								cacheResolver.useCacheBlock();
+							}
+							contentBlocks.add(ContentBlockParam.ofDocument(documentBuilder.build()));
 						}
 					}
 
-					String text = userMessage.getText();
-					if (text != null && !text.isEmpty()) {
-						TextBlockParam.Builder textBlockBuilder = TextBlockParam.builder().text(text);
-						if (userCacheControl != null) {
-							textBlockBuilder.cacheControl(userCacheControl);
-							cacheResolver.useCacheBlock();
-						}
-						contentBlocks.add(ContentBlockParam.ofText(textBlockBuilder.build()));
-					}
-
-					if (hasMedia) {
-						for (Media media : userMessage.getMedia()) {
-							contentBlocks.add(getContentBlockParamByMedia(media));
+					// One block per part, in part order, so text and media interleave as
+					// the message was built. Legacy messages have text first, then media.
+					// The cache breakpoint goes on the last non-empty text block.
+					List<MessagePart> userParts = userMessage.getParts();
+					int lastTextIndex = -1;
+					for (int p = 0; p < userParts.size(); p++) {
+						if (userParts.get(p) instanceof TextPart textPart && !textPart.text().isEmpty()) {
+							lastTextIndex = p;
 						}
 					}
+					for (int p = 0; p < userParts.size(); p++) {
+						MessagePart part = userParts.get(p);
+						if (part instanceof TextPart textPart) {
+							if (textPart.text().isEmpty()) {
+								continue;
+							}
+							TextBlockParam.Builder textBlockBuilder = TextBlockParam.builder().text(textPart.text());
+							if (userCacheControl != null && p == lastTextIndex) {
+								textBlockBuilder.cacheControl(userCacheControl);
+								cacheResolver.useCacheBlock();
+							}
+							contentBlocks.add(ContentBlockParam.ofText(textBlockBuilder.build()));
+						}
+						else if (part instanceof MediaPart mediaPart) {
+							contentBlocks.add(getContentBlockParamByMedia(mediaPart.media()));
+						}
+						else if (logger.isDebugEnabled()) {
+							logger.debug("Skipping user message part " + part.getClass().getSimpleName()
+									+ " that Anthropic cannot take");
+						}
+					}
 
-					builder.addUserMessageOfBlockParams(contentBlocks);
+					builder.addUserMessageOfContentBlockParams(contentBlocks);
 				}
 				else {
 					String text = message.getText();
@@ -738,21 +918,27 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 			else if (message.getMessageType() == MessageType.ASSISTANT) {
 				AssistantMessage assistantMessage = (AssistantMessage) message;
-				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-					List<ContentBlockParam> toolUseBlocks = assistantMessage.getToolCalls()
-						.stream()
-						.map(toolCall -> ContentBlockParam.ofToolUse(ToolUseBlockParam.builder()
-							.id(toolCall.id())
-							.name(toolCall.name())
-							.input(buildToolInput(toolCall.arguments()))
-							.build()))
-						.toList();
-					builder.addAssistantMessageOfBlockParams(toolUseBlocks);
-				}
-				else {
-					String text = message.getText();
+				if (hasOnlyTextParts(assistantMessage)) {
+					String text = assistantMessage.getText();
 					if (text != null) {
 						builder.addAssistantMessage(text);
+					}
+				}
+				else {
+					List<ContentBlockParam> blocks = toAssistantBlockParams(assistantMessage);
+					if (thinkingEnabled && onlyToolResponsesFollow(nonSystemMessages, i)) {
+						warnIfThinkingNotReplayed(assistantMessage, blocks);
+					}
+					if (blocks.isEmpty()) {
+						// Nothing Anthropic can take from this turn (for example only
+						// reasoning from another provider). The API rejects empty
+						// content, so the turn is left out as it was before parts.
+						if (logger.isDebugEnabled()) {
+							logger.debug("Skipping assistant message with no replayable content: " + assistantMessage);
+						}
+					}
+					else {
+						builder.addAssistantMessageOfContentBlockParams(blocks);
 					}
 				}
 			}
@@ -762,9 +948,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 				// Compute cache control for the last tool result message of the request.
 				// The breakpoint is placed on its final block, caching everything before
-				// it (tools + system + prior messages + earlier tool results).
+				// it (tools + system + prior messages + earlier tool results), so the
+				// prior tool outputs are read from cache on subsequent tool-calling
+				// rounds.
 				CacheControlEphemeral toolCacheControl = null;
-				if (i == lastToolIndex) {
+				if (cacheResolver.isCachingEnabled() && requestOptions.getCacheOptions().isCacheToolResults()
+						&& i == lastIndexOf(nonSystemMessages, MessageType.TOOL)) {
 					String combinedText = combineToolResponsesText(responses);
 					toolCacheControl = cacheResolver.resolve(MessageType.TOOL, combinedText);
 				}
@@ -783,20 +972,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				if (toolCacheControl != null) {
 					cacheResolver.useCacheBlock();
 				}
-				builder.addUserMessageOfBlockParams(toolResultBlocks);
+				builder.addUserMessageOfContentBlockParams(toolResultBlocks);
 			}
 		}
 
 		// Set optional parameters
-		if (requestOptions.getTemperature() != null) {
-			builder.temperature(requestOptions.getTemperature());
-		}
-		if (requestOptions.getTopP() != null) {
-			builder.topP(requestOptions.getTopP());
-		}
-		if (requestOptions.getTopK() != null) {
-			builder.topK(requestOptions.getTopK().longValue());
-		}
 		if (requestOptions.getStopSequences() != null && !requestOptions.getStopSequences().isEmpty()) {
 			builder.stopSequences(requestOptions.getStopSequences());
 		}
@@ -913,6 +1093,55 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
+	 * Finds the index of the first message of the given type.
+	 * @param messages the list of non-system messages
+	 * @param messageType the message type to look for
+	 * @return the index of the first message of that type, or {@code -1} if there is none
+	 */
+	private static int firstIndexOf(List<org.springframework.ai.chat.messages.Message> messages,
+			MessageType messageType) {
+		for (int i = 0; i < messages.size(); i++) {
+			if (messages.get(i).getMessageType() == messageType) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	/**
+	 * Finds the index of the last message of the given type.
+	 * @param messages the list of non-system messages
+	 * @param messageType the message type to look for
+	 * @return the index of the last message of that type, or {@code -1} if there is none
+	 */
+	private static int lastIndexOf(List<org.springframework.ai.chat.messages.Message> messages,
+			MessageType messageType) {
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			if (messages.get(i).getMessageType() == messageType) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	/**
+	 * Tells whether only tool response messages follow the message at the given index,
+	 * meaning the tool use loop of that message is still open.
+	 * @param messages the list of non-system messages
+	 * @param index the index of the message
+	 * @return {@code true} if every later message is a tool response, or there is none
+	 */
+	private static boolean onlyToolResponsesFollow(List<org.springframework.ai.chat.messages.Message> messages,
+			int index) {
+		for (int i = index + 1; i < messages.size(); i++) {
+			if (messages.get(i).getMessageType() != MessageType.TOOL) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
 	 * Combines text from all messages up to and including the specified index, for use in
 	 * cache eligibility length checks during CONVERSATION_HISTORY caching.
 	 * @param messages the list of non-system messages
@@ -943,28 +1172,31 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * Builds generations from the Anthropic message response. Extracts text, tool calls,
-	 * thinking content, and citations from the response content blocks.
+	 * Builds the single generation of an Anthropic message response. Every response
+	 * content block becomes one {@link MessagePart} in block order: text, thinking and
+	 * redacted thinking (as {@link ReasoningPart} carrying the signature to replay), tool
+	 * use, and an {@link UnknownPart} for block types that are not modeled yet. Citations
+	 * and web search results are accumulated into the response metadata as before.
 	 * @param message the Anthropic message response
 	 * @param citationAccumulator collects citations found in text blocks
 	 * @param webSearchAccumulator collects web search results found in response
-	 * @return list of generations with text, tool calls, and/or thinking content
+	 * @return a single-element list holding the generation
 	 */
 	private List<Generation> buildGenerations(Message message, List<Citation> citationAccumulator,
 			List<AnthropicWebSearchResult> webSearchAccumulator) {
-		List<Generation> generations = new ArrayList<>();
 
 		String finishReason = message.stopReason().map(r -> r.toString()).orElse("");
-		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
+		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder()
+			.finishReason(finishReason)
+			.finishReasonCategory(finishReasonCategory(message.stopReason()))
+			.build();
 
-		// Collect text and tool calls from content blocks
-		StringBuilder textContent = new StringBuilder();
-		List<ToolCall> toolCalls = new ArrayList<>();
+		List<MessagePart> parts = new ArrayList<>();
 
 		for (ContentBlock block : message.content()) {
 			if (block.isText()) {
 				TextBlock textBlock = block.asText();
-				textContent.append(textBlock.text());
+				parts.add(TextPart.of(textBlock.text()));
 
 				// Extract citations from text blocks if present
 				textBlock.citations().ifPresent(textCitations -> {
@@ -982,53 +1214,220 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				// to a JSON string via the visitor pattern since JsonValue.toString()
 				// produces Java Map format ("{key=value}"), not valid JSON.
 				String arguments = convertJsonValueToString(toolUseBlock._input());
-				toolCalls.add(new ToolCall(toolUseBlock.id(), "function", toolUseBlock.name(), arguments));
+				parts.add(ToolCallPart.of(new ToolCall(toolUseBlock.id(), "function", toolUseBlock.name(), arguments)));
 			}
 			else if (block.isThinking()) {
-				// ThinkingBlock: stored as a separate Generation with the thinking
-				// text as content and signature in metadata properties.
 				ThinkingBlock thinkingBlock = block.asThinking();
-				Map<String, Object> thinkingProperties = new HashMap<>();
-				thinkingProperties.put("signature", thinkingBlock.signature());
-				generations.add(new Generation(AssistantMessage.builder()
-					.content(thinkingBlock.thinking())
-					.properties(thinkingProperties)
-					.build(), generationMetadata));
+				parts.add(thinkingReasoningPart(thinkingBlock.thinking(), thinkingBlock.signature()));
 			}
 			else if (block.isRedactedThinking()) {
-				// RedactedThinkingBlock: safety-redacted reasoning with a data marker.
-				RedactedThinkingBlock redactedBlock = block.asRedactedThinking();
-				Map<String, Object> redactedProperties = new HashMap<>();
-				redactedProperties.put("data", redactedBlock.data());
-				generations.add(new Generation(AssistantMessage.builder().properties(redactedProperties).build(),
-						generationMetadata));
+				parts.add(redactedReasoningPart(block.asRedactedThinking().data()));
 			}
-			else if (block.isWebSearchToolResult()) {
-				WebSearchToolResultBlock wsBlock = block.asWebSearchToolResult();
-				if (wsBlock.content().isResultBlocks()) {
-					for (WebSearchResultBlock r : wsBlock.content().asResultBlocks()) {
-						webSearchAccumulator
-							.add(new AnthropicWebSearchResult(r.title(), r.url(), r.pageAge().orElse(null)));
+			else {
+				if (block.isWebSearchToolResult()) {
+					WebSearchToolResultBlock wsBlock = block.asWebSearchToolResult();
+					if (wsBlock.content().isResultBlocks()) {
+						for (WebSearchResultBlock r : wsBlock.content().asResultBlocks()) {
+							webSearchAccumulator
+								.add(new AnthropicWebSearchResult(r.title(), r.url(), r.pageAge().orElse(null)));
+						}
 					}
 				}
+				// server_tool_use, server tool results, container upload, future types:
+				// keep the raw block so nothing is silently dropped.
+				parts.add(unknownPart(block._json().orElseGet(() -> JsonValue.from(block))));
 			}
-			else if (block.isContainerUpload() || block.isServerToolUse() || block.isBashCodeExecutionToolResult()
-					|| block.isTextEditorCodeExecutionToolResult() || block.isCodeExecutionToolResult()) {
-				if (logger.isWarnEnabled()) {
-					logger.warn("Unsupported content block type: " + block);
+		}
+
+		AssistantMessage assistantMessage = AssistantMessage.builder().parts(parts).build();
+		return List.of(new Generation(assistantMessage, generationMetadata));
+	}
+
+	/**
+	 * Classifies the stop reason of a message.
+	 */
+	static FinishReasonCategory finishReasonCategory(Optional<StopReason> stopReason) {
+		if (stopReason.isEmpty()) {
+			return FinishReasonCategory.UNSPECIFIED;
+		}
+		return switch (stopReason.get().value()) {
+			case END_TURN, STOP_SEQUENCE -> FinishReasonCategory.COMPLETED;
+			case MAX_TOKENS, MODEL_CONTEXT_WINDOW_EXCEEDED -> FinishReasonCategory.TRUNCATED;
+			case TOOL_USE -> FinishReasonCategory.TOOL_CALL;
+			case REFUSAL -> FinishReasonCategory.FILTERED;
+			// A paused turn, a value the SDK does not know, and one that a newer version
+			// of the SDK adds
+			default -> FinishReasonCategory.OTHER;
+		};
+	}
+
+	private static ReasoningPart thinkingReasoningPart(String thinking, String signature) {
+		return new ReasoningPart(thinking, null, new OpaquePayload(ANTHROPIC_PROVIDER, PAYLOAD_SIGNATURE, signature),
+				Map.of());
+	}
+
+	private static ReasoningPart redactedReasoningPart(String data) {
+		return new ReasoningPart(null, null, new OpaquePayload(ANTHROPIC_PROVIDER, PAYLOAD_REDACTED_THINKING, data),
+				Map.of());
+	}
+
+	/**
+	 * Keeps a content block this model does not map to a typed part as an
+	 * {@link UnknownPart} holding the block JSON, with the block {@code type} as its
+	 * kind.
+	 * @param json the content block JSON
+	 * @return the part
+	 */
+	private static UnknownPart unknownPart(JsonValue json) {
+		Object nativeJson = convertJsonValueToNative(json);
+		String kind = (nativeJson instanceof Map<?, ?> map && map.get("type") instanceof String type && !type.isEmpty())
+				? type : "unknown";
+		return new UnknownPart(ANTHROPIC_PROVIDER, kind, toJsonString(nativeJson), null, Map.of());
+	}
+
+	private static boolean hasOnlyTextParts(AssistantMessage assistantMessage) {
+		for (MessagePart part : assistantMessage.getParts()) {
+			if (!(part instanceof TextPart)) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Converts an assistant message to Anthropic content blocks in part order. Reasoning
+	 * and unknown parts are replayed only when they were produced by Anthropic; those
+	 * from another provider and media are skipped.
+	 * @param assistantMessage the message to convert
+	 * @return the content blocks
+	 */
+	private List<ContentBlockParam> toAssistantBlockParams(AssistantMessage assistantMessage) {
+		List<ContentBlockParam> blocks = new ArrayList<>();
+		for (MessagePart part : assistantMessage.getParts()) {
+			if (part instanceof TextPart textPart) {
+				if (!textPart.text().isEmpty()) {
+					blocks.add(ContentBlockParam.ofText(TextBlockParam.builder().text(textPart.text()).build()));
 				}
 			}
+			else if (part instanceof ReasoningPart reasoningPart) {
+				OpaquePayload payload = reasoningPart.payload();
+				if (payload != null && reasoningPart.replayableTo(ANTHROPIC_PROVIDER)) {
+					blocks.add(toThinkingBlockParam(reasoningPart, payload));
+				}
+				else if (logger.isDebugEnabled()) {
+					logger.debug("Skipping reasoning part from provider "
+							+ (payload != null ? payload.provider() : "none") + " on replay to Anthropic");
+				}
+			}
+			else if (part instanceof ToolCallPart && StreamingParts.isPartial(part)) {
+				// A tool-call argument delta of a stream, not a tool call
+				// (see StreamingParts)
+				continue;
+			}
+			else if (part instanceof ToolCallPart toolCallPart) {
+				ToolCall toolCall = toolCallPart.toolCall();
+				blocks.add(ContentBlockParam.ofToolUse(ToolUseBlockParam.builder()
+					.id(toolCall.id())
+					.name(toolCall.name())
+					.input(buildToolInput(toolCall.arguments()))
+					.build()));
+			}
+			else if (part instanceof MediaPart mediaPart) {
+				// Anthropic assistant turns take text, thinking and tool_use blocks only;
+				// media produced by another provider is not replayed, as before parts.
+				if (logger.isDebugEnabled()) {
+					logger.debug("Skipping assistant media " + mediaPart.media().getName() + " on replay to Anthropic");
+				}
+			}
+			else if (part instanceof ToolResultPart) {
+				throw new IllegalArgumentException(
+						"Tool results belong in a tool response message, not in an assistant message");
+			}
+			else if (part instanceof UnknownPart unknownPart) {
+				ContentBlockParam block = toUnknownBlockParam(unknownPart);
+				if (block != null) {
+					blocks.add(block);
+				}
+			}
+			else {
+				throw new IllegalStateException("Unhandled message part type " + part.getClass().getName());
+			}
 		}
+		return blocks;
+	}
 
-		AssistantMessage.Builder assistantMessageBuilder = AssistantMessage.builder().content(textContent.toString());
-
-		if (!toolCalls.isEmpty()) {
-			assistantMessageBuilder.toolCalls(toolCalls);
+	/**
+	 * Rebuilds a content block this model keeps as an {@link UnknownPart}, such as a
+	 * server tool use or its result, from the JSON it arrived as. Anthropic needs these
+	 * blocks back, for example to continue a turn paused with {@code pause_turn}, or to
+	 * cite web search results through their encrypted content. The conversion is schema
+	 * agnostic, so a block type this SDK version does not know still round-trips.
+	 * @param unknownPart the part to convert
+	 * @return the content block, or {@code null} if the part was produced by another
+	 * provider or its JSON cannot be converted
+	 */
+	private static @Nullable ContentBlockParam toUnknownBlockParam(UnknownPart unknownPart) {
+		if (!ANTHROPIC_PROVIDER.equals(unknownPart.provider())) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Skipping unknown part of kind " + unknownPart.kind() + " from provider "
+						+ unknownPart.provider() + " on replay to Anthropic");
+			}
+			return null;
 		}
+		try {
+			JsonValue json = ObjectMappers.jsonMapper().readValue(unknownPart.rawJson(), JsonValue.class);
+			return json.convert(ContentBlockParam.class);
+		}
+		catch (Exception ex) {
+			// Better a turn missing one block than a failed turn.
+			if (logger.isWarnEnabled()) {
+				logger.warn("Could not replay the Anthropic content block of kind " + unknownPart.kind()
+						+ "; dropping it: " + ex.getMessage());
+			}
+			if (logger.isDebugEnabled()) {
+				logger.debug("Failure converting the Anthropic content block of kind " + unknownPart.kind(), ex);
+			}
+			return null;
+		}
+	}
 
-		generations.add(new Generation(assistantMessageBuilder.build(), generationMetadata));
+	/**
+	 * Warns when an assistant turn whose tool use loop is still open, with extended
+	 * thinking enabled, has tool calls but no thinking block to replay. Anthropic expects
+	 * that turn to start with the thinking block it returned; without it, the API does
+	 * not fail but silently answers the request without extended thinking, and this
+	 * warning says why.
+	 * @param assistantMessage the assistant message followed only by tool responses
+	 * @param blocks the content blocks the message was converted to
+	 */
+	private static void warnIfThinkingNotReplayed(AssistantMessage assistantMessage, List<ContentBlockParam> blocks) {
+		if (!assistantMessage.hasToolCalls() || !logger.isWarnEnabled()) {
+			return;
+		}
+		boolean replayedThinking = blocks.stream().anyMatch(block -> block.isThinking() || block.isRedactedThinking());
+		if (!replayedThinking) {
+			logger.warn("Extended thinking is enabled but the assistant turn awaiting tool results has no Anthropic "
+					+ "thinking block to replay, so Anthropic is expected to answer without extended thinking. The "
+					+ "conversation history was likely stored or rebuilt without its message parts, or produced by "
+					+ "another provider or with thinking disabled.");
+		}
+	}
 
-		return generations;
+	/**
+	 * Rebuilds the thinking block an Anthropic reasoning part was mapped from. The
+	 * payload kind decides the block type: it says whether the payload data is a
+	 * signature or redacted block data.
+	 */
+	private static ContentBlockParam toThinkingBlockParam(ReasoningPart reasoningPart, OpaquePayload payload) {
+		if (PAYLOAD_REDACTED_THINKING.equals(payload.kind())) {
+			return ContentBlockParam
+				.ofRedactedThinking(RedactedThinkingBlockParam.builder().data(payload.data()).build());
+		}
+		// With the thinking display omitted, Anthropic returns an empty thinking text
+		// that must be replayed as is.
+		String thinking = Objects.requireNonNullElse(reasoningPart.text(), "");
+		return ContentBlockParam
+			.ofThinking(ThinkingBlockParam.builder().thinking(thinking).signature(payload.data()).build());
 	}
 
 	/**
@@ -1068,9 +1467,25 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		long outputTokens = usage.outputTokens();
 		Long cacheRead = usage.cacheReadInputTokens().orElse(null);
 		Long cacheWrite = usage.cacheCreationInputTokens().orElse(null);
-		return new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+		long promptTokens = promptTokens(inputTokens, cacheRead, cacheWrite);
+		return new DefaultUsage(Integer.valueOf(Math.toIntExact(promptTokens)),
 				Integer.valueOf(Math.toIntExact(outputTokens)),
-				Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), usage, cacheRead, cacheWrite);
+				Integer.valueOf(Math.toIntExact(promptTokens + outputTokens)), usage, cacheRead, cacheWrite);
+	}
+
+	/**
+	 * Anthropic reports {@code input_tokens} excluding the tokens read from or written to
+	 * the prompt cache, so the total input is the sum of the three.
+	 * @param inputTokens the uncached input tokens
+	 * @param cacheRead the tokens read from the cache, if reported
+	 * @param cacheWrite the tokens written to the cache, if reported
+	 * @return the total input tokens
+	 * @see <a href=
+	 * "https://docs.claude.com/en/docs/build-with-claude/prompt-caching#tracking-cache-performance">Tracking
+	 * cache performance</a>
+	 */
+	private static long promptTokens(long inputTokens, @Nullable Long cacheRead, @Nullable Long cacheWrite) {
+		return inputTokens + (cacheRead != null ? cacheRead : 0L) + (cacheWrite != null ? cacheWrite : 0L);
 	}
 
 	private @Nullable Citation convertTextCitation(TextCitation textCitation) {
@@ -1132,15 +1547,44 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @return a valid JSON string
 	 * @throws RuntimeException if serialization fails
 	 */
-	private String convertJsonValueToString(JsonValue jsonValue) {
+	private static String convertJsonValueToString(JsonValue jsonValue) {
+		// Convert to native Java objects first, then serialize with Jackson
+		return toJsonString(convertJsonValueToNative(jsonValue));
+	}
+
+	/**
+	 * Serializes a native Java object (see {@link #convertJsonValueToNative(JsonValue)})
+	 * to a JSON string.
+	 * @param nativeValue the value to serialize
+	 * @return a valid JSON string
+	 * @throws RuntimeException if serialization fails
+	 */
+	private static String toJsonString(@Nullable Object nativeValue) {
 		try {
-			var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
-			// Convert to native Java objects first, then serialize with Jackson
-			Object nativeValue = convertJsonValueToNative(jsonValue);
+			var jsonMapper = JsonMapper.builder().build();
 			return jsonMapper.writeValueAsString(nativeValue);
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to convert JsonValue to string", e);
+		}
+	}
+
+	/**
+	 * Parses a JSON string to a native Java object, keeping the string itself when it is
+	 * not valid JSON so that nothing is lost.
+	 * @param json the JSON string
+	 * @return the parsed value, or the string when it cannot be parsed
+	 */
+	private static @Nullable Object parseJson(String json) {
+		try {
+			var jsonMapper = JsonMapper.builder().build();
+			return jsonMapper.readValue(json, Object.class);
+		}
+		catch (Exception e) {
+			if (logger.isWarnEnabled()) {
+				logger.warn("Failed to parse streamed block input JSON: " + json, e);
+			}
+			return json;
 		}
 	}
 
@@ -1150,7 +1594,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @param jsonValue the SDK's JsonValue to convert
 	 * @return the equivalent native Java object, or null for JSON null
 	 */
-	private @Nullable Object convertJsonValueToNative(JsonValue jsonValue) {
+	private static @Nullable Object convertJsonValueToNative(JsonValue jsonValue) {
 		return jsonValue.accept(new JsonValue.Visitor<@Nullable Object>() {
 			@Override
 			public @Nullable Object visitNull() {
@@ -1179,15 +1623,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			@Override
 			public Object visitArray(List<? extends JsonValue> values) {
-				return values.stream().map(v -> convertJsonValueToNative(v)).toList();
+				return values.stream().map(AnthropicChatModel::convertJsonValueToNative).toList();
 			}
 
 			@Override
-			public Object visitObject(java.util.Map<String, ? extends JsonValue> values) {
-				java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
-				for (java.util.Map.Entry<String, ? extends JsonValue> entry : values.entrySet()) {
-					result.put(entry.getKey(), convertJsonValueToNative(entry.getValue()));
-				}
+			public Object visitObject(Map<String, ? extends JsonValue> values) {
+				Map<String, @Nullable Object> result = new LinkedHashMap<>();
+				values.forEach((key, value) -> result.put(key, convertJsonValueToNative(value)));
 				return result;
 			}
 		});
@@ -1206,13 +1648,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		ToolUseBlockParam.Input.Builder inputBuilder = ToolUseBlockParam.Input.builder();
 		if (argumentsJson != null && !argumentsJson.isEmpty()) {
 			try {
-				var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
-				java.util.Map<String, Object> arguments = jsonMapper.readValue(argumentsJson,
-						new tools.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {
-						});
-				for (java.util.Map.Entry<String, Object> entry : arguments.entrySet()) {
-					inputBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
-				}
+				var jsonMapper = JsonMapper.builder().build();
+				Map<String, Object> arguments = jsonMapper.readValue(argumentsJson, new TypeReference<>() {
+				});
+				arguments.forEach((key, value) -> inputBuilder.putAdditionalProperty(key, JsonValue.from(value)));
 			}
 			catch (Exception e) {
 				if (logger.isWarnEnabled()) {
@@ -1236,23 +1675,19 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @return the Anthropic SDK Tool
 	 * @throws RuntimeException if the JSON schema cannot be parsed
 	 */
-	@SuppressWarnings("unchecked")
 	private Tool toAnthropicTool(ToolDefinition toolDefinition) {
 		try {
 			// Parse the JSON schema string into a Map
-			var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
-			java.util.Map<String, Object> schemaMap = jsonMapper.readValue(toolDefinition.inputSchema(),
-					new tools.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {
-					});
+			var jsonMapper = JsonMapper.builder().build();
+			Map<String, Object> schemaMap = jsonMapper.readValue(toolDefinition.inputSchema(), new TypeReference<>() {
+			});
 
 			// Build properties via putAdditionalProperty (SDK requires structured input)
 			Tool.InputSchema.Properties.Builder propertiesBuilder = Tool.InputSchema.Properties.builder();
 			Object propertiesObj = schemaMap.get("properties");
-			if (propertiesObj instanceof java.util.Map) {
-				java.util.Map<String, Object> properties = (java.util.Map<String, Object>) propertiesObj;
-				for (java.util.Map.Entry<String, Object> entry : properties.entrySet()) {
-					propertiesBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
-				}
+			if (propertiesObj instanceof Map<?, ?> properties) {
+				properties.forEach(
+						(key, value) -> propertiesBuilder.putAdditionalProperty((String) key, JsonValue.from(value)));
 			}
 
 			Tool.InputSchema.Builder inputSchemaBuilder = Tool.InputSchema.builder()
@@ -1260,11 +1695,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			// Add required fields if present
 			Object requiredObj = schemaMap.get("required");
-			if (requiredObj instanceof java.util.List) {
-				java.util.List<String> required = (java.util.List<String>) requiredObj;
-				for (String req : required) {
-					inputSchemaBuilder.addRequired(req);
-				}
+			if (requiredObj instanceof List<?> required) {
+				required.forEach(field -> inputSchemaBuilder.addRequired((String) field));
 			}
 
 			return Tool.builder()
@@ -1468,26 +1900,67 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * Holds state accumulated during streaming for building complete responses. This
-	 * includes message metadata (ID, model, input tokens) and tool call accumulation
-	 * state for streaming tool calling support.
+	 * Closes the response of a stream that is still being opened if the subscriber
+	 * cancels first. Reactor drops a value that arrives after a cancel, so without this
+	 * nobody would close the response. Whichever of {@link #opened} and {@link #cancel}
+	 * runs second sees the other one and closes the response.
+	 */
+	private static final class PendingResponse {
+
+		private final AtomicBoolean cancelled = new AtomicBoolean();
+
+		private final AtomicReference<@Nullable HttpResponse> response = new AtomicReference<>();
+
+		<T extends HttpResponse> T opened(T response) {
+			this.response.set(response);
+			if (this.cancelled.get()) {
+				response.close();
+			}
+			return response;
+		}
+
+		void cancel() {
+			this.cancelled.set(true);
+			HttpResponse response = this.response.get();
+			if (response != null) {
+				response.close();
+			}
+		}
+
+		boolean isCancelled() {
+			return this.cancelled.get();
+		}
+
+	}
+
+	/**
+	 * Holds state accumulated during streaming: message metadata (ID, model, input
+	 * tokens), in-flight tool use blocks and blocks not modeled as a part keyed by
+	 * content block index, and metadata accumulated for the final response. Text and
+	 * reasoning are not accumulated here; they are streamed as indexed partial parts and
+	 * rebuilt by {@link MessageAggregator}.
 	 */
 	private static class StreamingState {
 
-		private final AtomicReference<String> messageId = new AtomicReference<>();
+		private final AtomicReference<@Nullable String> messageId = new AtomicReference<>();
 
-		private final AtomicReference<String> model = new AtomicReference<>();
+		private final AtomicReference<@Nullable String> model = new AtomicReference<>();
 
 		private final AtomicReference<Long> inputTokens = new AtomicReference<>(0L);
 
-		// Tool calling state - tracks the current tool being streamed
-		private final AtomicReference<String> currentToolId = new AtomicReference<>("");
+		private final AtomicReference<@Nullable Long> cacheReadInputTokens = new AtomicReference<>();
 
-		private final AtomicReference<String> currentToolName = new AtomicReference<>("");
+		private final AtomicReference<@Nullable Long> cacheCreationInputTokens = new AtomicReference<>();
 
-		private final StringBuilder currentToolJsonAccumulator = new StringBuilder();
+		// Tool use blocks being streamed, keyed by content block index
+		private final Map<Integer, InFlightToolUse> inFlightToolUses = new LinkedHashMap<>();
 
-		private final List<ToolCall> completedToolCalls = new ArrayList<>();
+		// Completed tool calls keyed by content block index
+		private final Map<Integer, ToolCall> completedToolCalls = new TreeMap<>();
+
+		// Blocks not modeled as a part (server tool use and results, container upload),
+		// keyed by content block index
+		private final Map<Integer, InFlightUnknownBlock> inFlightUnknownBlocks = new HashMap<>();
 
 		private final List<Citation> accumulatedCitations = new ArrayList<>();
 
@@ -1495,22 +1968,38 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private final AtomicReference<RateLimit> rateLimit = new AtomicReference<>(new EmptyRateLimit());
 
-		void setMessageInfo(String id, String modelName, long tokens) {
+		void setMessageInfo(String id, String modelName, com.anthropic.models.messages.Usage usage) {
 			this.messageId.set(id);
 			this.model.set(modelName);
-			this.inputTokens.set(tokens);
+			this.inputTokens.set(usage.inputTokens());
+			this.cacheReadInputTokens.set(usage.cacheReadInputTokens().orElse(null));
+			this.cacheCreationInputTokens.set(usage.cacheCreationInputTokens().orElse(null));
+		}
+
+		void updateUsage(MessageDeltaUsage usage) {
+			usage.inputTokens().ifPresent(this.inputTokens::set);
+			usage.cacheReadInputTokens().ifPresent(this.cacheReadInputTokens::set);
+			usage.cacheCreationInputTokens().ifPresent(this.cacheCreationInputTokens::set);
 		}
 
 		String getMessageId() {
-			return this.messageId.get();
+			return Objects.requireNonNullElse(this.messageId.get(), "");
 		}
 
 		String getModel() {
-			return this.model.get();
+			return Objects.requireNonNullElse(this.model.get(), "");
 		}
 
 		long getInputTokens() {
 			return this.inputTokens.get();
+		}
+
+		@Nullable Long getCacheReadInputTokens() {
+			return this.cacheReadInputTokens.get();
+		}
+
+		@Nullable Long getCacheCreationInputTokens() {
+			return this.cacheCreationInputTokens.get();
 		}
 
 		void setRateLimit(RateLimit rateLimit) {
@@ -1522,52 +2011,97 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		/**
-		 * Starts tracking a new tool use block.
+		 * Starts tracking the tool use block at the given content block index.
+		 * @param index the content block index
 		 * @param toolId the tool call ID
 		 * @param toolName the tool name
 		 */
-		void startToolUse(String toolId, String toolName) {
-			this.currentToolId.set(toolId);
-			this.currentToolName.set(toolName);
-			this.currentToolJsonAccumulator.setLength(0);
+		void startToolUse(int index, String toolId, String toolName) {
+			this.inFlightToolUses.put(index, new InFlightToolUse(toolId, toolName));
 		}
 
 		/**
-		 * Appends partial JSON to the current tool's input accumulator.
+		 * Starts tracking a content block not modeled as a part at the given index.
+		 * @param index the content block index
+		 * @param json the block JSON from the start event
+		 */
+		void startUnknownBlock(int index, JsonValue json) {
+			this.inFlightUnknownBlocks.put(index, new InFlightUnknownBlock(json));
+		}
+
+		/**
+		 * Appends partial JSON to the input of the tool use or server tool use block at
+		 * the given index.
+		 * @param index the content block index
 		 * @param partialJson the partial JSON string
 		 */
-		void appendToolJson(String partialJson) {
-			this.currentToolJsonAccumulator.append(partialJson);
-		}
-
-		/**
-		 * Finalizes the current tool use block and adds it to completed tool calls.
-		 */
-		void finishToolUse() {
-			String id = this.currentToolId.get();
-			String name = this.currentToolName.get();
-			if (!id.isEmpty() && !name.isEmpty()) {
-				String arguments = this.currentToolJsonAccumulator.toString();
-				this.completedToolCalls.add(new ToolCall(id, "function", name, arguments));
+		void appendInputJson(int index, String partialJson) {
+			InFlightToolUse toolUse = this.inFlightToolUses.get(index);
+			if (toolUse != null) {
+				toolUse.arguments.append(partialJson);
+				return;
 			}
-			// Reset current tool state (use empty string as "not tracking" sentinel)
-			this.currentToolId.set("");
-			this.currentToolName.set("");
-			this.currentToolJsonAccumulator.setLength(0);
+			InFlightUnknownBlock unknownBlock = this.inFlightUnknownBlocks.get(index);
+			if (unknownBlock != null) {
+				unknownBlock.input.append(partialJson);
+			}
 		}
 
 		/**
-		 * Returns true if currently tracking a tool use block.
+		 * The argument delta of the tool use block at the given index, carrying the id
+		 * and name of the call.
+		 * @param index the content block index
+		 * @param argumentsDelta the arguments fragment
+		 * @return the delta, or {@code null} if no tool use with an id and a name is
+		 * tracked there, as {@link #finishToolUse(int)} would not complete it
 		 */
-		boolean isTrackingToolUse() {
-			return !this.currentToolId.get().isEmpty();
+		@Nullable ToolCall toolCallDelta(int index, String argumentsDelta) {
+			InFlightToolUse toolUse = this.inFlightToolUses.get(index);
+			if (toolUse == null || toolUse.id.isEmpty() || toolUse.name.isEmpty()) {
+				return null;
+			}
+			return new ToolCall(toolUse.id, "function", toolUse.name, argumentsDelta);
 		}
 
 		/**
-		 * Returns the list of completed tool calls accumulated during streaming.
+		 * Finalizes the block not modeled as a part at the given index, if one is being
+		 * tracked, with the input streamed as deltas in place of the empty input of the
+		 * start event.
+		 * @param index the content block index
+		 * @return the part holding the block, or {@code null} if none is tracked there
 		 */
-		List<ToolCall> getCompletedToolCalls() {
-			return new ArrayList<>(this.completedToolCalls);
+		@Nullable UnknownPart finishUnknownBlock(int index) {
+			InFlightUnknownBlock unknownBlock = this.inFlightUnknownBlocks.remove(index);
+			if (unknownBlock == null) {
+				return null;
+			}
+			JsonValue json = unknownBlock.json;
+			if (!unknownBlock.input.isEmpty() && convertJsonValueToNative(json) instanceof Map<?, ?> fields) {
+				Map<Object, @Nullable Object> completed = new LinkedHashMap<>(fields);
+				completed.put("input", parseJson(unknownBlock.input.toString()));
+				json = JsonValue.from(completed);
+			}
+			return unknownPart(json);
+		}
+
+		/**
+		 * Finalizes the tool use block at the given index, if one is being tracked, and
+		 * records it as a completed tool call.
+		 * @param index the content block index
+		 */
+		void finishToolUse(int index) {
+			InFlightToolUse toolUse = this.inFlightToolUses.remove(index);
+			if (toolUse != null && !toolUse.id.isEmpty() && !toolUse.name.isEmpty()) {
+				this.completedToolCalls.put(index,
+						new ToolCall(toolUse.id, "function", toolUse.name, toolUse.arguments.toString()));
+			}
+		}
+
+		/**
+		 * Returns the completed tool calls keyed by content block index, in index order.
+		 */
+		Map<Integer, ToolCall> getCompletedToolCalls() {
+			return new TreeMap<>(this.completedToolCalls);
 		}
 
 		void addCitation(Citation citation) {
@@ -1584,6 +2118,33 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		List<AnthropicWebSearchResult> getWebSearchResults() {
 			return new ArrayList<>(this.accumulatedWebSearchResults);
+		}
+
+		private static final class InFlightToolUse {
+
+			private final String id;
+
+			private final String name;
+
+			private final StringBuilder arguments = new StringBuilder();
+
+			InFlightToolUse(String id, String name) {
+				this.id = id;
+				this.name = name;
+			}
+
+		}
+
+		private static final class InFlightUnknownBlock {
+
+			private final JsonValue json;
+
+			private final StringBuilder input = new StringBuilder();
+
+			InFlightUnknownBlock(JsonValue json) {
+				this.json = json;
+			}
+
 		}
 
 	}
@@ -1624,6 +2185,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		/**
 		 * Sets the asynchronous Anthropic client.
+		 * <p>
+		 * When set, streaming requests are sent with this client, but their HTTP
+		 * observations are then not children of the chat observation, so they don't join
+		 * the caller's trace. Configure only {@link #anthropicClient(AnthropicClient)} to
+		 * keep streaming requests in the caller's trace.
 		 * @param anthropicClientAsync the asynchronous client
 		 * @return this builder
 		 */

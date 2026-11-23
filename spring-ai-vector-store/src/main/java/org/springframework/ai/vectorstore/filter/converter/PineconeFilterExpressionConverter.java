@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.filter.converter;
 
+import java.util.Locale;
+
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
@@ -53,7 +55,7 @@ public class PineconeFilterExpressionConverter extends AbstractFilterExpressionC
 	}
 
 	private String getOperationSymbol(Expression exp) {
-		return "\"$" + exp.type().toString().toLowerCase() + "\": ";
+		return "\"$" + exp.type().toString().toLowerCase(Locale.ROOT) + "\": ";
 	}
 
 	@Override

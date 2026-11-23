@@ -1,0 +1,48 @@
+[[model-apis]]
+= Model APIs
+:page-aliases: api/index.adoc
+
+Spring AI defines a portable interface for each type of AI model.
+Every provider integration implements these interfaces, so application code can change provider without changing the code that calls the model.
+Chat, transcription and text-to-speech models can also stream their output, and each implementation exposes its provider-specific options.
+
+image::spring-ai-model-hierarchy.svg[The model interfaces of Spring AI,900,opts=inline]
+
+[cols="1,1,3", options="header"]
+|===
+| Model type | Interface | Purpose
+
+| xref:models/chat.adoc[Chat]
+| `ChatModel`
+| Generates a response to a prompt made of messages.
+
+| xref:models/embeddings.adoc[Embedding]
+| `EmbeddingModel`
+| Turns text into vectors for similarity search.
+
+| xref:models/image.adoc[Image]
+| `ImageModel`
+| Generates images from text.
+
+| xref:models/audio/transcription.adoc[Transcription]
+| `TranscriptionModel`
+| Converts speech to text.
+
+| xref:models/audio/speech.adoc[Text to speech]
+| `TextToSpeechModel`
+| Converts text to speech.
+
+| xref:models/moderation.adoc[Moderation]
+| `ModerationModel`
+| Checks text for potentially harmful content.
+
+| xref:models/decision.adoc[Decision]
+| `DecisionModel`
+| Answers yes/no, choice and score questions.
+|===
+
+All of them build on the xref:models/generic-model.adoc[Generic Model API].
+
+Most applications talk to a chat model through the xref:chatclient/index.adoc[ChatClient] instead of using `ChatModel` directly.
+
+To see which provider implements which model type, go to xref:integrations/models/index.adoc[Model Providers].

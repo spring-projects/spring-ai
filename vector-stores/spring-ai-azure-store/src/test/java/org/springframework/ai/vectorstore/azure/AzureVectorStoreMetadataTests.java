@@ -20,12 +20,17 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.util.JacksonUtils;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit tests for {@link AzureVectorStore#parseMetadataToMutable(String)}.
+ * Unit tests for {@link AzureVectorStore} metadata serialization and deserialization,
+ * covering both {@link AzureVectorStore#parseMetadataToMutable(String)} and the Jackson
+ * serialization used in {@code doAdd}.
  *
  * @author Jinwoo Lee
+ * @author Ilayaperumal Gopinathan
  */
 class AzureVectorStoreMetadataTests {
 
@@ -50,6 +55,27 @@ class AzureVectorStoreMetadataTests {
 		assertThat(map).containsEntry("k", "v");
 		map.put("distance", 0.4);
 		assertThat(map).containsEntry("distance", 0.4);
+	}
+
+	@Test
+	void returnsEmptyMutableMapForInvalidJson() {
+		Map<String, Object> map = AzureVectorStore.parseMetadataToMutable("not-valid-json");
+		assertThat(map).isEmpty();
+		map.put("distance", 0.5);
+		assertThat(map).containsEntry("distance", 0.5);
+	}
+
+	@Test
+	void roundTripPreservesMultipleValueTypes() throws Exception {
+		Map<String, Object> original = Map.of("name", "test", "version", 3, "enabled", Boolean.FALSE, "score", 0.7);
+		String json = JacksonUtils.getDefaultJsonMapper().writeValueAsString(original);
+		Map<String, Object> restored = AzureVectorStore.parseMetadataToMutable(json);
+		assertThat(restored).containsEntry("name", "test")
+			.containsEntry("version", 3)
+			.containsEntry("enabled", Boolean.FALSE)
+			.containsEntry("score", 0.7);
+		restored.put("distance", 0.1);
+		assertThat(restored).containsEntry("distance", 0.1);
 	}
 
 }

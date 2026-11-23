@@ -17,6 +17,9 @@
 package org.springframework.ai.chroma.vectorstore;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -52,6 +55,18 @@ class ChromaApiTest {
 	@AfterEach
 	void tearDown() throws IOException {
 		this.mockWebServer.shutdown();
+	}
+
+	@Test
+	void addEmbeddingsRequestKeepsNullMetadataValues() {
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("tag", "v2");
+		metadata.put("removed", null);
+
+		ChromaApi.AddEmbeddingsRequest request = new ChromaApi.AddEmbeddingsRequest("id", new float[] { 1f }, metadata,
+				"text");
+
+		assertThat(request.metadata()).isEqualTo(List.of(metadata));
 	}
 
 	@Test

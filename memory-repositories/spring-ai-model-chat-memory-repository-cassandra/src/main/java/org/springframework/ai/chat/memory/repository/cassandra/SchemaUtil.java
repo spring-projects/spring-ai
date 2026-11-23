@@ -29,7 +29,12 @@ import org.apache.commons.logging.LogFactory;
  *
  * @author Mick Semb Wever
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of session memory:
+ * {@code org.springframework.ai.session.SessionRepository} in {@code spring-ai-session},
+ * with a JDBC store in {@code spring-ai-session-jdbc}. There is no session store for
+ * Cassandra yet; one is planned before 3.0.0, when this module is removed.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
 public final class SchemaUtil {
 
 	private static final Log logger = LogFactory.getLog(SchemaUtil.class);

@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Thomas Vitale
  */
+@SuppressWarnings("removal")
 public class MessageWindowChatMemoryTests {
 
 	private final MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder().build();

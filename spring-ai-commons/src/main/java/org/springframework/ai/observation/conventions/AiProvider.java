@@ -45,6 +45,11 @@ public enum AiProvider {
 	DEEPSEEK("deepseek"),
 
 	/**
+	 * AI system provided by ElevenLabs.
+	 */
+	ELEVENLABS("elevenlabs"),
+
+	/**
 	 * AI system provided by Google Gen AI.
 	 */
 	GOOGLE_GENAI_AI("google_genai"),
@@ -73,6 +78,16 @@ public enum AiProvider {
 	 * AI system provided by Spring AI.
 	 */
 	SPRING_AI("spring_ai"),
+
+	/**
+	 * AI system provided by Stability AI.
+	 */
+	STABILITY_AI("stability_ai"),
+
+	/**
+	 * AI system serving the System One protocol: TypeSafe Jev, Laya or Ollama.
+	 */
+	SYSTEMONE("systemone"),
 
 	/**
 	 * AI system provided by Vertex AI.

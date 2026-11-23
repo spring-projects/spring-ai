@@ -349,7 +349,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 		@Override
 		public B clone() {
 			AbstractBuilder<B> copy = super.clone();
-			copy.tools = this.tools;
+			copy.tools = this.tools == null ? null : new ArrayList<>(this.tools);
 			return (B) copy;
 		}
 

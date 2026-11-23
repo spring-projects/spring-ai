@@ -16,6 +16,7 @@
 
 package org.springframework.ai.vectorstore;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -259,6 +260,30 @@ class SimpleVectorStoreFilterExpressionEvaluatorTests {
 				new Filter.Value(new Date(1704637752148L)));
 		assertThat(this.evaluator.evaluate(expr, Map.of("activationDate", "2024-01-07T14:29:12Z"))).isTrue();
 		assertThat(this.evaluator.evaluate(expr, Map.of("activationDate", "2024-01-07T00:00:00Z"))).isFalse();
+	}
+
+	@Test
+	void testInWithDates() {
+		var expr = new Filter.Expression(IN, new Filter.Key("activationDate"),
+				new Filter.Value(List.of(Date.from(Instant.parse("2024-01-07T14:29:12.148Z")),
+						Date.from(Instant.parse("2024-01-08T00:00:00Z")))));
+
+		assertThat(this.evaluator.evaluate(expr, Map.of("activationDate", "2024-01-07T14:29:12Z"))).isTrue();
+		assertThat(this.evaluator.evaluate(expr, Map.of("activationDate", "2024-01-08T00:00:00Z"))).isTrue();
+		assertThat(this.evaluator.evaluate(expr, Map.of("activationDate", "2024-01-09T00:00:00Z"))).isFalse();
+		assertThat(this.evaluator.evaluate(expr, Map.of())).isFalse();
+	}
+
+	@Test
+	void testNinWithDates() {
+		var expr = new Filter.Expression(NIN, new Filter.Key("activationDate"),
+				new Filter.Value(List.of(Date.from(Instant.parse("2024-01-07T14:29:12.148Z")),
+						Date.from(Instant.parse("2024-01-08T00:00:00Z")))));
+
+		assertThat(this.evaluator.evaluate(expr, Map.of("activationDate", "2024-01-07T14:29:12Z"))).isFalse();
+		assertThat(this.evaluator.evaluate(expr, Map.of("activationDate", "2024-01-08T00:00:00Z"))).isFalse();
+		assertThat(this.evaluator.evaluate(expr, Map.of("activationDate", "2024-01-09T00:00:00Z"))).isTrue();
+		assertThat(this.evaluator.evaluate(expr, Map.of())).isTrue();
 	}
 
 	@Test

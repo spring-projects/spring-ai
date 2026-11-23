@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public class OpenAiEmbeddingPropertiesTests {
 
@@ -83,6 +84,36 @@ public class OpenAiEmbeddingPropertiesTests {
 				assertThat(embeddingProperties.getUser()).isEqualTo("userXYZ");
 				assertThat(embeddingProperties.getDimensions()).isEqualTo(1024);
 				assertThat(embeddingProperties.getMetadataMode()).isEqualTo(MetadataMode.NONE);
+			});
+	}
+
+	@Test
+	public void embeddingExtraBodyTest() {
+
+		this.contextRunner
+			.withPropertyValues(// @formatter:off
+				"spring.ai.openai.api-key=API_KEY",
+				"spring.ai.openai.base-url=http://TEST.BASE.URL",
+
+				"spring.ai.openai.embedding.extra-body.key1=value1",
+				"spring.ai.openai.embedding.extra-body.key2=123",
+				"spring.ai.openai.embedding.extra-body.nested.key3=true"
+			)
+			// @formatter:on
+			.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
+
+				assertThat(embeddingProperties.getExtraBody()).isNotNull();
+				assertThat(embeddingProperties.getExtraBody()).containsEntry("key1", "value1");
+				assertThat(embeddingProperties.getExtraBody()).containsEntry("key2", "123");
+				assertThat(embeddingProperties.getExtraBody()).containsKey("nested");
+
+				var options = embeddingProperties.toOptions();
+				assertThat(options.getExtraBody()).isNotNull();
+				assertThat(options.getExtraBody()).containsEntry("key1", "value1");
+				assertThat(options.getExtraBody()).containsEntry("key2", "123");
+				assertThat(options.getExtraBody()).containsKey("nested");
 			});
 	}
 

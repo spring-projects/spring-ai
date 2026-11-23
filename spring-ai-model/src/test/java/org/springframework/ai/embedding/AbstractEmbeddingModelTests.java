@@ -29,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
+import org.springframework.core.OverridingClassLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Md Nayan Mia
  */
 @ExtendWith(MockitoExtension.class)
 public class AbstractEmbeddingModelTests {
@@ -88,6 +90,29 @@ public class AbstractEmbeddingModelTests {
 			.isEqualTo(Integer.valueOf(dimension));
 		verify(this.embeddingModel, never()).embed(any(String.class));
 		verify(this.embeddingModel, never()).embed(any(Document.class));
+	}
+
+	@Test
+	public void testKnownModelDimensionsWithIsolatedContextClassLoader() throws Exception {
+		ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+		ClassLoader modelClassLoader = new OverridingClassLoader(getClass().getClassLoader()) {
+			@Override
+			protected boolean isEligibleForOverriding(String className) {
+				return className.equals(AbstractEmbeddingModel.class.getName());
+			}
+		};
+		try {
+			Thread.currentThread().setContextClassLoader(ClassLoader.getPlatformClassLoader());
+			Class<?> modelClass = Class.forName(AbstractEmbeddingModel.class.getName(), true, modelClassLoader);
+			assertThat(modelClass.getClassLoader()).isSameAs(modelClassLoader);
+			Object dimensions = modelClass.getMethod("dimensions", EmbeddingModel.class, String.class, String.class)
+				.invoke(null, this.embeddingModel, "text-embedding-ada-002", "Hello world!");
+			assertThat(dimensions).isEqualTo(1536);
+			verify(this.embeddingModel, never()).embed(any(String.class));
+		}
+		finally {
+			Thread.currentThread().setContextClassLoader(originalClassLoader);
+		}
 	}
 
 	@Test

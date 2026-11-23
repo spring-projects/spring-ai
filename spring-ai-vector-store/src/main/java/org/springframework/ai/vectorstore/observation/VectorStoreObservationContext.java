@@ -143,6 +143,10 @@ public class VectorStoreObservationContext extends Observation.Context {
 		 */
 		ADD("add"),
 		/**
+		 * VectorStore upsert operation.
+		 */
+		UPSERT("upsert"),
+		/**
 		 * VectorStore delete operation.
 		 */
 		DELETE("delete"),

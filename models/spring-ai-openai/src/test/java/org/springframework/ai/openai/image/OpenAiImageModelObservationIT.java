@@ -107,9 +107,10 @@ public class OpenAiImageModelObservationIT {
 
 		@Bean
 		public OpenAiImageModel openAiImageModel(TestObservationRegistry observationRegistry) {
-			return new OpenAiImageModel(
-					OpenAiImageOptions.builder().model(OpenAiImageOptions.DEFAULT_IMAGE_MODEL).build(),
-					observationRegistry);
+			OpenAiImageOptions options = OpenAiImageOptions.builder()
+				.model(OpenAiImageOptions.DEFAULT_IMAGE_MODEL)
+				.build();
+			return OpenAiImageModel.builder().options(options).observationRegistry(observationRegistry).build();
 		}
 
 	}

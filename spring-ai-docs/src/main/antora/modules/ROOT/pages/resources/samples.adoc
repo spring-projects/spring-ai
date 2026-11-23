@@ -1,0 +1,22 @@
+[[samples]]
+= Samples and Workshops
+
+== Samples
+
+* https://github.com/spring-projects/spring-ai-examples[Spring AI Examples] contains runnable examples maintained by the Spring AI team.
+* https://github.com/spring-ai-community/awesome-spring-ai[Awesome Spring AI] is a community-curated list of resources, samples and tools.
+* https://github.com/spring-ai-community/spring-ai-agent-utils/tree/main/examples[Spring AI Agent Utils examples] (Community) include a coding agent, Agent Skills, sub-agents and long-term memory, see xref:agents/agent-utils.adoc[Spring AI Agent Utils].
+
+== Workshops
+
+The workshops are maintained by their publishers, outside the Spring AI project.
+Each one targets the Spring AI version it was written for, which can be older than the version these docs describe.
+
+* https://catalog.workshops.aws/java-spring-ai-agents[Building Java AI Agents with Spring AI], by AWS.
+* https://catalog.workshops.aws/java-spring-ai-agentcore[Building Agents with Spring AI and AgentCore], by AWS, uses Amazon Bedrock AgentCore.
+* https://github.com/microsoft/Spring-AI-for-Beginners[Spring AI for Beginners], by Microsoft, is a course from a simple chat application to AI agents.
+
+== Feedback
+
+The project's https://github.com/spring-projects/spring-ai/discussions[GitHub discussions] is a great place to send feedback.
+To contribute, see xref:resources/contributing.adoc[Contributing].

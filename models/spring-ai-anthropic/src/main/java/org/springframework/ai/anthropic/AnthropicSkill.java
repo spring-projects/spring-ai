@@ -18,6 +18,7 @@ package org.springframework.ai.anthropic;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
@@ -54,7 +55,7 @@ public enum AnthropicSkill {
 	static {
 		Map<String, AnthropicSkill> map = new HashMap<>();
 		for (AnthropicSkill skill : values()) {
-			map.put(skill.skillId.toLowerCase(), skill);
+			map.put(skill.skillId.toLowerCase(Locale.ROOT), skill);
 		}
 		BY_ID = Collections.unmodifiableMap(map);
 	}
@@ -77,7 +78,7 @@ public enum AnthropicSkill {
 		if (skillId == null) {
 			return null;
 		}
-		return BY_ID.get(skillId.toLowerCase());
+		return BY_ID.get(skillId.toLowerCase(Locale.ROOT));
 	}
 
 	public String getSkillId() {

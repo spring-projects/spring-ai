@@ -17,6 +17,10 @@
 package org.springframework.ai.anthropic.http.okhttp;
 
 import com.anthropic.backends.AnthropicBackend;
+import com.anthropic.core.RequestOptions;
+import com.anthropic.core.http.HttpMethod;
+import com.anthropic.core.http.HttpRequest;
+import com.anthropic.core.http.HttpResponse;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -83,6 +87,37 @@ class SpringAiAnthropicHttpClientTests {
 			try (Response second = client.newCall(newPost(url)).execute()) {
 				assertThat(second.code()).isEqualTo(200);
 			}
+		}
+	}
+
+	@Test
+	void followsRedirectsUnlessTheRequestOptionsSayNot() throws Exception {
+		try (MockWebServer server = new MockWebServer()) {
+			server.enqueue(new MockResponse().setResponseCode(302).setHeader("Location", "/target"));
+			server.enqueue(new MockResponse().setResponseCode(200));
+			server.enqueue(new MockResponse().setResponseCode(302).setHeader("Location", "/target"));
+			// Only reached if the second redirect is wrongly followed
+			server.enqueue(new MockResponse().setResponseCode(200));
+			server.start();
+
+			AnthropicBackend backend = AnthropicBackend.builder().apiKey("test-key").build();
+			SpringAiAnthropicHttpClient client = SpringAiAnthropicHttpClient.builder().backend(backend).build();
+			HttpRequest request = HttpRequest.builder()
+				.method(HttpMethod.GET)
+				.baseUrl(server.url("/").toString())
+				.addPathSegment("start")
+				.build();
+
+			try (HttpResponse followed = client.execute(request, RequestOptions.none())) {
+				assertThat(followed.statusCode()).isEqualTo(200);
+			}
+			// The SDK sets this for requests that must stay on the original host, such as
+			// the workload identity token exchange.
+			try (HttpResponse notFollowed = client.execute(request,
+					RequestOptions.builder().followRedirects(false).build())) {
+				assertThat(notFollowed.statusCode()).isEqualTo(302);
+			}
+			assertThat(server.getRequestCount()).isEqualTo(3);
 		}
 	}
 

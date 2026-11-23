@@ -19,6 +19,7 @@ package org.springframework.ai.openai.chat.proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -320,7 +321,7 @@ class NvidiaWithOpenAiChatModelIT {
 		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 		// Because max_tokens is 2, the finish reason should be length or similar
 		// indicating truncation
-		assertThat(response.getResult().getMetadata().getFinishReason().toLowerCase()).contains("length");
+		assertThat(response.getResult().getMetadata().getFinishReason().toLowerCase(Locale.ROOT)).contains("length");
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

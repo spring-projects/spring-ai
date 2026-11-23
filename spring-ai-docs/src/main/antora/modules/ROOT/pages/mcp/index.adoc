@@ -1,0 +1,146 @@
+[[mcp-overview]]
+= Model Context Protocol (MCP)
+:page-aliases: api/mcp/mcp-overview.adoc
+
+The link:https://modelcontextprotocol.io[Model Context Protocol] (MCP) is an open protocol through which AI applications use tools, resources and prompts that other programs provide.
+An MCP server offers them, and an MCP client, inside the AI application, calls them.
+
+Spring AI supports both sides.
+Your application can use the tools of MCP servers as if they were its own, and it can offer its own tools, resources and prompts as an MCP server.
+
+[[mcp-architecture]]
+image::mcp-architecture.svg[MCP clients and servers in a Spring AI application,900,opts=inline]
+
+Your application is the MCP _host_.
+It has one MCP client for each server it connects to, and its `ChatClient` uses the tools of all of them.
+Each server wraps a service and is built once, by the provider of that service.
+So M applications and N services need M + N integrations instead of M × N: each application speaks MCP once, and each service offers it once.
+
+TIP: New to MCP?
+The xref:tutorials/mcp.adoc[Build and Use an MCP Server] tutorial builds a server and a client step by step.
+
+== What Spring AI Adds
+
+Spring AI builds on the link:https://java.sdk.modelcontextprotocol.io/latest/overview/[MCP Java SDK], which implements the protocol.
+On top of it, Spring AI provides:
+
+* Spring Boot starters that create MCP clients from configuration properties, and MCP servers from your beans.
+* A bridge to Spring AI tools: the tools of MCP servers become `ToolCallback` instances that a `ChatClient` can use, and your `ToolCallback` beans become the tools of your MCP server.
+* xref:mcp/annotations/index.adoc[MCP annotations], such as `@McpTool` and `@McpResource` for servers, and `@McpElicitation` for clients.
+* Spring WebMVC and WebFlux transports for MCP servers.
+
+The community project link:https://github.com/spring-ai-community/mcp-security[MCP Security] adds OAuth 2.0 and API key security to Spring AI MCP servers and clients, see xref:mcp/security.adoc[MCP Security].
+
+[[modern-or-legacy]]
+== Modern or Legacy?
+
+MCP has two generations, and Spring AI supports both:
+
+* *Modern*, the link:https://modelcontextprotocol.io/specification/2026-07-28[2026-07-28 revision] of the specification.
+There is no handshake and no session, and every request stands alone.
+* *Legacy*, the 2025-11-25 revision and earlier ones.
+Client and server set up a session with an `initialize` handshake.
+
+Legacy does not mean deprecated: both generations are supported, and one application can use both.
+The two generations cannot talk to each other, so choose the one that the other side speaks.
+A modern client cannot call a legacy server, and a legacy client cannot call a modern server.
+
+[cols="1,2,2"]
+|===
+| |Legacy |Modern (2026-07-28)
+
+|Lifecycle
+|An `initialize` handshake, then a session.
+|None. Every request carries the protocol version and the client capabilities.
+
+|Input from the user
+|The server sends elicitation, sampling and roots requests to the client.
+|The server answers that it needs input, and the client sends the request again with the answers. The Spring AI client supports elicitation, but not sampling.
+
+|Scaling a server
+|Sessions live in the server process, except on the stateless server.
+|Any server instance can answer any request.
+
+|Clients per connection
+|One client, shared by all requests.
+|One client per request by default, configurable with `client-scope`.
+
+|Client configuration
+|Every connection, unless it sets `protocol: MODERN`.
+|A Streamable HTTP connection with `protocol: MODERN`, or a transport bean for STDIO.
+
+|Server configuration
+|`spring.ai.mcp.server.protocol` set to `STREAMABLE` (recommended), `STATELESS` or `SSE` (deprecated), or `spring.ai.mcp.server.stdio=true`.
+Without the property, the deprecated `SSE` is selected.
+|`spring.ai.mcp.server.protocol=MODERN`, for WebMVC, WebFlux and STDIO.
+
+|Guides
+|xref:mcp/client/transports.adoc[Client Transports], xref:mcp/server/index.adoc[MCP Server]
+|xref:mcp/client/modern.adoc[2026-07-28 Connections], xref:mcp/server/modern.adoc[2026-07-28 Servers]
+|===
+
+The annotations and the `ToolCallback` bridge work the same with both generations.
+A few annotations and parameters apply to one generation only, see xref:mcp/annotations/index.adoc#protocol-support[Protocol Support].
+
+NOTE: The 2026-07-28 revision requires the MCP Java SDK `2.2.0` line or later, which is the version that Spring AI uses by default.
+
+[[_spring_ai_mcp_integration]]
+== Starters
+
+=== Client
+
+[cols="2,3"]
+|===
+|Starter |Transports
+
+|`spring-ai-starter-mcp-client`
+|STDIO, and Streamable HTTP and SSE (deprecated) through the JDK `HttpClient`.
+
+|`spring-ai-starter-mcp-client-webflux`
+|STDIO, and Streamable HTTP and SSE (deprecated) through the WebFlux `WebClient`.
+|===
+
+Modern connections use the JDK `HttpClient` transport with both starters.
+See xref:mcp/client/index.adoc[MCP Client].
+
+=== Server
+
+[cols="2,2,3"]
+|===
+|Starter |Transport |Selected with
+
+|`spring-ai-starter-mcp-server`
+|STDIO
+|`spring.ai.mcp.server.stdio=true`, and `spring.ai.mcp.server.protocol=MODERN` for a modern server.
+
+|`spring-ai-starter-mcp-server-webmvc`
+|HTTP on Spring WebMVC
+|`spring.ai.mcp.server.protocol`: `STREAMABLE` (recommended), `STATELESS`, `MODERN` or `SSE` (deprecated).
+
+|`spring-ai-starter-mcp-server-webflux`
+|HTTP on Spring WebFlux
+|`spring.ai.mcp.server.protocol`: `STREAMABLE` (recommended), `STATELESS`, `MODERN` or `SSE` (deprecated).
+|===
+
+Set `spring.ai.mcp.server.protocol` explicitly, for example to `STREAMABLE`.
+Without the property, the WebMVC and WebFlux starters select the deprecated `SSE` transport.
+See xref:mcp/server/index.adoc[MCP Server].
+
+== The MCP Java SDK
+
+The starters create and configure the clients and servers of the MCP Java SDK.
+To customize them beyond the configuration properties, or to use them without Spring Boot, see the SDK documentation:
+
+* link:https://java.sdk.modelcontextprotocol.io/latest/overview/[Overview], which describes the architecture of both generations.
+* link:https://java.sdk.modelcontextprotocol.io/latest/client-modern/[MCP Client (2026-07-28)] and link:https://java.sdk.modelcontextprotocol.io/latest/server-modern/[MCP Server (2026-07-28)].
+* link:https://java.sdk.modelcontextprotocol.io/latest/client/[MCP Client] and link:https://java.sdk.modelcontextprotocol.io/latest/server/[MCP Server] for the legacy generation.
+
+== In This Section
+
+* xref:mcp/client/index.adoc[MCP Client] connects your application to MCP servers.
+* xref:mcp/server/index.adoc[MCP Server] exposes your tools, resources and prompts.
+* xref:mcp/annotations/index.adoc[MCP Annotations] declare server features and client handlers on methods.
+* xref:mcp/security.adoc[MCP Security] protects servers and authorizes clients.
+* xref:mcp/utilities.adoc[MCP Utilities] convert between MCP tools and Spring AI tools.
+* xref:tools/mcp.adoc[Using MCP Tools] passes the tools of MCP servers to a `ChatClient`.
+* xref:upgrading/mcp-2-0.adoc[MCP Changes in Spring AI 2.0] lists what changed in 2.0.

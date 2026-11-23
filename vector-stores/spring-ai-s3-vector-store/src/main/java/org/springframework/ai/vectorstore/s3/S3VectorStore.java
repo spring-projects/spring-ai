@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore.s3;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,9 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.services.s3vectors.S3VectorsClient;
 import software.amazon.awssdk.services.s3vectors.model.DeleteVectorsRequest;
+import software.amazon.awssdk.services.s3vectors.model.ListOutputVector;
+import software.amazon.awssdk.services.s3vectors.model.ListVectorsRequest;
+import software.amazon.awssdk.services.s3vectors.model.ListVectorsResponse;
 import software.amazon.awssdk.services.s3vectors.model.PutInputVector;
 import software.amazon.awssdk.services.s3vectors.model.PutVectorsRequest;
 import software.amazon.awssdk.services.s3vectors.model.QueryOutputVector;
@@ -44,11 +48,17 @@ import org.springframework.ai.vectorstore.observation.AbstractObservationVectorS
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Matej Nedic
+ * @author Jewoo Shin
  */
 public class S3VectorStore extends AbstractObservationVectorStore implements InitializingBean {
+
+	private static final int LIST_VECTORS_MAX_RESULTS = 500;
+
+	private static final int DELETE_VECTORS_MAX_KEYS = 500;
 
 	private final S3VectorsClient s3VectorsClient;
 
@@ -57,6 +67,8 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 	private final String indexName;
 
 	private final S3VectorFilterExpressionConverter filterExpressionConverter;
+
+	private final S3VectorStoreFilterExpressionEvaluator filterExpressionEvaluator;
 
 	/**
 	 * Creates a new S3VectorStore instance with the specified builder settings.
@@ -73,6 +85,7 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 		this.s3VectorsClient = builder.s3VectorsClient;
 		this.indexName = builder.indexName;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
+		this.filterExpressionEvaluator = new S3VectorStoreFilterExpressionEvaluator();
 		this.vectorBucketName = builder.vectorBucketName;
 	}
 
@@ -100,35 +113,38 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 
 	@Override
 	public void doDelete(List<String> idList) {
-		this.s3VectorsClient.deleteVectors(DeleteVectorsRequest.builder()
-			.keys(idList)
-			.indexName(this.indexName)
-			.vectorBucketName(this.vectorBucketName)
-			.build());
+		deleteVectors(idList);
 	}
 
 	@Override
 	public void doDelete(Filter.Expression filterExpression) {
-		Assert.notNull(filterExpression, "Filter expression mus not be null");
+		Assert.notNull(filterExpression, "Filter expression must not be null");
 
-		software.amazon.awssdk.core.document.Document filterDoc = this.filterExpressionConverter
-			.convertExpression(filterExpression);
-		QueryVectorsRequest request = QueryVectorsRequest.builder()
-			.filter(filterDoc)
-			.vectorBucketName(this.vectorBucketName)
-			.indexName(this.indexName)
-			.build();
-		List<String> keys = this.s3VectorsClient.queryVectors(request)
-			.vectors()
-			.stream()
-			.map(QueryOutputVector::key)
-			.toList();
+		String nextToken = null;
+		List<String> keys = new ArrayList<>();
+		do {
+			ListVectorsRequest.Builder requestBuilder = ListVectorsRequest.builder()
+				.vectorBucketName(this.vectorBucketName)
+				.indexName(this.indexName)
+				.maxResults(LIST_VECTORS_MAX_RESULTS)
+				.returnMetadata(true)
+				.returnData(false);
 
-		this.s3VectorsClient.deleteVectors(DeleteVectorsRequest.builder()
-			.vectorBucketName(this.vectorBucketName)
-			.keys(keys)
-			.indexName(this.indexName)
-			.build());
+			if (StringUtils.hasText(nextToken)) {
+				requestBuilder.nextToken(nextToken);
+			}
+
+			ListVectorsResponse response = this.s3VectorsClient.listVectors(requestBuilder.build());
+			for (ListOutputVector vector : response.vectors()) {
+				if (matchesFilter(vector, filterExpression)) {
+					keys.add(vector.key());
+				}
+			}
+			nextToken = response.nextToken();
+		}
+		while (StringUtils.hasText(nextToken));
+
+		deleteVectors(keys);
 	}
 
 	@Override
@@ -166,6 +182,28 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 			metadata.put("SPRING_AI_S3_DISTANCE", vector.distance());
 		}
 		return Document.builder().metadata(metadata).text(vector.key()).build();
+	}
+
+	private boolean matchesFilter(ListOutputVector vector, Filter.Expression filterExpression) {
+		software.amazon.awssdk.core.document.Document metadataDocument = vector.metadata();
+		Map<String, Object> metadata = (metadataDocument != null) ? DocumentUtils.fromDocument(metadataDocument) : null;
+		return this.filterExpressionEvaluator.evaluate(filterExpression,
+				(metadata != null) ? metadata : Collections.emptyMap());
+	}
+
+	private void deleteVectors(List<String> keys) {
+		Assert.notNull(keys, "Keys must not be null");
+		if (keys.isEmpty()) {
+			return;
+		}
+		for (int i = 0; i < keys.size(); i += DELETE_VECTORS_MAX_KEYS) {
+			List<String> batch = keys.subList(i, Math.min(i + DELETE_VECTORS_MAX_KEYS, keys.size()));
+			this.s3VectorsClient.deleteVectors(DeleteVectorsRequest.builder()
+				.keys(batch)
+				.indexName(this.indexName)
+				.vectorBucketName(this.vectorBucketName)
+				.build());
+		}
 	}
 
 	private static software.amazon.awssdk.core.document.Document constructMetadata(

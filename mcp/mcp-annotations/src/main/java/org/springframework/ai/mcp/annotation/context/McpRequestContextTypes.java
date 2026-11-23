@@ -106,7 +106,11 @@ public interface McpRequestContextTypes<ET> {
 		SamplingSpec message(TextContent... content);
 
 		default SamplingSpec message(String... text) {
-			return message(List.of(text).stream().map(t -> new TextContent(t)).toList().toArray(new TextContent[0]));
+			return message(List.of(text)
+				.stream()
+				.map(t -> TextContent.builder(t).build())
+				.toList()
+				.toArray(new TextContent[0]));
 		}
 
 		SamplingSpec message(SamplingMessage... message);

@@ -209,8 +209,11 @@ public class StreamableMcpAnnotationsIT {
 
 						// TOOL STRUCTURED OUTPUT
 						// Call tool with valid structured output
-						CallToolResult calculatorToolResponse = mcpClient.callTool(new McpSchema.CallToolRequest(
-								"calculator", Map.of("expression", "2 + 3"), Map.of("meta1", "value1")));
+						CallToolResult calculatorToolResponse = mcpClient
+							.callTool(McpSchema.CallToolRequest.builder("calculator")
+								.arguments(Map.of("expression", "2 + 3"))
+								.meta(Map.of("meta1", "value1"))
+								.build());
 
 						assertThat(calculatorToolResponse).isNotNull();
 						assertThat(calculatorToolResponse.isError()).isFalse();
@@ -249,14 +252,16 @@ public class StreamableMcpAnnotationsIT {
 						assertThat(mcpClient.listPrompts().prompts()).hasSize(1);
 
 						// get prompt
-						GetPromptResult promptResult = mcpClient
-							.getPrompt(new GetPromptRequest("code-completion", Map.of("language", "java")));
+						GetPromptResult promptResult = mcpClient.getPrompt(GetPromptRequest.builder("code-completion")
+							.arguments(Map.of("language", "java"))
+							.build());
 						assertThat(promptResult).isNotNull();
 
 						// completion
-						CompleteRequest completeRequest = new CompleteRequest(
-								new PromptReference("ref/prompt", "code-completion", "Code completion"),
-								new CompleteRequest.CompleteArgument("language", "py"));
+						CompleteRequest completeRequest = CompleteRequest
+							.builder(new PromptReference("ref/prompt", "code-completion", "Code completion"),
+									new CompleteRequest.CompleteArgument("language", "py"))
+							.build();
 
 						CompleteResult completeResult = mcpClient.completeCompletion(completeRequest);
 
@@ -322,7 +327,7 @@ public class StreamableMcpAnnotationsIT {
 				exchange.ping(); // call client ping
 
 				// call elicitation
-				var elicitationRequest = McpSchema.ElicitRequest
+				var elicitationRequest = McpSchema.ElicitFormRequest
 					.builder("Test message",
 							Map.of("type", "object", "properties", Map.of("message", Map.of("type", "string"))))
 					.build();
@@ -336,10 +341,11 @@ public class StreamableMcpAnnotationsIT {
 
 				// call sampling
 				var createMessageRequest = McpSchema.CreateMessageRequest
-					.builder(List.of(new McpSchema.SamplingMessage(McpSchema.Role.USER,
-							McpSchema.TextContent.builder("Test Sampling Message").build())), 500)
+					.builder(List.of(McpSchema.SamplingMessage
+						.builder(McpSchema.Role.USER, McpSchema.TextContent.builder("Test Sampling Message").build())
+						.build()), 500)
 					.modelPreferences(ModelPreferences.builder()
-						.hints(List.of(ModelHint.of("OpenAi"), ModelHint.of("Ollama")))
+						.hints(List.of(new ModelHint("OpenAi"), new ModelHint("Ollama")))
 						.costPriority(1.0)
 						.speedPriority(1.0)
 						.intelligencePriority(1.0)
@@ -388,8 +394,9 @@ public class StreamableMcpAnnotationsIT {
 							System.getProperty("os.version"), "java_version", System.getProperty("java.version"));
 					String jsonContent = JsonMapper.shared().writeValueAsString(systemInfo);
 					return McpSchema.ReadResourceResult
-						.builder(List
-							.of(new McpSchema.TextResourceContents(request.uri(), "application/json", jsonContent)))
+						.builder(List.of(McpSchema.TextResourceContents.builder(request.uri(), jsonContent)
+							.mimeType("application/json")
+							.build()))
 						.build();
 				}
 				catch (Exception e) {

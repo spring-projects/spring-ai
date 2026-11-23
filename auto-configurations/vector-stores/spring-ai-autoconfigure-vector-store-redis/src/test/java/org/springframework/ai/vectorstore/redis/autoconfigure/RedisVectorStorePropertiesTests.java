@@ -32,6 +32,7 @@ class RedisVectorStorePropertiesTests {
 		var props = new RedisVectorStoreProperties();
 		assertThat(props.getIndexName()).isEqualTo("default-index");
 		assertThat(props.getPrefix()).isEqualTo("default:");
+		assertThat(props.getDimensions()).isNull();
 
 		// Verify default HNSW parameters
 		assertThat(props.getHnsw().getM()).isEqualTo(16);
@@ -44,9 +45,11 @@ class RedisVectorStorePropertiesTests {
 		var props = new RedisVectorStoreProperties();
 		props.setIndexName("myIdx");
 		props.setPrefix("doc:");
+		props.setDimensions(384);
 
 		assertThat(props.getIndexName()).isEqualTo("myIdx");
 		assertThat(props.getPrefix()).isEqualTo("doc:");
+		assertThat(props.getDimensions()).isEqualTo(384);
 	}
 
 	@Test

@@ -44,6 +44,11 @@ public class OllamaInitializationProperties {
 	private final ModelTypeInit embedding = new ModelTypeInit();
 
 	/**
+	 * Decision models initialization settings.
+	 */
+	private final ModelTypeInit decision = new ModelTypeInit();
+
+	/**
 	 * Whether to pull models at startup-time and how.
 	 */
 	private PullModelStrategy pullModelStrategy = PullModelStrategy.NEVER;
@@ -72,6 +77,10 @@ public class OllamaInitializationProperties {
 
 	public ModelTypeInit getEmbedding() {
 		return this.embedding;
+	}
+
+	public ModelTypeInit getDecision() {
+		return this.decision;
 	}
 
 	public Duration getTimeout() {

@@ -24,6 +24,7 @@ import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfigurationUtil.ResolvedConnectionProperties;
 import org.springframework.ai.openai.OpenAiModerationModel;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.setup.OpenAiSetup;
@@ -33,6 +34,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 /**
  * Moderation {@link AutoConfiguration Auto-configuration} for OpenAI SDK.
@@ -47,19 +49,20 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiModerationProperties.class })
+@Import(OpenAiConnectionDetailsConfiguration.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.MODERATION_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
 public class OpenAiModerationAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiModerationModel openAiSdkModerationModel(OpenAiCommonProperties commonProperties,
-			OpenAiModerationProperties moderationProperties, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<MeterRegistry> meterRegistry,
+	public OpenAiModerationModel openAiSdkModerationModel(OpenAiConnectionDetails connectionDetails,
+			OpenAiCommonProperties commonProperties, OpenAiModerationProperties moderationProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
-		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
-				moderationProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(connectionDetails,
+				commonProperties, moderationProperties);
 
 		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
 
@@ -72,7 +75,7 @@ public class OpenAiModerationAutoConfiguration {
 			.build();
 	}
 
-	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties,
+	private OpenAIClient openAiClient(ResolvedConnectionProperties commonProperties,
 			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 

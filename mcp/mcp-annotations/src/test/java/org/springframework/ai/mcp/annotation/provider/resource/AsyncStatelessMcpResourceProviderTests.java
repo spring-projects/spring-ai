@@ -79,7 +79,7 @@ public class AsyncStatelessMcpResourceProviderTests {
 
 		// Test that the handler works
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test://resource/123");
+		ReadResourceRequest request = ReadResourceRequest.builder("test://resource/123").build();
 		Mono<ReadResourceResult> result = resourceSpec.readHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {
@@ -295,7 +295,7 @@ public class AsyncStatelessMcpResourceProviderTests {
 
 		// Test that the handler works with URI variables
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("variable://resource/123/document");
+		ReadResourceRequest request = ReadResourceRequest.builder("variable://resource/123/document").build();
 		Mono<ReadResourceResult> result = resourceTemplateSpecs.get(0).readHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {
@@ -351,7 +351,7 @@ public class AsyncStatelessMcpResourceProviderTests {
 
 		// Test that the handler works with private methods
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("private://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("private://resource").build();
 		Mono<ReadResourceResult> result = resourceSpecs.get(0).readHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {
@@ -383,7 +383,7 @@ public class AsyncStatelessMcpResourceProviderTests {
 
 		// Test that the handler works with list return type
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("list://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("list://resource").build();
 		Mono<ReadResourceResult> result = resourceSpecs.get(0).readHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {
@@ -418,7 +418,7 @@ public class AsyncStatelessMcpResourceProviderTests {
 
 		// Test that the handler works with context parameter
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("context://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("context://resource").build();
 		Mono<ReadResourceResult> result = resourceSpecs.get(0).readHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {
@@ -452,7 +452,7 @@ public class AsyncStatelessMcpResourceProviderTests {
 
 		// Test that the handler works with request parameter
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("request://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("request://resource").build();
 		Mono<ReadResourceResult> result = resourceSpecs.get(0).readHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {
@@ -485,7 +485,7 @@ public class AsyncStatelessMcpResourceProviderTests {
 
 		// Test that the handler works with sync method returning Mono
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("sync-mono://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("sync-mono://resource").build();
 		Mono<ReadResourceResult> result = resourceSpecs.get(0).readHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {

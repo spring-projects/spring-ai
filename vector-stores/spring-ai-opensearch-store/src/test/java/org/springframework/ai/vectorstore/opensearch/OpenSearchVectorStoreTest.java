@@ -30,23 +30,30 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.ShardStatistics;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.core.search.HitsMetadata;
+import org.opensearch.client.opensearch.core.search.TotalHits;
+import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.opensearch.OpenSearchVectorStore.OpenSearchDocument;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for OpenSearchVectorStore.doAdd() method.
- *
- * Focuses on testing the manageDocumentIds functionality and document ID handling.
+ * Unit tests for {@link OpenSearchVectorStore}.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OpenSearchVectorStore.doAdd() Tests")
@@ -201,6 +208,55 @@ class OpenSearchVectorStoreTest {
 				assertThat(operation.index().id()).isNull();
 			}
 		}
+	}
+
+	@Test
+	@DisplayName("Should deserialize search results via OpenSearchDocument, not Document")
+	void shouldDeserializeSearchResultsViaOpenSearchDocument() throws IOException {
+		// Given
+		when(this.mockEmbeddingModel.embed(any(String.class))).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
+
+		OpenSearchDocument openSearchDocument = new OpenSearchDocument("doc-1", "Spring AI is great",
+				Map.of("author", "tester", "priority", 1), new float[] { 0.1f, 0.2f, 0.3f });
+
+		Hit<OpenSearchDocument> hit = Hit.<OpenSearchDocument>builder()
+			.id("doc-1")
+			.index("spring-ai-document-index")
+			.score(0.95)
+			.source(openSearchDocument)
+			.build();
+
+		HitsMetadata<OpenSearchDocument> hitsMetadata = HitsMetadata.<OpenSearchDocument>builder()
+			.hits(List.of(hit))
+			.total(TotalHits.of(t -> t.value(1).relation(TotalHitsRelation.Eq)))
+			.build();
+
+		SearchResponse<OpenSearchDocument> searchResponse = new SearchResponse.Builder<OpenSearchDocument>()
+			.hits(hitsMetadata)
+			.took(1)
+			.timedOut(false)
+			.shards(ShardStatistics.of(s -> s.total(1).successful(1).failed(0)))
+			.build();
+
+		when(this.mockOpenSearchClient.search(any(org.opensearch.client.opensearch.core.SearchRequest.class),
+				eq(OpenSearchDocument.class)))
+			.thenReturn(searchResponse);
+
+		OpenSearchVectorStore vectorStore = createVectorStore(true);
+
+		// When
+		List<Document> results = vectorStore.similaritySearch(
+				org.springframework.ai.vectorstore.SearchRequest.builder().query("Spring AI").topK(1).build());
+
+		// Then
+		assertThat(results).hasSize(1);
+		Document result = results.get(0);
+		assertThat(result.getId()).isEqualTo("doc-1");
+		assertThat(result.getText()).isEqualTo("Spring AI is great");
+		assertThat(result.getMetadata()).containsEntry("author", "tester");
+		assertThat(result.getMetadata()).containsEntry("priority", 1);
+		assertThat(result.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
+		assertThat(result.getScore()).isEqualTo(0.95);
 	}
 
 }

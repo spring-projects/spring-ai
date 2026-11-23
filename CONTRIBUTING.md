@@ -108,7 +108,7 @@ If the commit has both an issue and a PR associated, the Spring AI committer mer
 
 ## Source code style
 
-Spring AI source code style follows the checkstyle guidelines used by the [core Spring Framework project](https://github.com/spring-framework/wiki/Code-Style) with some exceptions.
+Spring AI source code style follows the checkstyle guidelines used by the [core Spring Framework project](https://github.com/spring-projects/spring-framework/wiki/Code-Style) with some exceptions.
 See also related [IntelliJ IDEA Editor Settings](https://github.com/spring-projects/spring-framework/blob/main/src/idea/spring-framework.xml).
 
 The code is formatted using the [java-format plugin](https://github.com/spring-io/spring-javaformat) as part of the build.
@@ -120,6 +120,10 @@ To format the code specifically:
 ./mvnw process-sources
 ```
 Note that this will not format the import order which is documented below.
+
+Code formatting is applied automatically by local builds.
+To disable it, add `-Dspring-javaformat.skip=true` to the build command.
+To check formatting without modifying files, like CI does, add `-P'!format-apply,format-check'` instead.
 
 ### Formatting
 

@@ -33,7 +33,13 @@ import org.springframework.context.annotation.Bean;
  * @author Mick Semb Wever
  * @author Jihoon Kim
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of the session memory
+ * auto-configuration, {@code SessionServiceAutoConfiguration} in
+ * {@code spring-ai-autoconfigure-model-session}. There is no session store for Cassandra
+ * yet; one is planned before 3.0.0, when this module is removed.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 // Ordering is to make sure ChatMemoryRepository bean is cassandra one
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ CassandraChatMemoryRepository.class, CqlSession.class })

@@ -39,10 +39,9 @@ public class SyncMcpSamplingMethodCallbackExample {
 	@McpSampling(clients = "test-client")
 	public CreateMessageResult handleSamplingRequest(CreateMessageRequest request) {
 		// Process the request and return a result
-		return CreateMessageResult.builder()
-			.role(Role.ASSISTANT)
-			.content(new TextContent("This is a response to the sampling request"))
-			.model("test-model")
+		return CreateMessageResult
+			.builder(Role.ASSISTANT, TextContent.builder("This is a response to the sampling request").build(),
+					"test-model")
 			.build();
 	}
 
@@ -63,10 +62,9 @@ public class SyncMcpSamplingMethodCallbackExample {
 	 */
 	@McpSampling(clients = "test-client")
 	public CreateMessageResult invalidParameterType(String invalidParam) {
-		return CreateMessageResult.builder()
-			.role(Role.ASSISTANT)
-			.content(new TextContent("This method has an invalid parameter type"))
-			.model("test-model")
+		return CreateMessageResult
+			.builder(Role.ASSISTANT, TextContent.builder("This method has an invalid parameter type").build(),
+					"test-model")
 			.build();
 	}
 
@@ -76,10 +74,8 @@ public class SyncMcpSamplingMethodCallbackExample {
 	 */
 	@McpSampling(clients = "test-client")
 	public CreateMessageResult noParameters() {
-		return CreateMessageResult.builder()
-			.role(Role.ASSISTANT)
-			.content(new TextContent("This method has no parameters"))
-			.model("test-model")
+		return CreateMessageResult
+			.builder(Role.ASSISTANT, TextContent.builder("This method has no parameters").build(), "test-model")
 			.build();
 	}
 
@@ -91,10 +87,8 @@ public class SyncMcpSamplingMethodCallbackExample {
 	 */
 	@McpSampling(clients = "test-client")
 	public CreateMessageResult tooManyParameters(CreateMessageRequest request, String extraParam) {
-		return CreateMessageResult.builder()
-			.role(Role.ASSISTANT)
-			.content(new TextContent("This method has too many parameters"))
-			.model("test-model")
+		return CreateMessageResult
+			.builder(Role.ASSISTANT, TextContent.builder("This method has too many parameters").build(), "test-model")
 			.build();
 	}
 

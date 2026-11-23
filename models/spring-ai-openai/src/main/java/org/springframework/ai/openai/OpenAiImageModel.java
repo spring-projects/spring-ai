@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.openai.client.OpenAIClient;
+import com.openai.core.RequestOptions;
 import com.openai.models.images.ImageGenerateParams;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
@@ -52,6 +53,7 @@ import org.springframework.util.Assert;
  * @author Hyunjoon Choi
  * @author Christian Tzolov
  * @author Mark Pollack
+ * @author guan xu
  */
 public class OpenAiImageModel implements ImageModel {
 
@@ -69,7 +71,9 @@ public class OpenAiImageModel implements ImageModel {
 
 	/**
 	 * Creates a new OpenAiImageModel with default options.
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel() {
 		this(null, null, null);
 	}
@@ -77,7 +81,9 @@ public class OpenAiImageModel implements ImageModel {
 	/**
 	 * Creates a new OpenAiImageModel with the given options.
 	 * @param options the image options
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable OpenAiImageOptions options) {
 		this(null, options, null);
 	}
@@ -85,7 +91,9 @@ public class OpenAiImageModel implements ImageModel {
 	/**
 	 * Creates a new OpenAiImageModel with the given observation registry.
 	 * @param observationRegistry the observation registry
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable ObservationRegistry observationRegistry) {
 		this(null, null, observationRegistry);
 	}
@@ -94,7 +102,9 @@ public class OpenAiImageModel implements ImageModel {
 	 * Creates a new OpenAiImageModel with the given options and observation registry.
 	 * @param options the image options
 	 * @param observationRegistry the observation registry
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable OpenAiImageOptions options, @Nullable ObservationRegistry observationRegistry) {
 		this(null, options, observationRegistry);
 	}
@@ -102,7 +112,9 @@ public class OpenAiImageModel implements ImageModel {
 	/**
 	 * Creates a new OpenAiImageModel with the given OpenAI client.
 	 * @param openAIClient the OpenAI client
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable OpenAIClient openAIClient) {
 		this(openAIClient, null, null);
 	}
@@ -111,7 +123,9 @@ public class OpenAiImageModel implements ImageModel {
 	 * Creates a new OpenAiImageModel with the given OpenAI client and options.
 	 * @param openAIClient the OpenAI client
 	 * @param options the image options
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable OpenAIClient openAIClient, @Nullable OpenAiImageOptions options) {
 		this(openAIClient, options, null);
 	}
@@ -121,7 +135,9 @@ public class OpenAiImageModel implements ImageModel {
 	 * registry.
 	 * @param openAIClient the OpenAI client
 	 * @param observationRegistry the observation registry
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable OpenAIClient openAIClient, @Nullable ObservationRegistry observationRegistry) {
 		this(openAIClient, null, observationRegistry);
 	}
@@ -131,7 +147,9 @@ public class OpenAiImageModel implements ImageModel {
 	 * @param openAiClient the OpenAI client
 	 * @param options the image options
 	 * @param observationRegistry the observation registry
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable OpenAIClient openAiClient, @Nullable OpenAiImageOptions options,
 			@Nullable ObservationRegistry observationRegistry) {
 		this(builder().openAiClient(openAiClient).options(options).observationRegistry(observationRegistry));
@@ -142,16 +160,16 @@ public class OpenAiImageModel implements ImageModel {
 	}
 
 	private OpenAiImageModel(Builder builder) {
-		this.options = builder.options != null ? builder.options : OpenAiImageOptions.builder().build();
+		this.options = Objects.requireNonNullElseGet(builder.options, () -> OpenAiImageOptions.builder().build());
 		this.observationRegistry = Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP);
 		this.openAiClient = Objects.requireNonNullElseGet(builder.openAiClient,
 				() -> OpenAiSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
 						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
-						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders(), this.observationRegistry, null,
-						builder.httpClientCustomizers));
+						Objects.requireNonNullElse(this.options.getTimeout(), AbstractOpenAiOptions.DEFAULT_TIMEOUT),
+						this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders(),
+						this.observationRegistry, null, builder.httpClientCustomizers));
 	}
 
 	/**
@@ -171,6 +189,8 @@ public class OpenAiImageModel implements ImageModel {
 
 		ImageGenerateParams imageGenerateParams = options.toOpenAiImageGenerateParams(imagePrompt);
 
+		RequestOptions requestOptions = this.buildRequestOptions(options);
+
 		if (logger.isTraceEnabled()) {
 			logger.trace("OpenAiImageOptions call " + options.getModel() + " with the following options : "
 					+ imageGenerateParams);
@@ -186,9 +206,9 @@ public class OpenAiImageModel implements ImageModel {
 					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 							this.observationRegistry)
 					.observe(() -> {
-						var images = this.openAiClient.images().generate(imageGenerateParams);
+						var images = this.openAiClient.images().generate(imageGenerateParams, requestOptions);
 
-						if (images.data().isEmpty() && images.data().get().isEmpty()) {
+						if (images.data().isEmpty() || images.data().get().isEmpty()) {
 							throw new IllegalArgumentException("Image generation failed: no image returned");
 						}
 
@@ -221,6 +241,20 @@ public class OpenAiImageModel implements ImageModel {
 	public void setObservationConvention(ImageModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
+	}
+
+	/**
+	 * Creates a RequestOptions instance from the given image options.
+	 * @param options the image options
+	 * @return a RequestOptions instance
+	 */
+	private RequestOptions buildRequestOptions(OpenAiImageOptions options) {
+		Assert.notNull(options, "Options cannot be null");
+		RequestOptions.Builder requestOptionsBuilder = RequestOptions.builder();
+		if (options.getTimeout() != null) {
+			requestOptionsBuilder.timeout(options.getTimeout());
+		}
+		return requestOptionsBuilder.build();
 	}
 
 	public static final class Builder {

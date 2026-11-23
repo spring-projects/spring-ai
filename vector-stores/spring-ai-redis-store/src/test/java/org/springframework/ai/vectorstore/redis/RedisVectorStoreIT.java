@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.redis;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,6 +58,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Yanming Zhou
+ * @author Taewoong Kim
  */
 @Testcontainers
 class RedisVectorStoreIT extends BaseVectorStoreTests {
@@ -107,11 +109,35 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@Test
+	void searchResultsAreOrderedByScore() {
+		this.contextRunner.run(context -> {
+			RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
+			vectorStore.add(this.documents);
+
+			// The best match is the document added last. Unsorted, Redis tends to return
+			// results in insertion order, which would put it at the end.
+			String query = "The Great Depression and the economic collapse of the 1930s";
+
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query(query).topK(3).similarityThresholdAll().build());
+			assertThat(results).hasSize(3);
+			assertThat(results.get(0).getId()).isEqualTo("3");
+			assertThat(results).extracting(Document::getScore).isSortedAccordingTo(Comparator.reverseOrder());
+
+			List<Document> rangeResults = vectorStore.searchByRange(query, 0.0);
+			assertThat(rangeResults).isNotEmpty();
+			assertThat(rangeResults.get(0).getId()).isEqualTo("3");
+			assertThat(rangeResults).extracting(Document::getScore).isSortedAccordingTo(Comparator.reverseOrder());
+		});
+	}
+
+	@Test
 	void addAndSearch() {
 
 		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
+			RedisVectorStore redisVectorStore = context.getBean(RedisVectorStore.class);
 
 			vectorStore.add(this.documents);
 
@@ -126,6 +152,10 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 			assertThat(resultDoc.getMetadata()).hasSize(3);
 			assertThat(resultDoc.getMetadata()).containsKeys("meta1", RedisVectorStore.DISTANCE_FIELD_NAME,
 					DocumentMetadata.DISTANCE.value());
+			assertThat(redisVectorStore.searchByText("Spring", RedisVectorStore.DEFAULT_CONTENT_FIELD_NAME, 5))
+				.extracting(Document::getId)
+				.contains("1");
+			assertThat(redisVectorStore.searchByRange("Spring", 0.0)).extracting(Document::getId).contains("1");
 
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());

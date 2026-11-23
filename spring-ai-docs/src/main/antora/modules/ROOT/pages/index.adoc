@@ -1,47 +1,103 @@
 [[introduction]]
-= Introduction
+= What is Spring AI
 
-image::spring_ai_logo_with_text.svg[Integration Problem, width=300, align="left"]
+Spring AI is an application framework for building AI-powered applications with Spring.
+It provides portable abstractions for AI models, vector stores and tools, so the code you write does not depend on one provider.
 
-The `Spring AI` project aims to streamline the development of applications that incorporate artificial intelligence functionality without unnecessary complexity.
+NOTE: Spring AI addresses the fundamental challenge of AI integration: connecting your enterprise data and APIs with AI models.
 
-The project draws inspiration from notable Python projects, such as LangChain and LlamaIndex, but Spring AI is not a direct port of those projects.
-The project was founded with the belief that the next wave of Generative AI applications will not be only for Python developers but will be ubiquitous across many programming languages.
+image::spring-ai-overview.svg[Spring AI connects your application to AI models,860,opts=inline]
 
-NOTE: Spring AI addresses the fundamental challenge of AI integration: `Connecting your enterprise Data and APIs with AI Models`.
+Spring AI sits between your application and the models.
+In one direction it gives a model the context it needs: your prompts, your documents and the memory of the conversation.
+In the other direction it brings the work of the model into your application: answers as Java types, and calls to your own methods and services.
 
-image::spring-ai-integration-diagram-3.svg[Interactive,500,opts=interactive]
+== What You Can Build
 
-Spring AI provides abstractions that serve as the foundation for developing AI applications.
-These abstractions have multiple implementations, enabling easy component swapping with minimal code changes.
+* *Assistants and chat applications* that hold a conversation, using the xref:chatclient/index.adoc[ChatClient] and xref:memory/session/index.adoc[session memory].
+* *Question answering over your own documents*, using xref:rag/index.adoc[retrieval augmented generation] and a xref:integrations/vector-stores/index.adoc[vector store].
+* *xref:agents/index.adoc[Agents] that take action*, by letting the model call your Java methods as xref:tools/index.adoc[tools] or reach external systems through the xref:mcp/index.adoc[Model Context Protocol], with xref:tools/confirmation.adoc[approval by a person] where it matters.
+* *Applications that return data, not prose*, by mapping model output to Java types with xref:structured-output/index.adoc[structured output].
+* *Applications that see, hear and speak*, using xref:multimodality.adoc[multimodal input] and the xref:models/index.adoc[image and audio model APIs].
 
-Spring AI provides the following features:
+== Building Blocks
 
-* Portable API support across AI providers for Chat, text-to-image, and Embedding models. Both synchronous and streaming API options are supported. Access to model-specific features is also available.
-* Support for all major xref:api/index.adoc[AI Model providers] such as Anthropic, OpenAI, Microsoft, Amazon, Google, and Ollama. Supported model types include:
-** xref:api/chatmodel.adoc[Chat Completion]
-** xref:api/embeddings.adoc[Embedding]
-** xref:api/imageclient.adoc[Text to Image]
-** xref:api/audio/transcriptions.adoc[Audio Transcription]
-** xref:api/audio/speech.adoc[Text to Speech]
-** xref:api/moderation.adoc[Moderation]
-* xref:api/structured-output-converter.adoc[Structured Outputs] - Mapping of AI Model output to POJOs.
-* Support for all major xref:api/vectordbs.adoc[Vector Database providers] such as Apache Cassandra, Azure Vector Search, Chroma, Elasticsearch, GemFire, MariaDB, Milvus, MongoDB Atlas, Neo4j, OpenSearch, Oracle, PostgreSQL/PGVector, Pinecone, Qdrant, Redis, Typesense and Weaviate.
-* Portable API across Vector Store providers, including a novel SQL-like metadata filter API.
-* xref:api/tools.adoc[Tools/Function Calling] - Permits the model to request the execution of client-side tools and functions, thereby accessing necessary real-time information as required and taking action.
-* xref:observability/index.adoc[Observability] - Provides insights into AI-related operations.
-* Document ingestion xref:api/etl-pipeline.adoc[ETL framework] for Data Engineering.
-* xref:api/testing.adoc[AI Model Evaluation] - Utilities to help evaluate generated content and protect against hallucinated response.
-* xref:api/mcp/mcp-overview.adoc[MCP (Model Context Protocol)] - Seamless integration for building AI applications that consume MCP servers or expose Spring-based services to the AI ecosystem.
-* Spring Boot Auto Configuration and Starters for AI Models and Vector Stores.
-* xref:api/chatclient.adoc[ChatClient API] - Fluent API for communicating with AI Chat Models, idiomatically similar to the WebClient and RestClient APIs.
-* xref:api/advisors.adoc[Advisors API] - Encapsulates recurring Generative AI patterns, transforms data sent to and from Language Models (LLMs), and provides portability across various models and use cases.
-* Support for xref:api/chatclient.adoc#_chat_memory[Chat Conversation Memory] and xref:api/chatclient.adoc#_retrieval_augmented_generation[Retrieval Augmented Generation (RAG)].
+The following map shows the parts of Spring AI.
+Green parts belong to Spring AI, and blue parts are projects of the https://github.com/spring-ai-community[Spring AI Community].
+A light-blue model provider is a xref:integrations/community/index.adoc[community-maintained integration] that its provider maintains in its own repository.
+Select a part to go to its documentation.
 
-This feature set lets you implement common use cases, such as "`Q&A over your documentation`" or "`Chat with your documentation.`"
+image::spring-ai-project-map.svg[The building blocks of Spring AI,920,opts=inline]
 
+The table describes the main building blocks:
 
-The xref:concepts.adoc[concepts section] provides a high-level overview of AI concepts and their representation in Spring AI.
+[cols="1,3", options="header"]
+|===
+| Building block | What it does
 
-The xref:getting-started.adoc[Getting Started] section shows you how to create your first AI application.
-Subsequent sections delve into each component and common use cases with a code-focused approach.
+| xref:chatclient/index.adoc[ChatClient]
+| A fluent API for talking to a chat model, similar in style to `WebClient` and `RestClient`.
+
+| xref:models/index.adoc[Model APIs]
+| Portable interfaces for chat, embedding, image, audio, moderation and decision models.
+Chat, text-to-speech and transcription models can also stream their output.
+
+| xref:prompts/index.adoc[Prompts]
+| Messages and templates for the text that is sent to a model.
+
+| xref:advisors/index.adoc[Advisors]
+| Interceptors around a model call that add memory, retrieval, tool calling, logging and other recurring patterns.
+
+| xref:tools/index.adoc[Tool calling]
+| Lets the model request the execution of your `@Tool` methods to fetch information or take action.
+A person can xref:tools/confirmation.adoc[approve a tool call] before it runs, and xref:tools/tool-search.adoc[tool search] keeps the prompt small when there are many tools.
+
+| xref:mcp/index.adoc[Model Context Protocol]
+| Client and server support for consuming MCP servers and exposing Spring services to the AI ecosystem, for both generations of the protocol, including the 2026-07-28 revision.
+
+| xref:memory/index.adoc[Memory]
+| Keeps a conversation across requests.
+xref:memory/session/index.adoc[Session memory] stores it as a log of events, compacts it when it grows, and lets the model search it.
+
+| xref:rag/index.adoc[Retrieval augmented generation]
+| Brings your data to the model, with an xref:rag/etl/index.adoc[ETL pipeline] for ingestion and a portable xref:rag/vector-store/index.adoc[vector store API] with metadata filters.
+
+| xref:structured-output/index.adoc[Structured output]
+| Maps model output to Java types.
+
+| xref:agents/index.adoc[Agents]
+| Combines these blocks into applications in which the model decides what to do next, and into xref:agents/patterns.adoc[workflows] of several model calls.
+
+| xref:evaluation/index.adoc[Evaluation and testing]
+| Utilities for evaluating generated content and for running models and stores locally in tests.
+
+| xref:observability/index.adoc[Observability]
+| Metrics and traces for AI operations.
+
+| xref:resilience/index.adoc[Resilience and safety]
+| Retries failed model calls, and blocks unwanted input with guardrails and moderation models.
+|===
+
+Spring Boot auto-configuration and starters are available for the model providers, the vector stores, MCP clients and servers, and session storage.
+See xref:reference/modules.adoc[Modules and Starters].
+
+== Requirements
+
+Spring AI requires Java 17 or later and Spring Boot 4.
+xref:get-started/project-setup.adoc[Project Setup] lists the supported Spring Boot versions and the dependency management.
+
+== Supported Providers
+
+Spring AI integrates with the major xref:integrations/models/index.adoc[model providers], including Anthropic, OpenAI, Google, Amazon Bedrock, Mistral AI and Ollama, and with a wide range of xref:integrations/vector-stores/index.adoc[vector stores].
+Each integration follows the same portable API, and also exposes the provider-specific options when you need them.
+
+Projects maintained by the community extend Spring AI, for example with ready-made agent tools and with security for MCP.
+They are marked "(Community)" in these docs and listed under xref:integrations/community/index.adoc[Community-Maintained Integrations].
+
+== Where to Go Next
+
+* xref:get-started/quickstart.adoc[Quickstart] builds a first application in a few minutes.
+* The tutorials build on it: xref:tutorials/rag.adoc[Chat with Your Documents], xref:tutorials/tools.adoc[Give the Model Tools], xref:tutorials/sessions.adoc[A Conversational App with Sessions] and xref:tutorials/mcp.adoc[Build and Use an MCP Server].
+* xref:concepts.adoc[AI Concepts] explains the ideas behind the API.
+* xref:get-started/choose-provider.adoc[Choosing a Model Provider] helps you pick a model to start with.
+* xref:upgrading/spring-ai-2-1.adoc[Upgrading to 2.1] describes what changed since 2.0, and xref:upgrading/index.adoc[Upgrade Notes] covers the earlier releases.

@@ -16,12 +16,15 @@
 
 package org.springframework.ai.vectorstore.redis.cache.semantic.autoconfigure;
 
+import java.time.Duration;
+
 import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.JedisClientConfig;
 import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.chat.cache.semantic.SemanticCache;
 import org.springframework.ai.chat.cache.semantic.SemanticCacheAdvisor;
+import org.springframework.ai.chat.cache.semantic.SemanticCacheScopeResolver;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -127,15 +130,29 @@ public class RedisSemanticCacheAutoConfiguration {
 	}
 
 	/**
-	 * Creates the semantic cache advisor for ChatClient integration.
+	 * Creates the semantic cache advisor for ChatClient integration. Only created when
+	 * the application defines a {@link SemanticCacheScopeResolver}, since the scope that
+	 * isolates cached responses can only be decided by the application.
 	 * @param semanticCache the semantic cache
+	 * @param scopeResolver the resolver of the scope that isolates cached responses
+	 * @param properties the semantic cache properties
 	 * @return the semantic cache advisor
 	 */
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnBean(SemanticCache.class)
-	public SemanticCacheAdvisor semanticCacheAdvisor(final SemanticCache semanticCache) {
-		return new SemanticCacheAdvisor(semanticCache);
+	@ConditionalOnBean({ SemanticCache.class, SemanticCacheScopeResolver.class })
+	public SemanticCacheAdvisor semanticCacheAdvisor(final SemanticCache semanticCache,
+			final SemanticCacheScopeResolver scopeResolver, final RedisSemanticCacheProperties properties) {
+		SemanticCacheAdvisor.Builder builder = SemanticCacheAdvisor.builder()
+			.cache(semanticCache)
+			.scopeResolver(scopeResolver);
+
+		Duration ttl = properties.getTtl();
+		if (ttl != null) {
+			builder.ttl(ttl);
+		}
+
+		return builder.build();
 	}
 
 }

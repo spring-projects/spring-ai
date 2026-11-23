@@ -18,9 +18,12 @@ package org.springframework.ai.reader;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -204,6 +207,27 @@ public class TextReaderTests {
 		assertThat(documents).hasSize(1);
 		assertThat(documents.get(0).getText()).isEqualTo("Content without extension");
 		assertThat(documents.get(0).getMetadata().get(TextReader.SOURCE_METADATA)).isEqualTo("no-extension-file");
+	}
+
+	@Test
+	void closesTheResourceInputStream() {
+		AtomicBoolean closed = new AtomicBoolean();
+		Resource resource = new ByteArrayResource("Test content".getBytes(StandardCharsets.UTF_8)) {
+			@Override
+			public InputStream getInputStream() throws IOException {
+				return new FilterInputStream(super.getInputStream()) {
+					@Override
+					public void close() throws IOException {
+						closed.set(true);
+						super.close();
+					}
+				};
+			}
+		};
+
+		new TextReader(resource).get();
+
+		assertThat(closed).isTrue();
 	}
 
 }

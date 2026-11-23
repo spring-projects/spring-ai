@@ -1,0 +1,80 @@
+@startuml session-compaction-classes
+!pragma layout smetana
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+
+interface CompactionTrigger <<functional>> {
+  +shouldCompact(request): boolean
+}
+class TurnCountTrigger
+class TokenCountTrigger
+class CompositeCompactionTrigger {
+  {static} +anyOf(triggers...)
+}
+interface CompactionStrategy <<functional>> {
+  +compact(request): CompactionResult
+}
+class WindowCompactionStrategy {
+  +builder()
+  +getWindow(): CompactionWindow
+}
+class CompactionWindow <<record>> {
+  rule: Rule
+  size
+  {static} +lastEvents(n)
+  {static} +lastTurns(n)
+  {static} +tokenBudget(maxTokens)
+}
+interface CompactionSummarizer <<functional>> {
+  +summarize(request): List<Message>
+}
+class ChatModelSummarizer {
+  +builder(chatModel)
+}
+class SummaryRequest <<record>> {
+  session
+  priorSummary
+  covered
+  preserved
+}
+class CompactionRequest <<record>> {
+  session
+  events
+  currentTurnCount
+}
+class CompactionResult <<record>> {
+  coveredEvents
+  pinnedEvents
+  preservedEvents
+  summary: List<Message>
+  tokensEstimatedSaved
+  strategy
+  +isUnchanged(): boolean
+  +toEvents(sessionId): List<SessionEvent>
+}
+class CompactionBoundary <<record>> {
+  id
+  pinnedEventIds
+  summaryEventIds
+  preservedEventIds
+  coveredEventCount
+  tokensEstimatedSaved
+  strategy
+  {static} +project(log)
+}
+
+CompactionTrigger <|.. TurnCountTrigger
+CompactionTrigger <|.. TokenCountTrigger
+CompactionTrigger <|.. CompositeCompactionTrigger
+CompactionStrategy <|.. WindowCompactionStrategy
+WindowCompactionStrategy --> CompactionWindow
+WindowCompactionStrategy --> "0..1" CompactionSummarizer
+CompactionSummarizer <|.. ChatModelSummarizer
+CompactionSummarizer ..> SummaryRequest
+CompactionTrigger ..> CompactionRequest
+CompactionStrategy ..> CompactionRequest
+CompactionStrategy ..> CompactionResult
+CompactionResult ..> CompactionBoundary : toEvents()
+@enduml

@@ -19,6 +19,7 @@ package org.springframework.ai.embedding;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 import com.knuddels.jtokkit.api.EncodingType;
 import org.junit.jupiter.api.Test;
@@ -77,6 +78,30 @@ public class TokenCountBatchingStrategyTests {
 		TokenCountBatchingStrategy tokenCountBatchingStrategy = new TokenCountBatchingStrategy();
 		assertThatThrownBy(() -> tokenCountBatchingStrategy.batch(List.of(new Document(contentAsString))))
 			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void batchKeepsEqualDocuments() {
+		TokenCountBatchingStrategy strategy = new TokenCountBatchingStrategy();
+		Document first = new Document("shared-id", "same text content", Map.of());
+		Document second = new Document("shared-id", "same text content", Map.of());
+
+		List<List<Document>> batches = strategy.batch(List.of(first, second));
+
+		int totalDocs = batches.stream().mapToInt(List::size).sum();
+		assertThat(totalDocs).isEqualTo(2);
+		assertThat(batches.get(0)).containsExactly(first, second);
+	}
+
+	@Test
+	void batchKeepsRepeatedDocumentInstance() {
+		TokenCountBatchingStrategy strategy = new TokenCountBatchingStrategy();
+		Document document = new Document("doc-id", "Hello world", Map.of());
+
+		List<List<Document>> batches = strategy.batch(List.of(document, document));
+
+		int totalDocs = batches.stream().mapToInt(List::size).sum();
+		assertThat(totalDocs).isEqualTo(2);
 	}
 
 }

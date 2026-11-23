@@ -20,12 +20,14 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.genai.Client;
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -38,6 +40,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -60,7 +63,6 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.NonNull;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
@@ -131,8 +133,7 @@ class GoogleGenAiChatModelIT {
 		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("SAFETY");
 	}
 
-	@NonNull
-	private Prompt createPrompt(GoogleGenAiChatOptions chatOptions) {
+	private @NonNull Prompt createPrompt(GoogleGenAiChatOptions chatOptions) {
 		String request = "Name 3 famous pirates from the Golden Age of Piracy and tell me what they did.";
 		String name = "Bob";
 		String voice = "pirate";
@@ -585,6 +586,30 @@ class GoogleGenAiChatModelIT {
 		assertThat(response).isNotEmpty();
 	}
 
+	@Test
+	void includeThoughtsReturnsReasoningPartsBesideTheAnswer() {
+		var options = GoogleGenAiChatOptions.builder()
+			.model(ChatModel.GEMINI_3_5_FLASH)
+			.thinkingBudget(1024)
+			.includeThoughts(true)
+			.build();
+		var prompt = new Prompt("How many r are there in the word strawberry? Answer with just the number.", options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		assertThat(response.getResults()).hasSize(1);
+		AssistantMessage output = response.getResult().getOutput();
+		assertThat(output.getReasoning()).isNotEmpty();
+		assertThat(output.getText()).contains("3");
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregated::set).blockLast();
+
+		AssistantMessage streamed = aggregated.get().getResult().getOutput();
+		assertThat(streamed.getReasoning()).isNotEmpty();
+		assertThat(streamed.getText()).contains("3");
+	}
+
 	/**
 	 * Tests that using thinkingLevel with models that don't support it results in an API
 	 * error. The {@code thinkingLevel} option is only supported by Gemini 3 Pro models.
@@ -617,7 +642,7 @@ class GoogleGenAiChatModelIT {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClientGlobal())
 			.options(GoogleGenAiChatOptions.builder()
-				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+				.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
 				.build())
 			.build();
@@ -635,7 +660,7 @@ class GoogleGenAiChatModelIT {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClientGlobal())
 			.options(GoogleGenAiChatOptions.builder()
-				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+				.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 				.temperature(0.1)
 				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
 				.build())
@@ -669,7 +694,7 @@ class GoogleGenAiChatModelIT {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClientGlobal())
 			.options(GoogleGenAiChatOptions.builder()
-				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+				.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 				.temperature(0.1)
 				.thinkingBudget(4096)
 				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)

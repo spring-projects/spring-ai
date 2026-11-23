@@ -19,6 +19,7 @@ package org.springframework.ai.mcp;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -124,17 +125,22 @@ public class AsyncMcpToolCallback implements ToolCallback {
 		try {
 			var mcpMeta = toolContext != null ? this.toolContextToMcpMetaConverter.convert(toolContext) : null;
 
-			var request = CallToolRequest.builder()
-				// Use the original tool name, not the prefixed one from getToolDefinition
-				.name(this.tool.name())
-				.arguments(arguments)
-				.meta(mcpMeta)
-				.build();
+			// Use the original tool name, not the prefixed one from getToolDefinition
+			var request = CallToolRequest.builder(this.tool.name()).arguments(arguments).meta(mcpMeta).build();
 
-			response = this.mcpClient.callTool(request).onErrorMap(exception -> {
-				logger.error("Exception while tool calling: ", exception);
-				return new ToolExecutionException(this.getToolDefinition(), exception);
+			// Only map non-McpError exceptions to ToolExecutionException. McpError is a
+			// protocol-level signal (e.g. URL elicitation) that must propagate as a hard
+			// failure rather than being conveyed to the model as an error result.
+			response = this.mcpClient.callTool(request).onErrorMap(e -> !(e instanceof McpError), e -> {
+				logger.error("Exception while tool calling: ", e);
+				return new ToolExecutionException(this.getToolDefinition(), e);
 			}).contextWrite(ctx -> ctx.putAll(ToolCallReactiveContextHolder.getContext())).block();
+		}
+		catch (McpError ex) {
+			logger.error("Protocol error while calling tool: ", ex);
+			// Since the tool calling manager only handles ToolExecutionException, this
+			// bubbles up and fails the model interaction.
+			throw ex;
 		}
 		catch (Exception ex) {
 			logger.error("Exception while tool calling: ", ex);

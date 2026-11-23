@@ -87,7 +87,8 @@ public class DefaultSamplingSpec implements SamplingSpec {
 	}
 
 	private SamplingSpec messageInternal(Content... content) {
-		this.messages.addAll(List.of(content).stream().map(c -> new SamplingMessage(Role.USER, c)).toList());
+		this.messages
+			.addAll(List.of(content).stream().map(c -> SamplingMessage.builder(Role.USER, c).build()).toList());
 		return this;
 	}
 

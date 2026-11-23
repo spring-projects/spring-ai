@@ -19,6 +19,7 @@ package org.springframework.ai.mcp.annotation.method.tool;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -72,18 +73,22 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 	 */
 	protected Object callMethod(Object[] methodArguments) {
 		this.toolMethod.setAccessible(true);
-
-		Object result;
 		try {
-			result = this.toolMethod.invoke(this.toolObject, methodArguments);
+			return this.toolMethod.invoke(this.toolObject, methodArguments);
 		}
 		catch (IllegalAccessException ex) {
 			throw new RuntimeException("Failed to access tool method", ex);
 		}
 		catch (InvocationTargetException ex) {
-			throw new RuntimeException("Error invoking method: " + this.toolMethod.getName(), ex.getCause());
+			Throwable cause = ex.getCause();
+			if (cause instanceof RuntimeException re) {
+				throw re;
+			}
+			if (cause instanceof Error err) {
+				throw err;
+			}
+			throw new UndeclaredThrowableException(cause);
 		}
-		return result;
 	}
 
 	/**

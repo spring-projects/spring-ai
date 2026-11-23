@@ -28,7 +28,12 @@ import org.springframework.data.mongodb.core.mapping.Document;
  *
  * @author Lukasz Jernas
  * @since 1.1.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of session memory:
+ * {@code org.springframework.ai.session.SessionRepository} in {@code spring-ai-session},
+ * with a JDBC store in {@code spring-ai-session-jdbc}. There is no session store for
+ * MongoDB yet; one is planned before 3.0.0, when this module is removed.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
 @Document("ai_chat_memory")
 public record Conversation(String conversationId, Message message, Instant timestamp) {
 	public record Message(@Nullable String content, String type, Map<String, Object> metadata) {

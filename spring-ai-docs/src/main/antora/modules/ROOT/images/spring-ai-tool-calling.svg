@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 930 494" width="930" role="img" aria-labelledby="tool-calling-title tool-calling-desc" font-family="'Open Sans', 'Helvetica Neue', Arial, sans-serif" fill="currentColor">
+<defs><marker id="tool-calling-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor" fill-opacity="0.6"/></marker><marker id="tool-calling-arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6DB33F"/></marker></defs>
+<title id="tool-calling-title">The tool calling loop</title>
+<desc id="tool-calling-desc">1: The application sends a prompt and its tools through Spring AI. 2: Spring AI sends the messages and the tool definitions to the model. 3: The model asks for a tool call with arguments. 4 and 5: Spring AI runs the tool and gets the result. 6: Spring AI sends the result to the model. Steps 3 to 6 repeat while the model asks for tools. 7: The model gives its final answer. 8: Spring AI returns the response to the application.</desc>
+<rect x="10" y="10" width="160" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.2"/><text x="90.0" y="33.5" text-anchor="middle" font-size="14">Your application</text>
+<path d="M90 58 V486" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="260" y="10" width="160" height="38" rx="8" fill="#6DB33F"/><text x="340.0" y="33.5" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Spring AI</text>
+<path d="M340 58 V486" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="510" y="10" width="160" height="38" rx="8" fill="none" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.2"/><text x="590.0" y="33.5" text-anchor="middle" font-size="14">Tool</text>
+<path d="M590 58 V486" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="760" y="10" width="160" height="38" rx="8" fill="#6DB33F" fill-opacity="0.14" stroke="#6DB33F" stroke-width="1.2"/><text x="840.0" y="33.5" text-anchor="middle" font-size="14">AI model</text>
+<path d="M840 58 V486" stroke="currentColor" stroke-opacity="0.3" stroke-width="1.2" stroke-dasharray="4 4"/>
+<rect x="335" y="82" width="10" height="386" rx="3" fill="#6DB33F"/>
+<path d="M96.0 96.0 L334.0 96.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#tool-calling-arrow)"/>
+<circle cx="148.6" cy="82" r="10" fill="#6DB33F"/>
+<text x="148.6" y="86.0" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">1</text>
+<text x="215.0" y="87.0" text-anchor="middle" font-size="13" font-weight="600">prompt + tools</text>
+<text x="215.0" y="113.0" text-anchor="middle" font-size="11.5" fill-opacity="0.75" font-family="ui-monospace, Menlo, Consolas, monospace">chatClient.prompt(…).tools(…)</text>
+<path d="M346.0 148.0 L834.0 148.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#tool-calling-arrow)"/>
+<circle cx="476.8" cy="134" r="10" fill="#6DB33F"/>
+<text x="476.8" y="138.0" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">2</text>
+<text x="590.0" y="139.0" text-anchor="middle" font-size="13" font-weight="600">messages + tool definitions</text>
+<text x="590.0" y="165.0" text-anchor="middle" font-size="11.5" fill-opacity="0.75">name, description, input schema</text>
+<path d="M834.0 200.0 L346.0 200.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#tool-calling-arrow)"/>
+<circle cx="534.4" cy="186" r="10" fill="#6DB33F"/>
+<text x="534.4" y="190.0" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">3</text>
+<text x="590.0" y="191.0" text-anchor="middle" font-size="13" font-weight="600">call a tool</text>
+<text x="590.0" y="217.0" text-anchor="middle" font-size="11.5" fill-opacity="0.75">tool name + arguments</text>
+<path d="M346.0 252.0 L584.0 252.0" fill="none" stroke="#6DB33F" stroke-width="2.4" marker-end="url(#tool-calling-arrow-green)"/>
+<circle cx="405.8" cy="238" r="10" fill="#6DB33F"/>
+<text x="405.8" y="242.0" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">4</text>
+<text x="465.0" y="243.0" text-anchor="middle" font-size="13" font-weight="600">run the tool</text>
+<text x="465.0" y="269.0" text-anchor="middle" font-size="11.5" fill-opacity="0.75">with the arguments</text>
+<path d="M584.0 304.0 L346.0 304.0" fill="none" stroke="#6DB33F" stroke-width="2.4" marker-end="url(#tool-calling-arrow-green)"/>
+<circle cx="427.4" cy="290" r="10" fill="#6DB33F"/>
+<text x="427.4" y="294.0" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">5</text>
+<text x="465.0" y="295.0" text-anchor="middle" font-size="13" font-weight="600">result</text>
+<path d="M346.0 348.0 L834.0 348.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#tool-calling-arrow)"/>
+<circle cx="494.8" cy="334" r="10" fill="#6DB33F"/>
+<text x="494.8" y="338.0" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">6</text>
+<text x="590.0" y="339.0" text-anchor="middle" font-size="13" font-weight="600">messages + tool result</text>
+<path d="M834.0 392.0 L346.0 392.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#tool-calling-arrow)"/>
+<circle cx="530.8" cy="378" r="10" fill="#6DB33F"/>
+<text x="530.8" y="382.0" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">7</text>
+<text x="590.0" y="383.0" text-anchor="middle" font-size="13" font-weight="600">final answer</text>
+<path d="M334.0 436.0 L96.0 436.0" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.6" marker-end="url(#tool-calling-arrow)"/>
+<circle cx="170.2" cy="422" r="10" fill="#6DB33F"/>
+<text x="170.2" y="426.0" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">8</text>
+<text x="215.0" y="427.0" text-anchor="middle" font-size="13" font-weight="600">response</text>
+<rect x="250" y="176" width="680" height="190" rx="10" fill="none" stroke="#6DB33F" stroke-width="1.4" stroke-dasharray="6 4"/>
+<text x="922.0" y="192.0" text-anchor="end" font-size="11.5" font-weight="600" fill="#6DB33F">repeats while the model asks for tools</text>
+</svg>

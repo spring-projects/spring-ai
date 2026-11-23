@@ -30,9 +30,9 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -149,7 +149,7 @@ class DefaultChatClientObservationConventionTests {
 					ToolCallingChatOptions.builder()
 						.toolCallbacks(dummyFunction("toolCallback1"), dummyFunction("toolCallback2"))
 						.build()))
-			.context(ChatMemory.CONVERSATION_ID, "007")
+			.context(MemoryAdvisor.CONVERSATION_ID, "007")
 			.build();
 
 		ChatClientObservationContext observationContext = ChatClientObservationContext.builder()

@@ -1,0 +1,10 @@
+[[mistral-ai]]
+= Mistral AI
+
+The `spring-ai-mistral-ai` module integrates the Mistral AI platform.
+Add the `spring-ai-starter-model-mistral-ai` starter to auto-configure it.
+
+* xref:integrations/models/mistral-ai/chat.adoc[Chat]
+* xref:integrations/models/mistral-ai/embeddings.adoc[Embeddings]
+* xref:integrations/models/mistral-ai/moderation.adoc[Moderation]
+* xref:integrations/models/mistral-ai/chat.adoc#_mistral_ai_ocr[OCR], through the low-level `MistralOcrApi` client

@@ -20,6 +20,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
@@ -39,19 +40,46 @@ public class MariaDBSchemaValidator {
 
 	private static final Log logger = LogFactory.getLog(MariaDBSchemaValidator.class);
 
+	/**
+	 * Result of {@link #vectorColumnDimensions} when the table or column does not exist,
+	 * or the column is not a {@code VECTOR}.
+	 */
+	static final int NO_VECTOR_COLUMN = -1;
+
+	// A null schema means the schema selected on the connection.
+	private static final String TABLE_EXISTS_QUERY = """
+			SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES
+			WHERE TABLE_SCHEMA = COALESCE(?, SCHEMA()) AND TABLE_NAME = ?
+			""";
+
+	private static final String COLUMN_TYPE_QUERY = """
+			SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+			WHERE TABLE_SCHEMA = COALESCE(?, SCHEMA()) AND TABLE_NAME = ? AND COLUMN_NAME = ?
+			""";
+
+	private static final Pattern VECTOR_COLUMN_TYPE = Pattern.compile("vector\\((\\d+)\\)", Pattern.CASE_INSENSITIVE);
+
 	private final JdbcTemplate jdbcTemplate;
 
 	public MariaDBSchemaValidator(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	private boolean isTableExists(@Nullable String schemaName, String tableName) {
+	private String resolveSchemaName(@Nullable String schemaName) {
+		if (schemaName != null) {
+			return schemaName;
+		}
+		String currentSchema = this.jdbcTemplate.queryForObject("SELECT SCHEMA()", String.class);
+		Assert.state(currentSchema != null, "No schema name configured and no schema selected on the connection");
+		return currentSchema;
+	}
+
+	private boolean isTableExists(String schemaName, String tableName) {
 		// schema and table are expected to be escaped
 		String sql = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?";
 		try {
 			// Query for a single integer value, if it exists, table exists
-			this.jdbcTemplate.queryForObject(sql, Integer.class, (schemaName == null) ? "SCHEMA()" : schemaName,
-					tableName);
+			this.jdbcTemplate.queryForObject(sql, Integer.class, schemaName, tableName);
 			return true;
 		}
 		catch (DataAccessException e) {
@@ -59,19 +87,66 @@ public class MariaDBSchemaValidator {
 		}
 	}
 
+	/**
+	 * Whether the vector table exists.
+	 * @param schemaName the schema of the vector table, or {@code null} for the schema
+	 * selected on the connection
+	 * @param tableName the vector table
+	 * @return {@code true} if the table exists
+	 * @throws DataAccessException if the lookup itself fails
+	 */
+	boolean tableExists(@Nullable String schemaName, String tableName) {
+		Integer count = this.jdbcTemplate.queryForObject(TABLE_EXISTS_QUERY, Integer.class, unquote(schemaName),
+				unquote(tableName));
+		return count != null && count > 0;
+	}
+
+	/**
+	 * Returns the vector size the table's embedding column accepts, as declared in its
+	 * {@code VECTOR(n)} type. MariaDB always requires a size, so there is no column that
+	 * accepts any size.
+	 * <p>
+	 * A failed lookup is not reported as "no column": the {@link DataAccessException}
+	 * propagates, so a caller can tell an absent column from a lookup that did not work.
+	 * @param schemaName the schema of the vector table, or {@code null} for the schema
+	 * selected on the connection
+	 * @param tableName the vector table
+	 * @param embeddingFieldName the name of the embedding column
+	 * @return the declared size, or {@link #NO_VECTOR_COLUMN} when the table or column
+	 * does not exist
+	 * @throws DataAccessException if the lookup itself fails
+	 */
+	int vectorColumnDimensions(@Nullable String schemaName, String tableName, String embeddingFieldName) {
+		List<String> result = this.jdbcTemplate.queryForList(COLUMN_TYPE_QUERY, String.class, unquote(schemaName),
+				unquote(tableName), unquote(embeddingFieldName));
+		if (result.isEmpty() || result.get(0) == null) {
+			return NO_VECTOR_COLUMN;
+		}
+		Matcher matcher = VECTOR_COLUMN_TYPE.matcher(result.get(0));
+		return matcher.matches() ? Integer.parseInt(matcher.group(1)) : NO_VECTOR_COLUMN;
+	}
+
+	// The store keeps names in their quoted form, while INFORMATION_SCHEMA holds them
+	// without quotes. Names are restricted to letters, digits and underscores, so
+	// dropping the backticks is enough.
+	private static @Nullable String unquote(@Nullable String identifier) {
+		return (identifier != null) ? identifier.replace("`", "") : null;
+	}
+
 	void validateTableSchema(@Nullable String schemaName, String tableName, String idFieldName, String contentFieldName,
 			String metadataFieldName, String embeddingFieldName, int embeddingDimensions) {
 
-		if (!isTableExists(schemaName, tableName)) {
+		String resolvedSchemaName = resolveSchemaName(schemaName);
+
+		if (!isTableExists(resolvedSchemaName, tableName)) {
 			throw new IllegalStateException(
-					String.format("Table '%s' does not exist in schema '%s'", tableName, schemaName));
+					String.format("Table '%s' does not exist in schema '%s'", tableName, resolvedSchemaName));
 		}
 
 		// ensure server support VECTORs
 		try {
 			// Query for a single integer value, if it exists, database support vector
-			this.jdbcTemplate.queryForObject("SELECT vec_distance_euclidean(x'0000803f', x'0000803f')", Integer.class,
-					schemaName, tableName);
+			this.jdbcTemplate.queryForObject("SELECT vec_distance_euclidean(x'0000803f', x'0000803f')", Integer.class);
 		}
 		catch (DataAccessException e) {
 			if (logger.isErrorEnabled()) {
@@ -87,7 +162,8 @@ public class MariaDBSchemaValidator {
 
 		try {
 			if (logger.isInfoEnabled()) {
-				logger.info("Validating MariaDBStore schema for table: " + tableName + " in schema: " + schemaName);
+				logger.info(
+						"Validating MariaDBStore schema for table: " + tableName + " in schema: " + resolvedSchemaName);
 			}
 
 			List<String> expectedColumns = new ArrayList<>();
@@ -100,11 +176,12 @@ public class MariaDBSchemaValidator {
 			// Include the schema name in the query to target the correct table
 			String query = "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS "
 					+ "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?";
-			List<Map<String, @Nullable Object>> columns = this.jdbcTemplate.queryForList(query, schemaName, tableName);
+			List<Map<String, @Nullable Object>> columns = this.jdbcTemplate.queryForList(query, resolvedSchemaName,
+					tableName);
 
 			if (columns.isEmpty()) {
 				throw new IllegalStateException("Error while validating table schema, Table " + tableName
-						+ " does not exist in schema " + schemaName);
+						+ " does not exist in schema " + resolvedSchemaName);
 			}
 
 			// Check each column against expected fields
@@ -140,11 +217,11 @@ public class MariaDBSchemaValidator {
 										%s UUID NOT NULL DEFAULT uuid() PRIMARY KEY,
 										%s TEXT,
 										%s JSON,
-										%s VECTOR(%d) NOT NULL,
+										%s VECTOR(%s) NOT NULL,
 										VECTOR INDEX (%s)
-								) ENGINE=InnoDB""", schemaName == null ? tableName : schemaName + "." + tableName,
-								idFieldName, contentFieldName, metadataFieldName, embeddingFieldName,
-								embeddingDimensions, embeddingFieldName)
+								) ENGINE=InnoDB""", resolvedSchemaName + "." + tableName, idFieldName, contentFieldName,
+								metadataFieldName, embeddingFieldName,
+								(embeddingDimensions > 0) ? embeddingDimensions : "<dimensions>", embeddingFieldName)
 						+ "\n" + "Please adjust these commands based on your specific configuration and the"
 						+ " capabilities of your vector database system.");
 			}

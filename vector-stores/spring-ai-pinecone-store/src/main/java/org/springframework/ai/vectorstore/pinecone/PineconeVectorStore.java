@@ -370,9 +370,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		}
 
 		/**
-		 * Sets the Pinecone namespace. Note: The free-tier (gcp-starter) doesn't support
-		 * Namespaces.
-		 * @param namespace The namespace to use (leave empty for free tier)
+		 * Sets the Pinecone namespace.
+		 * @param namespace The namespace to use ({@code null} is treated as the default
+		 * namespace)
 		 * @return The builder instance
 		 */
 		public Builder namespace(@Nullable String namespace) {

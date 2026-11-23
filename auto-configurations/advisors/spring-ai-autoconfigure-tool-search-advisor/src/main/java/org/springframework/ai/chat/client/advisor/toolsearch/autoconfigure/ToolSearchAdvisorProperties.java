@@ -21,8 +21,9 @@ import java.time.Duration;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
-import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
 import org.springframework.ai.tool.toolsearch.ToolIndex;
+import org.springframework.ai.tool.toolsearch.index.decision.DecisionToolIndex;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
 
@@ -56,6 +57,8 @@ public class ToolSearchAdvisorProperties {
 	 * {@code org.apache.lucene:lucene-core} on the classpath.</li>
 	 * <li>{@code vector} — embedding-based semantic search; requires a
 	 * {@code VectorStore} bean and {@code spring-ai-vector-store} on the classpath.</li>
+	 * <li>{@code decision} — a decision model picks the tool and can report that none
+	 * applies; requires a {@code DecisionModel} bean.</li>
 	 * </ul>
 	 * When not set, {@code regex} is used as the default.
 	 */
@@ -70,9 +73,9 @@ public class ToolSearchAdvisorProperties {
 	/**
 	 * Key name in the advisor context map that carries the conversation/session ID. Must
 	 * match the key used by whatever provides it (e.g. a memory advisor). Defaults to
-	 * {@link ChatMemory#CONVERSATION_ID}.
+	 * {@link MemoryAdvisor#CONVERSATION_ID}.
 	 */
-	private String sessionIdKeyName = ChatMemory.CONVERSATION_ID;
+	private String sessionIdKeyName = MemoryAdvisor.CONVERSATION_ID;
 
 	/**
 	 * When {@code true} (default), tool references discovered across all tool-search tool
@@ -98,6 +101,8 @@ public class ToolSearchAdvisorProperties {
 	private final Eviction eviction = new Eviction();
 
 	private final Lucene lucene = new Lucene();
+
+	private final Decision decision = new Decision();
 
 	public boolean isEnabled() {
 		return this.enabled;
@@ -165,6 +170,13 @@ public class ToolSearchAdvisorProperties {
 	}
 
 	/**
+	 * @since 2.1.0
+	 */
+	public Decision getDecision() {
+		return this.decision;
+	}
+
+	/**
 	 * Eviction strategy settings for the per-session tool-index cache.
 	 */
 	public static class Eviction {
@@ -219,6 +231,45 @@ public class ToolSearchAdvisorProperties {
 
 		public void setMinScoreThreshold(float minScoreThreshold) {
 			this.minScoreThreshold = minScoreThreshold;
+		}
+
+	}
+
+	/**
+	 * Settings for the {@link DecisionToolIndex}. Used only when
+	 * {@code tool-index-type=decision}.
+	 *
+	 * @since 2.1.0
+	 */
+	public static class Decision {
+
+		/**
+		 * How confident the decision model must be that at least one tool fits the
+		 * request. Below this, no tools are returned. Raise it when calling the wrong
+		 * tool is worse than calling none.
+		 */
+		private double applicabilityThreshold = DecisionToolIndex.Builder.DEFAULT_APPLICABILITY_THRESHOLD;
+
+		/**
+		 * Lowest probability a tool needs to be returned. At zero, every tool the model
+		 * gave a probability above zero is returned.
+		 */
+		private double minimumRelevance = DecisionToolIndex.Builder.DEFAULT_MINIMUM_RELEVANCE;
+
+		public double getApplicabilityThreshold() {
+			return this.applicabilityThreshold;
+		}
+
+		public void setApplicabilityThreshold(double applicabilityThreshold) {
+			this.applicabilityThreshold = applicabilityThreshold;
+		}
+
+		public double getMinimumRelevance() {
+			return this.minimumRelevance;
+		}
+
+		public void setMinimumRelevance(double minimumRelevance) {
+			this.minimumRelevance = minimumRelevance;
 		}
 
 	}

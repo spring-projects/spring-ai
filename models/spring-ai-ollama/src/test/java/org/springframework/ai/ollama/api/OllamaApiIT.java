@@ -71,7 +71,7 @@ class OllamaApiIT extends BaseOllamaIT {
 						.content("What is the capital of Bulgaria and what is the size? "
 								+ "What it the national anthem?")
 						.build()))
-			.options(OllamaChatOptions.builder().temperature(0.9).build())
+			.options(OllamaChatOptions.builder().temperature(0.0).build())
 			.build();
 
 		ChatResponse response = getOllamaApi().chat(request);
@@ -103,8 +103,13 @@ class OllamaApiIT extends BaseOllamaIT {
 			.isObject()
 			.containsOnlyKeys("name", "capital", "languages")
 			.containsEntry("name", "Canada")
-			.containsEntry("capital", "Ottawa")
-			.containsEntry("languages", List.of("English", "French"));
+			.containsEntry("capital", "Ottawa");
+		// The model may list more languages or qualify them, e.g. "French (official)"
+		JsonAssertions.assertThatJson(messageContent)
+			.node("languages")
+			.isArray()
+			.anySatisfy(language -> assertThat(language).asString().containsIgnoringCase("English"))
+			.anySatisfy(language -> assertThat(language).asString().containsIgnoringCase("French"));
 	}
 
 	@Test
@@ -114,7 +119,7 @@ class OllamaApiIT extends BaseOllamaIT {
 			.messages(List.of(Message.builder(Role.USER)
 				.content("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
 				.build()))
-			.options(OllamaChatOptions.builder().temperature(0.9).build().toMap())
+			.options(OllamaChatOptions.builder().temperature(0.0).build().toMap())
 			.build();
 
 		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
@@ -157,7 +162,7 @@ class OllamaApiIT extends BaseOllamaIT {
 						.content("What is the capital of Bulgaria and what is the size? "
 								+ "What it the national anthem?")
 						.build()))
-			.options(OllamaChatOptions.builder().temperature(0.9).build())
+			.options(OllamaChatOptions.builder().temperature(0.0).build())
 			.enableThinking()
 			.build();
 
@@ -178,7 +183,7 @@ class OllamaApiIT extends BaseOllamaIT {
 			.messages(List.of(Message.builder(Role.USER)
 				.content("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
 				.build()))
-			.options(OllamaChatOptions.builder().temperature(0.9).build())
+			.options(OllamaChatOptions.builder().temperature(0.0).build())
 			.enableThinking()
 			.build();
 
@@ -200,7 +205,7 @@ class OllamaApiIT extends BaseOllamaIT {
 		var request = ChatRequest.builder(THINKING_MODEL)
 			.stream(true)
 			.messages(List.of(Message.builder(Role.USER).content("What are the planets in the solar system?").build()))
-			.options(OllamaChatOptions.builder().temperature(0.9).build())
+			.options(OllamaChatOptions.builder().temperature(0.0).build())
 			.enableThinking()
 			.build();
 
@@ -222,7 +227,7 @@ class OllamaApiIT extends BaseOllamaIT {
 		var request = ChatRequest.builder(THINKING_MODEL)
 			.stream(true)
 			.messages(List.of(Message.builder(Role.USER).content("What are the planets in the solar system?").build()))
-			.options(OllamaChatOptions.builder().temperature(0.9).build())
+			.options(OllamaChatOptions.builder().temperature(0.0).build())
 			.disableThinking()
 			.build();
 

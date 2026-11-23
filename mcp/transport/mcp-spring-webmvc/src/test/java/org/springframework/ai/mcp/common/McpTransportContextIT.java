@@ -104,8 +104,9 @@ public class McpTransportContextIT {
 
 	private static final BiFunction<McpTransportContext, McpSchema.CallToolRequest, McpSchema.CallToolResult> statelessHandler = (
 			transportContext, request) -> McpSchema.CallToolResult.builder()
-				.content(
-						List.of(new McpSchema.TextContent(transportContext.get("server-side-header-value").toString())))
+				.content(List
+					.of(McpSchema.TextContent.builder(transportContext.get("server-side-header-value").toString())
+						.build()))
 				.build();
 
 	private static final BiFunction<McpSyncServerExchange, McpSchema.CallToolRequest, McpSchema.CallToolResult> statefulHandler = (
@@ -122,8 +123,7 @@ public class McpTransportContextIT {
 
 	private McpSyncClient sseClient;
 
-	private static final McpSchema.Tool tool = McpSchema.Tool.builder()
-		.name("test-tool")
+	private static final McpSchema.Tool tool = McpSchema.Tool.builder("test-tool", Map.of())
 		.description("return the value of the x-test header from call tool request")
 		.build();
 
@@ -148,7 +148,7 @@ public class McpTransportContextIT {
 
 		CLIENT_SIDE_HEADER_VALUE_HOLDER.set("some important value");
 		McpSchema.CallToolResult response = this.streamableClient
-			.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
+			.callTool(McpSchema.CallToolRequest.builder("test-tool").build());
 
 		assertThat(response).isNotNull();
 		assertThat(response.content()).hasSize(1)
@@ -168,7 +168,7 @@ public class McpTransportContextIT {
 
 		CLIENT_SIDE_HEADER_VALUE_HOLDER.set("some important value");
 		McpSchema.CallToolResult response = this.streamableClient
-			.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
+			.callTool(McpSchema.CallToolRequest.builder("test-tool").build());
 
 		assertThat(response).isNotNull();
 		assertThat(response.content()).hasSize(1)
@@ -187,7 +187,7 @@ public class McpTransportContextIT {
 
 		CLIENT_SIDE_HEADER_VALUE_HOLDER.set("some important value");
 		McpSchema.CallToolResult response = this.sseClient
-			.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
+			.callTool(McpSchema.CallToolRequest.builder("test-tool").build());
 
 		assertThat(response).isNotNull();
 		assertThat(response.content()).hasSize(1)

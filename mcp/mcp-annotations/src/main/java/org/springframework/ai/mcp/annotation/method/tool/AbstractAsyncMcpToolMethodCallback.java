@@ -17,7 +17,9 @@
 package org.springframework.ai.mcp.annotation.method.tool;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.UndeclaredThrowableException;
 
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import org.reactivestreams.Publisher;
@@ -45,8 +47,25 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	protected final Class<? extends Throwable> toolCallExceptionClass;
+	/**
+	 * @deprecated no longer consulted. Exception handling now follows the {@code @Tool}
+	 * contract based on the exception type. Retained for backward compatibility. Will be
+	 * removed in 2.1.0.
+	 */
+	@Deprecated
+	protected Class<? extends Throwable> toolCallExceptionClass = Exception.class;
 
+	protected AbstractAsyncMcpToolMethodCallback(ReturnMode returnMode, Method toolMethod, Object toolObject) {
+		super(returnMode, toolMethod, toolObject);
+	}
+
+	/**
+	 * @deprecated use
+	 * {@link #AbstractAsyncMcpToolMethodCallback(ReturnMode, Method, Object)}. The
+	 * {@code toolCallExceptionClass} argument is ignored: exception handling now follows
+	 * the {@code @Tool} contract based on the exception type. Will be removed in 2.1.0.
+	 */
+	@Deprecated
 	protected AbstractAsyncMcpToolMethodCallback(ReturnMode returnMode, Method toolMethod, Object toolObject,
 			Class<? extends Throwable> toolCallExceptionClass) {
 		super(returnMode, toolMethod, toolObject);
@@ -66,21 +85,18 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 
 			// Check if the Mono contains CallToolResult
 			if (ReactiveUtils.isReactiveReturnTypeOfCallToolResult(this.toolMethod)) {
-				return (Mono<CallToolResult>) monoResult;
+				return ((Mono<CallToolResult>) monoResult).onErrorResume(this::toErrorResultOrPropagate);
 			}
 
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return monoResult
-					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()));
+					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()))
+					.onErrorResume(this::toErrorResultOrPropagate);
 			}
 
 			// Handle other Mono types - map the emitted value to CallToolResult
-			return monoResult.map(this::mapValueToCallToolResult)
-				.onErrorResume(e -> Mono.just(CallToolResult.builder()
-					.isError(true)
-					.addTextContent("Error invoking method: %s".formatted(e.getMessage()))
-					.build()));
+			return monoResult.map(this::mapValueToCallToolResult).onErrorResume(this::toErrorResultOrPropagate);
 		}
 
 		// Handle Flux by taking the first element
@@ -89,22 +105,18 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 
 			// Check if the Flux contains CallToolResult
 			if (ReactiveUtils.isReactiveReturnTypeOfCallToolResult(this.toolMethod)) {
-				return ((Flux<CallToolResult>) fluxResult).next();
+				return ((Flux<CallToolResult>) fluxResult).next().onErrorResume(this::toErrorResultOrPropagate);
 			}
 
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return fluxResult
-					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()));
+					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()))
+					.onErrorResume(this::toErrorResultOrPropagate);
 			}
 
 			// Handle other Flux types by taking the first element and mapping
-			return fluxResult.next()
-				.map(this::mapValueToCallToolResult)
-				.onErrorResume(e -> Mono.just(CallToolResult.builder()
-					.isError(true)
-					.addTextContent("Error invoking method: %s".formatted(e.getMessage()))
-					.build()));
+			return fluxResult.next().map(this::mapValueToCallToolResult).onErrorResume(this::toErrorResultOrPropagate);
 		}
 
 		// Handle other Publisher types
@@ -114,21 +126,18 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 
 			// Check if the Publisher contains CallToolResult
 			if (ReactiveUtils.isReactiveReturnTypeOfCallToolResult(this.toolMethod)) {
-				return (Mono<CallToolResult>) monoFromPublisher;
+				return ((Mono<CallToolResult>) monoFromPublisher).onErrorResume(this::toErrorResultOrPropagate);
 			}
 
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return monoFromPublisher
-					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()));
+					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()))
+					.onErrorResume(this::toErrorResultOrPropagate);
 			}
 
 			// Handle other Publisher types by mapping the emitted value
-			return monoFromPublisher.map(this::mapValueToCallToolResult)
-				.onErrorResume(e -> Mono.just(CallToolResult.builder()
-					.isError(true)
-					.addTextContent("Error invoking method: %s".formatted(e.getMessage()))
-					.build()));
+			return monoFromPublisher.map(this::mapValueToCallToolResult).onErrorResume(this::toErrorResultOrPropagate);
 		}
 
 		// This should not happen in async context, but handle as fallback
@@ -144,6 +153,26 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 	 */
 	protected CallToolResult mapValueToCallToolResult(Object value) {
 		return convertValueToCallToolResult(value);
+	}
+
+	/**
+	 * Resolves a reactive error either into an error {@link CallToolResult} conveyed to
+	 * the model, or into a propagated error that fails the model interaction. Mirrors the
+	 * {@code @Tool} contract: ordinary {@link RuntimeException}s are conveyed to the
+	 * model, while declared checked exceptions (carried as
+	 * {@link UndeclaredThrowableException}), {@link Error}s and protocol-level
+	 * {@link McpError}s bubble up as hard failures.
+	 * @param e the reactive error
+	 * @return an error result or a propagated error
+	 */
+	private Mono<CallToolResult> toErrorResultOrPropagate(Throwable e) {
+		if (e instanceof RuntimeException && !(e instanceof UndeclaredThrowableException) && !(e instanceof McpError)) {
+			return Mono.just(CallToolResult.builder()
+				.isError(true)
+				.addTextContent("Error invoking method: %s".formatted(e.getMessage()))
+				.build());
+		}
+		return Mono.error(e);
 	}
 
 	/**

@@ -134,6 +134,14 @@ public class OllamaModelManager {
 				.timeout(this.options.timeout())
 				.retryWhen(Retry.backoff(this.options.maxRetries(), Duration.ofSeconds(5)))
 				.blockLast();
+
+		// The pull stream can terminate normally (no error, no timeout) before a
+		// "success" status is ever observed, e.g. when Ollama closes the response
+		// early for a no-op pull. Verify the model is actually available rather than
+		// assuming the pull succeeded just because the stream completed.
+		Assert.state(isModelAvailable(modelName), () -> "Failed to pull model '" + modelName
+				+ "'. Ollama does not report the model as available after the pull operation completed.");
+
 		if (logger.isInfoEnabled()) {
 			logger.info("Completed pulling the '" + modelName + "' model");
 		}

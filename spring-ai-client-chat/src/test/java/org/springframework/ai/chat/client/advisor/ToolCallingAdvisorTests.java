@@ -16,13 +16,16 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -42,15 +45,25 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallLimitExceededException;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -64,6 +77,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link ToolCallingAdvisor}.
  *
  * @author Christian Tzolov
+ * @author Jewoo Shin
  */
 @ExtendWith(MockitoExtension.class)
 public class ToolCallingAdvisorTests {
@@ -338,6 +352,118 @@ public class ToolCallingAdvisorTests {
 	}
 
 	@Test
+	void adviseCallAccumulatesUsageAcrossToolCallIterations() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createResponse(true, new DefaultUsage(10, 20, 30));
+		ChatClientResponse finalResponse = createResponse(false, new DefaultUsage(1, 2, 3));
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] == 1 ? responseWithToolCall : finalResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false));
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		assertUsage(result.chatResponse().getMetadata().getUsage(), 11, 22, 33);
+		assertThat(result.chatResponse().getResults()).isEqualTo(finalResponse.chatResponse().getResults());
+		assertThat(callCount[0]).isEqualTo(2);
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void adviseCallAccumulatesCacheMetricsAndDropsNativeUsage() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createResponse(true,
+				new DefaultUsage(10, 20, 30, new Object(), 100L, 5L));
+		ChatClientResponse finalResponse = createResponse(false, new DefaultUsage(1, 2, 3, new Object(), 200L, 0L));
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] == 1 ? responseWithToolCall : finalResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false));
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		Usage usage = result.chatResponse().getMetadata().getUsage();
+		assertUsage(usage, 11, 22, 33);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(300L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(5L);
+		// Provider-specific native usage cannot be merged across rounds, so it is dropped
+		// once usage is accumulated.
+		assertThat(usage.getNativeUsage()).isNull();
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void adviseCallKeepsSingleCallUsageWhenNoToolCall() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse response = createResponse(false, new DefaultUsage(1, 2, 3));
+
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> response);
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		assertUsage(result.chatResponse().getMetadata().getUsage(), 1, 2, 3);
+		assertThat(result.chatResponse().getResults()).isEqualTo(response.chatResponse().getResults());
+		verify(this.toolCallingManager, times(0)).executeToolCalls(any(), any());
+	}
+
+	@Test
+	void adviseCallPreservesAccumulatedUsageForReturnDirect() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse firstToolCallResponse = createResponse(true, new DefaultUsage(10, 20, 30));
+		ChatClientResponse secondToolCallResponse = createResponse(true, new DefaultUsage(1, 2, 3));
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] == 1 ? firstToolCallResponse : secondToolCallResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false), createToolExecutionResult(true));
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		assertUsage(result.chatResponse().getMetadata().getUsage(), 11, 22, 33);
+		assertThat(result.chatResponse().getResults()).hasSize(1);
+		assertThat(result.chatResponse().getResults().get(0).getOutput().getText()).isEqualTo("Tool result data");
+		assertThat(callCount[0]).isEqualTo(2);
+		verify(this.toolCallingManager, times(2)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
 	void testAdviseCallWithMultipleToolCallIterations() {
 		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
 
@@ -484,6 +610,220 @@ public class ToolCallingAdvisorTests {
 		assertThat(results).isNotNull().hasSize(1);
 		assertThat(callCount[0]).isEqualTo(2);
 		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void streamedToolCallDeltasReachTheCallerAndOnlyTheCompleteCallIsExecuted() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		AssistantMessage.ToolCall complete = new AssistantMessage.ToolCall("tool-call-1", "function", "testTool",
+				"{\"city\":\"Paris\"}");
+		ChatClientResponse announced = partChunk("round-1", StreamingParts
+			.partial(ToolCallPart.of(new AssistantMessage.ToolCall("tool-call-1", "function", "testTool", "")), 0));
+		ChatClientResponse argumentsDelta = partChunk("round-1", StreamingParts.partial(ToolCallPart.of(complete), 0));
+		ChatClientResponse completeCall = partChunk("round-1", StreamingParts.complete(ToolCallPart.of(complete), 0));
+		ChatClientResponse answer = partChunk("round-2", StreamingParts.partial(TextPart.of("Sunny."), 0));
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			return (callCount[0] == 1) ? Flux.just(announced, argumentsDelta, completeCall) : Flux.just(answer);
+		});
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false));
+
+		List<ChatClientResponse> results = advisor.adviseStream(createMockRequest(), realChain).collectList().block();
+
+		// The deltas reach the caller, the chunk of the complete call is filtered out
+		assertThat(results).isNotNull()
+			.extracting(ChatClientResponse::chatResponse)
+			.containsExactly(announced.chatResponse(), argumentsDelta.chatResponse(), answer.chatResponse());
+
+		// Only the complete call is executed
+		ArgumentCaptor<ChatResponse> executed = ArgumentCaptor.forClass(ChatResponse.class);
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), executed.capture());
+		assertThat(executed.getValue().getResult().getOutput().getToolCalls()).containsExactly(complete);
+
+		// What an outer chat memory advisor aggregates: the answer, without a tool call
+		// left unanswered by a tool response
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator()
+			.aggregate(Flux.fromIterable(results).mapNotNull(ChatClientResponse::chatResponse), aggregated::set)
+			.blockLast();
+		assertThat(aggregated.get().getResult().getOutput().hasToolCalls()).isFalse();
+		assertThat(aggregated.get().getResult().getOutput().getText()).isEqualTo("Sunny.");
+	}
+
+	@Test
+	void adviseStreamAccumulatesPreviousLoopUsageOnUsageBearingChunk() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createResponse(true, new DefaultUsage(10, 20, 30));
+		ChatClientResponse finalResponse = createResponse(false, new DefaultUsage(1, 2, 3));
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			return Flux.just(callCount[0] == 1 ? responseWithToolCall : finalResponse);
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false));
+
+		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
+
+		assertThat(results).isNotNull().hasSize(1);
+		assertUsage(results.get(0).chatResponse().getMetadata().getUsage(), 11, 22, 33);
+		assertThat(results.get(0).chatResponse().getResults()).isEqualTo(finalResponse.chatResponse().getResults());
+		assertThat(callCount[0]).isEqualTo(2);
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void adviseStreamAccumulatesPreviousLoopUsageOnlyOnUsageBearingChunks() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createResponse(true, new DefaultUsage(10, 20, 30));
+		ChatClientResponse finalResponseChunk = createResponse(false, new DefaultUsage(0, 0, 0), "Hello ");
+		ChatClientResponse finalResponseWithUsage = createResponse(false, new DefaultUsage(1, 2, 3), "world");
+		ChatClientResponse finalResponseTrailingChunk = createResponse(false, new DefaultUsage(0, 0, 0), "!");
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] == 1 ? Flux.just(responseWithToolCall)
+					: Flux.just(finalResponseChunk, finalResponseWithUsage, finalResponseTrailingChunk);
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false));
+
+		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
+
+		assertThat(results).isNotNull().hasSize(3);
+		assertUsage(results.get(0).chatResponse().getMetadata().getUsage(), 0, 0, 0);
+		assertUsage(results.get(1).chatResponse().getMetadata().getUsage(), 11, 22, 33);
+		assertUsage(results.get(2).chatResponse().getMetadata().getUsage(), 0, 0, 0);
+		assertThat(results.get(0).chatResponse().getResult().getOutput().getText()).isEqualTo("Hello ");
+		assertThat(results.get(1).chatResponse().getResult().getOutput().getText()).isEqualTo("world");
+		assertThat(results.get(2).chatResponse().getResult().getOutput().getText()).isEqualTo("!");
+		assertThat(callCount[0]).isEqualTo(2);
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void adviseStreamEmitsAccumulatedUsageWhenFinalRoundReportsNoUsage() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createResponse(true, new DefaultUsage(10, 20, 30));
+		// The final round streams content but reports no usage of its own.
+		ChatClientResponse finalResponse = createResponse(false, new DefaultUsage(0, 0, 0));
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			return Flux.just(callCount[0] == 1 ? responseWithToolCall : finalResponse);
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false));
+
+		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
+
+		// The final round's content chunk is emitted unchanged (no usage), followed by a
+		// trailing usage-only response carrying the accumulated total from previous
+		// rounds.
+		assertThat(results).isNotNull().hasSize(2);
+		assertUsage(results.get(0).chatResponse().getMetadata().getUsage(), 0, 0, 0);
+		assertThat(results.get(0).chatResponse().getResult().getOutput().getText()).isEqualTo("response");
+		assertUsage(results.get(1).chatResponse().getMetadata().getUsage(), 10, 20, 30);
+		assertThat(results.get(1).chatResponse().getResults()).isEmpty();
+		assertThat(callCount[0]).isEqualTo(2);
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void adviseStreamKeepsAccumulatedUsageSubscriptionLocal() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createResponse(true, new DefaultUsage(10, 20, 30));
+		ChatClientResponse finalResponse = createResponse(false, new DefaultUsage(1, 2, 3));
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			return Flux.just(callCount[0] % 2 == 1 ? responseWithToolCall : finalResponse);
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false));
+
+		Flux<ChatClientResponse> responseFlux = advisor.adviseStream(request, realChain);
+
+		List<ChatClientResponse> firstSubscriptionResults = responseFlux.collectList().block();
+		List<ChatClientResponse> secondSubscriptionResults = responseFlux.collectList().block();
+
+		assertThat(firstSubscriptionResults).isNotNull().hasSize(1);
+		assertThat(secondSubscriptionResults).isNotNull().hasSize(1);
+		assertUsage(firstSubscriptionResults.get(0).chatResponse().getMetadata().getUsage(), 11, 22, 33);
+		assertUsage(secondSubscriptionResults.get(0).chatResponse().getMetadata().getUsage(), 11, 22, 33);
+		assertThat(callCount[0]).isEqualTo(4);
+		verify(this.toolCallingManager, times(2)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void adviseStreamPreservesAccumulatedUsageForReturnDirect() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse firstToolCallResponse = createResponse(true, new DefaultUsage(10, 20, 30));
+		ChatClientResponse secondToolCallResponse = createResponse(true, new DefaultUsage(1, 2, 3));
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			return Flux.just(callCount[0] == 1 ? firstToolCallResponse : secondToolCallResponse);
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false), createToolExecutionResult(true));
+
+		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
+
+		assertThat(results).isNotNull().hasSize(1);
+		assertUsage(results.get(0).chatResponse().getMetadata().getUsage(), 11, 22, 33);
+		assertThat(results.get(0).chatResponse().getResults()).hasSize(1);
+		assertThat(results.get(0).chatResponse().getResults().get(0).getOutput().getText())
+			.isEqualTo("Tool result data");
+		assertThat(callCount[0]).isEqualTo(2);
+		verify(this.toolCallingManager, times(2)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
 	}
 
 	@Test
@@ -713,6 +1053,249 @@ public class ToolCallingAdvisorTests {
 	}
 
 	@Test
+	void whenConversationHistoryDisabledThenExecuteToolCallsStillSeesFullTurnHistory() {
+		// Even though conversationHistoryEnabled(false) trims what's forwarded to the
+		// rest of the chain (verified by
+		// testDisableInternalConversationHistoryBuilderMethod
+		// above), executeToolCalls must still see the complete, untrimmed history for
+		// this turn on every round - otherwise DefaultToolCallingManager's tool call
+		// limit counting would silently undercount once earlier rounds' tool responses
+		// are no longer forwarded.
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.disableInternalConversationHistory()
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse firstToolCallResponse = createMockResponse(true);
+		ChatClientResponse secondToolCallResponse = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			if (callCount[0] == 1) {
+				return firstToolCallResponse;
+			}
+			else if (callCount[0] == 2) {
+				return secondToolCallResponse;
+			}
+			else {
+				return finalResponse;
+			}
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ToolResponseMessage.ToolResponse round1Response = new ToolResponseMessage.ToolResponse("tool-1", "testTool",
+				"round1 result");
+		ToolResponseMessage round1ToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(round1Response))
+			.build();
+		List<Message> round1History = List.of(new UserMessage("test"), AssistantMessage.builder().content("").build(),
+				round1ToolResponseMessage);
+		ToolExecutionResult round1Result = ToolExecutionResult.builder().conversationHistory(round1History).build();
+
+		ToolResponseMessage.ToolResponse round2Response = new ToolResponseMessage.ToolResponse("tool-2", "testTool",
+				"round2 result");
+		ToolResponseMessage round2ToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(round2Response))
+			.build();
+		List<Message> round2History = new ArrayList<>(round1History);
+		round2History.add(AssistantMessage.builder().content("").build());
+		round2History.add(round2ToolResponseMessage);
+		ToolExecutionResult round2Result = ToolExecutionResult.builder().conversationHistory(round2History).build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(round1Result, round2Result);
+
+		advisor.adviseCall(request, realChain);
+
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(this.toolCallingManager, times(2)).executeToolCalls(promptCaptor.capture(), any(ChatResponse.class));
+
+		List<Prompt> capturedPrompts = promptCaptor.getAllValues();
+		// Round 1: only the original request, nothing to lose yet.
+		assertThat(capturedPrompts.get(0).getInstructions()).hasSize(1);
+		// Round 2: must be given the complete, untrimmed round1History (3 messages),
+		// not the version trimmed down to just the system message and the last
+		// message (2 messages) that gets forwarded to the rest of the chain. A weaker
+		// `contains(round1ToolResponseMessage)` check would not catch a regression
+		// here, since the trimmed version also happens to retain the last message.
+		assertThat(capturedPrompts.get(1).getInstructions()).isEqualTo(round1History);
+	}
+
+	@Test
+	void whenConversationHistoryDisabledThenStreamExecuteToolCallsStillSeesFullTurnHistory() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.disableInternalConversationHistory()
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse firstToolCallResponse = createMockResponse(true);
+		ChatClientResponse secondToolCallResponse = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			if (callCount[0] == 1) {
+				return Flux.just(firstToolCallResponse);
+			}
+			else if (callCount[0] == 2) {
+				return Flux.just(secondToolCallResponse);
+			}
+			else {
+				return Flux.just(finalResponse);
+			}
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		ToolResponseMessage.ToolResponse round1Response = new ToolResponseMessage.ToolResponse("tool-1", "testTool",
+				"round1 result");
+		ToolResponseMessage round1ToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(round1Response))
+			.build();
+		List<Message> round1History = List.of(new UserMessage("test"), AssistantMessage.builder().content("").build(),
+				round1ToolResponseMessage);
+		ToolExecutionResult round1Result = ToolExecutionResult.builder().conversationHistory(round1History).build();
+
+		ToolResponseMessage.ToolResponse round2Response = new ToolResponseMessage.ToolResponse("tool-2", "testTool",
+				"round2 result");
+		ToolResponseMessage round2ToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(round2Response))
+			.build();
+		List<Message> round2History = new ArrayList<>(round1History);
+		round2History.add(AssistantMessage.builder().content("").build());
+		round2History.add(round2ToolResponseMessage);
+		ToolExecutionResult round2Result = ToolExecutionResult.builder().conversationHistory(round2History).build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(round1Result, round2Result);
+
+		advisor.adviseStream(request, realChain).collectList().block();
+
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(this.toolCallingManager, times(2)).executeToolCalls(promptCaptor.capture(), any(ChatResponse.class));
+
+		List<Prompt> capturedPrompts = promptCaptor.getAllValues();
+		assertThat(capturedPrompts.get(0).getInstructions()).hasSize(1);
+		// Must be the complete, untrimmed round1History (3 messages), not the trimmed
+		// 2-message version forwarded to the rest of the chain.
+		assertThat(capturedPrompts.get(1).getInstructions()).isEqualTo(round1History);
+	}
+
+	@Test
+	void whenToolCallLimitExceededThenAdviseCallReturnsPartialResult() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> responseWithToolCall);
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		// Simulates a parallel tool-call batch where the first call to "testTool"
+		// already succeeded before the second call breached the limit.
+		// DefaultToolCallingManager always appends the synthesized breach response
+		// last.
+		ToolResponseMessage.ToolResponse successfulToolResponse = new ToolResponseMessage.ToolResponse("tool-1",
+				"testTool", "successful result");
+		ToolResponseMessage.ToolResponse breachToolResponse = new ToolResponseMessage.ToolResponse("tool-2", "testTool",
+				"Tool call limit (1) exceeded for tool 'testTool'.");
+		ToolResponseMessage partialToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(successfulToolResponse, breachToolResponse))
+			.build();
+		List<Message> partialHistory = List.of(new UserMessage("test"), AssistantMessage.builder().content("").build(),
+				partialToolResponseMessage);
+		ToolExecutionResult partialResult = ToolExecutionResult.builder().conversationHistory(partialHistory).build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenThrow(new ToolCallLimitExceededException("testTool", 1, partialResult));
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		// The limit is hit on the first round, so the loop must break instead of
+		// looping back to the LLM.
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+
+		// A single generation is returned to the client - carrying the breach message,
+		// not one of the successful calls from the same batch, so the limit is never
+		// mistaken for one of several equally valid answers. The successful call is
+		// preserved in metadata instead of being discarded or emitted as a sibling
+		// generation.
+		assertThat(result.chatResponse()).isNotNull();
+		assertThat(result.chatResponse().getResults()).hasSize(1);
+		Generation generation = result.chatResponse().getResults().get(0);
+		assertThat(generation.getOutput().getText()).isEqualTo(breachToolResponse.responseData());
+		assertThat(generation.getMetadata().getFinishReason()).isEqualTo(ToolCallLimitExceededException.FINISH_REASON);
+		assertThat(generation.getMetadata().<List<ToolResponseMessage
+				.ToolResponse>>get(ToolCallLimitExceededException.METADATA_PARTIAL_TOOL_RESPONSES))
+			.containsExactly(successfulToolResponse);
+	}
+
+	@Test
+	void whenToolCallLimitExceededThenAdviseStreamReturnsPartialResult() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor(
+				(req, chain) -> Flux.just(responseWithToolCall));
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		// Simulates a parallel tool-call batch where the first call to "testTool"
+		// already succeeded before the second call breached the limit.
+		// DefaultToolCallingManager always appends the synthesized breach response
+		// last.
+		ToolResponseMessage.ToolResponse successfulToolResponse = new ToolResponseMessage.ToolResponse("tool-1",
+				"testTool", "successful result");
+		ToolResponseMessage.ToolResponse breachToolResponse = new ToolResponseMessage.ToolResponse("tool-2", "testTool",
+				"Tool call limit (1) exceeded for tool 'testTool'.");
+		ToolResponseMessage partialToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(successfulToolResponse, breachToolResponse))
+			.build();
+		List<Message> partialHistory = List.of(new UserMessage("test"), AssistantMessage.builder().content("").build(),
+				partialToolResponseMessage);
+		ToolExecutionResult partialResult = ToolExecutionResult.builder().conversationHistory(partialHistory).build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenThrow(new ToolCallLimitExceededException("testTool", 1, partialResult));
+
+		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
+
+		// The limit is hit on the first round, so the loop must break instead of
+		// looping back to the LLM.
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+
+		// Intermediate tool call response is filtered out; only the single breach
+		// generation carried by the exception is emitted, with the successful call
+		// preserved in metadata rather than as a sibling generation.
+		assertThat(results).isNotNull().hasSize(1);
+		assertThat(results.get(0).chatResponse()).isNotNull();
+		assertThat(results.get(0).chatResponse().getResults()).hasSize(1);
+		Generation generation = results.get(0).chatResponse().getResults().get(0);
+		assertThat(generation.getOutput().getText()).isEqualTo(breachToolResponse.responseData());
+		assertThat(generation.getMetadata().getFinishReason()).isEqualTo(ToolCallLimitExceededException.FINISH_REASON);
+		assertThat(generation.getMetadata().<List<ToolResponseMessage
+				.ToolResponse>>get(ToolCallLimitExceededException.METADATA_PARTIAL_TOOL_RESPONSES))
+			.containsExactly(successfulToolResponse);
+	}
+
+	@Test
 	void testExtendedAdvisorWithCustomHooks() {
 		int[] hookCallCounts = { 0, 0, 0 }; // initializeLoop, beforeCall, afterCall
 
@@ -792,6 +1375,92 @@ public class ToolCallingAdvisorTests {
 		assertThat(advisor.getOrder()).isEqualTo(customOrder);
 	}
 
+	@Test
+	void streamToolExecutionSeesOptionsMutatedByDoBeforeStreamHook() {
+		// Regression guard: a subclass (e.g. ToolSearchToolCallingAdvisor) may inject
+		// per-iteration tool callbacks into ToolCallingChatOptions from its
+		// doBeforeStream hook. executeToolCalls() must see that mutated options, not
+		// the pre-doBeforeStream snapshot - otherwise the injected tool can't be
+		// resolved when the model calls it.
+		ToolCallback injectedCallback = mock(ToolCallback.class, Mockito.withSettings().strictness(Strictness.LENIENT));
+		when(injectedCallback.getToolDefinition())
+			.thenReturn(ToolDefinition.builder().name("injectedTool").description("").inputSchema("{}").build());
+
+		MutatingToolCallingAdvisor advisor = new MutatingToolCallingAdvisor(this.toolCallingManager, injectedCallback);
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			return Flux.just(callCount[0] == 1 ? responseWithToolCall : finalResponse);
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		advisor.adviseStream(request, realChain).collectList().block();
+
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(this.toolCallingManager).executeToolCalls(promptCaptor.capture(), any(ChatResponse.class));
+
+		ToolCallingChatOptions executedOptions = (ToolCallingChatOptions) promptCaptor.getValue().getOptions();
+		assertThat(executedOptions.getToolCallbacks()).contains(injectedCallback);
+	}
+
+	@Test
+	void callToolExecutionSeesOptionsMutatedByDoBeforeCallHook() {
+		// Non-streaming counterpart of
+		// streamToolExecutionSeesOptionsMutatedByDoBeforeStreamHook:
+		// the same options-mutation-visibility guarantee must hold for adviseCall().
+		ToolCallback injectedCallback = mock(ToolCallback.class, Mockito.withSettings().strictness(Strictness.LENIENT));
+		when(injectedCallback.getToolDefinition())
+			.thenReturn(ToolDefinition.builder().name("injectedTool").description("").inputSchema("{}").build());
+
+		MutatingToolCallingAdvisor advisor = new MutatingToolCallingAdvisor(this.toolCallingManager, injectedCallback);
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		TerminalCallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] == 1 ? responseWithToolCall : finalResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		advisor.adviseCall(request, realChain);
+
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(this.toolCallingManager).executeToolCalls(promptCaptor.capture(), any(ChatResponse.class));
+
+		ToolCallingChatOptions executedOptions = (ToolCallingChatOptions) promptCaptor.getValue().getOptions();
+		assertThat(executedOptions.getToolCallbacks()).contains(injectedCallback);
+	}
+
 	// Helper methods
 
 	private ChatClientRequest createMockRequestWithSystemMessage() {
@@ -834,6 +1503,57 @@ public class ToolCallingAdvisorTests {
 		});
 
 		return mockRequest;
+	}
+
+	private ChatClientResponse createResponse(boolean hasToolCalls, Usage usage) {
+		return createResponse(hasToolCalls, usage, "response");
+	}
+
+	private ChatClientResponse createResponse(boolean hasToolCalls, Usage usage, String content) {
+		AssistantMessage assistantMessage;
+		if (hasToolCalls) {
+			AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("tool-call-1", "function", "testTool",
+					"{}");
+			assistantMessage = AssistantMessage.builder().content(content).toolCalls(List.of(toolCall)).build();
+		}
+		else {
+			assistantMessage = new AssistantMessage(content);
+		}
+
+		ChatResponseMetadata metadata = ChatResponseMetadata.builder().usage(usage).build();
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(assistantMessage)))
+			.metadata(metadata)
+			.build();
+
+		return ChatClientResponse.builder().chatResponse(chatResponse).build();
+	}
+
+	private static ChatClientResponse partChunk(String responseId, MessagePart part) {
+		ChatResponse chatResponse = new ChatResponse(
+				List.of(new Generation(AssistantMessage.builder().part(part).build())),
+				ChatResponseMetadata.builder().id(responseId).build());
+		return ChatClientResponse.builder().chatResponse(chatResponse).build();
+	}
+
+	private ToolExecutionResult createToolExecutionResult(boolean returnDirect) {
+		ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse("tool-1", "testTool",
+				"Tool result data");
+		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(toolResponse))
+			.build();
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), toolResponseMessage);
+		return ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.returnDirect(returnDirect)
+			.build();
+	}
+
+	private void assertUsage(Usage usage, int promptTokens, int completionTokens, int totalTokens) {
+		assertThat(usage.getPromptTokens()).isEqualTo(promptTokens);
+		assertThat(usage.getCompletionTokens()).isEqualTo(completionTokens);
+		assertThat(usage.getTotalTokens()).isEqualTo(totalTokens);
 	}
 
 	private ChatClientResponse createMockResponse(boolean hasToolCalls) {
@@ -983,6 +1703,46 @@ public class ToolCallingAdvisorTests {
 				return new TestableToolCallingAdvisor(getToolCallingManager(), getAdvisorOrder(), null);
 			}
 
+		}
+
+	}
+
+	/**
+	 * Test subclass mimicking how {@code ToolSearchToolCallingAdvisor} uses the
+	 * doBeforeCall/doBeforeStream hooks to inject a per-iteration tool callback into the
+	 * ToolCallingChatOptions on the mutated request.
+	 */
+	private static class MutatingToolCallingAdvisor extends ToolCallingAdvisor {
+
+		private final ToolCallback injectedCallback;
+
+		MutatingToolCallingAdvisor(ToolCallingManager toolCallingManager, ToolCallback injectedCallback) {
+			super(toolCallingManager, DEFAULT_TOOL_EXECUTION_ELIGIBILITY_CHECKER, DEFAULT_ORDER, true);
+			this.injectedCallback = injectedCallback;
+		}
+
+		@Override
+		protected ChatClientRequest doBeforeStream(ChatClientRequest chatClientRequest,
+				StreamAdvisorChain streamAdvisorChain) {
+			return injectCallback(chatClientRequest);
+		}
+
+		@Override
+		protected ChatClientRequest doBeforeCall(ChatClientRequest chatClientRequest,
+				CallAdvisorChain callAdvisorChain) {
+			return injectCallback(chatClientRequest);
+		}
+
+		private ChatClientRequest injectCallback(ChatClientRequest chatClientRequest) {
+			ToolCallingChatOptions options = (ToolCallingChatOptions) chatClientRequest.prompt().getOptions();
+			List<ToolCallback> callbacks = options.getToolCallbacks() != null
+					? new ArrayList<>(options.getToolCallbacks()) : new ArrayList<>();
+			callbacks.add(this.injectedCallback);
+			ToolCallingChatOptions mutatedOptions = options.mutate().toolCallbacks(callbacks).build();
+			return ChatClientRequest.builder()
+				.prompt(chatClientRequest.prompt().mutate().chatOptions(mutatedOptions).build())
+				.context(chatClientRequest.context())
+				.build();
 		}
 
 	}

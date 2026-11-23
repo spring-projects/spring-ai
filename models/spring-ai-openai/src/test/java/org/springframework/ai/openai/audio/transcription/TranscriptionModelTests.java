@@ -43,7 +43,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 class TranscriptionModelTests {
 
 	@Test
-	void transcrbeRequestReturnsResponseCorrectly() {
+	void transcribeRequestReturnsResponseCorrectly() {
 
 		Resource mockAudioFile = Mockito.mock(Resource.class);
 

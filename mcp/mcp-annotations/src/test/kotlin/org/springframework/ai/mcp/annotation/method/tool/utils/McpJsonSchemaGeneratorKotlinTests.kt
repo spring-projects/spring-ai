@@ -54,6 +54,19 @@ class McpJsonSchemaGeneratorKotlinTests {
 		assertThat(requestRequired).doesNotContain("filter")
 	}
 
+	@Test
+	fun `suspend functions do not expose the continuation parameter`() {
+		val method = SearchTools::class.java.declaredMethods.first { it.name == "fetch" }
+
+		val schema = McpJsonSchemaGenerator.generateForMethodInput(method)
+		val schemaNode = jsonMapper.readTree(schema)
+		val properties = schemaNode["properties"]
+
+		assertThat(properties["url"]).isNotNull()
+		assertThat(properties["\$completion"]).isNull()
+		assertThat(requiredNames(schemaNode["required"])).containsExactly("url")
+	}
+
 	private fun requiredNames(required: JsonNode?): List<String> {
 		if (required == null || required.isNull) {
 			return emptyList()
@@ -75,6 +88,11 @@ class McpJsonSchemaGeneratorKotlinTests {
 		@McpTool(description = "Mixed")
 		fun mixed(@McpToolParam(required = false) request: SearchRequest? = null): String {
 			return "ok"
+		}
+
+		@McpTool(description = "Fetch")
+		suspend fun fetch(url: String): String {
+			return url
 		}
 
 	}

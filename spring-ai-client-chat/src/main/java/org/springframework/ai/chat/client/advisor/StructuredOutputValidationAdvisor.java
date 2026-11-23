@@ -41,6 +41,10 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.GuardrailRefusal;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
@@ -55,9 +59,15 @@ import org.springframework.util.StringUtils;
  * When validation fails, the advisor appends the validation error to the user message and
  * re-invokes the model, repeating up to {@code maxRepeatAttempts} times.
  * <p>
+ * A response that is not the model's output is returned as it is, without validation or
+ * another attempt: a tool call, and the refusal of a guardrail (see
+ * {@link GuardrailRefusal}). A response that a safety filter or a refusal of the model
+ * stopped is validated, and returned without another attempt when it is not valid.
+ * <p>
  * Streaming responses are not supported.
  *
  * @author Christian Tzolov
+ * @author Jewoo Shin
  */
 public final class StructuredOutputValidationAdvisor implements CallAdvisor, StreamAdvisor {
 
@@ -120,28 +130,41 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		ChatClientResponse chatClientResponse = null;
 
-		var repeatCounter = 0;
-
-		boolean isValidationSuccess = true;
+		boolean isValidationSuccess = false;
 
 		var processedChatClientRequest = chatClientRequest;
 
-		do {
-			// Before Call
-			repeatCounter++;
+		UsageAccumulator usageAccumulator = new UsageAccumulator();
 
+		for (var currentAttemptNumber = 1 + this.maxRepeatAttempts; currentAttemptNumber > 0
+				&& !isValidationSuccess; currentAttemptNumber--) {
 			// Next Call
 			chatClientResponse = callAdvisorChain.copy(this).nextCall(processedChatClientRequest);
 
 			// After Call
+			ChatResponse chatResponse = chatClientResponse.chatResponse();
+			usageAccumulator.addRoundResponse(chatResponse);
+
+			if (GuardrailRefusal.isRefusal(chatResponse)) {
+				// A guardrail refused the turn. Its refusal is not the model's output, so
+				// there is nothing to validate, and asking again would be refused again.
+				break;
+			}
 
 			// We should not validate tool call requests, only the content of the final
 			// response.
-			if (chatClientResponse.chatResponse() == null || !chatClientResponse.chatResponse().hasToolCalls()) {
-
-				SchemaValidation validationResponse = validateOutputSchema(chatClientResponse);
+			if (chatResponse == null || !chatResponse.hasToolCalls()) {
+				SchemaValidation validationResponse = validateOutputSchema(chatClientResponse,
+						currentAttemptNumber - 1);
 
 				isValidationSuccess = validationResponse.success();
+
+				if (!isValidationSuccess && isContentFiltered(chatResponse)) {
+					// A safety filter or a refusal of the model stopped the response.
+					// The validation error is not why it is invalid, so asking again
+					// with that error would only repeat the stop.
+					break;
+				}
 
 				if (!isValidationSuccess) {
 
@@ -165,18 +188,32 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 					processedChatClientRequest = chatClientRequest.mutate().prompt(augmentedPrompt).build();
 				}
+				else if (logger.isDebugEnabled()) {
+					logger.debug("JSON validation succeeded");
+				}
+			}
+			else {
+				// A tool call round has nothing to validate. Return it to the caller
+				// (e.g. the tool calling advisor) instead of repeating the same request.
+				break;
 			}
 		}
-		while (!isValidationSuccess && repeatCounter <= this.maxRepeatAttempts);
 
-		return chatClientResponse;
+		return usageAccumulator.applyAccumulatedUsage(Objects.requireNonNull(chatClientResponse));
 	}
 
-	@SuppressWarnings("null")
-	private SchemaValidation validateOutputSchema(ChatClientResponse chatClientResponse) {
+	/**
+	 * Whether a safety filter or a refusal of the model stopped the generation that is
+	 * validated, which is the first.
+	 */
+	private static boolean isContentFiltered(@Nullable ChatResponse chatResponse) {
+		Generation result = (chatResponse != null) ? chatResponse.getResult() : null;
+		return result != null && result.getMetadata().getFinishReasonCategory() == FinishReasonCategory.FILTERED;
+	}
+
+	private SchemaValidation validateOutputSchema(ChatClientResponse chatClientResponse, int leftAttemptsCounter) {
 
 		if (chatClientResponse.chatResponse() == null || chatClientResponse.chatResponse().getResult() == null
-				|| chatClientResponse.chatResponse().getResult().getOutput() == null
 				|| chatClientResponse.chatResponse().getResult().getOutput().getText() == null) {
 
 			logger.warn("ChatClientResponse is missing required json output for validation.");
@@ -187,7 +224,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		String json = chatClientResponse.chatResponse().getResult().getOutput().getText();
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Validating JSON output against schema. Attempts left: " + this.maxRepeatAttempts);
+			logger.debug("Validating JSON output against schema. Attempts left: " + leftAttemptsCounter);
 		}
 
 		return validateJsonText(json);

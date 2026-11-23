@@ -75,7 +75,7 @@ class GoogleGenAiChatModelMLDevIT {
 		Prompt prompt = new Prompt(
 				new UserMessage("What are the top 3 most famous pirates in history? Use Google Search."),
 				GoogleGenAiChatOptions.builder()
-					.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+					.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 					.googleSearchRetrieval(true)
 					.includeServerSideToolInvocations(true)
 					.build());

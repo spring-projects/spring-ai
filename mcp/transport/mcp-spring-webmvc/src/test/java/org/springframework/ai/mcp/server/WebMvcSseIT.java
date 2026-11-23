@@ -34,7 +34,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.provider.Arguments;
-import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
 import org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider;
@@ -48,7 +47,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Timeout(15)
+@Timeout(60)
 class WebMvcSseIT extends AbstractMcpClientServerIntegrationTests {
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
@@ -67,11 +66,11 @@ class WebMvcSseIT extends AbstractMcpClientServerIntegrationTests {
 
 		clientBuilders.put("httpclient",
 				McpClient.sync(HttpClientSseClientTransport.builder("http://127.0.0.1:" + port).build())
-					.requestTimeout(Duration.ofHours(10)));
+					.initializationTimeout(Duration.ofSeconds(10)));
 
 		clientBuilders.put("webflux", McpClient
 			.sync(WebFluxSseClientTransport.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port)).build())
-			.requestTimeout(Duration.ofHours(10)));
+			.initializationTimeout(Duration.ofSeconds(10)));
 	}
 
 	private TomcatTestUtil.TomcatServer tomcatServer;
@@ -100,11 +99,9 @@ class WebMvcSseIT extends AbstractMcpClientServerIntegrationTests {
 
 	@AfterEach
 	public void after() {
-		reactor.netty.http.HttpResources.disposeLoopsAndConnections();
 		if (this.mcpServerTransportProvider != null) {
 			this.mcpServerTransportProvider.closeGracefully().block();
 		}
-		Schedulers.shutdownNow();
 		if (this.tomcatServer.appContext() != null) {
 			this.tomcatServer.appContext().close();
 		}

@@ -38,11 +38,11 @@ public class AsyncMcpProgressMethodCallbackTests {
 
 	// ProgressNotification constructor: (String progressToken, double progress, Double
 	// total, String message)
-	private static final ProgressNotification TEST_NOTIFICATION = new ProgressNotification("progress-token-123", // progressToken
-			0.5, // progress
-			100.0, // total
-			"Processing..." // message
-	);
+	private static final ProgressNotification TEST_NOTIFICATION = ProgressNotification
+		.builder("progress-token-123", 0.5)
+		.total(100.0)
+		.message("Processing...")
+		.build();
 
 	@Test
 	void testValidVoidMethod() throws Exception {

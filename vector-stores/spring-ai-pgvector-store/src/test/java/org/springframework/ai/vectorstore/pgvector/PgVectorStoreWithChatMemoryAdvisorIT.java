@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -27,6 +28,8 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
@@ -45,7 +48,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.lang.NonNull;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -66,7 +68,10 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 	@SuppressWarnings("resource")
 	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>(PgVectorImage.DEFAULT_IMAGE)
 		.withUsername("postgres")
-		.withPassword("postgres");
+		.withPassword("postgres")
+		.waitingFor(new WaitAllStrategy()
+			.withStrategy(Wait.forLogMessage(".*database system is ready to accept connections.*\\s", 2))
+			.withStrategy(Wait.forListeningPort()));
 
 	float[] embed = { 0.003961659F, -0.0073295482F, 0.02663665F };
 
@@ -100,7 +105,8 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 
 	private static @NonNull JdbcTemplate createJdbcTemplateWithConnectionToTestcontainer() {
 		PGSimpleDataSource ds = new PGSimpleDataSource();
-		ds.setUrl("jdbc:postgresql://localhost:" + postgresContainer.getMappedPort(5432) + "/postgres");
+		ds.setUrl("jdbc:postgresql://" + postgresContainer.getHost() + ":" + postgresContainer.getMappedPort(5432)
+				+ "/postgres");
 		ds.setUser(postgresContainer.getUsername());
 		ds.setPassword(postgresContainer.getPassword());
 		return new JdbcTemplate(ds);

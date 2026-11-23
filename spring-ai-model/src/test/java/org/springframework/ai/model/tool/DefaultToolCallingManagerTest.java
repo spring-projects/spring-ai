@@ -86,6 +86,7 @@ class DefaultToolCallingManagerTest {
 		// Mock the tool callbacks resolution by creating a custom ToolCallbackResolver
 		DefaultToolCallingManager managerWithCallback = DefaultToolCallingManager.builder()
 			.observationRegistry(ObservationRegistry.NOOP)
+			.resolutionFallbackEnabled(true)
 			.toolCallbackResolver(toolName -> {
 				if ("testTool".equals(toolName)) {
 					return mockToolCallback;
@@ -143,6 +144,7 @@ class DefaultToolCallingManagerTest {
 		// Mock the tool callbacks resolution by creating a custom ToolCallbackResolver
 		DefaultToolCallingManager managerWithCallback = DefaultToolCallingManager.builder()
 			.observationRegistry(ObservationRegistry.NOOP)
+			.resolutionFallbackEnabled(true)
 			.toolCallbackResolver(toolName -> {
 				if ("testTool".equals(toolName)) {
 					return mockToolCallback;
@@ -219,6 +221,7 @@ class DefaultToolCallingManagerTest {
 
 		DefaultToolCallingManager manager = DefaultToolCallingManager.builder()
 			.observationRegistry(ObservationRegistry.NOOP)
+			.resolutionFallbackEnabled(true)
 			.toolCallbackResolver(toolName -> {
 				if ("tool1".equals(toolName)) {
 					return toolCallback1;
@@ -273,6 +276,7 @@ class DefaultToolCallingManagerTest {
 
 		DefaultToolCallingManager manager = DefaultToolCallingManager.builder()
 			.observationRegistry(ObservationRegistry.NOOP)
+			.resolutionFallbackEnabled(true)
 			.toolCallbackResolver(toolName -> "complexTool".equals(toolName) ? complexToolCallback : null)
 			.build();
 
@@ -320,6 +324,7 @@ class DefaultToolCallingManagerTest {
 
 		DefaultToolCallingManager manager = DefaultToolCallingManager.builder()
 			.observationRegistry(ObservationRegistry.NOOP)
+			.resolutionFallbackEnabled(true)
 			.toolCallbackResolver(toolName -> "testTool".equals(toolName) ? toolCallback : null)
 			.build();
 
@@ -363,6 +368,7 @@ class DefaultToolCallingManagerTest {
 
 		DefaultToolCallingManager manager = DefaultToolCallingManager.builder()
 			.observationRegistry(ObservationRegistry.NOOP)
+			.resolutionFallbackEnabled(true)
 			.toolCallbackResolver(toolName -> "nullReturningTool".equals(toolName) ? toolCallback : null)
 			.build();
 
@@ -417,6 +423,7 @@ class DefaultToolCallingManagerTest {
 
 		DefaultToolCallingManager manager = DefaultToolCallingManager.builder()
 			.observationRegistry(ObservationRegistry.NOOP)
+			.resolutionFallbackEnabled(true)
 			.toolCallbackResolver(toolName -> "multiGenTool".equals(toolName) ? toolCallback : null)
 			.build();
 

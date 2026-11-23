@@ -16,6 +16,8 @@
 
 package org.springframework.ai.google.genai.metadata;
 
+import java.util.Locale;
+
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.genai.types.TrafficType;
 
@@ -60,7 +62,7 @@ public enum GoogleGenAiTrafficType {
 		}
 
 		// Try to match by string value
-		String typeStr = trafficType.toString().toUpperCase();
+		String typeStr = trafficType.toString().toUpperCase(Locale.ROOT);
 
 		// Map SDK values to our enum values
 		return switch (typeStr) {

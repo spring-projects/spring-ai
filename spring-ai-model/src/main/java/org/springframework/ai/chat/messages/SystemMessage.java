@@ -18,7 +18,6 @@ package org.springframework.ai.chat.messages;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import org.jspecify.annotations.Nullable;
 
@@ -47,27 +46,8 @@ public class SystemMessage extends AbstractMessage {
 	}
 
 	@Override
-	public boolean equals(@Nullable Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof SystemMessage that)) {
-			return false;
-		}
-		if (!super.equals(o)) {
-			return false;
-		}
-		return Objects.equals(this.textContent, that.textContent);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(super.hashCode(), this.textContent);
-	}
-
-	@Override
 	public String toString() {
-		return "SystemMessage{" + "textContent='" + this.textContent + '\'' + ", messageType=" + this.messageType
+		return "SystemMessage{" + "textContent='" + getText() + '\'' + ", messageType=" + this.messageType
 				+ ", metadata=" + this.metadata + '}';
 	}
 
@@ -77,8 +57,9 @@ public class SystemMessage extends AbstractMessage {
 
 	public Builder mutate() {
 		Builder builder = new Builder();
-		if (this.textContent != null) {
-			builder.text(this.textContent);
+		String text = getText();
+		if (text != null) {
+			builder.text(text);
 		}
 		builder.metadata(this.metadata);
 		return builder;

@@ -16,9 +16,13 @@
 
 package org.springframework.ai.model.bedrock.converse.autoconfigure;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
+import org.springframework.ai.bedrock.converse.api.BedrockCacheStrategy;
+import org.springframework.ai.bedrock.converse.api.BedrockCacheTtl;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -90,6 +94,48 @@ public class BedrockConverseProxyChatPropertiesTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(BedrockProxyChatModel.class)).isEmpty();
+			});
+	}
+
+	@Test
+	public void requestParametersSupportsMixedFlatAndNestedValuesTest() {
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.bedrock.converse.chat.request-parameters.output_config.effort=low",
+					"spring.ai.bedrock.converse.chat.request-parameters.anthropic_version=bedrock-2023-05-31")
+			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(BedrockConverseProxyChatProperties.class);
+
+				assertThat(chatProperties.getRequestParameters()).containsEntry("anthropic_version",
+						"bedrock-2023-05-31");
+				assertThat(chatProperties.getRequestParameters().get("output_config")).isInstanceOfSatisfying(Map.class,
+						outputConfig -> assertThat(outputConfig).containsEntry("effort", "low"));
+
+				var options = chatProperties.toOptions();
+				assertThat(options.getRequestParameters()).containsKey("output_config");
+			});
+	}
+
+	@Test
+	public void cacheOptionsTest() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.bedrock.converse.chat.cache-options.strategy=SYSTEM_ONLY",
+					"spring.ai.bedrock.converse.chat.cache-options.ttl=ONE_HOUR",
+					"spring.ai.bedrock.converse.chat.cache-options.cache-tool-results=true")
+			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(BedrockConverseProxyChatProperties.class);
+				assertThat(chatProperties.getCacheOptions().getStrategy()).isEqualTo(BedrockCacheStrategy.SYSTEM_ONLY);
+				assertThat(chatProperties.getCacheOptions().getTtl()).isEqualTo(BedrockCacheTtl.ONE_HOUR);
+				assertThat(chatProperties.getCacheOptions().isCacheToolResults()).isTrue();
+
+				var options = chatProperties.toOptions();
+				assertThat(options.getCacheOptions().getStrategy()).isEqualTo(BedrockCacheStrategy.SYSTEM_ONLY);
+				assertThat(options.getCacheOptions().getTtl()).isEqualTo(BedrockCacheTtl.ONE_HOUR);
+				assertThat(options.getCacheOptions().isCacheToolResults()).isTrue();
 			});
 	}
 

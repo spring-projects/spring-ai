@@ -52,7 +52,7 @@ public class DefaultSamplingSpecTests {
 	@Test
 	public void testMessageWithTextContent() {
 		DefaultSamplingSpec spec = new DefaultSamplingSpec();
-		TextContent content = new TextContent("Test message");
+		TextContent content = TextContent.builder("Test message").build();
 
 		spec.message(content);
 
@@ -64,8 +64,8 @@ public class DefaultSamplingSpecTests {
 	@Test
 	public void testMessageWithMultipleTextContent() {
 		DefaultSamplingSpec spec = new DefaultSamplingSpec();
-		TextContent content1 = new TextContent("Message 1");
-		TextContent content2 = new TextContent("Message 2");
+		TextContent content1 = TextContent.builder("Message 1").build();
+		TextContent content2 = TextContent.builder("Message 2").build();
 
 		spec.message(content1, content2);
 
@@ -75,7 +75,9 @@ public class DefaultSamplingSpecTests {
 	@Test
 	public void testMessageWithSamplingMessage() {
 		DefaultSamplingSpec spec = new DefaultSamplingSpec();
-		SamplingMessage message = new SamplingMessage(Role.ASSISTANT, new TextContent("Assistant message"));
+		SamplingMessage message = SamplingMessage
+			.builder(Role.ASSISTANT, TextContent.builder("Assistant message").build())
+			.build();
 
 		spec.message(message);
 
@@ -188,7 +190,7 @@ public class DefaultSamplingSpecTests {
 	public void testFluentInterface() {
 		DefaultSamplingSpec spec = new DefaultSamplingSpec();
 
-		McpRequestContextTypes.SamplingSpec result = spec.message(new TextContent("Test"))
+		McpRequestContextTypes.SamplingSpec result = spec.message(TextContent.builder("Test").build())
 			.systemPrompt("System")
 			.temperature(0.7)
 			.maxTokens(100)

@@ -30,7 +30,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatModel;
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-@EnumSource(value = ChatModel.class, names = { "MAGISTRAL_MEDIUM", "MISTRAL_MEDIUM", "MISTRAL_SMALL" })
+@EnumSource(value = ChatModel.class, names = { "MISTRAL_MEDIUM", "MISTRAL_SMALL" })
 public @interface ThinkingModelSource {
 
 }

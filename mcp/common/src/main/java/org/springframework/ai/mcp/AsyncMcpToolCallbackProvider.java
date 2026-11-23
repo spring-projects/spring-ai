@@ -23,6 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.util.Assert;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.tool.ToolCallback;
@@ -52,6 +53,8 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 
 	private final ToolContextToMcpMetaConverter toolContextToMcpMetaConverter;
 
+	private final @Nullable ToolCallbackProvider modernToolCallbackProvider;
+
 	private volatile boolean invalidateCache = true;
 
 	private volatile List<ToolCallback> cachedToolCallbacks = List.of();
@@ -79,6 +82,21 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 	 */
 	private AsyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpToolNamePrefixGenerator toolNamePrefixGenerator,
 			ToolContextToMcpMetaConverter toolContextToMcpMetaConverter, List<McpAsyncClient> mcpClients) {
+		this(toolFilter, toolNamePrefixGenerator, toolContextToMcpMetaConverter, mcpClients, null);
+	}
+
+	/**
+	 * Creates a provider with full configuration.
+	 * @param toolFilter filter for discovered tools
+	 * @param toolNamePrefixGenerator generates prefixes for tool names
+	 * @param toolContextToMcpMetaConverter converts tool context to MCP metadata
+	 * @param mcpClients MCP clients for tool discovery
+	 * @param modernToolCallbackProvider provider of the tools of modern MCP connections,
+	 * if any
+	 */
+	private AsyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpToolNamePrefixGenerator toolNamePrefixGenerator,
+			ToolContextToMcpMetaConverter toolContextToMcpMetaConverter, List<McpAsyncClient> mcpClients,
+			@Nullable ToolCallbackProvider modernToolCallbackProvider) {
 		Assert.notNull(mcpClients, "MCP clients must not be null");
 		Assert.notNull(toolFilter, "Tool filter must not be null");
 		Assert.notNull(toolNamePrefixGenerator, "Tool name prefix generator must not be null");
@@ -87,6 +105,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 		this.mcpClients = mcpClients;
 		this.toolNamePrefixGenerator = toolNamePrefixGenerator;
 		this.toolContextToMcpMetaConverter = toolContextToMcpMetaConverter;
+		this.modernToolCallbackProvider = modernToolCallbackProvider;
 	}
 
 	/**
@@ -169,7 +188,17 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 			}
 		}
 
-		return this.cachedToolCallbacks.toArray(new ToolCallback[0]);
+		List<ToolCallback> toolCallbacks = this.cachedToolCallbacks;
+
+		if (this.modernToolCallbackProvider != null) {
+			// Modern callbacks are bound to the client that serves the current request,
+			// so they are resolved on every call and are not part of the cache.
+			toolCallbacks = new ArrayList<>(toolCallbacks);
+			toolCallbacks.addAll(List.of(this.modernToolCallbackProvider.getToolCallbacks()));
+			this.validateToolCallbacks(toolCallbacks);
+		}
+
+		return toolCallbacks.toArray(new ToolCallback[0]);
 	}
 
 	/**
@@ -243,6 +272,8 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter
 			.defaultConverter();
 
+		private @Nullable ToolCallbackProvider modernToolCallbackProvider;
+
 		private Builder() {
 		}
 
@@ -301,9 +332,27 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 			return this;
 		}
 
+		/**
+		 * Sets the provider of the tools of the MCP connections that speak the 2026-07-28
+		 * ("modern") protocol revision, typically an
+		 * {@code AsyncModernMcpToolCallbackProvider}. Its callbacks are returned together
+		 * with those of the MCP clients, so that an application that talks to legacy and
+		 * modern servers registers a single provider. They are resolved on every call to
+		 * {@link AsyncMcpToolCallbackProvider#getToolCallbacks()} and are neither cached
+		 * nor affected by {@link AsyncMcpToolCallbackProvider#invalidateCache()}.
+		 * @param modernToolCallbackProvider provider of the modern connections' tools
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		public Builder modernToolCallbackProvider(ToolCallbackProvider modernToolCallbackProvider) {
+			Assert.notNull(modernToolCallbackProvider, "Modern tool callback provider must not be null");
+			this.modernToolCallbackProvider = modernToolCallbackProvider;
+			return this;
+		}
+
 		public AsyncMcpToolCallbackProvider build() {
 			return new AsyncMcpToolCallbackProvider(this.toolFilter, this.toolNamePrefixGenerator,
-					this.toolContextToMcpMetaConverter, this.mcpClients);
+					this.toolContextToMcpMetaConverter, this.mcpClients, this.modernToolCallbackProvider);
 		}
 
 	}

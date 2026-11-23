@@ -16,6 +16,7 @@
 
 package org.springframework.ai.bedrock.converse;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -103,6 +104,52 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 
 		assertThat(merged.getRequestParameters()).containsEntry("base-key", "base-value");
 		assertThat(merged.getRequestParameters()).containsEntry("override-key", "override-value");
+	}
+
+	@Test
+	void cloneCreatesIndependentRequestParameters() {
+		Map<String, Object> requestParameters = new HashMap<>();
+		requestParameters.put("key", "value");
+
+		Builder source = BedrockChatOptions.builder().requestParameters(requestParameters);
+		Builder clone = source.clone();
+		requestParameters.put("anotherKey", "anotherValue");
+
+		assertThat(clone.build().getRequestParameters()).containsOnlyKeys("key");
+	}
+
+	@Test
+	void cloneHandlesNullRequestParameters() {
+		assertThat(BedrockChatOptions.builder().clone().build().getRequestParameters()).isNull();
+	}
+
+	@Test
+	void requestParametersSupportsFlatStringValues() {
+		Map<String, Object> flatRequestParameters = Map.of("anthropic_version", "bedrock-2023-05-31");
+
+		BedrockChatOptions options = BedrockChatOptions.builder().requestParameters(flatRequestParameters).build();
+
+		assertThat(options.getRequestParameters()).containsEntry("anthropic_version", "bedrock-2023-05-31");
+	}
+
+	@Test
+	void requestParametersSupportsNestedMapValues() {
+		Map<String, Object> nestedRequestParameters = Map.of("output_config", Map.of("effort", "low"));
+
+		BedrockChatOptions options = BedrockChatOptions.builder().requestParameters(nestedRequestParameters).build();
+
+		assertThat(options.getRequestParameters().get("output_config")).isEqualTo(Map.of("effort", "low"));
+	}
+
+	@Test
+	void requestParametersSupportsMixedFlatAndNestedValuesInOneCall() {
+		Map<String, Object> mixedRequestParameters = Map.of("anthropic_version", "bedrock-2023-05-31", "output_config",
+				Map.of("effort", "low"));
+
+		BedrockChatOptions options = BedrockChatOptions.builder().requestParameters(mixedRequestParameters).build();
+
+		assertThat(options.getRequestParameters()).containsEntry("anthropic_version", "bedrock-2023-05-31");
+		assertThat(options.getRequestParameters().get("output_config")).isEqualTo(Map.of("effort", "low"));
 	}
 
 }

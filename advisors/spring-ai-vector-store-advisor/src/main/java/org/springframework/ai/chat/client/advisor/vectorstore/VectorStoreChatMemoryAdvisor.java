@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.advisor.vectorstore;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -141,7 +142,8 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 		String longTermMemory = documents == null ? "" : documents.stream().map(doc -> {
 			Map<String, Object> metadata = Objects.requireNonNullElse(doc.getMetadata(), Map.of());
 			String role = (String) metadata.getOrDefault(DOCUMENT_METADATA_MESSAGE_TYPE, "UNKNOWN");
-			return "<memory-entry type=\"" + role.toLowerCase() + "\">" + escapeXml(doc.getText()) + "</memory-entry>";
+			return "<memory-entry type=\"" + role.toLowerCase(Locale.ROOT) + "\">" + escapeXml(doc.getText())
+					+ "</memory-entry>";
 		}).collect(Collectors.joining(System.lineSeparator()));
 
 		SystemMessage systemMessage = request.prompt().getSystemMessage();

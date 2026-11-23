@@ -1,0 +1,34 @@
+@startuml session-lifecycle-sequence
+skinparam shadowing false
+autonumber
+participant "Application / integration" as App
+participant SessionService as Svc
+participant SessionRepository as Repo
+participant Model as LLM
+
+App -> Svc: create(CreateSessionRequest)
+Svc -> Repo: saveIfAbsent(session)
+Repo --> Svc: inserted (false when the id exists)
+Svc --> App: Session
+
+loop every turn
+  App -> Svc: getActiveMessages(id)
+  Svc -> Repo: findEvents(id, EventFilter.active())
+  Repo --> Svc: the view
+  Svc --> App: messages (covered events excluded)
+  App -> LLM: system prompt (supplied per request) + view + user message
+  LLM --> App: reply
+  App -> Svc: appendMessage(id, user message)\nappendMessage(id, reply)
+  Svc -> Repo: appendEvent(event)
+  opt the compaction trigger fires
+    App -> Svc: compact(id, trigger, strategy)
+    Svc -> Repo: getEventVersion, findEvents(active),\nappendEvents(boundary + summary, version)
+    note over Repo: the old events are covered,\nstill in the log
+  end
+end
+
+... later, from a scheduler ...
+App -> Svc: deleteExpiredSessions(now)
+Svc -> Repo: deleteExpiredSessions(now)
+note over Repo: the session and all its events are removed
+@enduml

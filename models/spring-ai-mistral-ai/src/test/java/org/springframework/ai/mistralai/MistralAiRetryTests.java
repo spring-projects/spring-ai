@@ -108,7 +108,7 @@ class MistralAiRetryTests {
 		assertThat(response).isNotNull();
 		var result = response.getResult();
 		assertThat(result).isNotNull();
-		assertThat(result.getOutput().getText()).isSameAs("Response");
+		assertThat(result.getOutput().getText()).isEqualTo("Response");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}

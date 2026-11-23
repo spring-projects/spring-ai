@@ -1,0 +1,159 @@
+[[tool-search-guide]]
+= Guide: Dynamic Tool Discovery
+:page-aliases: guides/dynamic-tool-search.adoc
+
+As an agent connects to more services, such as Slack, GitHub, Jira or several MCP servers, its tool library grows.
+Every tool definition is sent to the model with every request, which costs tokens, and models choose less reliably among many similar tools.
+
+The tool search pattern, link:https://www.anthropic.com/engineering/advanced-tool-use[described by Anthropic], solves this: the model first receives only a search tool, searches for the capabilities it needs, and then receives only the definitions of the tools it found.
+Spring AI implements it with the `ToolSearchToolCallingAdvisor`, which works with every chat model that supports tool calling.
+
+This guide shows the setup step by step.
+xref:tools/tool-search.adoc[Tool Search] is the reference for all options.
+
+== How It Works
+
+`ToolSearchToolCallingAdvisor` extends the xref:tools/tool-calling-advisor.adoc[`ToolCallingAdvisor`], so it runs the tool calling loop too:
+
+image::tools/spring-ai-tool-search-tool-calling-flow.png[Tool search flow,600]
+
+. *Indexing.* The tools of the request are indexed in a `ToolIndex`, once per session.
+They are indexed again only when the set of tools changes.
+. *First request.* The model receives only the definition of the search tool.
+. *Search.* When the model needs a capability, it calls the search tool with a description of what it needs.
+. *Expansion.* The `ToolIndex` returns the matching tools, and the advisor adds their definitions to the tools of the next request.
+. *Tool calls.* The model calls the tools it found, and the loop continues until the model answers.
+
+== Setup with Spring Boot
+
+Add the starter:
+
+[source,xml]
+----
+<dependency>
+	<groupId>org.springframework.ai</groupId>
+	<artifactId>spring-ai-starter-tool-search-advisor</artifactId>
+</dependency>
+----
+
+Enable the advisor:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-search-advisor.enabled=true
+----
+
+The auto-configured `ChatClient.Builder` then uses `ToolSearchToolCallingAdvisor` in place of the default tool calling advisor, with a regular-expression index by default.
+Register your tools as usual:
+
+[source,java]
+----
+@Bean
+ChatClient chatClient(ChatClient.Builder builder) {
+	return builder
+		.defaultTools(new MyTools()) // indexed, but not sent to the model up front
+		.build();
+}
+----
+
+== Setup without Spring Boot
+
+Add `spring-ai-tool-search-advisor`, choose a `ToolIndex`, and register the advisor yourself:
+
+[source,java]
+----
+var advisor = ToolSearchToolCallingAdvisor.builder()
+	.toolIndex(new LuceneToolIndex())
+	.build();
+
+ChatClient chatClient = ChatClient.builder(chatModel)
+	.defaultTools(new MyTools())
+	.defaultAdvisors(advisor) // replaces the default ToolCallingAdvisor
+	.build();
+----
+
+`LuceneToolIndex` needs `lucene-core` on the classpath, and `VectorToolIndex` needs `spring-ai-vector-store`: the module declares them as optional dependencies.
+`RegexToolIndex` needs nothing more.
+
+== Calling the Model
+
+The advisor keeps an index for each session, so every call needs a session id.
+It reads it from the same parameter as the memory advisors:
+
+[source,java]
+----
+String answer = chatClient.prompt()
+	.user("""
+		Help me plan what to wear today in Amsterdam.
+		Please suggest clothing shops that are open right now.
+		""")
+	.advisors(a -> a.param(MemoryAdvisor.CONVERSATION_ID, "session-42"))
+	.call()
+	.content();
+----
+
+When you use xref:memory/session/chat-client.adoc[session memory], `SessionAdvisors.session(sessionId)` sets the same parameter.
+A call without a session id fails with an `IllegalArgumentException`.
+
+The tools in this example:
+
+[source,java]
+----
+class MyTools {
+
+	@Tool(description = "Get the weather for a given location at a given time")
+	String weather(String location, @ToolParam(description = "YYYY-MM-DDTHH:mm") String atTime) {
+		return weatherService.forecast(location, atTime);
+	}
+
+	@Tool(description = "Get the names of clothing shops in a location that are open at a given time")
+	List<String> clothingShops(String location, @ToolParam(description = "YYYY-MM-DDTHH:mm") String openAt) {
+		return shopDirectory.openShops(location, openAt);
+	}
+
+	@Tool(description = "Get the current date and time in a location")
+	String currentTime(String location) {
+		return clock.now(location);
+	}
+}
+----
+
+== Choosing an Index
+
+[cols="1,2,3", options="header"]
+|===
+| Index | Implementation | Finds tools by
+
+| Regular expression (default with the starter)
+| `RegexToolIndex`
+| The words of the search query, matched in tool names and descriptions.
+No extra dependencies.
+
+| Keyword
+| `LuceneToolIndex`
+| Full-text search over tool names and descriptions.
+
+| Semantic
+| `VectorToolIndex`
+| Similarity of the query to the tool descriptions, using a `VectorStore`.
+
+| Decision
+| `DecisionToolIndex`
+| A xref:models/decision.adoc[decision model] that judges which tools apply to the query.
+|===
+
+See xref:tools/tool-search.adoc[Tool Search] for the details of each index.
+
+== When to Use Tool Search
+
+Tool search pays off when the tool definitions are large compared with the rest of the request, for example with tens of tools or several MCP servers, or when the model picks the wrong tool among many similar ones.
+With a few compact tools that are used in every session, the extra search round costs more than it saves.
+
+The https://spring.io/blog/2025/12/11/spring-ai-tool-search-tools-tzolov[announcement blog post] reports benchmarks with 28 tools, in which tool search reduced the tokens per request by 34% with OpenAI, 60% with Gemini and 64% with Anthropic.
+Your results depend on your tools and models.
+
+== Related Documentation
+
+* xref:tools/tool-search.adoc[Tool Search]
+* xref:advisors/recursive.adoc[Recursive Advisors]
+* link:https://spring.io/blog/2025/11/04/spring-ai-recursive-advisors[Spring AI Recursive Advisors] (blog post)

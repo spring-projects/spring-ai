@@ -17,10 +17,13 @@
 package org.springframework.ai.vectorstore.pgvector;
 
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.JdbcTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -28,8 +31,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Yanming Zhou
@@ -42,7 +47,10 @@ public class PgVectorSchemaValidatorIT {
 	@Container
 	static PostgreSQLContainer postgresContainer = new PostgreSQLContainer(PgVectorImage.DEFAULT_IMAGE)
 		.withUsername("postgres")
-		.withPassword("postgres");
+		.withPassword("postgres")
+		.waitingFor(new WaitAllStrategy()
+			.withStrategy(Wait.forLogMessage(".*database system is ready to accept connections.*\\s", 2))
+			.withStrategy(Wait.forListeningPort()));
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
@@ -61,12 +69,26 @@ public class PgVectorSchemaValidatorIT {
 					embedding vector(1024)
 				)
 				""");
-		assertThatNoException()
-			.isThrownBy(() -> this.schemaValidator.validateTableSchema("public", "vector_store", 1024));
+		assertThatNoException().isThrownBy(() -> this.schemaValidator.validateTableSchema("public", "vector_store",
+				1024, "content", "metadata", "embedding"));
 		assertThatIllegalStateException()
-			.isThrownBy(() -> this.schemaValidator.validateTableSchema("public", "vector_store", 2048))
+			.isThrownBy(() -> this.schemaValidator.validateTableSchema("public", "vector_store", 2048, "content",
+					"metadata", "embedding"))
 			.withMessageContaining("1024");
 
+	}
+
+	@Test
+	void schemaValidationWithInitializeSchemaSucceedsOnFreshDatabase() {
+		PgVectorStore vectorStore = PgVectorStore.builder(this.jdbcTemplate, mock(EmbeddingModel.class))
+			.vectorTableName("fresh_vector_store")
+			.dimensions(1024)
+			.initializeSchema(true)
+			.vectorTableValidationsEnabled(true)
+			.build();
+
+		assertThatNoException().isThrownBy(vectorStore::afterPropertiesSet);
+		assertThat(this.schemaValidator.isTableExists("public", "fresh_vector_store")).isTrue();
 	}
 
 	@Configuration(proxyBeanMethods = false)

@@ -56,7 +56,7 @@ class VectorStoreQueryResponseObservationHandlerTests {
 	void whenEmptyQueryResponseThenOutputNothing(CapturedOutput output) {
 		var context = VectorStoreObservationContext.builder("db", VectorStoreObservationContext.Operation.ADD).build();
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.v.o.VectorStoreQueryResponseObservationHandler -- Vector Store Query Response:
 				[]
 				""");
@@ -67,7 +67,7 @@ class VectorStoreQueryResponseObservationHandlerTests {
 		var context = VectorStoreObservationContext.builder("db", VectorStoreObservationContext.Operation.ADD).build();
 		context.setQueryResponse(List.of(new Document("doc1"), new Document("doc2")));
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.v.o.VectorStoreQueryResponseObservationHandler -- Vector Store Query Response:
 				["doc1", "doc2"]
 				""");

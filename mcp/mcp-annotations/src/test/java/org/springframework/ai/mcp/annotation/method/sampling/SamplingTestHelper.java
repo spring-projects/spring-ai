@@ -39,15 +39,14 @@ public final class SamplingTestHelper {
 	 * @return A sample request
 	 */
 	public static CreateMessageRequest createSampleRequest() {
-		SamplingMessage userMessage = new SamplingMessage(Role.USER,
-				new TextContent("Hello, can you help me with a task?"));
+		SamplingMessage userMessage = SamplingMessage
+			.builder(Role.USER, TextContent.builder("Hello, can you help me with a task?").build())
+			.build();
 
-		return CreateMessageRequest.builder()
-			.messages(List.of(userMessage))
+		return CreateMessageRequest.builder(List.of(userMessage), 100)
 			.modelPreferences(ModelPreferences.builder().addHint("claude-3-haiku").build())
 			.systemPrompt("You are a helpful assistant.")
 			.temperature(0.7)
-			.maxTokens(100)
 			.build();
 	}
 

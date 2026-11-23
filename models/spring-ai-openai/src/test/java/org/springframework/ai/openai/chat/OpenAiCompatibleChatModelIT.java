@@ -57,7 +57,7 @@ public class OpenAiCompatibleChatModelIT {
 		builder.add(OpenAiChatModel.builder()
 			.options(org.springframework.ai.openai.OpenAiChatOptions.builder()
 				.apiKey(System.getenv("OPENAI_API_KEY"))
-				.model("gpt-3.5-turbo")
+				.model("gpt-5-mini")
 				.build())
 			.build());
 

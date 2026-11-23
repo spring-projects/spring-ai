@@ -17,6 +17,8 @@
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -25,8 +27,16 @@ import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.mcp.SyncMcpToolCallback;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpConnection;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpToolCallback;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpToolCallbackProvider;
+import org.springframework.ai.mcp.modern.client.McpModernConnectionInfo;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallback;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -221,6 +231,21 @@ public class ToolCallbackConverterAutoConfigurationIT {
 	}
 
 	@Test
+	void modernMcpClientToolsNotExposedByDefault() {
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(ToolCallbackConverterAutoConfiguration.class))
+			.withPropertyValues("spring.ai.mcp.server.enabled=true")
+			.withUserConfiguration(TestModernMcpToolConfiguration.class)
+			.run(context -> {
+				@SuppressWarnings("unchecked")
+				List<SyncToolSpecification> syncTools = (List<SyncToolSpecification>) context.getBean("syncTools");
+				assertThat(syncTools).isEmpty();
+				// The provider creates a client each time it lists its tools.
+				assertThat(context.getBean(TestModernMcpToolConfiguration.class).clientsCreated).hasValue(0);
+			});
+	}
+
+	@Test
 	void regularToolsExportedByDefault() {
 		new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(ToolCallbackConverterAutoConfiguration.class))
@@ -248,7 +273,8 @@ public class ToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockTool.name()).thenReturn("test-tool");
 			Mockito.when(mockTool.description()).thenReturn("Test Tool");
 			Mockito.when(mockClient.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult);
-			when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+			when(mockClient.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 
 			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build());
 		}
@@ -281,7 +307,8 @@ public class ToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockTool1.name()).thenReturn("test-tool-1");
 			Mockito.when(mockTool1.description()).thenReturn("Test Tool 1");
 			Mockito.when(mockClient1.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult1);
-			when(mockClient1.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient1", "1.0.0"));
+			when(mockClient1.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("testClient1", "1.0.0").build());
 
 			McpSyncClient mockClient2 = Mockito.mock(McpSyncClient.class);
 			McpSchema.Tool mockTool2 = Mockito.mock(McpSchema.Tool.class);
@@ -290,7 +317,8 @@ public class ToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockTool2.name()).thenReturn("test-tool-2");
 			Mockito.when(mockTool2.description()).thenReturn("Test Tool 2");
 			Mockito.when(mockClient2.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult2);
-			when(mockClient2.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient2", "1.0.0"));
+			when(mockClient2.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("testClient2", "1.0.0").build());
 
 			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient1).tool(mockTool1).build(),
 					SyncMcpToolCallback.builder().mcpClient(mockClient2).tool(mockTool2).build());
@@ -310,7 +338,8 @@ public class ToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockTool1.name()).thenReturn("duplicate-tool");
 			Mockito.when(mockTool1.description()).thenReturn("First Tool");
 			Mockito.when(mockClient1.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult1);
-			when(mockClient1.getClientInfo()).thenReturn(new McpSchema.Implementation("client", "server1", "1.0.0"));
+			when(mockClient1.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("client", "1.0.0").title("server1").build());
 
 			McpSyncClient mockClient2 = Mockito.mock(McpSyncClient.class);
 			McpSchema.Tool mockTool2 = Mockito.mock(McpSchema.Tool.class);
@@ -319,7 +348,8 @@ public class ToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockTool2.name()).thenReturn("duplicate-tool");
 			Mockito.when(mockTool2.description()).thenReturn("Second Tool");
 			Mockito.when(mockClient2.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult2);
-			when(mockClient2.getClientInfo()).thenReturn(new McpSchema.Implementation("client", "server2", "1.0.0"));
+			when(mockClient2.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("client", "1.0.0").title("server2").build());
 
 			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient1).tool(mockTool1).build(),
 					SyncMcpToolCallback.builder().mcpClient(mockClient2).tool(mockTool2).build());
@@ -339,7 +369,8 @@ public class ToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockTool.name()).thenReturn("test-tool");
 			Mockito.when(mockTool.description()).thenReturn("Test Tool");
 			Mockito.when(mockClient.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult);
-			when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+			when(mockClient.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 
 			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build());
 		}
@@ -358,14 +389,63 @@ public class ToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockTool.name()).thenReturn("mcp-provider-tool");
 			Mockito.when(mockTool.description()).thenReturn("MCP Provider Tool");
 			Mockito.when(mockClient.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult);
-			when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+			when(mockClient.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 			when(mockClient.getClientCapabilities()).thenReturn(McpSchema.ClientCapabilities.builder().build());
 
-			McpSchema.ListToolsResult listToolsResult = new McpSchema.ListToolsResult(List.of(mockTool), null);
+			McpSchema.ListToolsResult listToolsResult = McpSchema.ListToolsResult.builder(List.of(mockTool)).build();
 			Mockito.when(mockClient.listTools()).thenReturn(listToolsResult);
 
 			return org.springframework.ai.mcp.SyncMcpToolCallbackProvider.builder()
 				.mcpClients(List.of(mockClient))
+				.build();
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class TestModernMcpToolConfiguration {
+
+		final AtomicInteger clientsCreated = new AtomicInteger();
+
+		@Bean
+		List<ToolCallback> modernToolCallbacks() {
+			io.modelcontextprotocol.modern.client.McpSyncClient client = io.modelcontextprotocol.modern.client.McpClient
+				.sync(request -> Flux.empty())
+				.build();
+			io.modelcontextprotocol.modern.McpSchema.Tool tool = io.modelcontextprotocol.modern.McpSchema.Tool
+				.builder("modern-tool", Map.of("type", "object"))
+				.build();
+			return List
+				.of(SyncModernMcpToolCallback.builder().mcpClient(client).tool(tool).build(), AsyncModernMcpToolCallback
+					.builder()
+					.mcpClient(io.modelcontextprotocol.modern.client.McpClient.async(request -> Flux.empty()).build())
+					.tool(tool)
+					.prefixedToolName("async-modern-tool")
+					.build());
+		}
+
+		@Bean
+		ToolCallbackProvider asyncModernToolCallbackProvider() {
+			McpModernConnectionInfo info = new McpModernConnectionInfo("billing",
+					io.modelcontextprotocol.modern.McpSchema.Implementation.builder("test-client", "1").build());
+			return AsyncModernMcpToolCallbackProvider.builder()
+				.connection(AsyncModernMcpConnection.perRequest(info, () -> {
+					this.clientsCreated.incrementAndGet();
+					return io.modelcontextprotocol.modern.client.McpClient.async(request -> Flux.empty()).build();
+				}))
+				.build();
+		}
+
+		@Bean
+		ToolCallbackProvider modernToolCallbackProvider() {
+			McpModernConnectionInfo info = new McpModernConnectionInfo("tickets",
+					io.modelcontextprotocol.modern.McpSchema.Implementation.builder("test-client", "1").build());
+			return SyncModernMcpToolCallbackProvider.builder()
+				.connection(SyncModernMcpConnection.perRequest(info, () -> {
+					this.clientsCreated.incrementAndGet();
+					return io.modelcontextprotocol.modern.client.McpClient.sync(request -> Flux.empty()).build();
+				}))
 				.build();
 		}
 

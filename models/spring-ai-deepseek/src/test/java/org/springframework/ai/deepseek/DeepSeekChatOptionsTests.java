@@ -16,11 +16,16 @@
 
 package org.springframework.ai.deepseek;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.deepseek.DeepSeekChatOptions.Builder;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for {@link DeepSeekChatOptions}.
@@ -52,6 +57,26 @@ class DeepSeekChatOptionsTests extends AbstractChatOptionsTests<DeepSeekChatOpti
 		DeepSeekChatOptions merged = base.mutate().combineWith(override.mutate()).build();
 
 		org.assertj.core.api.Assertions.assertThat(merged.getTools()).containsExactlyInAnyOrder(baseTool, overrideTool);
+	}
+
+	@Test
+	void cloneCreatesIndependentToolsList() {
+		DeepSeekApi.FunctionTool tool = new DeepSeekApi.FunctionTool(DeepSeekApi.FunctionTool.Type.FUNCTION,
+				new DeepSeekApi.FunctionTool.Function("function", "", "{}"));
+		List<DeepSeekApi.FunctionTool> tools = new ArrayList<>();
+		tools.add(tool);
+
+		Builder source = DeepSeekChatOptions.builder().tools(tools);
+		Builder clone = source.clone();
+		tools.add(new DeepSeekApi.FunctionTool(DeepSeekApi.FunctionTool.Type.FUNCTION,
+				new DeepSeekApi.FunctionTool.Function("other", "", "{}")));
+
+		assertThat(clone.build().getTools()).containsExactly(tool);
+	}
+
+	@Test
+	void cloneHandlesNullToolsList() {
+		assertThat(DeepSeekChatOptions.builder().clone().build().getTools()).isNull();
 	}
 
 }

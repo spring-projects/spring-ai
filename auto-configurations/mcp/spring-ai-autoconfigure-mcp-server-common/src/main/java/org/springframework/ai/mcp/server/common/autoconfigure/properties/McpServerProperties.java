@@ -135,7 +135,23 @@ public class McpServerProperties {
 
 	public enum ServerProtocol {
 
-		SSE, STREAMABLE, STATELESS
+		/**
+		 * Legacy HTTP+SSE transport (2024-11-05 revision).
+		 */
+		SSE,
+		/**
+		 * Streamable-HTTP transport with sessions (2025-03-26 revision and later).
+		 */
+		STREAMABLE,
+		/**
+		 * Session-less Streamable-HTTP transport.
+		 */
+		STATELESS,
+		/**
+		 * The 2026-07-28 specification revision: stateless, {@code server/discover}
+		 * based, multi round-trip requests, no sessions.
+		 */
+		MODERN
 
 	}
 

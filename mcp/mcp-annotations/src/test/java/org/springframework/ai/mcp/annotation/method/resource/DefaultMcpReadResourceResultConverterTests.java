@@ -83,8 +83,10 @@ public class DefaultMcpReadResourceResultConverterTests {
 	@Test
 	void testExistingResourceContentsPassthroughPreservesOriginalMeta() {
 		Map<String, Object> userMeta = Map.of("custom", "user-provided-meta");
-		TextResourceContents userContent = new TextResourceContents("resource://test", "text/plain", "user content",
-				userMeta);
+		TextResourceContents userContent = TextResourceContents.builder("resource://test", "user content")
+			.mimeType("text/plain")
+			.meta(userMeta)
+			.build();
 
 		Map<String, Object> annotationMeta = Map.of("annotation", "should-not-override");
 
@@ -101,9 +103,11 @@ public class DefaultMcpReadResourceResultConverterTests {
 	@Test
 	void testExistingReadResourceResultPassthroughIsUnmodified() {
 		Map<String, Object> userMeta = Map.of("original", "from-user");
-		TextResourceContents userContent = new TextResourceContents("resource://test", "text/plain", "user content",
-				userMeta);
-		ReadResourceResult userResult = new ReadResourceResult(List.of(userContent));
+		TextResourceContents userContent = TextResourceContents.builder("resource://test", "user content")
+			.mimeType("text/plain")
+			.meta(userMeta)
+			.build();
+		ReadResourceResult userResult = ReadResourceResult.builder(List.of(userContent)).build();
 
 		Map<String, Object> annotationMeta = Map.of("annotation", "should-not-override");
 
@@ -120,8 +124,10 @@ public class DefaultMcpReadResourceResultConverterTests {
 	@Test
 	void testExistingResourceContentsListPassthroughPreservesOriginalMeta() {
 		Map<String, Object> userMeta = Map.of("custom", "list-meta");
-		TextResourceContents userContent = new TextResourceContents("resource://test", "text/plain", "user content",
-				userMeta);
+		TextResourceContents userContent = TextResourceContents.builder("resource://test", "user content")
+			.mimeType("text/plain")
+			.meta(userMeta)
+			.build();
 
 		Map<String, Object> annotationMeta = Map.of("annotation", "should-not-override");
 

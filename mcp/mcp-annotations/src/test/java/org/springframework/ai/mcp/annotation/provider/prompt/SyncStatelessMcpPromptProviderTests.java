@@ -57,8 +57,11 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(name = "test-prompt", description = "A test prompt")
 			public GetPromptResult testPrompt(GetPromptRequest request) {
-				return new GetPromptResult("Test prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Hello from " + request.name()))));
+				return GetPromptResult
+					.builder(List.of(new PromptMessage(Role.ASSISTANT,
+							TextContent.builder("Hello from " + request.name()).build())))
+					.description("Test prompt result")
+					.build();
 			}
 
 		}
@@ -80,7 +83,7 @@ public class SyncStatelessMcpPromptProviderTests {
 		McpTransportContext context = mock(McpTransportContext.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("test-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("test-prompt").arguments(args).build();
 		GetPromptResult result = promptSpec.promptHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -97,8 +100,11 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(name = "custom-name", description = "Custom named prompt")
 			public GetPromptResult methodWithDifferentName() {
-				return new GetPromptResult("Custom prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Custom prompt content"))));
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Custom prompt content").build())))
+					.description("Custom prompt result")
+					.build();
 			}
 
 		}
@@ -119,8 +125,11 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(description = "Prompt with default name")
 			public GetPromptResult defaultNameMethod() {
-				return new GetPromptResult("Default prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Default prompt content"))));
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Default prompt content").build())))
+					.description("Default prompt result")
+					.build();
 			}
 
 		}
@@ -141,8 +150,11 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(name = "", description = "Prompt with empty name")
 			public GetPromptResult emptyNameMethod() {
-				return new GetPromptResult("Empty name prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Empty name prompt content"))));
+				return GetPromptResult
+					.builder(List.of(new PromptMessage(Role.ASSISTANT,
+							TextContent.builder("Empty name prompt content").build())))
+					.description("Empty name prompt result")
+					.build();
 			}
 
 		}
@@ -163,14 +175,20 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(name = "mono-prompt", description = "Prompt returning Mono")
 			public Mono<GetPromptResult> monoPrompt() {
-				return Mono.just(new GetPromptResult("Mono prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Mono prompt content")))));
+				return Mono.just(GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Mono prompt content").build())))
+					.description("Mono prompt result")
+					.build());
 			}
 
 			@McpPrompt(name = "sync-prompt", description = "Synchronous prompt")
 			public GetPromptResult syncPrompt() {
-				return new GetPromptResult("Sync prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Sync prompt content"))));
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Sync prompt content").build())))
+					.description("Sync prompt result")
+					.build();
 			}
 
 		}
@@ -191,14 +209,20 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(name = "prompt1", description = "First prompt")
 			public GetPromptResult firstPrompt() {
-				return new GetPromptResult("First prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("First prompt content"))));
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("First prompt content").build())))
+					.description("First prompt result")
+					.build();
 			}
 
 			@McpPrompt(name = "prompt2", description = "Second prompt")
 			public GetPromptResult secondPrompt() {
-				return new GetPromptResult("Second prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Second prompt content"))));
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Second prompt content").build())))
+					.description("Second prompt result")
+					.build();
 			}
 
 		}
@@ -220,8 +244,11 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(name = "first-prompt", description = "First prompt")
 			public GetPromptResult firstPrompt() {
-				return new GetPromptResult("First prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("First prompt content"))));
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("First prompt content").build())))
+					.description("First prompt result")
+					.build();
 			}
 
 		}
@@ -230,8 +257,11 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(name = "second-prompt", description = "Second prompt")
 			public GetPromptResult secondPrompt() {
-				return new GetPromptResult("Second prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Second prompt content"))));
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Second prompt content").build())))
+					.description("Second prompt result")
+					.build();
 			}
 
 		}
@@ -255,19 +285,28 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(name = "valid-prompt", description = "Valid prompt")
 			public GetPromptResult validPrompt() {
-				return new GetPromptResult("Valid prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Valid prompt content"))));
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Valid prompt content").build())))
+					.description("Valid prompt result")
+					.build();
 			}
 
 			public GetPromptResult nonAnnotatedMethod() {
-				return new GetPromptResult("Non-annotated result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Non-annotated content"))));
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Non-annotated content").build())))
+					.description("Non-annotated result")
+					.build();
 			}
 
 			@McpPrompt(name = "mono-prompt", description = "Mono prompt")
 			public Mono<GetPromptResult> monoPrompt() {
-				return Mono.just(new GetPromptResult("Mono prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Mono prompt content")))));
+				return Mono.just(GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Mono prompt content").build())))
+					.description("Mono prompt result")
+					.build());
 			}
 
 		}
@@ -290,9 +329,12 @@ public class SyncStatelessMcpPromptProviderTests {
 			public GetPromptResult argumentPrompt(
 					@McpArg(name = "name", description = "User's name", required = true) String name,
 					@McpArg(name = "age", description = "User's age", required = false) Integer age) {
-				return new GetPromptResult("Argument prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent(
-								"Hello " + name + ", you are " + (age != null ? age : "unknown") + " years old"))));
+				return GetPromptResult.builder(List.of(new PromptMessage(Role.ASSISTANT,
+						TextContent
+							.builder("Hello " + name + ", you are " + (age != null ? age : "unknown") + " years old")
+							.build())))
+					.description("Argument prompt result")
+					.build();
 			}
 
 		}
@@ -311,7 +353,7 @@ public class SyncStatelessMcpPromptProviderTests {
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
 		args.put("age", 30);
-		GetPromptRequest request = new GetPromptRequest("argument-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("argument-prompt").arguments(args).build();
 		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -328,8 +370,11 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(name = "private-prompt", description = "Private prompt method")
 			private GetPromptResult privatePrompt() {
-				return new GetPromptResult("Private prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Private prompt content"))));
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Private prompt content").build())))
+					.description("Private prompt result")
+					.build();
 			}
 
 		}
@@ -346,7 +391,7 @@ public class SyncStatelessMcpPromptProviderTests {
 		// Test that the handler works with private methods
 		McpTransportContext context = mock(McpTransportContext.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("private-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("private-prompt").arguments(args).build();
 		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -379,7 +424,7 @@ public class SyncStatelessMcpPromptProviderTests {
 		// Test that the handler works with string return type
 		McpTransportContext context = mock(McpTransportContext.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("string-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("string-prompt").arguments(args).build();
 		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -395,9 +440,13 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(name = "context-prompt", description = "Prompt with context parameter")
 			public GetPromptResult contextPrompt(McpTransportContext context, GetPromptRequest request) {
-				return new GetPromptResult("Context prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Prompt with context: "
-								+ (context != null ? "present" : "null") + ", name: " + request.name()))));
+				return GetPromptResult
+					.builder(List.of(new PromptMessage(Role.ASSISTANT,
+							TextContent.builder("Prompt with context: " + (context != null ? "present" : "null")
+									+ ", name: " + request.name())
+								.build())))
+					.description("Context prompt result")
+					.build();
 			}
 
 		}
@@ -413,7 +462,7 @@ public class SyncStatelessMcpPromptProviderTests {
 		// Test that the handler works with context parameter
 		McpTransportContext context = mock(McpTransportContext.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("context-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("context-prompt").arguments(args).build();
 		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -431,8 +480,11 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(name = "request-prompt", description = "Prompt with request parameter")
 			public GetPromptResult requestPrompt(GetPromptRequest request) {
-				return new GetPromptResult("Request prompt result", List
-					.of(new PromptMessage(Role.ASSISTANT, new TextContent("Prompt for name: " + request.name()))));
+				return GetPromptResult
+					.builder(List.of(new PromptMessage(Role.ASSISTANT,
+							TextContent.builder("Prompt for name: " + request.name()).build())))
+					.description("Request prompt result")
+					.build();
 			}
 
 		}
@@ -448,7 +500,7 @@ public class SyncStatelessMcpPromptProviderTests {
 		// Test that the handler works with request parameter
 		McpTransportContext context = mock(McpTransportContext.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("request-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("request-prompt").arguments(args).build();
 		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -465,8 +517,8 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(name = "messages-list-prompt", description = "Prompt returning messages list")
 			public List<PromptMessage> messagesListPrompt() {
-				return List.of(new PromptMessage(Role.ASSISTANT, new TextContent("First message")),
-						new PromptMessage(Role.ASSISTANT, new TextContent("Second message")));
+				return List.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("First message").build()),
+						new PromptMessage(Role.ASSISTANT, TextContent.builder("Second message").build()));
 			}
 
 		}
@@ -482,7 +534,7 @@ public class SyncStatelessMcpPromptProviderTests {
 		// Test that the handler works with messages list return type
 		McpTransportContext context = mock(McpTransportContext.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("messages-list-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("messages-list-prompt").arguments(args).build();
 		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -497,7 +549,7 @@ public class SyncStatelessMcpPromptProviderTests {
 
 			@McpPrompt(name = "single-message-prompt", description = "Prompt returning single message")
 			public PromptMessage singleMessagePrompt() {
-				return new PromptMessage(Role.ASSISTANT, new TextContent("Single message"));
+				return new PromptMessage(Role.ASSISTANT, TextContent.builder("Single message").build());
 			}
 
 		}
@@ -513,7 +565,7 @@ public class SyncStatelessMcpPromptProviderTests {
 		// Test that the handler works with single message return type
 		McpTransportContext context = mock(McpTransportContext.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("single-message-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("single-message-prompt").arguments(args).build();
 		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -543,7 +595,7 @@ public class SyncStatelessMcpPromptProviderTests {
 		// Test that the handler works with string list return type
 		McpTransportContext context = mock(McpTransportContext.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("string-list-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("string-list-prompt").arguments(args).build();
 		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
 
 		assertThat(result).isNotNull();

@@ -21,6 +21,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.openai.models.chat.completions.ChatCompletionCreateParams.Modality;
@@ -32,7 +33,14 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.StreamingChatModel;
@@ -297,6 +305,68 @@ class OpenAiChatClientIT {
 		String content = response.collectList().block().stream().collect(Collectors.joining());
 
 		assertThat(content).contains("30", "10", "15");
+	}
+
+	@Test
+	void streamedToolCallArgumentDeltasReachTheCallerAndTheConversationContinues() {
+		AtomicInteger toolExecutions = new AtomicInteger();
+		MockWeatherService weatherService = new MockWeatherService();
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
+		// The memory advisor sits outside the tool calling loop, so it sees every chunk
+		// the loop lets through, the argument deltas included
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
+			.defaultAdvisors(a -> a.advisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+				.param(ChatMemory.CONVERSATION_ID, "tool-call-deltas"))
+			.build();
+
+		// @formatter:off
+		List<ChatResponse> responses = chatClient.prompt()
+				.user("What's the weather like in Paris? Answer in Celsius.")
+				.tools(FunctionToolCallback.builder("getCurrentWeather", request -> {
+						toolExecutions.incrementAndGet();
+						return weatherService.apply((MockWeatherService.Request) request);
+					})
+					.description("Get the weather in location")
+					.inputType(MockWeatherService.Request.class)
+					.build())
+				.stream()
+				.chatResponse()
+				.collectList()
+				.block();
+		// @formatter:on
+
+		List<ToolCallPart> deltas = responses.stream()
+			.filter(response -> response.getResult() != null)
+			.flatMap(response -> response.getResult().getOutput().getParts().stream())
+			.filter(part -> part instanceof ToolCallPart && StreamingParts.isPartial(part))
+			.map(ToolCallPart.class::cast)
+			.toList();
+		// The deltas reach the caller, while the complete tool calls are executed once
+		// each, and kept out of the stream
+		assertThat(deltas).isNotEmpty()
+			.allSatisfy(delta -> assertThat(delta.toolCall().name()).isEqualTo("getCurrentWeather"));
+		assertThat(toolExecutions.get())
+			.isEqualTo((int) deltas.stream().map(delta -> delta.toolCall().id()).distinct().count());
+		assertThat(responses).noneMatch(ChatResponse::hasToolCalls);
+		String text = responses.stream()
+			.filter(response -> response.getResult() != null)
+			.map(response -> response.getResult().getOutput().getText())
+			.collect(Collectors.joining());
+		assertThat(text).contains("15").doesNotContain("\"location\"");
+
+		// The memory holds no delta and no unanswered tool call, and the next turn,
+		// which sends that history, is accepted
+		assertThat(chatMemory.get("tool-call-deltas")).filteredOn(AssistantMessage.class::isInstance)
+			.isNotEmpty()
+			.allSatisfy(message -> {
+				AssistantMessage assistantMessage = (AssistantMessage) message;
+				assertThat(assistantMessage.getParts()).noneMatch(StreamingParts::isPartial);
+				assertThat(assistantMessage.hasToolCalls()).isFalse();
+			});
+		String followUp = chatClient.prompt().user("Which city did I ask about?").call().content();
+		assertThat(followUp).contains("Paris");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")

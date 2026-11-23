@@ -88,7 +88,7 @@ public class DeepSeekRetryTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("Response");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
@@ -116,14 +116,14 @@ public class DeepSeekRetryTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("Response");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
 	@Test
 	public void deepSeekChatStreamNonTransientError() {
-		given(this.deepSeekApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
+		given(this.deepSeekApi.chatCompletionStreamRaw(isA(ChatCompletionRequest.class)))
 			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.chatModel.stream(new Prompt("text")).collectList().block());
 	}

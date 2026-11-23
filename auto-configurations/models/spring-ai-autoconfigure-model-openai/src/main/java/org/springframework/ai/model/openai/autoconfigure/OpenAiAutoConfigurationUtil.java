@@ -16,27 +16,54 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import java.time.Duration;
+
+import org.springframework.ai.model.openai.autoconfigure.OpenAiConnectionDetailsConfiguration.PropertiesOpenAiConnectionDetails;
 import org.springframework.util.StringUtils;
 
+/**
+ * Utilities shared by the OpenAI auto-configurations to resolve the connection settings a
+ * model is built with.
+ *
+ * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
+ * @author Thomas Vitale
+ */
 public final class OpenAiAutoConfigurationUtil {
 
 	private OpenAiAutoConfigurationUtil() {
 		// Avoids instantiation
 	}
 
+	/**
+	 * Resolve the connection properties from the common and model-level properties only,
+	 * with the base URL and API key backed by the common properties.
+	 */
 	public static ResolvedConnectionProperties resolveCommonProperties(AbstractOpenAiProperties commonProperties,
 			AbstractOpenAiProperties modelProperties) {
+		return resolveCommonProperties(new PropertiesOpenAiConnectionDetails(commonProperties), commonProperties,
+				modelProperties);
+	}
+
+	/**
+	 * Resolve the connection properties, taking the base URL and API key from the model
+	 * properties when set and from the given {@link OpenAiConnectionDetails} otherwise.
+	 *
+	 * @since 2.1.0
+	 */
+	public static ResolvedConnectionProperties resolveCommonProperties(OpenAiConnectionDetails connectionDetails,
+			AbstractOpenAiProperties commonProperties, AbstractOpenAiProperties modelProperties) {
 
 		var resolved = new ResolvedConnectionProperties();
 
 		resolved.setBaseUrl(StringUtils.hasText(modelProperties.getBaseUrl()) ? modelProperties.getBaseUrl()
-				: commonProperties.getBaseUrl());
+				: connectionDetails.getBaseUrl());
 
 		// An explicit empty string ("") is a deliberate no-auth signal (NoopApiKey
-		// behaviour) and must be preserved. Only fall back to commonProperties when the
-		// model-level key is null (i.e. not configured at all).
+		// behaviour) and must be preserved. Only fall back to the connection details when
+		// the model-level key is null (i.e. not configured at all).
 		resolved.setApiKey(
-				modelProperties.getApiKey() != null ? modelProperties.getApiKey() : commonProperties.getApiKey());
+				modelProperties.getApiKey() != null ? modelProperties.getApiKey() : connectionDetails.getApiKey());
 
 		String organizationId = StringUtils.hasText(modelProperties.getOrganizationId())
 				? modelProperties.getOrganizationId() : commonProperties.getOrganizationId();
@@ -45,8 +72,12 @@ public final class OpenAiAutoConfigurationUtil {
 		resolved.setCredential(modelProperties.getCredential() != null ? modelProperties.getCredential()
 				: commonProperties.getCredential());
 
-		resolved.setTimeout(!modelProperties.getTimeout().equals(OpenAiCommonProperties.DEFAULT_TIMEOUT)
-				? modelProperties.getTimeout() : commonProperties.getTimeout());
+		// A null timeout means "not configured", so the model-level value only wins when
+		// it was actually set. The resolved value is always non-null: it is what the
+		// OpenAI client is built with.
+		Duration timeout = modelProperties.getTimeout() != null ? modelProperties.getTimeout()
+				: commonProperties.getTimeout();
+		resolved.setTimeout(timeout != null ? timeout : OpenAiCommonProperties.DEFAULT_TIMEOUT);
 
 		resolved.setModel(StringUtils.hasText(modelProperties.getModel()) ? modelProperties.getModel()
 				: commonProperties.getModel());
@@ -77,6 +108,16 @@ public final class OpenAiAutoConfigurationUtil {
 	}
 
 	public static class ResolvedConnectionProperties extends OpenAiCommonProperties {
+
+		/**
+		 * Unlike the properties it is resolved from, a resolved timeout is always
+		 * present: it is what the OpenAI client is built with.
+		 */
+		@Override
+		public Duration getTimeout() {
+			Duration timeout = super.getTimeout();
+			return timeout != null ? timeout : DEFAULT_TIMEOUT;
+		}
 
 	}
 

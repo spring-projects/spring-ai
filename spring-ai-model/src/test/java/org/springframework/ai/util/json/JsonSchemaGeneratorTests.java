@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -36,6 +37,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 
@@ -44,7 +46,6 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
-import org.springframework.lang.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -289,6 +290,44 @@ class JsonSchemaGeneratorTests {
 				""";
 
 		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithUpperCaseTypesInTrLocale() throws Exception {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+			Method method = TestMethods.class.getDeclaredMethod("simpleMethod", String.class, int.class);
+
+			// The method "convertTypeValuesToUpperCase" will fail to correctly uppercase
+			// STRING and INTEGER in turkish locale, resulting in STRİNG and İNTEGER
+			String schema = JsonSchemaGenerator.generateForMethodInput(method,
+					JsonSchemaGenerator.SchemaOption.UPPER_CASE_TYPE_VALUES);
+			String expectedJsonSchema = """
+					{
+					    "$schema": "https://json-schema.org/draft/2020-12/schema",
+					    "type": "OBJECT",
+					    "properties": {
+					        "name": {
+					            "type": "STRING"
+					        },
+					        "age": {
+					            "type": "INTEGER"
+					        }
+					    },
+					    "required": [
+					        "name",
+					        "age"
+					    ],
+					    "additionalProperties": false
+					}
+					""";
+
+			assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 	@Test
@@ -771,9 +810,9 @@ class JsonSchemaGeneratorTests {
 		assertThat(schemaNode.at("/properties/request").has("$defs"))
 			.as("$defs must not remain nested inside the parameter sub-schema")
 			.isFalse();
-		assertThat(schemaNode.at("/properties/request/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/properties/request/properties/filters/items/$ref").asString())
 			.isEqualTo("#/$defs/RecursiveFilter");
-		assertThat(schemaNode.at("/$defs/RecursiveFilter/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/$defs/RecursiveFilter/properties/filters/items/$ref").asString())
 			.isEqualTo("#/$defs/RecursiveFilter");
 	}
 
@@ -791,9 +830,9 @@ class JsonSchemaGeneratorTests {
 
 		assertThat(schemaNode.at("/$defs").size()).isEqualTo(1);
 		assertThat(schemaNode.at("/$defs").has("RecursiveFilter")).isTrue();
-		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asString())
 			.isEqualTo("#/$defs/RecursiveFilter");
-		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asString())
 			.isEqualTo("#/$defs/RecursiveFilter");
 	}
 
@@ -819,12 +858,13 @@ class JsonSchemaGeneratorTests {
 		assertThat(schemaNode.at("/$defs/Filter_2/properties").has("code"))
 			.as("second colliding entry retains OuterB.Filter shape (code field)")
 			.isTrue();
-		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asText()).isEqualTo("#/$defs/Filter");
-		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asString()).isEqualTo("#/$defs/Filter");
+		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asString())
 			.as("second parameter's $ref must be rewritten to the renamed entry")
 			.isEqualTo("#/$defs/Filter_2");
-		assertThat(schemaNode.at("/$defs/Filter/properties/children/items/$ref").asText()).isEqualTo("#/$defs/Filter");
-		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asText())
+		assertThat(schemaNode.at("/$defs/Filter/properties/children/items/$ref").asString())
+			.isEqualTo("#/$defs/Filter");
+		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asString())
 			.as("self-reference inside the renamed entry must follow the rename")
 			.isEqualTo("#/$defs/Filter_2");
 	}
@@ -847,13 +887,13 @@ class JsonSchemaGeneratorTests {
 			.as("colliding definition is renamed with PeerB shape")
 			.isTrue();
 		assertThat(schemaNode.at("/$defs/Wrapper").has("properties")).isTrue();
-		assertThat(schemaNode.at("/$defs/Wrapper/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/$defs/Wrapper/properties/filters/items/$ref").asString())
 			.as("peer Wrapper's $ref to the colliding name must be rewritten to the renamed entry")
 			.isEqualTo("#/$defs/Filter_2");
-		assertThat(schemaNode.at("/$defs/Wrapper/properties/nested/items/$ref").asText())
+		assertThat(schemaNode.at("/$defs/Wrapper/properties/nested/items/$ref").asString())
 			.as("peer Wrapper's self-reference must be left alone")
 			.isEqualTo("#/$defs/Wrapper");
-		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asText())
+		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asString())
 			.as("renamed entry's self-reference must follow the rename")
 			.isEqualTo("#/$defs/Filter_2");
 	}
@@ -1073,7 +1113,7 @@ class JsonSchemaGeneratorTests {
 
 	}
 
-	record JSpecifyNullablePerson(int id, String name, @org.jspecify.annotations.Nullable String email) {
+	record JSpecifyNullablePerson(int id, String name, @Nullable String email) {
 
 	}
 

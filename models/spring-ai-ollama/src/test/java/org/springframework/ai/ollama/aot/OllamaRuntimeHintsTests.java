@@ -17,6 +17,7 @@
 package org.springframework.ai.ollama.aot;
 
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -177,7 +178,7 @@ class OllamaRuntimeHintsTests {
 
 		// Count classes related to embedding functionality
 		long embeddingClassCount = registeredTypes.stream()
-			.filter(typeRef -> typeRef.getName().toLowerCase().contains("embedding"))
+			.filter(typeRef -> typeRef.getName().toLowerCase(Locale.ROOT).contains("embedding"))
 			.count();
 		assertThat(embeddingClassCount).isGreaterThan(0);
 	}
@@ -250,8 +251,8 @@ class OllamaRuntimeHintsTests {
 
 		// Verify enum types are registered (critical for JSON deserialization)
 		boolean hasEnumTypes = registeredTypes.stream()
-			.anyMatch(tr -> tr.getName().contains("$") || tr.getName().toLowerCase().contains("role")
-					|| tr.getName().toLowerCase().contains("type"));
+			.anyMatch(tr -> tr.getName().contains("$") || tr.getName().toLowerCase(Locale.ROOT).contains("role")
+					|| tr.getName().toLowerCase(Locale.ROOT).contains("type"));
 
 		assertThat(hasEnumTypes).as("Enum types should be registered for native image compatibility").isTrue();
 	}
@@ -289,7 +290,7 @@ class OllamaRuntimeHintsTests {
 
 		// Count tool-related classes
 		long toolClassCount = registeredTypes.stream()
-			.filter(typeRef -> typeRef.getName().toLowerCase().contains("tool"))
+			.filter(typeRef -> typeRef.getName().toLowerCase(Locale.ROOT).contains("tool"))
 			.count();
 		assertThat(toolClassCount).isGreaterThan(0);
 	}

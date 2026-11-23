@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 /**
  * @author Jonathan Leijendekker
  */
+@SuppressWarnings("removal")
 class JdbcChatMemoryRepositoryRuntimeHintsTest {
 
 	private final RuntimeHints hints = new RuntimeHints();

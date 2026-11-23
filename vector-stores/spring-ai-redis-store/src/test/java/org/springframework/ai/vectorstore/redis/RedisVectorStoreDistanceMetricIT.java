@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore.redis;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -145,7 +146,7 @@ class RedisVectorStoreDistanceMetricIT {
 			// distance)
 			boolean foundDbDoc = false;
 			for (Document doc : dbResults) {
-				if (doc.getText().toLowerCase().contains("databases")
+				if (doc.getText().toLowerCase(Locale.ROOT).contains("databases")
 						&& "DB".equals(doc.getMetadata().get("category"))) {
 					foundDbDoc = true;
 					break;

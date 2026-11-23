@@ -19,7 +19,6 @@ package org.springframework.ai.ollama.api;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import org.jspecify.annotations.Nullable;
 
@@ -62,15 +61,14 @@ public final class OllamaApiHelper {
 			return false;
 		}
 
-		return Boolean.TRUE.equals(ollamaChatResponse.done())
-				&& Objects.requireNonNull(ollamaChatResponse.doneReason()).equals("stop");
+		return Boolean.TRUE.equals(ollamaChatResponse.done()) && "stop".equals(ollamaChatResponse.doneReason());
 	}
 
 	public static ChatResponse merge(ChatResponse previous, ChatResponse current) {
 
 		String model = merge(previous.model(), current.model());
 		Instant createdAt = merge(previous.createdAt(), current.createdAt());
-		OllamaApi.Message message = merge(previous.message(), current.message());
+		OllamaApi.@Nullable Message message = merge(previous.message(), current.message());
 		String doneReason = (current.doneReason() != null ? current.doneReason() : previous.doneReason());
 		Boolean done = (current.done() != null ? current.done() : previous.done());
 		Long totalDuration = merge(previous.totalDuration(), current.totalDuration());
@@ -84,7 +82,15 @@ public final class OllamaApiHelper {
 				promptEvalCount, promptEvalDuration, evalCount, evalDuration);
 	}
 
-	private static OllamaApi.Message merge(OllamaApi.Message previous, OllamaApi.Message current) {
+	private static OllamaApi.@Nullable Message merge(OllamaApi.@Nullable Message previous,
+			OllamaApi.@Nullable Message current) {
+
+		if (previous == null) {
+			return current;
+		}
+		if (current == null) {
+			return previous;
+		}
 
 		String content = mergeContent(previous, current);
 		String thinking = mergeThinking(previous, current);

@@ -18,7 +18,11 @@ package org.springframework.ai.elevenlabs;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
@@ -28,7 +32,12 @@ import org.springframework.ai.audio.tts.Speech;
 import org.springframework.ai.audio.tts.TextToSpeechModel;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
+import org.springframework.ai.audio.tts.observation.DefaultTextToSpeechModelObservationConvention;
+import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationContext;
+import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationConvention;
+import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationDocumentation;
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
@@ -51,19 +60,51 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 
 	private final ElevenLabsTextToSpeechOptions options;
 
+	private final ObservationRegistry observationRegistry;
+
+	private TextToSpeechModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
+
+	private static final TextToSpeechModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultTextToSpeechModelObservationConvention();
+
 	public ElevenLabsTextToSpeechModel(ElevenLabsApi elevenLabsApi, ElevenLabsTextToSpeechOptions options) {
 		this(elevenLabsApi, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	public ElevenLabsTextToSpeechModel(ElevenLabsApi elevenLabsApi, ElevenLabsTextToSpeechOptions options,
 			RetryTemplate retryTemplate) {
+		this(elevenLabsApi, options, retryTemplate, ObservationRegistry.NOOP);
+	}
+
+	/**
+	 * Creates a model that reports its calls to the given observation registry.
+	 * @param elevenLabsApi the ElevenLabs API client
+	 * @param options the default options
+	 * @param retryTemplate the retry template
+	 * @param observationRegistry the observation registry,
+	 * {@link ObservationRegistry#NOOP} for none
+	 * @since 2.0.2
+	 */
+	public ElevenLabsTextToSpeechModel(ElevenLabsApi elevenLabsApi, ElevenLabsTextToSpeechOptions options,
+			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 		Assert.notNull(elevenLabsApi, "ElevenLabsApi must not be null");
 		Assert.notNull(options, "ElevenLabsSpeechOptions must not be null");
 		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
+		Assert.notNull(observationRegistry, "ObservationRegistry must not be null");
 
 		this.elevenLabsApi = elevenLabsApi;
 		this.options = options;
 		this.retryTemplate = retryTemplate;
+		this.observationRegistry = observationRegistry;
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data.
+	 * @param observationConvention the provided convention
+	 * @since 2.0.2
+	 */
+	public void setObservationConvention(TextToSpeechModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 	public static Builder builder() {
@@ -74,28 +115,91 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 	public TextToSpeechResponse call(TextToSpeechPrompt prompt) {
 		RequestContext requestContext = prepareRequest(prompt);
 
-		byte[] audioData = RetryUtils.execute(this.retryTemplate, () -> {
-			var response = this.elevenLabsApi.textToSpeech(requestContext.request, requestContext.voiceId,
-					requestContext.queryParameters);
-			if (response.getBody() == null) {
-				if (logger.isWarnEnabled()) {
-					logger.warn("No speech response returned for request: " + requestContext.request);
-				}
-				return new byte[0];
-			}
-			return response.getBody();
-		});
+		var observationContext = TextToSpeechModelObservationContext.builder()
+			.prompt(new TextToSpeechPrompt(prompt.getInstructions(), requestContext.options))
+			.provider(AiProvider.ELEVENLABS.value())
+			.build();
 
-		return new TextToSpeechResponse(List.of(new Speech(audioData)));
+		return Objects.requireNonNull(
+				TextToSpeechModelObservationDocumentation.TEXT_TO_SPEECH_MODEL_OPERATION
+					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+							this.observationRegistry)
+					.observe(() -> {
+						byte[] audioData = RetryUtils.execute(this.retryTemplate, () -> {
+							var response = this.elevenLabsApi.textToSpeech(requestContext.request,
+									requestContext.voiceId, requestContext.queryParameters);
+							if (response.getBody() == null) {
+								if (logger.isWarnEnabled()) {
+									logger.warn("No speech response returned for request: " + requestContext.request);
+								}
+								return new byte[0];
+							}
+							return response.getBody();
+						});
+						TextToSpeechResponse response = new TextToSpeechResponse(List.of(new Speech(audioData)));
+						observationContext.setResponse(response);
+						return response;
+					}));
 	}
 
 	@Override
 	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
 		RequestContext requestContext = prepareRequest(prompt);
 
-		return RetryUtils.execute(this.retryTemplate, () -> this.elevenLabsApi
-			.textToSpeechStream(requestContext.request, requestContext.voiceId, requestContext.queryParameters)
-			.map(entity -> new TextToSpeechResponse(List.of(new Speech(Objects.requireNonNull(entity.getBody()))))));
+		return Flux.deferContextual(contextView -> {
+			var observationContext = TextToSpeechModelObservationContext.builder()
+				.prompt(new TextToSpeechPrompt(prompt.getInstructions(), requestContext.options))
+				.provider(AiProvider.ELEVENLABS.value())
+				.streaming(true)
+				.build();
+			Observation observation = TextToSpeechModelObservationDocumentation.TEXT_TO_SPEECH_MODEL_OPERATION
+				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+						this.observationRegistry);
+			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+			observation.parentObservation(parentObservation);
+			try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
+					: Observation.Scope.NOOP) {
+				observation.start();
+			}
+
+			Flux<TextToSpeechResponse> responses;
+			try {
+				// The stream is built here, before any subscription, so a failure at
+				// this point ends the observation: the Flux's callbacks never run.
+				responses = RetryUtils.execute(this.retryTemplate,
+						() -> this.elevenLabsApi
+							.textToSpeechStream(requestContext.request, requestContext.voiceId,
+									requestContext.queryParameters)
+							.map(entity -> new TextToSpeechResponse(
+									List.of(new Speech(Objects.requireNonNull(entity.getBody()))))));
+			}
+			catch (RuntimeException ex) {
+				observation.error(ex);
+				observation.stop();
+				throw ex;
+			}
+			return observed(responses, observation);
+		});
+	}
+
+	/**
+	 * Ends the observation with the stream: on completion, error or cancel, before the
+	 * terminal signal reaches the subscriber (unlike {@code doFinally}), so a caller that
+	 * blocks on the stream finds the observation stopped. Stopped once, whichever comes
+	 * first.
+	 */
+	private static <T> Flux<T> observed(Flux<T> stream, Observation observation) {
+		AtomicBoolean stopped = new AtomicBoolean();
+		Runnable stop = () -> {
+			if (stopped.compareAndSet(false, true)) {
+				observation.stop();
+			}
+		};
+		return stream.doOnError(observation::error)
+			.doOnError(ex -> stop.run())
+			.doOnComplete(stop)
+			.doOnCancel(stop)
+			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 	}
 
 	private RequestContext prepareRequest(TextToSpeechPrompt prompt) {
@@ -105,7 +209,7 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 		Assert.state(voiceId != null, "voiceId must not be null");
 		MultiValueMap<String, String> queryParameters = buildQueryParameters(options);
 
-		return new RequestContext(request, voiceId, queryParameters);
+		return new RequestContext(request, voiceId, queryParameters, options);
 	}
 
 	private MultiValueMap<String, String> buildQueryParameters(ElevenLabsTextToSpeechOptions options) {
@@ -205,6 +309,8 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 
 		private ElevenLabsTextToSpeechOptions options = ElevenLabsTextToSpeechOptions.builder().build();
 
+		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
+
 		public Builder elevenLabsApi(ElevenLabsApi elevenLabsApi) {
 			this.elevenLabsApi = elevenLabsApi;
 			return this;
@@ -220,16 +326,29 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 			return this;
 		}
 
+		/**
+		 * Sets the observation registry the model reports its calls to. Defaults to
+		 * {@link ObservationRegistry#NOOP}: no observations.
+		 * @param observationRegistry the observation registry
+		 * @return this builder
+		 * @since 2.0.2
+		 */
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
 		public ElevenLabsTextToSpeechModel build() {
 			Assert.notNull(this.elevenLabsApi, "ElevenLabsApi must not be null");
 			Assert.notNull(this.options, "ElevenLabsSpeechOptions must not be null");
-			return new ElevenLabsTextToSpeechModel(this.elevenLabsApi, this.options, this.retryTemplate);
+			return new ElevenLabsTextToSpeechModel(this.elevenLabsApi, this.options, this.retryTemplate,
+					this.observationRegistry);
 		}
 
 	}
 
 	private record RequestContext(ElevenLabsApi.SpeechRequest request, String voiceId,
-			MultiValueMap<String, String> queryParameters) {
+			MultiValueMap<String, String> queryParameters, ElevenLabsTextToSpeechOptions options) {
 	}
 
 }

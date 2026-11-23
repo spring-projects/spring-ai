@@ -77,8 +77,9 @@ public class AsyncMcpCompletionProviderTests {
 
 		// Test that the handler works
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpec.completionHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {
@@ -113,8 +114,9 @@ public class AsyncMcpCompletionProviderTests {
 
 		// Test that the handler works
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new ResourceReference("test://value"),
-				new CompleteRequest.CompleteArgument("variable", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new ResourceReference("test://value"), new CompleteRequest.CompleteArgument("variable", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpecs.get(0).completionHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {
@@ -276,8 +278,9 @@ public class AsyncMcpCompletionProviderTests {
 
 		// Test that the handler works with private methods
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("private-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("private-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpecs.get(0).completionHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {
@@ -310,8 +313,9 @@ public class AsyncMcpCompletionProviderTests {
 
 		// Test that the handler works with Mono<String> return type
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("mono-string-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("mono-string-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpecs.get(0).completionHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {
@@ -346,8 +350,9 @@ public class AsyncMcpCompletionProviderTests {
 
 		// Test that the handler works with exchange parameter
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("exchange-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("exchange-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpecs.get(0).completionHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {
@@ -382,8 +387,9 @@ public class AsyncMcpCompletionProviderTests {
 
 		// Test that the handler works with Mono<List<String>> return type
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("mono-list-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("mono-list-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpecs.get(0).completionHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {
@@ -418,8 +424,10 @@ public class AsyncMcpCompletionProviderTests {
 
 		// Test that the handler works with Mono<CompleteCompletion> return type
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("mono-completion-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("mono-completion-complete"),
+					new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpecs.get(0).completionHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {

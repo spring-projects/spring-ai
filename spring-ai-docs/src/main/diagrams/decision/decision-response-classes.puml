@@ -1,0 +1,61 @@
+@startuml decision-response-classes
+!pragma layout smetana
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+
+class DecisionResponse {
+  +getResults(): List<DecisionResult>
+  +getAnswers(): Map<String, DecisionAnswer>
+  +getYesNo(name): YesNoAnswer
+  +getChoice(name): ChoiceAnswer
+  +getScore(name): ScoreAnswer
+  +getAnswer(name, type): DecisionAnswer
+  +isRefused(name): boolean
+  +getMetadata(): DecisionResponseMetadata
+}
+class DecisionResult {
+  +getName()
+  +getOutput(): DecisionAnswer
+}
+class DecisionResponseMetadata {
+  +getId()
+  +getModel()
+  +getUsage(): Usage
+}
+interface DecisionAnswer <<sealed>>
+class YesNoAnswer {
+  +getProbability(): double
+  +isYes(): boolean
+  +isYes(threshold): boolean
+}
+class ChoiceAnswer {
+  +getValue()
+  +getProbability(option): Double
+  +getProbabilities(): Map<String, Double>
+  +getRankedOptions(): List<String>
+  +getConfidence(): Double
+}
+class ScoreAnswer {
+  +getValue(): double
+  +getProbabilities(): List<Double>
+  +getNearestLevel(): int
+  +getRoundedLevel(): int
+  +getConfidence(): Double
+}
+class RefusalAnswer {
+  +getReason()
+}
+
+DecisionResponse --> "*" DecisionResult : in prompt order
+DecisionResponse --> DecisionResponseMetadata
+DecisionResult --> DecisionAnswer
+DecisionAnswer <|.. YesNoAnswer
+DecisionAnswer <|.. ChoiceAnswer
+DecisionAnswer <|.. ScoreAnswer
+DecisionAnswer <|.. RefusalAnswer
+note bottom of YesNoAnswer : answers a YesNoQuestion
+note bottom of ChoiceAnswer : answers a ChoiceQuestion
+note bottom of ScoreAnswer : answers a ScoreQuestion
+note bottom of RefusalAnswer : any question the provider declined
+@enduml

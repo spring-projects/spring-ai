@@ -24,7 +24,11 @@ import org.springframework.boot.jdbc.init.DatabaseInitializationProperties;
  * @author Thomas Vitale
  * @author Yanming Zhou
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of
+ * {@code JdbcSessionRepositoryProperties} in
+ * {@code spring-ai-autoconfigure-model-session-jdbc}
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
 @ConfigurationProperties(JdbcChatMemoryRepositoryProperties.CONFIG_PREFIX)
 public class JdbcChatMemoryRepositoryProperties extends DatabaseInitializationProperties {
 

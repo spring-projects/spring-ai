@@ -16,10 +16,15 @@
 
 package org.springframework.ai.chat.client.advisor.api;
 
+import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.util.Assert;
+
 /**
- * Marker interface for advisors that own the memory lifecycle. An advisor implementing
- * this interface takes responsibility for managing the chat memory, including storing,
- * retrieving, and updating conversation context.
+ * An advisor that owns the memory lifecycle: it stores, retrieves and updates the
+ * conversation a request belongs to, named by {@link #CONVERSATION_ID}.
  *
  * <p>
  * {@link org.springframework.ai.chat.client.DefaultChatClient} uses this marker to detect
@@ -31,5 +36,23 @@ package org.springframework.ai.chat.client.advisor.api;
  * @see org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor
  */
 public interface MemoryAdvisor extends Advisor {
+
+	/**
+	 * The advisor context key of the conversation a request belongs to. Memory advisors
+	 * read it to find the conversation or session, and the {@code ChatClient} observation
+	 * records it. Set with
+	 * {@code .advisors(a -> a.param(MemoryAdvisor.CONVERSATION_ID, conversationId))}.
+	 */
+	String CONVERSATION_ID = "chat_memory_conversation_id";
+
+	/**
+	 * Retrieve the conversation ID from the given context.
+	 */
+	default String getConversationId(Map<String, @Nullable Object> context) {
+		Assert.notNull(context, "context cannot be null");
+		Assert.noNullElements(context.keySet().toArray(), "context cannot contain null keys");
+		Assert.notNull(context.get(CONVERSATION_ID), "conversationId cannot be null");
+		return context.get(CONVERSATION_ID).toString();
+	}
 
 }

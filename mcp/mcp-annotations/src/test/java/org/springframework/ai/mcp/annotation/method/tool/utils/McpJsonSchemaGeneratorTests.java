@@ -51,9 +51,9 @@ class McpJsonSchemaGeneratorTests {
 		assertThat(schemaNode.at("/properties/request").has("$defs"))
 			.as("$defs must not remain nested inside the parameter sub-schema")
 			.isFalse();
-		assertThat(schemaNode.at("/properties/request/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/properties/request/properties/filters/items/$ref").asString())
 			.isEqualTo("#/$defs/RecursiveFilter");
-		assertThat(schemaNode.at("/$defs/RecursiveFilter/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/$defs/RecursiveFilter/properties/filters/items/$ref").asString())
 			.isEqualTo("#/$defs/RecursiveFilter");
 	}
 
@@ -71,9 +71,9 @@ class McpJsonSchemaGeneratorTests {
 
 		assertThat(schemaNode.at("/$defs").size()).isEqualTo(1);
 		assertThat(schemaNode.at("/$defs").has("RecursiveFilter")).isTrue();
-		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asString())
 			.isEqualTo("#/$defs/RecursiveFilter");
-		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asString())
 			.isEqualTo("#/$defs/RecursiveFilter");
 	}
 
@@ -95,10 +95,12 @@ class McpJsonSchemaGeneratorTests {
 		assertThat(schemaNode.at("/$defs/Filter_2").has("properties")).isTrue();
 		assertThat(schemaNode.at("/$defs/Filter/properties").has("label")).isTrue();
 		assertThat(schemaNode.at("/$defs/Filter_2/properties").has("code")).isTrue();
-		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asText()).isEqualTo("#/$defs/Filter");
-		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asText()).isEqualTo("#/$defs/Filter_2");
-		assertThat(schemaNode.at("/$defs/Filter/properties/children/items/$ref").asText()).isEqualTo("#/$defs/Filter");
-		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asText())
+		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asString()).isEqualTo("#/$defs/Filter");
+		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asString())
+			.isEqualTo("#/$defs/Filter_2");
+		assertThat(schemaNode.at("/$defs/Filter/properties/children/items/$ref").asString())
+			.isEqualTo("#/$defs/Filter");
+		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asString())
 			.isEqualTo("#/$defs/Filter_2");
 	}
 
@@ -116,10 +118,11 @@ class McpJsonSchemaGeneratorTests {
 		assertThat(schemaNode.at("/$defs/Filter/properties").has("label")).isTrue();
 		assertThat(schemaNode.at("/$defs/Filter_2/properties").has("code")).isTrue();
 		assertThat(schemaNode.at("/$defs/Wrapper").has("properties")).isTrue();
-		assertThat(schemaNode.at("/$defs/Wrapper/properties/filters/items/$ref").asText())
+		assertThat(schemaNode.at("/$defs/Wrapper/properties/filters/items/$ref").asString())
 			.isEqualTo("#/$defs/Filter_2");
-		assertThat(schemaNode.at("/$defs/Wrapper/properties/nested/items/$ref").asText()).isEqualTo("#/$defs/Wrapper");
-		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asText())
+		assertThat(schemaNode.at("/$defs/Wrapper/properties/nested/items/$ref").asString())
+			.isEqualTo("#/$defs/Wrapper");
+		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asString())
 			.isEqualTo("#/$defs/Filter_2");
 	}
 
@@ -135,7 +138,7 @@ class McpJsonSchemaGeneratorTests {
 		String schema = McpJsonSchemaGenerator.generateFromClass(SearchRequest.class);
 		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
 
-		assertThat(schemaNode.get("type").asText()).isEqualTo("object");
+		assertThat(schemaNode.get("type").asString()).isEqualTo("object");
 		assertThat(schemaNode.has("properties")).isTrue();
 	}
 
@@ -144,7 +147,7 @@ class McpJsonSchemaGeneratorTests {
 		String schema = McpJsonSchemaGenerator.generateFromType(SearchRequest.class);
 		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
 
-		assertThat(schemaNode.get("type").asText()).isEqualTo("object");
+		assertThat(schemaNode.get("type").asString()).isEqualTo("object");
 		assertThat(schemaNode.has("properties")).isTrue();
 	}
 

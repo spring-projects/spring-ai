@@ -1,0 +1,44 @@
+{
+  "properties": [
+    {
+      "name": "spring.ai.chat.memory.repository.jdbc.continue-on-error",
+      "type": "java.lang.Boolean",
+      "deprecation": {
+        "level": "warning",
+        "reason": "ChatMemory is deprecated since 2.1.0, for removal in 3.0.0, in favor of session memory.",
+        "replacement": "spring.ai.session.repository.jdbc.continue-on-error",
+        "since": "2.1.0"
+      }
+    },
+    {
+      "name": "spring.ai.chat.memory.repository.jdbc.initialize-schema",
+      "type": "org.springframework.boot.sql.init.DatabaseInitializationMode",
+      "deprecation": {
+        "level": "warning",
+        "reason": "ChatMemory is deprecated since 2.1.0, for removal in 3.0.0, in favor of session memory.",
+        "replacement": "spring.ai.session.repository.jdbc.initialize-schema",
+        "since": "2.1.0"
+      }
+    },
+    {
+      "name": "spring.ai.chat.memory.repository.jdbc.platform",
+      "type": "java.lang.String",
+      "deprecation": {
+        "level": "warning",
+        "reason": "ChatMemory is deprecated since 2.1.0, for removal in 3.0.0, in favor of session memory.",
+        "replacement": "spring.ai.session.repository.jdbc.platform",
+        "since": "2.1.0"
+      }
+    },
+    {
+      "name": "spring.ai.chat.memory.repository.jdbc.schema",
+      "type": "java.lang.String",
+      "deprecation": {
+        "level": "warning",
+        "reason": "ChatMemory is deprecated since 2.1.0, for removal in 3.0.0, in favor of session memory.",
+        "replacement": "spring.ai.session.repository.jdbc.schema",
+        "since": "2.1.0"
+      }
+    }
+  ]
+}

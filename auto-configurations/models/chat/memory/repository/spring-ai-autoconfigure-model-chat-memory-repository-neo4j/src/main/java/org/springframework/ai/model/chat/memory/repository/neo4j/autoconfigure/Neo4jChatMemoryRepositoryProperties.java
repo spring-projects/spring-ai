@@ -23,7 +23,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Configuration properties for Neo4j chat memory.
  *
  * @author Enrico Rampazzo
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of the session memory
+ * auto-configuration, {@code SessionServiceAutoConfiguration} in
+ * {@code spring-ai-autoconfigure-model-session}. There is no session store for Neo4j yet;
+ * one is planned before 3.0.0, when this module is removed.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 @ConfigurationProperties(Neo4jChatMemoryRepositoryProperties.CONFIG_PREFIX)
 public class Neo4jChatMemoryRepositoryProperties {
 

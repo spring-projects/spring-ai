@@ -22,9 +22,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import com.openai.azure.AzureUrlPathMode;
 import com.openai.azure.credential.AzureApiKeyCredential;
 import com.openai.client.OpenAIClient;
+import com.openai.client.OpenAIClientAsync;
 import com.openai.core.ClientOptions;
+import com.openai.credential.Credential;
 import com.openai.models.ChatModel;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +36,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+/**
+ * Unit tests for {@link OpenAiSetup}.
+ *
+ * @author Jewoo Shin
+ */
 public class OpenAiSetupTests {
 
 	@Test
@@ -141,6 +149,79 @@ public class OpenAiSetupTests {
 		AzureApiKeyCredential credential = (AzureApiKeyCredential) options.credential();
 		assertEquals("my-foundry-key", credential.apiKey());
 		assertThat(options.headers().values("Authorization")).isEmpty();
+	}
+
+	@Test
+	void setupSyncClient_propagatesLegacyPathMode_forMicrosoftFoundryProxyHost() throws Exception {
+		OpenAIClient client = OpenAiSetup.setupSyncClient("https://enterprise-proxy.example.com/azure-openai-api",
+				"my-foundry-key", null, "my-deployment", null, null, true, false, null, Duration.ofSeconds(30), 2, null,
+				null, io.micrometer.observation.ObservationRegistry.NOOP, null, List.of());
+
+		Field field = client.getClass().getDeclaredField("clientOptions");
+		field.setAccessible(true);
+		ClientOptions options = (ClientOptions) field.get(client);
+		assertEquals(AzureUrlPathMode.LEGACY, options.azureUrlPathMode());
+	}
+
+	@Test
+	void setupAsyncClient_propagatesLegacyPathMode_forMicrosoftFoundryProxyHost() throws Exception {
+		OpenAIClientAsync client = OpenAiSetup.setupAsyncClient("https://enterprise-proxy.example.com/azure-openai-api",
+				"my-foundry-key", null, "my-deployment", null, null, true, false, null, Duration.ofSeconds(30), 2, null,
+				null, io.micrometer.observation.ObservationRegistry.NOOP, null, List.of());
+
+		Field field = client.getClass().getDeclaredField("clientOptions");
+		field.setAccessible(true);
+		ClientOptions options = (ClientOptions) field.get(client);
+		assertEquals(AzureUrlPathMode.LEGACY, options.azureUrlPathMode());
+	}
+
+	@Test
+	void setupSyncClient_propagatesUnifiedPathMode_forMicrosoftFoundryUnifiedEndpoint() throws Exception {
+		OpenAIClient client = OpenAiSetup.setupSyncClient("https://my-resource.openai.azure.com/openai/v1",
+				"my-foundry-key", null, null, null, null, true, false, null, Duration.ofSeconds(30), 2, null, null,
+				io.micrometer.observation.ObservationRegistry.NOOP, null, List.of());
+
+		Field field = client.getClass().getDeclaredField("clientOptions");
+		field.setAccessible(true);
+		ClientOptions options = (ClientOptions) field.get(client);
+		assertEquals(AzureUrlPathMode.UNIFIED, options.azureUrlPathMode());
+	}
+
+	@Test
+	void setupSyncClient_keepsAutoPathMode_forNonFoundryProvider() throws Exception {
+		OpenAIClient client = OpenAiSetup.setupSyncClient(null, "sk-test", null, null, null, null, false, false, null,
+				Duration.ofSeconds(30), 2, null, null, io.micrometer.observation.ObservationRegistry.NOOP, null,
+				List.of());
+
+		Field field = client.getClass().getDeclaredField("clientOptions");
+		field.setAccessible(true);
+		ClientOptions options = (ClientOptions) field.get(client);
+		assertEquals(AzureUrlPathMode.AUTO, options.azureUrlPathMode());
+	}
+
+	@Test
+	void setupSyncClient_propagatesLegacyPathMode_whenCredentialProvidedWithoutApiKey() throws Exception {
+		Credential credential = AzureApiKeyCredential.create("explicit-credential-key");
+		OpenAIClient client = OpenAiSetup.setupSyncClient("https://enterprise-proxy.example.com/azure-openai-api", null,
+				credential, "my-deployment", null, null, true, false, null, Duration.ofSeconds(30), 2, null, null,
+				io.micrometer.observation.ObservationRegistry.NOOP, null, List.of());
+
+		Field field = client.getClass().getDeclaredField("clientOptions");
+		field.setAccessible(true);
+		ClientOptions options = (ClientOptions) field.get(client);
+		assertEquals(AzureUrlPathMode.LEGACY, options.azureUrlPathMode());
+	}
+
+	@Test
+	void setupSyncClient_keepsAutoPathMode_forGitHubModelsProvider() throws Exception {
+		OpenAIClient client = OpenAiSetup.setupSyncClient(null, "ghp-test", null, null, null, null, false, true, null,
+				Duration.ofSeconds(30), 2, null, null, io.micrometer.observation.ObservationRegistry.NOOP, null,
+				List.of());
+
+		Field field = client.getClass().getDeclaredField("clientOptions");
+		field.setAccessible(true);
+		ClientOptions options = (ClientOptions) field.get(client);
+		assertEquals(AzureUrlPathMode.AUTO, options.azureUrlPathMode());
 	}
 
 }

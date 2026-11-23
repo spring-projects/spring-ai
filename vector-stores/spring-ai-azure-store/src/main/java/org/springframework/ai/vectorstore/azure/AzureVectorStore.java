@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
-import com.alibaba.fastjson2.JSONObject;
-import com.alibaba.fastjson2.TypeReference;
 import com.azure.core.util.Context;
 import com.azure.search.documents.SearchClient;
 import com.azure.search.documents.SearchDocument;
@@ -54,6 +52,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -85,6 +84,8 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	public static final String DEFAULT_INDEX_NAME = "spring_ai_azure_vector_store";
 
 	private static final Log logger = LogFactory.getLog(AzureVectorStore.class);
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final String SPRING_AI_VECTOR_CONFIG = "spring-ai-vector-config";
 
@@ -180,7 +181,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			searchDocument.put(ID_FIELD_NAME, document.getId());
 			searchDocument.put(this.embeddingFieldName, embeddings.get(i));
 			searchDocument.put(this.contentFieldName, document.getText());
-			searchDocument.put(this.metadataFieldName, new JSONObject(document.getMetadata()).toJSONString());
+			searchDocument.put(this.metadataFieldName, jsonHelper.toJson(document.getMetadata()));
 
 			// Add the filterable metadata fields as top level fields, allowing filler
 			// expressions on them.
@@ -344,11 +345,9 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			return new HashMap<>();
 		}
 		try {
-			Map<String, Object> parsed = JSONObject.parseObject(metadataJson, new TypeReference<Map<String, Object>>() {
-			});
-			return (parsed == null) ? new HashMap<>() : new HashMap<>(parsed);
+			return new HashMap<>(jsonHelper.fromJsonToMap(metadataJson));
 		}
-		catch (Exception ex) {
+		catch (IllegalStateException ex) {
 			if (logger.isWarnEnabled()) {
 				logger.warn("Failed to parse metadata JSON. Using empty metadata. json=" + metadataJson, ex);
 			}

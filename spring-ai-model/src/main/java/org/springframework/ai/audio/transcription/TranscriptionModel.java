@@ -26,9 +26,11 @@ import org.springframework.core.io.Resource;
  * known as Speech-to-Text.
  *
  * @author Mudabir Hussain
+ * @author guan xu
  * @since 1.0.0
  */
-public interface TranscriptionModel extends Model<AudioTranscriptionPrompt, AudioTranscriptionResponse> {
+public interface TranscriptionModel
+		extends Model<AudioTranscriptionPrompt, AudioTranscriptionResponse>, StreamingTranscriptionModel {
 
 	/**
 	 * Transcribes the audio from the given prompt.

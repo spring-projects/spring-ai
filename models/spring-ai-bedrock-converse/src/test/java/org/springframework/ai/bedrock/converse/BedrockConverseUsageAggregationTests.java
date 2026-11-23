@@ -87,7 +87,7 @@ public class BedrockConverseUsageAggregationTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getText()).isSameAs("Response Content Block");
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("Response Content Block");
 
 		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(16);
 		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(14);
@@ -162,7 +162,7 @@ public class BedrockConverseUsageAggregationTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText())
-			.isSameAs(converseResponseFinal.output().message().content().get(0).text());
+			.isEqualTo(converseResponseFinal.output().message().content().get(0).text());
 
 		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(540);
 		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(106);
@@ -187,7 +187,7 @@ public class BedrockConverseUsageAggregationTests {
 			.usage(TokenUsage.builder()
 				.inputTokens(100)
 				.outputTokens(50)
-				.totalTokens(150)
+				.totalTokens(250)
 				.cacheReadInputTokens(80)
 				.cacheWriteInputTokens(20)
 				.build())
@@ -198,18 +198,19 @@ public class BedrockConverseUsageAggregationTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getText()).isSameAs("Response with cache metrics");
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("Response with cache metrics");
 
-		// Verify standard usage metrics
-		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(100);
+		// Verify standard usage metrics, the prompt tokens including the cached ones
+		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(100 + 80 + 20);
 		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(50);
-		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(150);
+		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(250);
 
 		// Verify cache metrics are available in native usage object
 		Object nativeUsage = result.getMetadata().getUsage().getNativeUsage();
 		assertThat(nativeUsage).isInstanceOf(TokenUsage.class);
 
 		TokenUsage tokenUsage = (TokenUsage) nativeUsage;
+		assertThat(tokenUsage.inputTokens()).isEqualTo(100);
 		assertThat(tokenUsage.cacheReadInputTokens()).isEqualTo(80);
 		assertThat(tokenUsage.cacheWriteInputTokens()).isEqualTo(20);
 
@@ -239,7 +240,7 @@ public class BedrockConverseUsageAggregationTests {
 			.usage(TokenUsage.builder()
 				.inputTokens(200)
 				.outputTokens(50)
-				.totalTokens(250)
+				.totalTokens(400)
 				.cacheReadInputTokens(150) // First request reads from cache
 				.cacheWriteInputTokens(0)
 				.build())
@@ -257,7 +258,7 @@ public class BedrockConverseUsageAggregationTests {
 			.usage(TokenUsage.builder()
 				.inputTokens(300)
 				.outputTokens(30)
-				.totalTokens(330)
+				.totalTokens(480)
 				.cacheReadInputTokens(150) // Second request also reads from cache
 				.cacheWriteInputTokens(0)
 				.build())
@@ -288,19 +289,15 @@ public class BedrockConverseUsageAggregationTests {
 
 		assertThat(result).isNotNull();
 
-		// With external tool calling each chatModel.call() is independent, so only the
-		// last round's usage is reported (no cross-round accumulation).
-		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(300);
-		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(30);
-		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(330);
+		// ToolCallingAdvisor accumulates usage across framework-controlled tool
+		// calling rounds.
+		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(800);
+		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(80);
+		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(880);
 
-		// Verify cache metrics in native usage object (last round only)
-		Object nativeUsage = result.getMetadata().getUsage().getNativeUsage();
-		assertThat(nativeUsage).isInstanceOf(TokenUsage.class);
-
-		TokenUsage tokenUsage = (TokenUsage) nativeUsage;
-		assertThat(tokenUsage.cacheReadInputTokens()).isEqualTo(150);
-		assertThat(tokenUsage.cacheWriteInputTokens()).isEqualTo(0);
+		// Verify cache metrics in the accumulated Usage abstraction.
+		assertThat(result.getMetadata().getUsage().getCacheReadInputTokens()).isEqualTo(300L);
+		assertThat(result.getMetadata().getUsage().getCacheWriteInputTokens()).isEqualTo(0L);
 	}
 
 	public record Request(String location, String unit) {

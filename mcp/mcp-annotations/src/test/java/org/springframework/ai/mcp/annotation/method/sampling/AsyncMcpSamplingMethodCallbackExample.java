@@ -40,11 +40,11 @@ public class AsyncMcpSamplingMethodCallbackExample {
 	@McpSampling(clients = "test-client")
 	public Mono<CreateMessageResult> handleAsyncSamplingRequest(CreateMessageRequest request) {
 		// Process the request asynchronously and return a result
-		return Mono.just(CreateMessageResult.builder()
-			.role(Role.ASSISTANT)
-			.content(new TextContent("This is an async response to the sampling request"))
-			.model("test-model")
-			.build());
+		return Mono
+			.just(CreateMessageResult
+				.builder(Role.ASSISTANT,
+						TextContent.builder("This is an async response to the sampling request").build(), "test-model")
+				.build());
 	}
 
 	/**
@@ -55,10 +55,9 @@ public class AsyncMcpSamplingMethodCallbackExample {
 	@McpSampling(clients = "test-client")
 	public CreateMessageResult handleDirectSamplingRequest(CreateMessageRequest request) {
 		// Process the request and return a direct result
-		return CreateMessageResult.builder()
-			.role(Role.ASSISTANT)
-			.content(new TextContent("This is a direct response to the sampling request"))
-			.model("test-model")
+		return CreateMessageResult
+			.builder(Role.ASSISTANT, TextContent.builder("This is a direct response to the sampling request").build(),
+					"test-model")
 			.build();
 	}
 
@@ -79,11 +78,11 @@ public class AsyncMcpSamplingMethodCallbackExample {
 	 */
 	@McpSampling(clients = "test-client")
 	public Mono<CreateMessageResult> invalidParameterType(String invalidParam) {
-		return Mono.just(CreateMessageResult.builder()
-			.role(Role.ASSISTANT)
-			.content(new TextContent("This method has an invalid parameter type"))
-			.model("test-model")
-			.build());
+		return Mono.just(
+				CreateMessageResult
+					.builder(Role.ASSISTANT, TextContent.builder("This method has an invalid parameter type").build(),
+							"test-model")
+					.build());
 	}
 
 	/**
@@ -92,10 +91,8 @@ public class AsyncMcpSamplingMethodCallbackExample {
 	 */
 	@McpSampling(clients = "test-client")
 	public Mono<CreateMessageResult> noParameters() {
-		return Mono.just(CreateMessageResult.builder()
-			.role(Role.ASSISTANT)
-			.content(new TextContent("This method has no parameters"))
-			.model("test-model")
+		return Mono.just(CreateMessageResult
+			.builder(Role.ASSISTANT, TextContent.builder("This method has no parameters").build(), "test-model")
 			.build());
 	}
 
@@ -107,10 +104,8 @@ public class AsyncMcpSamplingMethodCallbackExample {
 	 */
 	@McpSampling(clients = "test-client")
 	public Mono<CreateMessageResult> tooManyParameters(CreateMessageRequest request, String extraParam) {
-		return Mono.just(CreateMessageResult.builder()
-			.role(Role.ASSISTANT)
-			.content(new TextContent("This method has too many parameters"))
-			.model("test-model")
+		return Mono.just(CreateMessageResult
+			.builder(Role.ASSISTANT, TextContent.builder("This method has too many parameters").build(), "test-model")
 			.build());
 	}
 

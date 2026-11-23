@@ -28,6 +28,7 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
 import org.apache.pdfbox.text.TextPositionComparator;
+import org.apache.pdfbox.util.IterativeMergeSort;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -36,7 +37,7 @@ import org.jspecify.annotations.Nullable;
  * text positions, and managing line breaks.
  *
  * @author Jonathan Link
- *
+ * @author Dimitar Proynov
  */
 public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 
@@ -44,11 +45,24 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 
 	public static final int OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT = 4;
 
+	/**
+	 * Upper bound on the total number of {@link TextLine}s (real content lines plus
+	 * synthetic gap-filling blank lines) accumulated for a single page, across all
+	 * regions. The per-gap cap in {@link #iterateThroughTextList} and the per-line length
+	 * cap in {@link TextLine} each bound a single allocation, but neither bounds how many
+	 * such allocations a page can accumulate; a PDF can stay under both per-allocation
+	 * caps while piling up enough of them on one page to exhaust the heap. This cap
+	 * closes that gap.
+	 */
+	private static final int MAX_LINES_PER_PAGE = 30_000;
+
 	private double currentPageWidth;
 
 	private @Nullable TextPosition previousTextPosition;
 
 	private List<TextLine> textLineList;
+
+	private int lineCountForCurrentPage;
 
 	/**
 	 * Constructor
@@ -67,22 +81,29 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 		PDRectangle pageRectangle = page.getMediaBox();
 		if (pageRectangle != null) {
 			this.setCurrentPageWidth(pageRectangle.getWidth() * 1.4);
+			this.lineCountForCurrentPage = 0;
 			super.processPage(page);
-			this.previousTextPosition = null;
-			this.textLineList = new ArrayList<>();
+			this.resetLineState();
 		}
+	}
+
+	/**
+	 * Resets the per-{@link #writePage()} line accumulation state. Subclasses that call
+	 * {@link #writePage()} more than once for the same page (e.g. once per region) must
+	 * call this between calls, otherwise each subsequent call accumulates on top of the
+	 * previous ones instead of starting fresh. Intentionally the lineCountForCurrentPage
+	 * is not reset.
+	 */
+	protected void resetLineState() {
+		this.previousTextPosition = null;
+		this.textLineList = new ArrayList<>();
 	}
 
 	@Override
 	protected void writePage() throws IOException {
 		List<List<TextPosition>> charactersByArticle = super.getCharactersByArticle();
 		for (List<TextPosition> textList : charactersByArticle) {
-			try {
-				this.sortTextPositionList(textList);
-			}
-			catch (IllegalArgumentException e) {
-				logger.error("Error sorting text positions", e);
-			}
+			sortTextPositionList(textList);
 			this.iterateThroughTextList(textList.iterator());
 		}
 		this.writeToOutputStream(this.getTextLineList());
@@ -97,13 +118,25 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 		}
 	}
 
-	/*
-	 * In order to get rid of the warning: TextPositionComparator class should implement
-	 * Comparator<TextPosition> instead of Comparator
+	/**
+	 * Sorts the given text positions in reading order.
+	 * <p>
+	 * {@link TextPositionComparator} is not transitive (PDFBOX-5308), so
+	 * {@code List.sort} can reject it with an {@link IllegalArgumentException} after
+	 * having already reordered part of the list. When that happens, fall back to a merge
+	 * sort, which does not check the comparator contract, the same way
+	 * {@code PDFTextStripper} does.
+	 * @param textList the text positions to sort in place
 	 */
-	private void sortTextPositionList(final List<TextPosition> textList) {
+	static void sortTextPositionList(final List<TextPosition> textList) {
 		TextPositionComparator comparator = new TextPositionComparator();
-		textList.sort(comparator);
+		try {
+			textList.sort(comparator);
+		}
+		catch (IllegalArgumentException ex) {
+			logger.debug("Comparison contract violated while sorting text positions, falling back to merge sort", ex);
+			IterativeMergeSort.sort(textList, comparator);
+		}
 	}
 
 	private void writeLine(final List<TextPosition> textPositionList) {
@@ -182,6 +215,12 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 	}
 
 	private TextLine addNewLine() {
+		if (++this.lineCountForCurrentPage > MAX_LINES_PER_PAGE) {
+			// Throw rather than keep allocating: no single gap or line breached its
+			// own cap, but the total for this page did.
+			throw new IllegalStateException("Unreasonable total number of lines (%d) accumulated for a single pdf page"
+				.formatted(this.lineCountForCurrentPage));
+		}
 		TextLine textLine = new TextLine(this.getCurrentPageWidth());
 		this.textLineList.add(textLine);
 		return textLine;

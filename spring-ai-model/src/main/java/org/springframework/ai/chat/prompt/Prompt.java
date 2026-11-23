@@ -42,6 +42,7 @@ import org.springframework.util.Assert;
  * @author luocongqiu
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public class Prompt implements ModelRequest<List<Message>> {
 
@@ -203,11 +204,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 				messagesCopy.add(systemMessage.copy());
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
-				messagesCopy.add(AssistantMessage.builder()
-					.content(Objects.requireNonNullElse(assistantMessage.getText(), ""))
-					.properties(assistantMessage.getMetadata())
-					.toolCalls(assistantMessage.getToolCalls())
-					.build());
+				messagesCopy.add(assistantMessage.copy());
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {
 				messagesCopy.add(ToolResponseMessage.builder()

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.google.genai;
 
+import java.util.Locale;
+
 import com.google.genai.Client;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -56,7 +58,7 @@ class GoogleGenAiChatPriorityIT {
 	}
 
 	private void runTest(Client genAiClient, String serviceTier) {
-		GoogleGenAiServiceTier tier = GoogleGenAiServiceTier.valueOf(serviceTier.toUpperCase());
+		GoogleGenAiServiceTier tier = GoogleGenAiServiceTier.valueOf(serviceTier.toUpperCase(Locale.ROOT));
 
 		var chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient)

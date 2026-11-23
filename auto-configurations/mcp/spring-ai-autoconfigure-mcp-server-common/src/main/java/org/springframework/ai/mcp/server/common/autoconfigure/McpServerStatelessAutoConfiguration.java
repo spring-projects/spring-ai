@@ -38,6 +38,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 
+import org.springframework.ai.mcp.customizer.McpServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -80,10 +81,12 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<SyncResourceSpecification>> resources,
 			ObjectProvider<List<SyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
-			ObjectProvider<List<SyncCompletionSpecification>> completions, Environment environment) {
+			ObjectProvider<List<SyncCompletionSpecification>> completions, Environment environment,
+			ObjectProvider<McpServerCustomizer<StatelessSyncSpecification>> customizers) {
 
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
+		McpSchema.Implementation serverInfo = Implementation
+			.builder(serverProperties.getName(), serverProperties.getVersion())
+			.build();
 
 		// Create the server with both tool and resource capabilities
 		StatelessSyncSpecification serverBuilder = McpServer.sync(statelessTransport).serverInfo(serverInfo);
@@ -159,6 +162,8 @@ public class McpServerStatelessAutoConfiguration {
 			serverBuilder.immediateExecution(true);
 		}
 
+		customizers.orderedStream().forEach(customizer -> customizer.customize(serverBuilder));
+
 		return serverBuilder.build();
 	}
 
@@ -170,10 +175,12 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<AsyncResourceSpecification>> resources,
 			ObjectProvider<List<AsyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
-			ObjectProvider<List<AsyncCompletionSpecification>> completions) {
+			ObjectProvider<List<AsyncCompletionSpecification>> completions,
+			ObjectProvider<McpServerCustomizer<StatelessAsyncSpecification>> customizers) {
 
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
+		McpSchema.Implementation serverInfo = Implementation
+			.builder(serverProperties.getName(), serverProperties.getVersion())
+			.build();
 
 		// Create the server with both tool and resource capabilities
 		StatelessAsyncSpecification serverBuilder = McpServer.async(statelessTransport).serverInfo(serverInfo);
@@ -245,6 +252,8 @@ public class McpServerStatelessAutoConfiguration {
 		serverBuilder.instructions(serverProperties.getInstructions());
 
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
+
+		customizers.orderedStream().forEach(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
 	}

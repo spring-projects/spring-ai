@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.redis.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -60,6 +62,13 @@ public class RedisVectorStoreProperties extends CommonVectorStoreProperties {
 	private String prefix = "default:";
 
 	/**
+	 * The vector size of the index. When set, it sizes an index created by
+	 * initialize-schema and is the size upsert checks vectors against. When not set, it
+	 * is read from the existing index, or taken from the embedding model.
+	 */
+	private @Nullable Integer dimensions;
+
+	/**
 	 * HNSW algorithm configuration properties.
 	 */
 	@NestedConfigurationProperty
@@ -95,6 +104,22 @@ public class RedisVectorStoreProperties extends CommonVectorStoreProperties {
 	 */
 	public final void setPrefix(final String keyPrefix) {
 		this.prefix = keyPrefix;
+	}
+
+	/**
+	 * Returns the vector size of the index.
+	 * @return the vector size, or {@code null} when not configured
+	 */
+	public final @Nullable Integer getDimensions() {
+		return this.dimensions;
+	}
+
+	/**
+	 * Sets the vector size of the index.
+	 * @param dimensions the vector size
+	 */
+	public final void setDimensions(final @Nullable Integer dimensions) {
+		this.dimensions = dimensions;
 	}
 
 	/**

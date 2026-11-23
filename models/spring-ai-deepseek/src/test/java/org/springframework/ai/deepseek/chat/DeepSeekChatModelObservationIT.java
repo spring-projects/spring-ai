@@ -69,7 +69,10 @@ public class DeepSeekChatModelObservationIT {
 
 	@Test
 	void observationForChatOperation() {
+		// Thinking mode ignores the sampling parameters this test observes, and its
+		// reasoning counts toward maxTokens, which can leave no room for the answer
 		var options = DeepSeekChatOptions.builder()
+			.disableThinking()
 			.frequencyPenalty(0.0)
 			.maxTokens(2048)
 			.presencePenalty(0.0)
@@ -92,7 +95,10 @@ public class DeepSeekChatModelObservationIT {
 
 	@Test
 	void observationForStreamingChatOperation() {
+		// Thinking mode ignores the sampling parameters this test observes, and its
+		// reasoning counts toward maxTokens, which can leave no room for the answer
 		var options = DeepSeekChatOptions.builder()
+			.disableThinking()
 			.frequencyPenalty(0.0)
 			.maxTokens(2048)
 			.presencePenalty(0.0)

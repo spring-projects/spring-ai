@@ -20,12 +20,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
@@ -51,6 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // @Disabled("the deepseek-chat model's Function Calling capability is unstable see:
 // https://api-docs.deepseek.com/guides/function_calling")
 @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
+@SuppressWarnings("removal")
 class DeepSeekChatModelFunctionCallingIT {
 
 	@Autowired
@@ -133,7 +138,26 @@ class DeepSeekChatModelFunctionCallingIT {
 		Prompt prompt = new Prompt(messages, promptOptions);
 
 		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
-		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		List<ChatResponse> firstRound = new MessageAggregator()
+			.aggregate(this.chatModel.stream(prompt), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		// The argument deltas of each call, which are not tool calls, join to its
+		// complete arguments
+		List<ToolCallPart> streamedToolCallParts = firstRound.stream()
+			.filter(chunk -> chunk.getResult() != null)
+			.flatMap(chunk -> chunk.getResult().getOutput().getParts().stream())
+			.filter(ToolCallPart.class::isInstance)
+			.map(ToolCallPart.class::cast)
+			.toList();
+		List<ToolCallPart> deltas = streamedToolCallParts.stream().filter(StreamingParts::isPartial).toList();
+		assertThat(deltas).isNotEmpty();
+		assertThat(aggregatedRef.get().getResult().getOutput().getToolCalls()).isNotEmpty()
+			.allSatisfy(toolCall -> assertThat(deltas.stream()
+				.filter(delta -> delta.toolCall().id().equals(toolCall.id()))
+				.map(delta -> delta.toolCall().arguments())
+				.collect(Collectors.joining())).isEqualTo(toolCall.arguments()));
 
 		while (aggregatedRef.get().hasToolCalls()) {
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
@@ -237,9 +261,11 @@ class DeepSeekChatModelFunctionCallingIT {
 		assertThat(response).isNotNull();
 		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput()).isNotNull();
-		assertThat(response.getResult().getOutput()).isInstanceOf(DeepSeekAssistantMessage.class);
-		DeepSeekAssistantMessage assistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
-		assertThat(assistantMessage.getReasoningContent()).isNotEmpty();
+		AssistantMessage assistantMessage = response.getResult().getOutput();
+		assertThat(assistantMessage.getReasoning()).isNotEmpty();
+		// Deprecated access path, still supported
+		assertThat(assistantMessage).isInstanceOfSatisfying(DeepSeekAssistantMessage.class,
+				deepSeek -> assertThat(deepSeek.getReasoningContent()).isNotEmpty());
 		assertThat(assistantMessage.getText()).isNotEmpty();
 		assertThat(assistantMessage.getText()).contains("30");
 	}

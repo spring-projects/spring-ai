@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AwsOpenSearchDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComposeIT {
 
 	AwsOpenSearchDockerComposeConnectionDetailsFactoryIT() {
-		super("localstack-compose.yaml", DockerImageName.parse("localstack/localstack:3.5.0"));
+		super("localstack-compose.yaml", DockerImageName.parse("localstack/localstack:3.8.1"));
 	}
 
 	@Test

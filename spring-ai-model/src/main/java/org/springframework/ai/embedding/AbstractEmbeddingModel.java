@@ -37,12 +37,13 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Josh Long
+ * @author Md Nayan Mia
  */
 @ImportRuntimeHints(AbstractEmbeddingModel.Hints.class)
 public abstract class AbstractEmbeddingModel implements EmbeddingModel {
 
 	private static final Resource EMBEDDING_MODEL_DIMENSIONS_PROPERTIES = new ClassPathResource(
-			"/embedding/embedding-model-dimensions.properties");
+			"/embedding/embedding-model-dimensions.properties", AbstractEmbeddingModel.class);
 
 	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = loadKnownModelDimensions();
 

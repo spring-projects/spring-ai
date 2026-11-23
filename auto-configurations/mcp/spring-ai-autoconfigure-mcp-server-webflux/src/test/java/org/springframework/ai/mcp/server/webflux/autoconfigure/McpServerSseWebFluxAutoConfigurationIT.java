@@ -16,16 +16,23 @@
 
 package org.springframework.ai.mcp.server.webflux.autoconfigure;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import io.modelcontextprotocol.server.McpSyncServer;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mcp.customizer.McpServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
 import org.springframework.ai.mcp.server.webflux.transport.WebFluxSseServerTransportProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.web.reactive.function.server.RouterFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -124,6 +131,38 @@ class McpServerSseWebFluxAutoConfigurationIT {
 				RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
 				assertThat(mockingDetails(routerFunction).isMock()).isTrue();
 			});
+	}
+
+	@Test
+	void multipleCustomizersAreAppliedInOrder() {
+		this.contextRunner.withUserConfiguration(OrderedCustomizersConfiguration.class)
+			.run(context -> assertThat(context.getBean("customizerInvocations", List.class)).containsExactly("first",
+					"second"));
+	}
+
+	@Configuration
+	static class OrderedCustomizersConfiguration {
+
+		@Bean
+		List<String> customizerInvocations() {
+			return new CopyOnWriteArrayList<>();
+		}
+
+		// Declared before "first" so that only @Order can make it run last.
+		@Bean
+		@Order(2)
+		McpServerCustomizer<WebFluxSseServerTransportProvider.Builder> secondCustomizer(
+				List<String> customizerInvocations) {
+			return builder -> customizerInvocations.add("second");
+		}
+
+		@Bean
+		@Order(1)
+		McpServerCustomizer<WebFluxSseServerTransportProvider.Builder> firstCustomizer(
+				List<String> customizerInvocations) {
+			return builder -> customizerInvocations.add("first");
+		}
+
 	}
 
 }

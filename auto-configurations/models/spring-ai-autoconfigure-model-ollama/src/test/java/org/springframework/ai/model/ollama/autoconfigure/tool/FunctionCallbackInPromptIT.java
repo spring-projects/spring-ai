@@ -53,8 +53,7 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 	// @formatter:off
 				"spring.ai.ollama.base-url=" + getBaseUrl(),
 				"spring.ai.ollama.chat.model=" + MODEL_NAME,
-				"spring.ai.ollama.chat.temperature=0.5",
-				"spring.ai.ollama.chat.top-k=10")
+				"spring.ai.ollama.chat.temperature=0.0")
 				// @formatter:on
 		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration.class));
 
@@ -119,9 +118,7 @@ class FunctionCallbackInPromptIT extends BaseOllamaIT {
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
 
-			assertThat(content).containsAnyOf("30.0", "30");
-			assertThat(content).containsAnyOf("10.0", "10");
-			assertThat(content).containsAnyOf("15.0", "15");
+			assertThat(content).contains("30", "10", "15");
 		});
 	}
 

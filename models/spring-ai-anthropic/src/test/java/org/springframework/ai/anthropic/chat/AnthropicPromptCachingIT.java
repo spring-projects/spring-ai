@@ -31,6 +31,7 @@ import org.springframework.ai.anthropic.AnthropicCacheStrategy;
 import org.springframework.ai.anthropic.AnthropicCacheTtl;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
+import org.springframework.ai.anthropic.AnthropicCitationDocument;
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -92,10 +93,9 @@ class AnthropicPromptCachingIT {
 		String systemPrompt = loadPrompt("system-only-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
 			.maxTokens(150)
-			.temperature(0.3)
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(
@@ -134,10 +134,9 @@ class AnthropicPromptCachingIT {
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS).build())
 			.maxTokens(200)
-			.temperature(0.3)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get current weather for a location")
 				.inputType(MockWeatherService.Request.class)
@@ -178,13 +177,12 @@ class AnthropicPromptCachingIT {
 		String systemPrompt = loadPrompt("system-only-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
 				.messageTypeMinContentLength(MessageType.USER, 0)
 				.build())
 			.maxTokens(200)
-			.temperature(0.3)
 			.build();
 
 		List<Message> conversationHistory = new ArrayList<>();
@@ -219,13 +217,12 @@ class AnthropicPromptCachingIT {
 		String systemPrompt = loadPrompt("system-only-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
 				.messageTypeMinContentLength(MessageType.SYSTEM, systemPrompt.length() + 1)
 				.build())
 			.maxTokens(60)
-			.temperature(0.2)
 			.build();
 
 		ChatResponse response = this.chatModel
@@ -244,13 +241,12 @@ class AnthropicPromptCachingIT {
 		String systemPrompt = loadPrompt("extended-ttl-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
 				.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
 				.build())
 			.maxTokens(100)
-			.temperature(0.3)
 			.build();
 
 		ChatResponse response = this.chatModel
@@ -273,7 +269,6 @@ class AnthropicPromptCachingIT {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.NONE).build())
 			.maxTokens(50)
-			.temperature(0.3)
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(
@@ -293,13 +288,12 @@ class AnthropicPromptCachingIT {
 		String largeSystemPrompt = loadPrompt("system-only-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
 				.messageTypeMinContentLength(MessageType.USER, 0)
 				.build())
 			.maxTokens(200)
-			.temperature(0.3)
 			.build();
 
 		List<Message> conversationHistory = new ArrayList<>();
@@ -377,7 +371,7 @@ class AnthropicPromptCachingIT {
 		String runMarker = "Session " + System.currentTimeMillis();
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
 				.cacheToolResults(true)
@@ -388,7 +382,6 @@ class AnthropicPromptCachingIT {
 				.inputType(MockWeatherService.Request.class)
 				.build())
 			.maxTokens(80)
-			.temperature(0.3)
 			.build();
 
 		List<Message> conversation = List.of(new SystemMessage("You are a weather assistant. " + runMarker),
@@ -435,13 +428,12 @@ class AnthropicPromptCachingIT {
 		String dynamicSystemPrompt = "Current user session ID: " + System.currentTimeMillis();
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
 				.multiBlockSystemCaching(true)
 				.build())
 			.maxTokens(150)
-			.temperature(0.3)
 			.build();
 
 		ChatResponse response = this.chatModel
@@ -458,6 +450,43 @@ class AnthropicPromptCachingIT {
 			.withFailMessage("Expected either cache creation or cache read tokens, but got creation=%d, read=%d",
 					cacheCreation, cacheRead)
 			.isTrue();
+	}
+
+	@Test
+	void shouldCachePdfCitationDocumentAcrossRequests() throws IOException {
+		// Batch Q&A over one PDF: every request is a fresh single-turn prompt, so the
+		// only breakpoint that can produce cache reads is the one on the document.
+		AnthropicCitationDocument document = AnthropicCitationDocument.builder()
+			.pdfFile("src/test/resources/spring-ai-reference-overview.pdf")
+			.title("Spring AI Reference")
+			.citationsEnabled(true)
+			.build();
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_5.asString())
+			.citationDocuments(document)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
+			.maxTokens(150)
+			.build();
+
+		ChatResponse first = this.chatModel
+			.call(new Prompt(List.of(new UserMessage("Based only on the document, what is Spring AI?")), options));
+		Usage firstUsage = getSdkUsage(first);
+		assertThat(firstUsage).isNotNull();
+		long firstCreation = firstUsage.cacheCreationInputTokens().orElse(0L);
+		long firstRead = firstUsage.cacheReadInputTokens().orElse(0L);
+		assertThat(firstCreation > 0 || firstRead > 0)
+			.withFailMessage("Expected the document to be written to or read from cache, but got creation=%d, read=%d",
+					firstCreation, firstRead)
+			.isTrue();
+
+		ChatResponse second = this.chatModel.call(new Prompt(
+				List.of(new UserMessage("Based only on the document, which models does it support?")), options));
+		Usage secondUsage = getSdkUsage(second);
+		assertThat(secondUsage).isNotNull();
+		assertThat(secondUsage.cacheReadInputTokens().orElse(0L))
+			.as("Second request should read the document from cache")
+			.isGreaterThan(0);
 	}
 
 }

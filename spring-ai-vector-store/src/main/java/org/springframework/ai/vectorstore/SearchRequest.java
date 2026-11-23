@@ -237,6 +237,9 @@ public class SearchRequest {
 		 * var parser = new FilterExpressionTextParser();
 		 * var exp = parser.parse("country == 'UK' && isActive == true && year >=2020");
 		 * }</pre>
+		 *
+		 * A parser instance caches what it parses without bound, so see
+		 * {@link FilterExpressionTextParser} before keeping one around.
 		 * @param expression {@link Filter.Expression} instance used to define the
 		 * metadata filter criteria. The 'null' value stands for no expression filters.
 		 * @return this builder.

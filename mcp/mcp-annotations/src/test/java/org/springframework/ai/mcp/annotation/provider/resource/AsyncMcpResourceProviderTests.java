@@ -78,7 +78,7 @@ public class AsyncMcpResourceProviderTests {
 
 		// Test that the handler works
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("test://resource/123");
+		ReadResourceRequest request = ReadResourceRequest.builder("test://resource/123").build();
 		Mono<ReadResourceResult> result = resourceSpec.readHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {
@@ -294,7 +294,7 @@ public class AsyncMcpResourceProviderTests {
 
 		// Test that the handler works with URI variables
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("variable://resource/123/document");
+		ReadResourceRequest request = ReadResourceRequest.builder("variable://resource/123/document").build();
 		Mono<ReadResourceResult> result = resourceTemplateSpecs.get(0).readHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {
@@ -350,7 +350,7 @@ public class AsyncMcpResourceProviderTests {
 
 		// Test that the handler works with private methods
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("private://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("private://resource").build();
 		Mono<ReadResourceResult> result = resourceSpecs.get(0).readHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {
@@ -382,7 +382,7 @@ public class AsyncMcpResourceProviderTests {
 
 		// Test that the handler works with list return type
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("list://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("list://resource").build();
 		Mono<ReadResourceResult> result = resourceSpecs.get(0).readHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {
@@ -417,7 +417,7 @@ public class AsyncMcpResourceProviderTests {
 
 		// Test that the handler works with exchange parameter
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("exchange://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("exchange://resource").build();
 		Mono<ReadResourceResult> result = resourceSpecs.get(0).readHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {
@@ -451,7 +451,7 @@ public class AsyncMcpResourceProviderTests {
 
 		// Test that the handler works with request parameter
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("request://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("request://resource").build();
 		Mono<ReadResourceResult> result = resourceSpecs.get(0).readHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {
@@ -484,7 +484,7 @@ public class AsyncMcpResourceProviderTests {
 
 		// Test that the handler works with sync method returning Mono
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("sync-mono://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("sync-mono://resource").build();
 		Mono<ReadResourceResult> result = resourceSpecs.get(0).readHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(readResult -> {
