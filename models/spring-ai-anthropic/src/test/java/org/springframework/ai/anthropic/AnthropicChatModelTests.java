@@ -66,6 +66,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -75,6 +77,8 @@ import org.reactivestreams.Subscription;
 import reactor.core.Disposable;
 import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.SignalType;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -416,6 +420,94 @@ class AnthropicChatModelTests {
 		assertThat(replayedAssistantBlocks.get(1).isToolUse()).isTrue();
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "thinking text", "" })
+	void thinkingBlocksAreReplayedAfterMetadataJsonRoundTrip(String thinking) {
+		String signature = "signature+/=\nopaque";
+		String redactedData = "redacted+/=\nopaque";
+		Message thinkingResponse = createMockMessageWithThinkingAndToolUse(thinking, signature, "toolu_123",
+				"getCurrentWeather", JsonValue.from(Map.of("location", "Paris")));
+		Message redactedResponse = createMockMessageWithRedactedThinkingAndToolUse(redactedData, "toolu_123",
+				"getCurrentWeather", JsonValue.from(Map.of("location", "Paris")));
+		Message response = createMockMessage(List.of(thinkingResponse.content().get(0),
+				redactedResponse.content().get(0), thinkingResponse.content().get(1)), StopReason.TOOL_USE, 15L, 25L);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(response);
+
+		AssistantMessage output = this.chatModel.call(new Prompt("What's the weather?")).getResult().getOutput();
+		AssistantMessage restored = restoreAssistantMetadata(output);
+		List<ContentBlockParam> blocks = replayedAssistantBlocks(restored);
+
+		assertThat(blocks).hasSize(3);
+		assertThat(blocks.get(0).asThinking().thinking()).isEqualTo(thinking);
+		assertThat(blocks.get(0).asThinking().signature()).isEqualTo(signature);
+		assertThat(blocks.get(1).asRedactedThinking().data()).isEqualTo(redactedData);
+		assertThat(blocks.get(2).asToolUse().id()).isEqualTo("toolu_123");
+		assertThat(blocks.get(2).asToolUse().name()).isEqualTo("getCurrentWeather");
+	}
+
+	@Test
+	void mixedTypedAndMapThinkingBlocksKeepTheirOrder() {
+		AssistantMessage message = assistantWithThinkingContents(List.of(
+				AnthropicChatModel.AnthropicThinkingContent.thinking("first", "first-signature"),
+				Map.of("redactedData", "redacted-data"), Map.of("thinking", "", "signature", "last-signature")));
+
+		List<ContentBlockParam> blocks = replayedAssistantBlocks(message);
+
+		assertThat(blocks).hasSize(4);
+		assertThat(blocks.get(0).asThinking().signature()).isEqualTo("first-signature");
+		assertThat(blocks.get(1).asRedactedThinking().data()).isEqualTo("redacted-data");
+		assertThat(blocks.get(2).asThinking().thinking()).isEmpty();
+		assertThat(blocks.get(2).asThinking().signature()).isEqualTo("last-signature");
+		assertThat(blocks.get(3).isToolUse()).isTrue();
+	}
+
+	@ParameterizedTest
+	@MethodSource("invalidThinkingContents")
+	void invalidThinkingMetadataDoesNotReplayPartialBlocks(Object invalidContent) {
+		AssistantMessage message = assistantWithThinkingContents(List
+			.of(AnthropicChatModel.AnthropicThinkingContent.thinking("valid", "valid-signature"), invalidContent));
+
+		List<ContentBlockParam> blocks = replayedAssistantBlocks(message);
+
+		assertThat(blocks).singleElement().satisfies(block -> assertThat(block.isToolUse()).isTrue());
+	}
+
+	private static Stream<Object> invalidThinkingContents() {
+		return Stream.of(Map.of(), Map.of("thinking", "missing signature"), Map.of("signature", "missing thinking"),
+				Map.of("thinking", 42, "signature", "signature"), Map.of("thinking", "text", "signature", 42),
+				Map.of("redactedData", 42),
+				Map.of("thinking", "text", "signature", "signature", "redactedData", "ambiguous"), "not a block");
+	}
+
+	private static AssistantMessage assistantWithThinkingContents(List<?> contents) {
+		return AssistantMessage.builder()
+			.content("")
+			.toolCalls(List.of(new AssistantMessage.ToolCall("toolu_123", "function", "getCurrentWeather", "{}")))
+			.properties(Map.of(AnthropicChatModel.ANTHROPIC_THINKING_CONTENTS_PROPERTY, contents))
+			.build();
+	}
+
+	private static AssistantMessage restoreAssistantMetadata(AssistantMessage message) {
+		JsonMapper mapper = JsonMapper.builder().build();
+		Map<String, Object> metadata = mapper.readValue(mapper.writeValueAsString(message.getMetadata()),
+				new TypeReference<Map<String, Object>>() {
+				});
+		return AssistantMessage.builder()
+			.content(message.getText())
+			.toolCalls(message.getToolCalls())
+			.properties(metadata)
+			.build();
+	}
+
+	private List<ContentBlockParam> replayedAssistantBlocks(AssistantMessage message) {
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("toolu_123", "getCurrentWeather", "sunny")))
+			.build();
+		Prompt prompt = new Prompt(List.of(new UserMessage("What's the weather?"), message, toolResponse),
+				this.chatModel.getOptions());
+		return assistantBlockParams(this.chatModel.createRequest(prompt, false));
+	}
+
 	@Test
 	void thinkingResponseReturnsFinalAssistantGenerationAsPrimary() {
 		Message mockResponse = createMockMessageWithThinkingAndText("thinking text", "thinking-signature",
@@ -437,9 +529,10 @@ class AnthropicChatModelTests {
 		assertThat(thinkingGeneration.getOutput().getMetadata()).containsEntry("signature", "thinking-signature");
 	}
 
-	@Test
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
 	@SuppressWarnings("unchecked")
-	void streamingThinkingBlockIsReplayedBeforeToolUseBlock() {
+	void streamingThinkingBlockIsReplayedBeforeToolUseBlock(boolean restoreFromJson) {
 		List<RawMessageStreamEvent> events = List.of(messageStartEvent(), thinkingStartEvent(),
 				thinkingDeltaEvent("thinking "), thinkingDeltaEvent("text"), signatureDeltaEvent("thinking-signature"),
 				contentBlockStopEvent(0), toolUseStartEvent("toolu_123", "getCurrentWeather"),
@@ -468,7 +561,11 @@ class AnthropicChatModelTests {
 		ToolExecutionResult toolExecutionResult = ToolCallingManager.builder()
 			.build()
 			.executeToolCalls(prompt, aggregatedResponse.get());
-		this.chatModel.call(new Prompt(toolExecutionResult.conversationHistory(), options));
+		this.chatModel.call(new Prompt(toolExecutionResult.conversationHistory()
+			.stream()
+			.map(message -> restoreFromJson && message instanceof AssistantMessage assistant
+					? restoreAssistantMetadata(assistant) : message)
+			.toList(), options));
 
 		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
 		verify(this.messageService).create(captor.capture());
