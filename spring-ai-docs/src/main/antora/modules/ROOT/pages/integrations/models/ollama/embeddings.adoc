@@ -100,7 +100,7 @@ This change is done to allow configuration of multiple models.
 ====
 
 The prefix `spring.ai.ollama.embedding` is the property prefix that configures the Ollama embedding model.
-It includes the Ollama request (advanced) parameters such as the `model`, `keep-alive`, and `truncate` as well as the Ollama model properties.
+It includes the Ollama request (advanced) parameters such as the `model`, `keep-alive`, `truncate`, and `dimensions` as well as the Ollama model properties.
 
 Here are the advanced request parameter for the Ollama embedding model:
 
@@ -112,6 +112,7 @@ Here are the advanced request parameter for the Ollama embedding model:
 You can use dedicated https://ollama.com/search?c=embedding[Embedding Model] types | mxbai-embed-large
 | spring.ai.ollama.embedding.keep-alive  | Controls how long the model will stay loaded into memory following the request | 5m
 | spring.ai.ollama.embedding.truncate  | Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.  | true
+| spring.ai.ollama.embedding.dimensions  | The number of dimensions the resulting output embeddings should have. Only supported by models that allow configurable output dimensions. | -
 |====
 
 
