@@ -18,8 +18,42 @@ package org.springframework.ai.vectorstore.weaviate.autoconfigure;
 
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
+/**
+ * Connection details for a Weaviate instance.
+ *
+ * <p>
+ * The Weaviate {@code client6} driver connects over both HTTP (REST) and gRPC, so this
+ * SPI now exposes a gRPC endpoint in addition to the HTTP one. {@link #getGrpcHost()} has
+ * a default implementation deriving the gRPC endpoint from {@link #getHost()} using the
+ * standard gRPC port {@code 50051}; implementations that map gRPC to a different host or
+ * port (for example randomly mapped container ports) should override it.
+ */
 public interface WeaviateConnectionDetails extends ConnectionDetails {
 
+	/**
+	 * The default Weaviate gRPC port.
+	 */
+	int DEFAULT_GRPC_PORT = 50051;
+
+	/**
+	 * The HTTP (REST) endpoint, in {@code host:port} form (for example
+	 * {@code localhost:8080}).
+	 * @return the HTTP endpoint
+	 */
 	String getHost();
+
+	/**
+	 * The gRPC endpoint, in {@code host:port} form (for example {@code localhost:50051}).
+	 * The default implementation reuses the host of {@link #getHost()} with the standard
+	 * gRPC port {@value #DEFAULT_GRPC_PORT}.
+	 * @return the gRPC endpoint
+	 * @since 2.1.0
+	 */
+	default String getGrpcHost() {
+		String http = getHost();
+		int separator = (http != null) ? http.lastIndexOf(':') : -1;
+		String host = (separator > -1) ? http.substring(0, separator) : http;
+		return host + ":" + DEFAULT_GRPC_PORT;
+	}
 
 }

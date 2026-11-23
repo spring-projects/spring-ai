@@ -38,6 +38,16 @@ public class WeaviateVectorStoreProperties {
 
 	private String host = "localhost:8080";
 
+	/**
+	 * gRPC host. When left empty it defaults to the host part of the HTTP host.
+	 */
+	private String grpcHost = "";
+
+	/**
+	 * gRPC port. Defaults to the standard Weaviate gRPC port 50051.
+	 */
+	private int grpcPort = WeaviateConnectionDetails.DEFAULT_GRPC_PORT;
+
 	private String apiKey = "";
 
 	private String objectClass = "SpringAiWeaviate";
@@ -69,6 +79,34 @@ public class WeaviateVectorStoreProperties {
 
 	public void setHost(String host) {
 		this.host = host;
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public String getGrpcHost() {
+		return this.grpcHost;
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public void setGrpcHost(String grpcHost) {
+		this.grpcHost = grpcHost;
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public int getGrpcPort() {
+		return this.grpcPort;
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public void setGrpcPort(int grpcPort) {
+		this.grpcPort = grpcPort;
 	}
 
 	public String getApiKey() {

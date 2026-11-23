@@ -24,7 +24,7 @@ import java.util.Map;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
-import io.weaviate.client.WeaviateClient;
+import io.weaviate.client6.v1.api.WeaviateClient;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
@@ -59,6 +59,7 @@ public class WeaviateVectorStoreObservationIT {
 
 	@Container
 	static WeaviateContainer weaviateContainer = new WeaviateContainer(WeaviateImage.DEFAULT_IMAGE)
+		.withExposedPorts(8080, 50051)
 		.waitingFor(Wait.forHttp("/v1/.well-known/ready").forPort(8080));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
@@ -161,11 +162,14 @@ public class WeaviateVectorStoreObservationIT {
 			return TestObservationRegistry.create();
 		}
 
-		@Bean
-		public WeaviateVectorStore vectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry) {
-			WeaviateClient weaviateClient = new WeaviateClient(
-					new io.weaviate.client.Config("http", weaviateContainer.getHttpHostAddress()));
+		@Bean(destroyMethod = "close")
+		public WeaviateClient weaviateClient() {
+			return WeaviateVectorStoreIT.clientFor(weaviateContainer);
+		}
 
+		@Bean
+		public WeaviateVectorStore vectorStore(EmbeddingModel embeddingModel, WeaviateClient weaviateClient,
+				ObservationRegistry observationRegistry) {
 			return WeaviateVectorStore.builder(weaviateClient, embeddingModel)
 				.consistencyLevel(WeaviateVectorStore.ConsistentLevel.ONE)
 				.observationRegistry(observationRegistry)

@@ -14,6 +14,19 @@ The following options are available:
 ** link:https://weaviate.io/developers/weaviate/installation/docker[Docker container]
 * If required, an API key for the xref:models/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `WeaviateVectorStore`.
 
+[NOTE]
+====
+The Weaviate Vector Store is built on the Weaviate Java `client6` API and uses gRPC for similarity search, writes, and deletes.
+This means:
+
+* The Weaviate server must expose its gRPC endpoint (port `50051` by default) in addition to the HTTP endpoint (port `8080` by default).
+* GraphQL does not need to be enabled on the cluster.
+* A recent Weaviate server version that supports the gRPC API is required (for example `1.31.22`, used in the examples below).
+
+Applications that previously constructed a v5 `io.weaviate.client.WeaviateClient` must migrate to the `client6` `io.weaviate.client6.v1.api.WeaviateClient`.
+See <<Migrating from the Weaviate v5 client>> below.
+====
+
 == Dependencies
 
 Add the Weaviate Vector Store dependency to your project:
@@ -47,9 +60,16 @@ Configuration can be provided via Spring Boot's _application.properties_:
 spring.ai.vectorstore.weaviate.host=<host_of_your_weaviate_instance>
 spring.ai.vectorstore.weaviate.scheme=<http_or_https>
 spring.ai.vectorstore.weaviate.api-key=<your_api_key>
+# Optional gRPC coordinates. grpc-host defaults to the host above, grpc-port defaults to 50051.
+spring.ai.vectorstore.weaviate.grpc-host=<grpc_host_of_your_weaviate_instance>
+spring.ai.vectorstore.weaviate.grpc-port=50051
 # API key if needed, e.g. OpenAI
 spring.ai.openai.api-key=<api-key>
 ----
+
+NOTE: The `client6` driver connects over both HTTP and gRPC.
+When your Weaviate server exposes gRPC on a non-default host or port (for example behind a proxy or on a mapped container port), set `grpc-host` and `grpc-port` accordingly.
+For Weaviate Cloud, the gRPC endpoint is served over TLS on the same domain; set `scheme=https`.
 
 If you prefer to use environment variables for sensitive information like API keys, you have multiple options:
 
@@ -143,11 +163,22 @@ Now you can auto-wire the `WeaviateVectorStore` as a vector store in your applic
 
 Instead of using Spring Boot auto-configuration, you can manually configure the `WeaviateVectorStore` using the builder pattern:
 
+The `WeaviateClient` is the `client6` type `io.weaviate.client6.v1.api.WeaviateClient`.
+
 [source,java]
 ----
 @Bean
 public WeaviateClient weaviateClient() {
-    return new WeaviateClient(new Config("http", "localhost:8080"));
+    // Local instance with default ports (HTTP 8080, gRPC 50051):
+    return WeaviateClient.connectToLocal();
+
+    // Or, for a custom endpoint:
+    // return WeaviateClient.connectToCustom(custom -> custom.scheme("http")
+    //     .httpHost("localhost").httpPort(8080)
+    //     .grpcHost("localhost").grpcPort(50051));
+
+    // Or, for Weaviate Cloud:
+    // return WeaviateClient.connectToWeaviateCloud("my-cluster.weaviate.cloud", "<api-key>");
 }
 
 @Bean
@@ -161,6 +192,9 @@ public VectorStore vectorStore(WeaviateClient weaviateClient, EmbeddingModel emb
         .build();
 }
 ----
+
+NOTE: The `client6` `WeaviateClient` is `AutoCloseable` and connects eagerly when constructed, so the Weaviate server must be reachable at bean-creation time.
+When you create the client yourself, let Spring manage its lifecycle (for example `@Bean(destroyMethod = "close")`).
 
 == Metadata filtering
 
@@ -193,41 +227,10 @@ vectorStore.similaritySearch(SearchRequest.builder()
         b.gte("year", 2020)).build()).build());
 ----
 
-NOTE: Those (portable) filter expressions get automatically converted into the proprietary Weaviate link:https://weaviate.io/developers/weaviate/api/graphql/filters[where filters].
+NOTE: Those (portable) filter expressions are automatically converted into native Weaviate `client6` `Filter` objects and applied over gRPC.
+No GraphQL filter strings are produced.
 
-For example, this portable filter expression:
-
-[source,sql]
-----
-country in ['UK', 'NL'] && year >= 2020
-----
-
-is converted into the proprietary Weaviate GraphQL filter format:
-
-[source,graphql]
-----
-operator: And
-operands:
-    [{
-        operator: Or
-        operands:
-            [{
-                path: ["meta_country"]
-                operator: Equal
-                valueText: "UK"
-            },
-            {
-                path: ["meta_country"]
-                operator: Equal
-                valueText: "NL"
-            }]
-    },
-    {
-        path: ["meta_year"]
-        operator: GreaterThanEqual
-        valueNumber: 2020
-    }]
-----
+For example, the portable filter expression `country in ['UK', 'NL'] && year >= 2020` is converted into the structured filter `(meta_country == "UK" OR meta_country == "NL") AND meta_year >= 2020`, where the filterable metadata fields are prefixed (by default with `meta_`).
 
 == Run Weaviate in Docker
 
@@ -242,10 +245,12 @@ docker run -it --rm --name weaviate \
     -e DEFAULT_VECTORIZER_MODULE=none \
     -e CLUSTER_HOSTNAME=node1 \
     -p 8080:8080 \
+    -p 50051:50051 \
     semitechnologies/weaviate:1.31.22
 ----
 
-This starts a Weaviate instance accessible at http://localhost:8080.
+This starts a Weaviate instance with the HTTP endpoint accessible at http://localhost:8080 and the gRPC endpoint at `localhost:50051`.
+The gRPC port must be published because the store performs all queries, writes, and deletes over gRPC.
 
 == WeaviateVectorStore properties
 
@@ -255,8 +260,10 @@ You can use the following properties in your Spring Boot configuration to custom
 |===
 |Property|Description|Default value
 
-|`spring.ai.vectorstore.weaviate.host`|The host of the Weaviate server|localhost:8080
-|`spring.ai.vectorstore.weaviate.scheme`|Connection schema|http
+|`spring.ai.vectorstore.weaviate.host`|The HTTP host of the Weaviate server, in `host:port` form|localhost:8080
+|`spring.ai.vectorstore.weaviate.scheme`|Connection schema (`http` or `https`); `https` enables TLS|http
+|`spring.ai.vectorstore.weaviate.grpc-host`|The gRPC host. When empty, defaults to the host part of `host`|
+|`spring.ai.vectorstore.weaviate.grpc-port`|The gRPC port|50051
 |`spring.ai.vectorstore.weaviate.api-key`|The API key for authentication|
 |`spring.ai.vectorstore.weaviate.object-class`|The class name for storing documents. |SpringAiWeaviate
 |`spring.ai.vectorstore.weaviate.content-field-name`|The field name for content|content
@@ -268,12 +275,49 @@ You can use the following properties in your Spring Boot configuration to custom
 TIP: Object class names should start with an uppercase letter, and field names should start with a lowercase letter.
 See link:https://weaviate.io/developers/weaviate/concepts/data#data-object-concepts[data-object-concepts]
 
+== Collection and schema
+
+On first use, the store ensures its collection (`object-class`) exists.
+If the collection is missing, it is created with a self-provided (vectorizer: `none`, bring-your-own-vector) index configured for *cosine* distance, a text content property, a text `metadata` property, and one property per configured filterable metadata field.
+An existing collection is reused as-is and is never reconfigured.
+
+== Scoring and distance
+
+Document scores are based on Weaviate's `certainty`, which is only meaningful for the *cosine* distance metric.
+The store preserves `Document.score = certainty` and `DocumentMetadata.DISTANCE = 1 - certainty`.
+
+IMPORTANT: Because `certainty` requires cosine distance, the store creates its collection with cosine distance.
+If you point the store at a pre-existing collection that uses a different distance metric, `certainty` is not returned and similarity search fails fast with a clear error rather than returning silently incorrect scores.
+
+== Consistency level
+
+The `consistency-level` property (and the `consistencyLevel(...)` builder method) accepts `ONE`, `QUORUM`, or `ALL`, defaulting to `ONE`.
+
+WARNING: Due to link:https://github.com/weaviate/java-client/issues/641[weaviate/java-client#641], the `client6` `6.3.0` driver currently maps both `QUORUM` and `ALL` to `ONE`.
+When `QUORUM` or `ALL` is configured, the store logs a one-time warning.
+This limitation will be removed once the project upgrades to a `client6` release that fixes the issue.
+
+== Migrating from the Weaviate v5 client
+
+Earlier versions of this store used the Weaviate Java v5 client and the GraphQL query API.
+The store now uses the `client6` gRPC API. When upgrading:
+
+* Replace the dependency `io.weaviate:client` with `io.weaviate:client6` (managed by the Spring AI BOM).
+* Replace client construction `new io.weaviate.client.WeaviateClient(new Config(...))` with the `client6` `io.weaviate.client6.v1.api.WeaviateClient` (for example `WeaviateClient.connectToCustom(...)` or `WeaviateClient.connectToWeaviateCloud(...)`).
+* Ensure the Weaviate server's gRPC endpoint (port `50051`) is reachable; GraphQL no longer needs to be enabled.
+* `getNativeClient()` now returns `io.weaviate.client6.v1.api.WeaviateClient` (note the different package; both clients share the simple name `WeaviateClient`).
+* The `WeaviateConnectionDetails` SPI now also exposes a gRPC endpoint via `getGrpcHost()` (a default method deriving `host:50051` from `getHost()`); custom implementations should override it when gRPC uses a different host or port.
+* The `WeaviateFilterExpressionConverter` is now package-internal and produces `client6` `Filter` objects instead of GraphQL filter strings.
+
 == Accessing the Native Client
 
-The Weaviate Vector Store implementation provides access to the underlying native Weaviate client (`WeaviateClient`) through the `getNativeClient()` method:
+The Weaviate Vector Store implementation provides access to the underlying native Weaviate client through the `getNativeClient()` method.
+After the migration, this is the `client6` client `io.weaviate.client6.v1.api.WeaviateClient`:
 
 [source,java]
 ----
+import io.weaviate.client6.v1.api.WeaviateClient;
+
 WeaviateVectorStore vectorStore = context.getBean(WeaviateVectorStore.class);
 Optional<WeaviateClient> nativeClient = vectorStore.getNativeClient();
 

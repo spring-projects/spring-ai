@@ -49,6 +49,11 @@ class WeaviateContainerConnectionDetailsFactory
 			return getContainer().getHttpHostAddress();
 		}
 
+		@Override
+		public String getGrpcHost() {
+			return getContainer().getGrpcHostAddress();
+		}
+
 	}
 
 }

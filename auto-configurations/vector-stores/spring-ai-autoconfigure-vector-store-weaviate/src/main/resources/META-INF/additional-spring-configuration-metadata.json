@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "spring.ai.vectorstore.weaviate.grpc-port",
+      "type": "java.lang.Integer",
+      "description": "gRPC port. Defaults to the standard Weaviate gRPC port 50051.",
+      "defaultValue": 50051
+    }
+  ]
+}

@@ -16,122 +16,207 @@
 
 package org.springframework.ai.vectorstore.weaviate;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.lang3.time.DateFormatUtils;
+import io.weaviate.client6.v1.api.collections.query.Filter;
+import io.weaviate.client6.v1.api.collections.query.Filter.FilterBuilder;
+import io.weaviate.client6.v1.api.collections.query.FilterOperand;
 
-import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
-import org.springframework.ai.vectorstore.filter.FilterHelper;
-import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.Filter.Operand;
+import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.util.Assert;
 
 /**
- * Converts {@link Expression} into Weaviate metadata filter expression format.
- * (https://weaviate.io/developers/weaviate/api/graphql/filters)
+ * Converts a Spring AI {@link Expression} into a native Weaviate {@code client6}
+ * {@link Filter} object.
+ *
+ * <p>
+ * Unlike the previous GraphQL-based implementation, this converter produces structured
+ * {@link Filter} objects consumed directly by the client6 gRPC query and delete APIs;
+ * there is no GraphQL filter string surface. Because the resulting {@link Filter} is a
+ * third-party type, this converter is intentionally package-internal.
  *
  * @author Christian Tzolov
  * @author Jonghoon Park
  */
-public class WeaviateFilterExpressionConverter extends AbstractFilterExpressionConverter {
+class WeaviateFilterExpressionConverter {
 
 	// https://weaviate.io/developers/weaviate/api/graphql/filters#special-cases
-	private static final List<String> SYSTEM_IDENTIFIERS = List.of("id", "_creationTimeUnix", "_lastUpdateTimeUnix");
+	// The document id maps to Weaviate's system uuid field. The GraphQL
+	// `_creationTimeUnix` / `_lastUpdateTimeUnix` special identifiers only ever existed
+	// to support the removed `id != -1` group placeholder and are no longer accepted.
+	private static final String SYSTEM_ID = "id";
+
+	private static final List<String> SYSTEM_IDENTIFIERS = List.of(SYSTEM_ID);
 
 	private static final String DEFAULT_META_FIELD_PREFIX = "meta_";
 
-	private boolean mapIntegerToNumberValue = true;
-
-	private List<String> allowedIdentifierNames;
+	private final List<String> allowedIdentifierNames;
 
 	private final String metaFieldPrefix;
 
-	/**
-	 * Constructs a new instance of the {@code WeaviateFilterExpressionConverter} class.
-	 * This constructor uses the default meta field prefix
-	 * ({@link #DEFAULT_META_FIELD_PREFIX}).
-	 * @param allowedIdentifierNames A {@code List} of allowed identifier names.
-	 */
-	public WeaviateFilterExpressionConverter(List<String> allowedIdentifierNames) {
+	WeaviateFilterExpressionConverter(List<String> allowedIdentifierNames) {
 		this(allowedIdentifierNames, DEFAULT_META_FIELD_PREFIX);
 	}
 
-	/**
-	 * Constructs a new instance of the {@code WeaviateFilterExpressionConverter} class.
-	 * @param allowedIdentifierNames A {@code List} of allowed identifier names.
-	 * @param metaFieldPrefix the prefix for meta fields
-	 * @since 1.1.0
-	 */
-	public WeaviateFilterExpressionConverter(List<String> allowedIdentifierNames, String metaFieldPrefix) {
+	WeaviateFilterExpressionConverter(List<String> allowedIdentifierNames, String metaFieldPrefix) {
 		Assert.notNull(allowedIdentifierNames, "List can be empty but not null.");
 		Assert.notNull(metaFieldPrefix, "metaFieldPrefix can be empty but not null.");
 		this.allowedIdentifierNames = allowedIdentifierNames;
 		this.metaFieldPrefix = metaFieldPrefix;
 	}
 
-	public void setAllowedIdentifierNames(List<String> allowedIdentifierNames) {
-		this.allowedIdentifierNames = allowedIdentifierNames;
+	/**
+	 * Converts the given Spring AI filter expression into a native Weaviate
+	 * {@link Filter}.
+	 * @param expression the Spring AI filter expression, must not be {@code null}
+	 * @return the equivalent client6 {@link Filter}
+	 */
+	Filter convert(Expression expression) {
+		Assert.notNull(expression, "Filter expression must not be null");
+		return convertExpression(expression);
 	}
 
-	public void setMapIntegerToNumberValue(boolean mapIntegerToNumberValue) {
-		this.mapIntegerToNumberValue = mapIntegerToNumberValue;
-	}
-
-	@Override
-	protected void doExpression(Expression exp, StringBuilder context) {
-		Assert.state(exp.right() != null, "expected an expression with a right operand");
-		if (exp.type() == ExpressionType.IN) {
-			FilterHelper.expandIn(exp, context, this);
-		}
-		else if (exp.type() == ExpressionType.NIN) {
-			FilterHelper.expandNin(exp, context, this);
-		}
-		else if (exp.type() == ExpressionType.AND || exp.type() == ExpressionType.OR) {
-			context.append(getOperationSymbol(exp));
-			context.append("operands:[{");
-			this.convertOperand(exp.left(), context);
-			context.append("},\n{");
-			this.convertOperand(exp.right(), context);
-			context.append("}]");
-		}
-		else {
-			this.convertOperand(exp.left(), context);
-			context.append(getOperationSymbol(exp));
-			this.convertOperand(exp.right(), context);
-		}
-	}
-
-	private String getOperationSymbol(Expression exp) {
+	private Filter convertExpression(Expression exp) {
 		return switch (exp.type()) {
-			case AND -> "operator:And \n";
-			case OR -> "operator:Or \n";
-			case EQ -> "operator:Equal \n";
-			case NE -> "operator:NotEqual \n";
-			case LT -> "operator:LessThan \n";
-			case LTE -> "operator:LessThanEqual \n";
-			case GT -> "operator:GreaterThan \n";
-			case GTE -> "operator:GreaterThanEqual \n";
-			case IN -> throw new IllegalStateException(
-					"The 'IN' operator should have been transformed into chain of OR/EQ expressions.");
-			case NIN -> throw new IllegalStateException(
-					"The 'NIN' operator should have been transformed into chain of AND/NEQ expressions.");
-			default -> throw new UnsupportedOperationException("Not supported expression type:" + exp.type());
+			case AND -> convertBoolean(exp, true);
+			case OR -> convertBoolean(exp, false);
+			case EQ, NE, LT, LTE, GT, GTE -> convertComparison(exp);
+			case IN -> convertIn(exp);
+			case NIN -> convertNin(exp);
+			default -> throw new UnsupportedOperationException("Not supported expression type: " + exp.type());
 		};
 	}
 
-	@Override
-	protected void doKey(Key key, StringBuilder context) {
-		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
-		context.append("path:[");
-		emitJsonValue(withMetaPrefix(identifier), context);
-		context.append("] \n");
+	private Filter convertBoolean(Expression exp, boolean and) {
+		Operand right = exp.right();
+		Assert.state(right != null, "AND/OR expression must have a right operand");
+		Filter left = convertOperand(exp.left());
+		Filter rightFilter = convertOperand(right);
+		return and ? Filter.and(left, rightFilter) : Filter.or(left, rightFilter);
 	}
 
-	public String withMetaPrefix(String identifier) {
+	private Filter convertOperand(Operand operand) {
+		if (operand instanceof Group group) {
+			// A group is simply its nested expression; the GraphQL `id != -1` placeholder
+			// hack is no longer needed with the structured Filter API.
+			return convertExpression(group.content());
+		}
+		if (operand instanceof Expression expression) {
+			return convertExpression(expression);
+		}
+		throw new IllegalArgumentException("Unsupported operand in boolean expression: " + operand);
+	}
+
+	private Filter convertComparison(Expression exp) {
+		Assert.isInstanceOf(Key.class, exp.left(), "Comparison expression must have a Key as its left operand");
+		Assert.isInstanceOf(Value.class, exp.right(), "Comparison expression must have a Value as its right operand");
+
+		String identifier = identifierOf((Key) exp.left());
+		Object value = ((Value) exp.right()).value();
+
+		if (SYSTEM_ID.equals(identifier)) {
+			return systemIdComparison(exp.type(), value);
+		}
+		return propertyComparison(withMetaPrefix(identifier), exp.type(), value);
+	}
+
+	private Filter propertyComparison(String path, ExpressionType type, Object value) {
+		FilterBuilder property = Filter.property(path);
+		if (value instanceof String string) {
+			return switch (type) {
+				case EQ -> property.eq(string);
+				case NE -> property.ne(string);
+				case LT -> property.lt(string);
+				case LTE -> property.lte(string);
+				case GT -> property.gt(string);
+				case GTE -> property.gte(string);
+				default -> throw unsupported(type, value);
+			};
+		}
+		if (value instanceof Boolean bool) {
+			return switch (type) {
+				case EQ -> property.eq(bool.booleanValue());
+				case NE -> property.ne(bool.booleanValue());
+				default -> throw unsupported(type, value);
+			};
+		}
+		if (value instanceof Number number) {
+			// Filterable numeric metadata fields are created as Weaviate `number`
+			// (float64) properties, mirroring the legacy `valueNumber` behavior.
+			double d = number.doubleValue();
+			return switch (type) {
+				case EQ -> property.eq(d);
+				case NE -> property.ne(d);
+				case LT -> property.lt(d);
+				case LTE -> property.lte(d);
+				case GT -> property.gt(d);
+				case GTE -> property.gte(d);
+				default -> throw unsupported(type, value);
+			};
+		}
+		if (value instanceof Date || value instanceof OffsetDateTime) {
+			OffsetDateTime dateTime = toOffsetDateTime(value);
+			return switch (type) {
+				case EQ -> property.eq(dateTime);
+				case NE -> property.ne(dateTime);
+				case LT -> property.lt(dateTime);
+				case LTE -> property.lte(dateTime);
+				case GT -> property.gt(dateTime);
+				case GTE -> property.gte(dateTime);
+				default -> throw unsupported(type, value);
+			};
+		}
+		throw new RuntimeException("Unsupported value type: " + (value == null ? "null" : value.getClass()));
+	}
+
+	private Filter systemIdComparison(ExpressionType type, Object value) {
+		String id = String.valueOf(value);
+		return switch (type) {
+			case EQ -> Filter.uuid().eq(id);
+			case NE -> Filter.uuid().ne(id);
+			default -> throw unsupported(type, value);
+		};
+	}
+
+	private Filter convertIn(Expression exp) {
+		return Filter.or(expandLeaves(exp, ExpressionType.EQ).toArray(new FilterOperand[0]));
+	}
+
+	private Filter convertNin(Expression exp) {
+		return Filter.and(expandLeaves(exp, ExpressionType.NE).toArray(new FilterOperand[0]));
+	}
+
+	private List<Filter> expandLeaves(Expression exp, ExpressionType leafType) {
+		Assert.isInstanceOf(Key.class, exp.left(), "IN/NIN expression must have a Key as its left operand");
+		Assert.isInstanceOf(Value.class, exp.right(), "IN/NIN expression must have a Value as its right operand");
+
+		String identifier = identifierOf((Key) exp.left());
+		Object value = ((Value) exp.right()).value();
+
+		List<?> values = (value instanceof List<?> list) ? list : List.of(value);
+		Assert.notEmpty(values, "IN/NIN expression must have at least one value");
+
+		List<Filter> leaves = new ArrayList<>(values.size());
+		for (Object element : values) {
+			leaves.add(convertComparison(new Expression(leafType, new Key(identifier), new Value(element))));
+		}
+		return leaves;
+	}
+
+	private String identifierOf(Key key) {
+		return hasOuterQuotes(key.key()) ? removeOuterQuotes(key.key()) : key.key();
+	}
+
+	String withMetaPrefix(String identifier) {
 		if (SYSTEM_IDENTIFIERS.contains(identifier)) {
 			return identifier;
 		}
@@ -141,69 +226,32 @@ public class WeaviateFilterExpressionConverter extends AbstractFilterExpressionC
 		}
 
 		throw new IllegalArgumentException("Not allowed filter identifier name: " + identifier
-				+ ". Consider adding it to WeaviateVectorStore#filterMetadataKeys.");
+				+ ". Consider adding it to WeaviateVectorStore#filterMetadataFields.");
 	}
 
-	@Override
-	protected void doValue(Filter.Value filterValue, StringBuilder context) {
-		if (filterValue.value() instanceof List) {
-			// nothing
-			throw new IllegalStateException("");
+	private static OffsetDateTime toOffsetDateTime(Object value) {
+		if (value instanceof OffsetDateTime offsetDateTime) {
+			return offsetDateTime;
 		}
-		else {
-			this.doSingleValue(filterValue.value(), context);
+		if (value instanceof Date date) {
+			return date.toInstant().atOffset(ZoneOffset.UTC);
 		}
+		throw new RuntimeException("Unsupported date value type: " + (value == null ? "null" : value.getClass()));
 	}
 
-	@Override
-	protected void doSingleValue(Object value, StringBuilder context) {
-		String singleValueFormat = "valueNumber:%s ";
-		if (value instanceof Integer i) {
-			if (this.mapIntegerToNumberValue) {
-				context.append(String.format(singleValueFormat, i));
-			}
-			else {
-				context.append(String.format("valueInt:%s ", i));
-			}
-		}
-		else if (value instanceof Long l) {
-			if (this.mapIntegerToNumberValue) {
-				context.append(String.format(singleValueFormat, l));
-			}
-			else {
-				context.append(String.format("valueInt:%s ", l));
-			}
-		}
-		else if (value instanceof Double d) {
-			context.append(String.format(singleValueFormat, d));
-		}
-		else if (value instanceof Float f) {
-			context.append(String.format(singleValueFormat, f));
-		}
-		else if (value instanceof Boolean b) {
-			context.append(String.format("valueBoolean:%s ", b));
-		}
-		else if (value instanceof String s) {
-			context.append("valueText:");
-			emitJsonValue(s, context);
-			context.append(" ");
-		}
-		else if (value instanceof Date date) {
-			String dateString = DateFormatUtils.format(date, "yyyy-MM-dd'T'HH:mm:ssZZZZZ");
-			context.append(String.format("valueDate:\"%s\" ", dateString));
-		}
-		else {
-			throw new RuntimeException("Unsupported value type: " + value);
-		}
+	private static RuntimeException unsupported(ExpressionType type, Object value) {
+		return new UnsupportedOperationException(
+				"Unsupported operator '" + type + "' for value type: " + (value == null ? "null" : value.getClass()));
 	}
 
-	@Override
-	protected void doGroup(Group group, StringBuilder context) {
-		// Replaces the group: AND((foo == "bar" OR bar == "foo"), "boza" == "koza") into
-		// AND(AND(id != -1, (foo == "bar" OR bar == "foo")), "boza" == "koza") into
-		this.convertOperand(new Expression(ExpressionType.AND,
-				new Expression(ExpressionType.NE, new Filter.Key("id"), new Filter.Value("-1")), group.content()),
-				context);
+	private static boolean hasOuterQuotes(String value) {
+		String trimmed = value.trim();
+		return (trimmed.startsWith("\"") && trimmed.endsWith("\""))
+				|| (trimmed.startsWith("'") && trimmed.endsWith("'"));
+	}
+
+	private static String removeOuterQuotes(String in) {
+		return in.substring(1, in.length() - 1);
 	}
 
 }

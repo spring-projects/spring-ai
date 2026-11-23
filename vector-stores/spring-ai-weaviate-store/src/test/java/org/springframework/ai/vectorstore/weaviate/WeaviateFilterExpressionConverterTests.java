@@ -18,13 +18,13 @@ package org.springframework.ai.vectorstore.weaviate;
 
 import java.util.List;
 
+import io.weaviate.client6.v1.api.collections.query.Filter;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
-import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,241 +32,179 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AN
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.IN;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LT;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NIN;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
 
 /**
+ * Tests for {@link WeaviateFilterExpressionConverter}.
+ *
+ * <p>
+ * Assertions are made against the client6 {@link Filter#toString()} representation, which
+ * is deterministic and renders the full operand tree (for example
+ * {@code Filter(meta_country Equal BG)}). This is the most practical structural assertion
+ * surface, since {@link Filter} exposes no accessors or {@code equals}.
+ *
  * @author Christian Tzolov
  */
-public class WeaviateFilterExpressionConverterTests {
+class WeaviateFilterExpressionConverterTests {
 
-	private static String format(String text) {
-		return text.trim().replace(" \n", "\n") + "\n";
+	private String convert(WeaviateFilterExpressionConverter converter, Expression expression) {
+		return converter.convert(expression).toString();
 	}
 
 	@Test
-	public void testMissingFilterName() {
+	void testMissingFilterName() {
+		WeaviateFilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of());
 
-		FilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of());
-
-		assertThatThrownBy(() -> converter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG"))))
+		assertThatThrownBy(() -> converter.convert(new Expression(EQ, new Key("country"), new Value("BG"))))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining(
-					"Not allowed filter identifier name: country. Consider adding it to WeaviateVectorStore#filterMetadataKeys.");
+			.hasMessageContaining("Not allowed filter identifier name: country")
+			.hasMessageContaining("WeaviateVectorStore#filterMetadataFields");
 	}
 
 	@Test
-	public void testSystemIdentifiers() {
+	void testSystemId() {
+		WeaviateFilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of());
 
-		FilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of());
-
-		// id == "1" && _creationTimeUnix >= "36" && _lastUpdateTimeUnix <= "100"
-
-		String vectorExpr = converter.convertExpression(new Expression(AND,
-				new Expression(AND, new Expression(EQ, new Key("id"), new Value("1")),
-						new Expression(GTE, new Key("_creationTimeUnix"), new Value("36"))),
-				new Expression(LTE, new Key("_lastUpdateTimeUnix"), new Value("100"))));
-
-		assertThat(format(vectorExpr)).isEqualTo("""
-				operator:And
-				operands:[{operator:And
-				operands:[{path:["id"]
-				operator:Equal
-				valueText:"1" },
-				{path:["_creationTimeUnix"]
-				operator:GreaterThanEqual
-				valueText:"36" }]},
-				{path:["_lastUpdateTimeUnix"]
-				operator:LessThanEqual
-				valueText:"100" }]
-				""");
+		// The Spring AI document id maps to Weaviate's system uuid field.
+		assertThat(convert(converter, new Expression(EQ, new Key("id"), new Value("1"))))
+			.isEqualTo("Filter(_id Equal 1)");
+		assertThat(convert(converter, new Expression(NE, new Key("id"), new Value("1"))))
+			.isEqualTo("Filter(_id NotEqual 1)");
 	}
 
 	@Test
-	public void testEQ() {
-		FilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("country"));
+	void testRemovedSystemTimestampIdentifiers() {
+		WeaviateFilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of());
 
-		// country == "BG"
-		String vectorExpr = converter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
-		assertThat(format(vectorExpr)).isEqualTo("""
-				path:["meta_country"]
-				operator:Equal
-				valueText:"BG"
-				""");
+		// The GraphQL _creationTimeUnix / _lastUpdateTimeUnix special identifiers are no
+		// longer accepted after the client6 migration.
+		assertThatThrownBy(() -> converter.convert(new Expression(GTE, new Key("_creationTimeUnix"), new Value("36"))))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Not allowed filter identifier name: _creationTimeUnix");
 	}
 
 	@Test
-	public void tesEqAndGte() {
-		FilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("genre", "year"));
+	void testEq() {
+		WeaviateFilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("country"));
+
+		assertThat(convert(converter, new Expression(EQ, new Key("country"), new Value("BG"))))
+			.isEqualTo("Filter(meta_country Equal BG)");
+	}
+
+	@Test
+	void testEqAndGte() {
+		WeaviateFilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("genre", "year"));
 
 		// genre == "drama" AND year >= 2020
-		String vectorExpr = converter
-			.convertExpression(new Expression(AND, new Expression(EQ, new Key("genre"), new Value("drama")),
-					new Expression(GTE, new Key("year"), new Value(2020))));
-		assertThat(format(vectorExpr)).isEqualTo("""
-				operator:And
-				operands:[{path:["meta_genre"]
-				operator:Equal
-				valueText:"drama" },
-				{path:["meta_year"]
-				operator:GreaterThanEqual
-				valueNumber:2020 }]
-				""");
+		String filter = convert(converter, new Expression(AND, new Expression(EQ, new Key("genre"), new Value("drama")),
+				new Expression(GTE, new Key("year"), new Value(2020))));
+		assertThat(filter)
+			.isEqualTo("Filter(Filter(meta_genre Equal drama) And Filter(meta_year GreaterThanEqual 2020.0))");
 	}
 
 	@Test
-	public void tesIn() {
-		FilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("genre"));
+	void testIn() {
+		WeaviateFilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("genre"));
 
-		// genre in ["comedy", "documentary", "drama"]
-		String vectorExpr = converter.convertExpression(
+		// genre in ["comedy", "documentary", "drama"] expands to an OR of equals.
+		String filter = convert(converter,
 				new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
-		assertThat(format(vectorExpr)).isEqualTo("""
-				operator:Or
-				operands:[{path:["meta_genre"]
-				operator:Equal
-				valueText:"comedy" },
-				{operator:Or
-				operands:[{path:["meta_genre"]
-				operator:Equal
-				valueText:"documentary" },
-				{path:["meta_genre"]
-				operator:Equal
-				valueText:"drama" }]}]
-				""");
+		assertThat(filter).isEqualTo("Filter(Filter(meta_genre Equal comedy) Or Filter(meta_genre Equal documentary) "
+				+ "Or Filter(meta_genre Equal drama))");
 	}
 
 	@Test
-	public void testNe() {
-		FilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("city", "year", "country"));
+	void testNin() {
+		WeaviateFilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("city"));
 
-		// year >= 2020 OR country == "BG" AND city != "Sofia"
-		String vectorExpr = converter
-			.convertExpression(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
-					new Expression(AND, new Expression(EQ, new Key("country"), new Value("BG")),
-							new Expression(NE, new Key("city"), new Value("Sofia")))));
-		assertThat(format(vectorExpr)).isEqualTo("""
-				operator:Or
-				operands:[{path:["meta_year"]
-				operator:GreaterThanEqual
-				valueNumber:2020 },
-				{operator:And
-				operands:[{path:["meta_country"]
-				operator:Equal
-				valueText:"BG" },
-				{path:["meta_city"]
-				operator:NotEqual
-				valueText:"Sofia" }]}]
-				""");
+		// city not in ["Sofia", "Plovdiv"] expands to an AND of not-equals.
+		String filter = convert(converter,
+				new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Plovdiv"))));
+		assertThat(filter).isEqualTo("Filter(Filter(meta_city NotEqual Sofia) And Filter(meta_city NotEqual Plovdiv))");
 	}
 
 	@Test
-	public void testGroup() {
-		FilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("city", "year", "country"));
+	void testNe() {
+		WeaviateFilterExpressionConverter converter = new WeaviateFilterExpressionConverter(
+				List.of("city", "year", "country"));
+
+		// year >= 2020 OR (country == "BG" AND city != "Sofia")
+		String filter = convert(converter,
+				new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
+						new Expression(AND, new Expression(EQ, new Key("country"), new Value("BG")),
+								new Expression(NE, new Key("city"), new Value("Sofia")))));
+		assertThat(filter).isEqualTo("Filter(Filter(meta_year GreaterThanEqual 2020.0) "
+				+ "Or Filter(Filter(meta_country Equal BG) And Filter(meta_city NotEqual Sofia)))");
+	}
+
+	@Test
+	void testGroup() {
+		WeaviateFilterExpressionConverter converter = new WeaviateFilterExpressionConverter(
+				List.of("city", "year", "country"));
 
 		// (year >= 2020 OR country == "BG") AND city NIN ["Sofia", "Plovdiv"]
-		String vectorExpr = converter.convertExpression(new Expression(AND,
-				new Group(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
-						new Expression(EQ, new Key("country"), new Value("BG")))),
-				new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Plovdiv")))));
-
-		assertThat(format(vectorExpr)).isEqualTo("""
-				operator:And
-				operands:[{operator:And
-				operands:[{path:["id"]
-				operator:NotEqual
-				valueText:"-1" },
-				{operator:Or
-				operands:[{path:["meta_year"]
-				operator:GreaterThanEqual
-				valueNumber:2020 },
-				{path:["meta_country"]
-				operator:Equal
-				valueText:"BG" }]}]},
-				{operator:And
-				operands:[{path:["meta_city"]
-				operator:NotEqual
-				valueText:"Sofia" },
-				{path:["meta_city"]
-				operator:NotEqual
-				valueText:"Plovdiv" }]}]
-				""");
+		String filter = convert(converter,
+				new Expression(AND,
+						new Group(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
+								new Expression(EQ, new Key("country"), new Value("BG")))),
+						new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Plovdiv")))));
+		assertThat(filter)
+			.isEqualTo("Filter(Filter(Filter(meta_year GreaterThanEqual 2020.0) Or Filter(meta_country Equal BG)) "
+					+ "And Filter(Filter(meta_city NotEqual Sofia) And Filter(meta_city NotEqual Plovdiv)))");
 	}
 
 	@Test
-	public void tesBoolean() {
-		FilterExpressionConverter converter = new WeaviateFilterExpressionConverter(
+	void testBoolean() {
+		WeaviateFilterExpressionConverter converter = new WeaviateFilterExpressionConverter(
 				List.of("isOpen", "year", "country"));
 
 		// isOpen == true AND year >= 2020 AND country IN ["BG", "NL", "US"]
-		String vectorExpr = converter.convertExpression(new Expression(AND,
-				new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
-						new Expression(GTE, new Key("year"), new Value(2020))),
-				new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))));
-
-		assertThat(format(vectorExpr)).isEqualTo("""
-				operator:And
-				operands:[{operator:And
-				operands:[{path:["meta_isOpen"]
-				operator:Equal
-				valueBoolean:true },
-				{path:["meta_year"]
-				operator:GreaterThanEqual
-				valueNumber:2020 }]},
-				{operator:Or
-				operands:[{path:["meta_country"]
-				operator:Equal
-				valueText:"BG" },
-				{operator:Or
-				operands:[{path:["meta_country"]
-				operator:Equal
-				valueText:"NL" },
-				{path:["meta_country"]
-				operator:Equal
-				valueText:"US" }]}]}]
-				""");
+		String filter = convert(converter,
+				new Expression(AND,
+						new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
+								new Expression(GTE, new Key("year"), new Value(2020))),
+						new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))));
+		assertThat(filter)
+			.isEqualTo("Filter(Filter(Filter(meta_isOpen Equal true) And Filter(meta_year GreaterThanEqual 2020.0)) "
+					+ "And Filter(Filter(meta_country Equal BG) Or Filter(meta_country Equal NL) "
+					+ "Or Filter(meta_country Equal US)))");
 	}
 
 	@Test
-	public void testDecimal() {
-		FilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("temperature"));
+	void testDecimal() {
+		WeaviateFilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("temperature"));
 
-		// temperature >= -15.6 && temperature <= +20.13
-		String vectorExpr = converter
-			.convertExpression(new Expression(AND, new Expression(GTE, new Key("temperature"), new Value(-15.6)),
-					new Expression(LTE, new Key("temperature"), new Value(20.13))));
-
-		assertThat(format(vectorExpr)).isEqualTo("""
-				operator:And
-				operands:[{path:["meta_temperature"]
-				operator:GreaterThanEqual
-				valueNumber:-15.6 },
-				{path:["meta_temperature"]
-				operator:LessThanEqual
-				valueNumber:20.13 }]
-				""");
+		// temperature >= -15.6 AND temperature <= 20.13. Note the client6 LESS_THAN_EQUAL
+		// operator renders as "LessThenEqual".
+		String filter = convert(converter,
+				new Expression(AND, new Expression(GTE, new Key("temperature"), new Value(-15.6)),
+						new Expression(LTE, new Key("temperature"), new Value(20.13))));
+		assertThat(filter).isEqualTo("Filter(Filter(meta_temperature GreaterThanEqual -15.6) "
+				+ "And Filter(meta_temperature LessThenEqual 20.13))");
 	}
 
 	@Test
-	public void testComplexIdentifiers() {
-		FilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("country 1 2 3"));
+	void testComplexIdentifiers() {
+		WeaviateFilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("country 1 2 3"));
 
-		String vectorExpr = converter
-			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
-		assertThat(format(vectorExpr)).isEqualTo("""
-				path:["meta_country 1 2 3"]
-				operator:Equal
-				valueText:"BG"
-				""");
+		assertThat(convert(converter, new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG"))))
+			.isEqualTo("Filter(meta_country 1 2 3 Equal BG)");
 
-		vectorExpr = converter.convertExpression(new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG")));
-		assertThat(format(vectorExpr)).isEqualTo("""
-				path:["meta_country 1 2 3"]
-				operator:Equal
-				valueText:"BG"
-				""");
+		assertThat(convert(converter, new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG"))))
+			.isEqualTo("Filter(meta_country 1 2 3 Equal BG)");
+	}
+
+	@Test
+	void testUnsupportedOperatorForValueType() {
+		WeaviateFilterExpressionConverter converter = new WeaviateFilterExpressionConverter(List.of("isOpen"));
+
+		// A relational operator is not supported for a boolean value.
+		assertThatThrownBy(() -> converter.convert(new Expression(LT, new Key("isOpen"), new Value(true))))
+			.isInstanceOf(UnsupportedOperationException.class);
 	}
 
 }
