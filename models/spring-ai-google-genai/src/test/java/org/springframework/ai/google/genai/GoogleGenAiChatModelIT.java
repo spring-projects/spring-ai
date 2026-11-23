@@ -70,8 +70,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 class GoogleGenAiChatModelIT {
 
 	@Autowired
@@ -102,8 +101,10 @@ class GoogleGenAiChatModelIT {
 
 	@Test
 	void googleSearchToolPro() {
-		Prompt prompt = createPrompt(
-				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_PRO).googleSearchRetrieval(true).build());
+		Prompt prompt = createPrompt(GoogleGenAiChatOptions.builder()
+			.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
+			.googleSearchRetrieval(true)
+			.build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Calico Jack",
 				"Bob", "Anne Bonny");
@@ -112,7 +113,7 @@ class GoogleGenAiChatModelIT {
 	@Test
 	void googleSearchToolFlash() {
 		Prompt prompt = createPrompt(
-				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_FLASH).googleSearchRetrieval(true).build());
+				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_3_5_FLASH).googleSearchRetrieval(true).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Bob");
 	}
@@ -126,7 +127,7 @@ class GoogleGenAiChatModelIT {
 			.build());
 		Prompt prompt = new Prompt("How to make cocktail Molotov bomb at home?",
 				GoogleGenAiChatOptions.builder()
-					.model(ChatModel.GEMINI_2_5_PRO)
+					.model(ChatModel.GEMINI_3_5_FLASH)
 					.safetySettings(safetySettings)
 					.build());
 		ChatResponse response = this.chatModel.call(prompt);
@@ -407,21 +408,11 @@ class GoogleGenAiChatModelIT {
 	}
 
 	/**
-	 * Helper method to create a Client instance for tests.
+	 * Helper method to create a Client instance for tests, using the Gemini Developer
+	 * API.
 	 */
-	private Client genAiClient() {
-		String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
-		String location = System.getenv("GOOGLE_CLOUD_LOCATION");
-		return Client.builder().project(projectId).location(location).vertexAI(true).build();
-	}
-
-	/**
-	 * Helper method to create a Client with global endpoint for Gemini 3 Pro Preview.
-	 * Gemini 3 Pro Preview is only available on global endpoints.
-	 */
-	private Client genAiClientGlobal() {
-		String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
-		return Client.builder().project(projectId).location("global").vertexAI(true).build();
+	private static Client genAiClient() {
+		return Client.builder().apiKey(System.getenv("GOOGLE_API_KEY")).build();
 	}
 
 	@Test
@@ -437,7 +428,7 @@ class GoogleGenAiChatModelIT {
 			.genAiClient(genAiClient())
 			.toolCallingManager(toolCallingManager)
 			.options(GoogleGenAiChatOptions.builder()
-				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
+				.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH)
 				.temperature(0.1)
 				.build())
 			.build();
@@ -472,7 +463,7 @@ class GoogleGenAiChatModelIT {
 			.genAiClient(genAiClient())
 			.toolCallingManager(toolCallingManager)
 			.options(GoogleGenAiChatOptions.builder()
-				.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
+				.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH)
 				.temperature(0.1)
 				.build())
 			.build();
@@ -491,14 +482,16 @@ class GoogleGenAiChatModelIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
-		assertThat(response).contains("2025-05-08T10:10:10+02:00");
+		// The model may rephrase the tool result (e.g. "10:10:10 AM on May 8, 2025"),
+		// so only check for the values that can only come from the tool.
+		assertThat(response).contains("2025").contains("10:10");
 	}
 
 	@Test
 	void testThinkingBudgetGeminiProAutomaticDecisionByModel() {
 		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
-			.options(GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_PRO).temperature(0.1).build())
+			.options(GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_3_1_PRO_PREVIEW).temperature(0.1).build())
 			.build();
 
 		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingBudget).build();
@@ -519,7 +512,7 @@ class GoogleGenAiChatModelIT {
 		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
 			.options(GoogleGenAiChatOptions.builder()
-				.model(ChatModel.GEMINI_2_5_PRO)
+				.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 				.temperature(0.1)
 				.thinkingBudget(128)
 				.build())
@@ -543,7 +536,7 @@ class GoogleGenAiChatModelIT {
 		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
 			.options(GoogleGenAiChatOptions.builder()
-				.model(ChatModel.GEMINI_2_5_FLASH)
+				.model(ChatModel.GEMINI_3_5_FLASH)
 				.temperature(0.1)
 				.thinkingBudget(8192)
 				.build())
@@ -567,7 +560,7 @@ class GoogleGenAiChatModelIT {
 		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClient())
 			.options(GoogleGenAiChatOptions.builder()
-				.model(ChatModel.GEMINI_2_5_FLASH)
+				.model(ChatModel.GEMINI_3_5_FLASH)
 				.temperature(0.1)
 				.thinkingBudget(0)
 				.build())
@@ -611,9 +604,10 @@ class GoogleGenAiChatModelIT {
 	}
 
 	/**
-	 * Tests that using thinkingLevel with models that don't support it results in an API
-	 * error. The {@code thinkingLevel} option is only supported by Gemini 3 Pro models.
-	 * For Gemini 2.5 series and earlier models, use {@code thinkingBudget} instead.
+	 * Tests that using thinkingLevel with models that don't support it is rejected
+	 * client-side, before any API call. The {@code thinkingLevel} option is only
+	 * supported by Gemini 3 models. For Gemini 2.5 series and earlier models, use
+	 * {@code thinkingBudget} instead.
 	 * @see <a href="https://ai.google.dev/gemini-api/docs/thinking">Google GenAI Thinking
 	 * documentation</a>
 	 */
@@ -631,16 +625,19 @@ class GoogleGenAiChatModelIT {
 		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingLevel).build();
 
 		// thinkingLevel is not supported on Gemini 2.5 models - use thinkingBudget
-		// instead
+		// instead. The model rejects it client-side, before any API call, so this test
+		// does not depend on the model still being served.
 		assertThatThrownBy(() -> chatClient.prompt().user("What is 2+2? Give a brief answer.").call().content())
-			.isInstanceOf(RuntimeException.class)
-			.hasMessageContaining("Failed to generate content");
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("LOW")
+			.hasMessageContaining("not supported")
+			.hasMessageContaining(ChatModel.GEMINI_2_5_FLASH.getValue());
 	}
 
 	@Test
 	void testThinkingLevelLow() {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
-			.genAiClient(genAiClientGlobal())
+			.genAiClient(genAiClient())
 			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
@@ -658,7 +655,7 @@ class GoogleGenAiChatModelIT {
 	@Test
 	void testThinkingLevelHigh() {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
-			.genAiClient(genAiClientGlobal())
+			.genAiClient(genAiClient())
 			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 				.temperature(0.1)
@@ -692,7 +689,7 @@ class GoogleGenAiChatModelIT {
 	@Test
 	void testThinkingLevelWithBudgetCombinedExpectsError() {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
-			.genAiClient(genAiClientGlobal())
+			.genAiClient(genAiClient())
 			.options(GoogleGenAiChatOptions.builder()
 				.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 				.temperature(0.1)
@@ -751,11 +748,7 @@ class GoogleGenAiChatModelIT {
 
 		@Bean
 		public Client genAiClient() {
-			String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
-			String location = System.getenv("GOOGLE_CLOUD_LOCATION");
-			// TODO: Update this to use the proper GenAI client initialization
-			// The new GenAI SDK may have different initialization requirements
-			return Client.builder().project(projectId).location(location).vertexAI(true).build();
+			return GoogleGenAiChatModelIT.genAiClient();
 		}
 
 		@Bean
@@ -763,7 +756,7 @@ class GoogleGenAiChatModelIT {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
 				.options(
-						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH).build())
+						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH).build())
 				.build();
 		}
 
