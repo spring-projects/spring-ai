@@ -1616,6 +1616,21 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				if (item instanceof AnthropicThinkingContent thinkingContent) {
 					thinkingContents.add(thinkingContent);
 				}
+				else if (item instanceof Map<?, ?> map) {
+					// JSON deserialization restores the records as maps.
+					Object thinking = map.get("thinking");
+					Object signature = map.get("signature");
+					Object redactedData = map.get("redactedData");
+					if (thinking instanceof String text && signature instanceof String sig && redactedData == null) {
+						thinkingContents.add(AnthropicThinkingContent.thinking(text, sig));
+					}
+					else if (redactedData instanceof String data && thinking == null && signature == null) {
+						thinkingContents.add(AnthropicThinkingContent.redacted(data));
+					}
+					else {
+						return List.of();
+					}
+				}
 				else {
 					return List.of();
 				}
