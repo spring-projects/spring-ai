@@ -116,4 +116,23 @@ class GoogleGenAiFinishReasonCategoryTests {
 		assertThat(metadata.getFinishReasonCategory()).isEqualTo(FinishReasonCategory.TOOL_CALL);
 	}
 
+	@Test
+	void aNullFinishReasonIsUnspecified() {
+		assertThat(GoogleGenAiChatModel.finishReasonCategory(null, false)).isEqualTo(FinishReasonCategory.UNSPECIFIED);
+		assertThat(GoogleGenAiChatModel.finishReasonCategory(null, true)).isEqualTo(FinishReasonCategory.UNSPECIFIED);
+	}
+
+	@Test
+	void aCandidateWithoutAFinishReasonHasNullFinishReasonAndUnspecifiedCategory() {
+		Candidate candidate = Candidate.builder()
+			.content(Content.builder().role("model").parts(List.of(Part.builder().text("partial").build())).build())
+			.build();
+
+		var generation = this.chatModel.responseCandidateToGeneration(candidate).get(0);
+
+		assertThat(generation.getMetadata().getFinishReason()).isNull();
+		assertThat(generation.getMetadata().getFinishReasonCategory()).isEqualTo(FinishReasonCategory.UNSPECIFIED);
+		assertThat(generation.getOutput().getMetadata()).doesNotContainKey("finishReason");
+	}
+
 }
