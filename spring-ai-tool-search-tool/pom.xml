@@ -44,12 +44,6 @@
 
 		<!-- Test dependencies -->
 		<dependency>
-			<groupId>org.apache.lucene</groupId>
-			<artifactId>lucene-analysis-common</artifactId>
-			<version>${lucene.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter</artifactId>
 			<scope>test</scope>

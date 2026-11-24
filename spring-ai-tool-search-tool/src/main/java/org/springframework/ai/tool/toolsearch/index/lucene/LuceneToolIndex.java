@@ -55,6 +55,7 @@ import org.springframework.ai.tool.toolsearch.ToolReference;
 import org.springframework.ai.tool.toolsearch.ToolSearchRequest;
 import org.springframework.ai.tool.toolsearch.ToolSearchResponse;
 import org.springframework.ai.tool.toolsearch.ToolSearchResponse.SearchMetadata;
+import org.springframework.util.Assert;
 
 /**
  * Lucene-based tool searcher for indexing and searching tool descriptions.
@@ -110,6 +111,7 @@ public class LuceneToolIndex implements Closeable, ToolIndex {
 	 * @param minScoreThreshold the minimum score a result must reach
 	 */
 	public LuceneToolIndex(Analyzer analyzer, float minScoreThreshold) {
+		Assert.notNull(analyzer, "analyzer must not be null");
 		this.analyzer = analyzer;
 		this.minScoreThreshold = minScoreThreshold;
 	}

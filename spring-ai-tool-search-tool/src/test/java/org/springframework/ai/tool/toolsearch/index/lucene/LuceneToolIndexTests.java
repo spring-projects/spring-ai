@@ -16,6 +16,9 @@
 
 package org.springframework.ai.tool.toolsearch.index.lucene;
 
+import java.io.FilterReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -25,9 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +37,7 @@ import org.springframework.ai.tool.toolsearch.ToolSearchRequest;
 import org.springframework.ai.tool.toolsearch.ToolSearchResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * Unit tests for {@link LuceneToolIndex}.
@@ -99,20 +101,22 @@ class LuceneToolIndexTests {
 
 	@Test
 	void customAnalyzerSplitsToolNamesIntoWords() throws Exception {
-		// StandardAnalyzer keeps "linear_create_issue" and "listTeams" as one token each
+		// StandardAnalyzer keeps "linear_create_issue" as one token
 		Analyzer splitting = new Analyzer() {
+			@Override
+			protected Reader initReader(String fieldName, Reader reader) {
+				return new UnderscoreToSpaceReader(reader);
+			}
+
 			@Override
 			protected TokenStreamComponents createComponents(String fieldName) {
 				Tokenizer source = new StandardTokenizer();
-				int flags = WordDelimiterGraphFilter.GENERATE_WORD_PARTS
-						| WordDelimiterGraphFilter.SPLIT_ON_CASE_CHANGE;
-				TokenStream words = new WordDelimiterGraphFilter(source, flags, null);
-				return new TokenStreamComponents(source, new LowerCaseFilter(words));
+				return new TokenStreamComponents(source, new LowerCaseFilter(source));
 			}
 		};
 		try (LuceneToolIndex searcher = new LuceneToolIndex(splitting, 0.25f)) {
 			searcher.indexTool(SESSION, ref("linear_create_issue", "Create a ticket in a team"));
-			searcher.indexTool(SESSION, ref("listTeams", "List the workspace's teams"));
+			searcher.indexTool(SESSION, ref("list_teams", "List the workspace's teams"));
 
 			ToolSearchResponse response = search(searcher, "linear issue");
 
@@ -124,6 +128,11 @@ class LuceneToolIndexTests {
 
 			assertThat(search(searcher, "linear issue").toolReferences()).isEmpty();
 		}
+	}
+
+	@Test
+	void nullAnalyzerIsRejected() {
+		assertThatIllegalArgumentException().isThrownBy(() -> new LuceneToolIndex(null, 0.25f));
 	}
 
 	@Test
@@ -222,6 +231,34 @@ class LuceneToolIndexTests {
 				assertThat(future.get().toolReferences()).isNotEmpty();
 			}
 		}
+	}
+
+	/**
+	 * Reads {@code _} as a space, so the tokenizer sees each word of a snake_case name.
+	 */
+	private static final class UnderscoreToSpaceReader extends FilterReader {
+
+		UnderscoreToSpaceReader(Reader in) {
+			super(in);
+		}
+
+		@Override
+		public int read() throws IOException {
+			int c = super.read();
+			return (c == '_') ? ' ' : c;
+		}
+
+		@Override
+		public int read(char[] buffer, int offset, int length) throws IOException {
+			int count = super.read(buffer, offset, length);
+			for (int i = offset; i < offset + count; i++) {
+				if (buffer[i] == '_') {
+					buffer[i] = ' ';
+				}
+			}
+			return count;
+		}
+
 	}
 
 }
