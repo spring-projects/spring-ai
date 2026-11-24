@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.genai.Client;
 import com.google.genai.types.Candidate;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -44,6 +46,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiModalityTokenCount;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiTrafficType;
@@ -129,6 +132,21 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 		assertThat(genAiUsage.getTotalTokens()).isEqualTo(175);
 		assertThat(genAiUsage.getThoughtsTokenCount()).isEqualTo(25); // Verify thinking
 																		// tokens
+	}
+
+	@Test
+	void streamingAggregationRetainsToolCallsAfterEmptyText() {
+		var content = Content.builder()
+			.parts(Part.builder().text("").build(), Part.fromFunctionCall("first", Map.of()),
+					Part.fromFunctionCall("second", Map.of()))
+			.build();
+		var generations = this.chatModel.responseCandidateToGeneration(Candidate.builder().content(content).build());
+		var aggregated = new AtomicReference<ChatResponse>();
+
+		new MessageAggregator().aggregate(Flux.just(new ChatResponse(generations)), aggregated::set).blockLast();
+
+		assertThat(aggregated.get().getResult().getOutput().getToolCalls()).extracting(AssistantMessage.ToolCall::name)
+			.containsExactly("first", "second");
 	}
 
 	@Test
