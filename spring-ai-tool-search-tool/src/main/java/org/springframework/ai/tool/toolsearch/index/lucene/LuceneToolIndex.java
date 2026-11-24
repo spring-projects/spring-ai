@@ -99,8 +99,19 @@ public class LuceneToolIndex implements Closeable, ToolIndex {
 	}
 
 	public LuceneToolIndex(float minScoreThreshold) {
+		this(new StandardAnalyzer(), minScoreThreshold);
+	}
+
+	/**
+	 * Creates a new LuceneToolIndex that analyzes tool names, descriptions and queries
+	 * with the given analyzer, for example one that splits snake_case and camelCase tool
+	 * names into words. The index closes the analyzer on {@link #close()}.
+	 * @param analyzer the analyzer for indexing and querying
+	 * @param minScoreThreshold the minimum score a result must reach
+	 */
+	public LuceneToolIndex(Analyzer analyzer, float minScoreThreshold) {
+		this.analyzer = analyzer;
 		this.minScoreThreshold = minScoreThreshold;
-		this.analyzer = new StandardAnalyzer();
 	}
 
 	/**

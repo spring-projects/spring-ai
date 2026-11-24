@@ -23,6 +23,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.tool.toolsearch.ToolReference;
@@ -88,6 +94,35 @@ class LuceneToolIndexTests {
 
 			assertThat(response.toolReferences()).hasSizeGreaterThanOrEqualTo(1);
 			assertThat(response.toolReferences().get(0).toolName()).isEqualTo("weather");
+		}
+	}
+
+	@Test
+	void customAnalyzerSplitsToolNamesIntoWords() throws Exception {
+		// StandardAnalyzer keeps "linear_create_issue" and "listTeams" as one token each
+		Analyzer splitting = new Analyzer() {
+			@Override
+			protected TokenStreamComponents createComponents(String fieldName) {
+				Tokenizer source = new StandardTokenizer();
+				int flags = WordDelimiterGraphFilter.GENERATE_WORD_PARTS
+						| WordDelimiterGraphFilter.SPLIT_ON_CASE_CHANGE;
+				TokenStream words = new WordDelimiterGraphFilter(source, flags, null);
+				return new TokenStreamComponents(source, new LowerCaseFilter(words));
+			}
+		};
+		try (LuceneToolIndex searcher = new LuceneToolIndex(splitting, 0.25f)) {
+			searcher.indexTool(SESSION, ref("linear_create_issue", "Create a ticket in a team"));
+			searcher.indexTool(SESSION, ref("listTeams", "List the workspace's teams"));
+
+			ToolSearchResponse response = search(searcher, "linear issue");
+
+			assertThat(response.toolReferences()).extracting(ToolReference::toolName)
+				.containsExactly("linear_create_issue");
+		}
+		try (LuceneToolIndex searcher = new LuceneToolIndex()) {
+			searcher.indexTool(SESSION, ref("linear_create_issue", "Create a ticket in a team"));
+
+			assertThat(search(searcher, "linear issue").toolReferences()).isEmpty();
 		}
 	}
 
