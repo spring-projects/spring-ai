@@ -93,32 +93,38 @@ public class MessageAggregator {
 
 		}).doOnNext(chatResponse -> {
 
-			if (chatResponse.getResult() != null) {
-				if (chatResponse.getResult().getMetadata() != null
-						&& chatResponse.getResult().getMetadata() != ChatGenerationMetadata.NULL) {
-					generationMetadataRef.set(chatResponse.getResult().getMetadata());
-				}
-				if (chatResponse.getResult().getOutput().getText() != null) {
-					messageTextContentRef.get().append(chatResponse.getResult().getOutput().getText());
-					var metadata = chatResponse.getResult().getOutput().getMetadata();
-					if (metadata != null && metadata.containsKey("isThought")) {
-						var isThought = Boolean.parseBoolean(metadata.get("isThought").toString());
-						if (isThought) {
-							thoughtsRef.get().append(chatResponse.getResult().getOutput().getText());
-						}
-						else {
-							outputWithoutThoughtsRef.get().append(chatResponse.getResult().getOutput().getText());
+			if (!CollectionUtils.isEmpty(chatResponse.getResults())) {
+				for (Generation generation : chatResponse.getResults()) {
+					if (generation == null) {
+						continue;
+					}
+					if (generation.getMetadata() != null && generation.getMetadata() != ChatGenerationMetadata.NULL) {
+						generationMetadataRef.set(generation.getMetadata());
+					}
+					AssistantMessage outputMessage = generation.getOutput();
+					if (outputMessage == null) {
+						continue;
+					}
+					if (outputMessage.getText() != null) {
+						messageTextContentRef.get().append(outputMessage.getText());
+						var metadata = outputMessage.getMetadata();
+						if (metadata != null && metadata.containsKey("isThought")) {
+							var isThought = Boolean.parseBoolean(metadata.get("isThought").toString());
+							(isThought ? thoughtsRef : outputWithoutThoughtsRef).get().append(outputMessage.getText());
 						}
 					}
+					if (outputMessage.getMetadata() != null) {
+						boolean preserveThoughtFlag = !StringUtils.hasLength(outputMessage.getText())
+								&& Boolean.TRUE.equals(messageMetadataMapRef.get().get("isThought"));
+						messageMetadataMapRef.get().putAll(outputMessage.getMetadata());
+						if (preserveThoughtFlag) {
+							messageMetadataMapRef.get().put("isThought", true);
+						}
+					}
+					if (!CollectionUtils.isEmpty(outputMessage.getToolCalls())) {
+						toolCallsRef.get().addAll(outputMessage.getToolCalls());
+					}
 				}
-				if (chatResponse.getResult().getOutput().getMetadata() != null) {
-					messageMetadataMapRef.get().putAll(chatResponse.getResult().getOutput().getMetadata());
-				}
-				AssistantMessage outputMessage = chatResponse.getResult().getOutput();
-				if (!CollectionUtils.isEmpty(outputMessage.getToolCalls())) {
-					toolCallsRef.get().addAll(outputMessage.getToolCalls());
-				}
-
 			}
 			if (chatResponse.getMetadata() != null) {
 				if (chatResponse.getMetadata().getUsage() != null) {

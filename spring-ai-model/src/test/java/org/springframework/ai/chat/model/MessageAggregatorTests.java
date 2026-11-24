@@ -18,12 +18,14 @@ package org.springframework.ai.chat.model;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
@@ -58,6 +60,48 @@ class MessageAggregatorTests {
 		new MessageAggregator().aggregate(responses, aggregated::set).blockLast();
 
 		assertThat(aggregated.get().getMetadata().getRateLimit()).isInstanceOf(EmptyRateLimit.class);
+	}
+
+	@Test
+	void aggregatesToolCallsWhenEmptyTextGenerationPrecedesToolCallGeneration() {
+		Generation emptyText = new Generation(
+				AssistantMessage.builder().content("").properties(Map.of("isThought", false)).build());
+		ToolCall toolCall1 = new ToolCall("call-1", "function", "toolOne", "{}");
+		ToolCall toolCall2 = new ToolCall("call-2", "function", "toolTwo", "{\"k\":\"v\"}");
+		Generation toolCalls = new Generation(
+				AssistantMessage.builder().content("").toolCalls(List.of(toolCall1, toolCall2)).build());
+
+		ChatResponse multiGenChunk = new ChatResponse(List.of(emptyText, toolCalls));
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(Flux.just(multiGenChunk), aggregated::set).blockLast();
+
+		assertThat(aggregated.get()).isNotNull();
+		assertThat(aggregated.get().hasToolCalls()).isTrue();
+		assertThat(aggregated.get().getResult().getOutput().getToolCalls()).containsExactly(toolCall1, toolCall2);
+	}
+
+	@Test
+	void aggregatesThoughtAndToolCallsAcrossGenerationsInSingleChunk() {
+		Generation thought = new Generation(AssistantMessage.builder()
+			.content("Thinking about the tool to call")
+			.properties(Map.of("isThought", true))
+			.build());
+		ToolCall toolCall = new ToolCall("call-1", "function", "getCurrentWeather", "{\"location\":\"Tokyo\"}");
+		Generation toolCalls = new Generation(
+				AssistantMessage.builder().content("").toolCalls(List.of(toolCall)).build());
+
+		ChatResponse multiGenChunk = new ChatResponse(List.of(thought, toolCalls));
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(Flux.just(multiGenChunk), aggregated::set).blockLast();
+
+		assertThat(aggregated.get()).isNotNull();
+		AssistantMessage output = aggregated.get().getResult().getOutput();
+		assertThat(output.getText()).isEqualTo("Thinking about the tool to call");
+		assertThat(output.getMetadata()).containsEntry("isThought", true)
+			.containsEntry("thoughts", "Thinking about the tool to call");
+		assertThat(output.getToolCalls()).containsExactly(toolCall);
 	}
 
 	private static ChatResponse chunk(String text, RateLimit rateLimit) {
