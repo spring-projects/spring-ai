@@ -165,6 +165,7 @@ import org.springframework.util.MimeType;
  * @author Jewoo Shin
  * @author Seeun Kim
  * @author guan xu
+ * @author Dimitar Proynov
  * @since 1.0.0
  * @see AnthropicChatOptions
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
@@ -1670,7 +1671,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * <p>
 	 * Conversion: parses the JSON schema to a Map, extracts "properties" (added via
 	 * {@code putAdditionalProperty()}), extracts "required" fields (added via
-	 * {@code addRequired()}), then builds the Tool with name, description, and schema.
+	 * {@code addRequired()}), keeps every other keyword except "$schema", such as the
+	 * "$defs" that "$ref" pointers resolve against, then builds the Tool with name,
+	 * description, and schema.
 	 * @param toolDefinition the tool definition with name, description, and JSON schema
 	 * @return the Anthropic SDK Tool
 	 * @throws RuntimeException if the JSON schema cannot be parsed
@@ -1678,9 +1681,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private Tool toAnthropicTool(ToolDefinition toolDefinition) {
 		try {
 			// Parse the JSON schema string into a Map
-			var jsonMapper = JsonMapper.builder().build();
-			Map<String, Object> schemaMap = jsonMapper.readValue(toolDefinition.inputSchema(), new TypeReference<>() {
-			});
+			Map<String, Object> schemaMap = AnthropicJsonSchemaUtils.parse(toolDefinition.inputSchema());
 
 			// Build properties via putAdditionalProperty (SDK requires structured input)
 			Tool.InputSchema.Properties.Builder propertiesBuilder = Tool.InputSchema.Properties.builder();
@@ -1698,6 +1699,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			if (requiredObj instanceof List<?> required) {
 				required.forEach(field -> inputSchemaBuilder.addRequired((String) field));
 			}
+
+			// Keep the remaining keywords, such as the "$defs" that "$ref" pointers in
+			// the properties resolve against
+			inputSchemaBuilder.putAllAdditionalProperties(
+					AnthropicJsonSchemaUtils.toAdditionalProperties(schemaMap, "type", "properties", "required"));
 
 			return Tool.builder()
 				.name(toolDefinition.name())
