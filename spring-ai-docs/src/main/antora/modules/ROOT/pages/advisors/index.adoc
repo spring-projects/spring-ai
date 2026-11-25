@@ -12,6 +12,23 @@ Even the call to the model is made by an advisor, the last one in the chain.
 To understand what a `ChatClient` call does, look at its advisor chain.
 For an agent built on a `ChatClient`, this chain is the backbone of its xref:agents/index.adoc#agent-harness[harness], the part of an agent that isn't the model.
 
+[[advisor-model]]
+== The Model in Four Rules
+
+. *A call is one pass down a sorted stack.*
+`ChatClient` sorts the advisors of a call by their order and runs them from the first to the last, which calls the model.
+The request travels down the chain as a `ChatClientRequest`, and the response travels back up as a `ChatClientResponse`.
+. *Every advisor runs around the rest of the chain.*
+It has code that runs before it calls the next advisor, and code that runs after the next advisor returns.
+Both can read and write state that outlives the call, such as a xref:memory/session/index.adoc[session].
+. *An advisor decides what happens to the rest of the chain.*
+It can pass the request on, run the rest of the chain more than once, or answer without running it at all.
+. *A recursive advisor multiplies what follows it.*
+An advisor before every recursive advisor runs once per call.
+An advisor after a recursive advisor runs once for every round of it.
+
+The sections below explain each rule.
+
 == The Advisor Chain
 
 For each call, `ChatClient` builds a chain:
@@ -27,10 +44,12 @@ The following chain uses session memory, retrieval and schema validation:
 
 image::spring-ai-advisor-chain.svg[The advisor chain of a ChatClient call,860,opts=inline]
 
-The request travels down the chain as a `ChatClientRequest`, and the response travels back up as a `ChatClientResponse`.
+A chain is used up as it runs: each advisor takes the next one from it.
+`ChatClient` therefore builds a new chain for every call.
+
 Each advisor decides what to do:
 
-* *Change the request or the response.* `QuestionAnswerAdvisor` adds documents to the prompt, and `SessionTurnAdvisor` stores the answer.
+* *Pass the request on, and change it or the response.* `QuestionAnswerAdvisor` adds documents to the prompt, and `SessionMemoryAdvisor` stores the request's last message before the model call and the reply after it.
 * *Run the rest of the chain more than once.* `ToolCallingAdvisor` runs everything after it again for each tool round, and `StructuredOutputValidationAdvisor` does so when an answer does not match its schema.
 See xref:advisors/recursive.adoc[Recursive Advisors].
 * *Answer without calling the rest of the chain.* `SafeGuardAdvisor` returns a refusal when the input contains a blocked word, and `SemanticCacheAdvisor` returns a cached answer.
@@ -44,10 +63,12 @@ The chain works like a stack.
 * `Ordered.HIGHEST_PRECEDENCE` is the lowest value and `Ordered.LOWEST_PRECEDENCE` the highest.
 * Advisors with the same order run in an undefined order.
 
-The position relative to the tool loop matters most.
+The position relative to the recursive advisors matters most, and the tool loop is the one that every chain has.
 An advisor before `ToolCallingAdvisor` runs once per call.
 An advisor after it runs again for every tool round, and sees each intermediate request and response.
 For example, `SessionTurnAdvisor` is placed before the loop so that it records each turn once, and `SessionMemoryAdvisor` after it so that every round sees the conversation, including the tool calls of earlier rounds.
+
+The same holds for any other recursive advisor, and the rounds multiply: an advisor after two recursive advisors runs for every round of both.
 
 [cols="3,2,4", options="header"]
 |===
@@ -81,6 +102,30 @@ For example, `SessionTurnAdvisor` is placed before the loop so that it records e
 The built-in advisors let you change their order through their builders.
 When `ChatClient` auto-registers the `ToolCallingAdvisor` and finds a `MemoryAdvisor` after it in the chain, such as `SessionMemoryAdvisor`, it turns off the advisor's internal conversation history and leaves the history of the tool rounds to that memory advisor.
 If you register the `ToolCallingAdvisor` yourself, call `disableInternalConversationHistory()` on its builder to get the same behavior.
+
+[[advisors-repeatable]]
+== Advisors Run More Than Once
+
+An advisor can run more than once for the same user request:
+
+* *Once for every round of a recursive advisor before it.*
+In the default chain, every advisor after the `ToolCallingAdvisor` runs again for each tool round.
+* *Again when your application sends the request again.*
+A retry after a failure runs the whole chain from the first advisor.
+So does the call that xref:tools/confirmation.adoc#resuming[resumes a conversation] after a tool call waited for confirmation.
+
+An advisor must therefore be repeatable: when it runs again, the outcome is the same as if it had run once.
+
+* *An advisor that only changes the request or the response is repeatable when it computes the change from the request it receives.*
+A recursive advisor builds the request of every round itself.
+A change that an advisor made in one round is not in the request of the next round, so the advisor makes it again.
+* *Work that must happen once per call belongs before the recursive advisors.*
+`SessionTurnAdvisor` runs before the tool loop for this reason.
+* *Work that must not happen twice needs a record.*
+An advisor that sends a notification or charges an account checks first whether it has already done so, in a store that outlives the call.
+Nothing that an advisor keeps in memory is there when your application sends the request again.
+
+xref:advisors/custom.adoc#repeatable-advisors[Writing an Advisor] shows how to follow this rule in an advisor of your own.
 
 == Registering Advisors
 

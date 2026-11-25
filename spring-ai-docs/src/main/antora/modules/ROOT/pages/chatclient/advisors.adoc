@@ -35,9 +35,7 @@ interface AdvisorSpec {
 ----
 
 IMPORTANT: The chain runs the advisors sorted by their `getOrder()` value, not in the order in which you register them.
-The advisor with the lowest order runs first on the way to the model, and last on the way back.
-Each advisor modifies the prompt or the context in some way, and the changes made by one advisor are passed on to the next in the chain.
-See xref:advisors/index.adoc#_order[Order] for the default order of the built-in advisors.
+See xref:advisors/index.adoc#_order[Order] for how the order decides where an advisor runs, and for the default order of the built-in advisors.
 
 The following example combines xref:memory/session/index.adoc[session memory] with retrieval:
 

@@ -19,7 +19,12 @@ A recursive advisor calls such a copy, made with `copy(this)`, once for every ro
 
 * The advisors before the recursive advisor run once per call.
 * The advisors after it, and the model, run on every round, and can observe and change each one.
+* Recursive advisors nest: an advisor after two of them runs for every round of both.
+* Each round starts from the request that the recursive advisor passes to the copy.
+A change that a following advisor made to the request of an earlier round is not in it.
 * Each round is observed like any other call of the chain.
+
+The advisors after a recursive advisor must be repeatable, see xref:advisors/index.adoc#advisors-repeatable[Advisors Run More Than Once].
 
 Make a new copy for every round.
 A chain is used up as it runs: each advisor takes the next one from it, so a chain that has run cannot run again.
