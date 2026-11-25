@@ -16,6 +16,12 @@
 
 package org.springframework.ai.openai.http.okhttp;
 
+import java.lang.ref.WeakReference;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationHandler;
+import io.micrometer.observation.ObservationRegistry;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -80,6 +86,65 @@ class SpringAiOpenAiHttpClientTests {
 				assertThat(second.code()).isEqualTo(200);
 			}
 		}
+	}
+
+	@Test
+	void observationInterceptorDoesNotPinTheObservationRegistry() throws Exception {
+		// The SDK Cleaner can retain the HTTP client after the Spring context
+		// closes. The interceptor must not keep a strong ref to the context's
+		// ObservationRegistry (gh-7455).
+		ObservationRegistry registry = ObservationRegistry.create();
+		WeakReference<ObservationRegistry> ref = new WeakReference<>(registry);
+		SpringAiOpenAiHttpClient client = SpringAiOpenAiHttpClient.builder().observationRegistry(registry).build();
+		registry = null;
+
+		assertThat(awaitCleared(ref)).as("registry should be collectable once only weakly held by the interceptor")
+			.isTrue();
+		client.close();
+	}
+
+	@Test
+	void observationsAreRecordedWhileRegistryIsReachable() throws Exception {
+		ObservationRegistry registry = ObservationRegistry.create();
+		AtomicInteger starts = new AtomicInteger();
+		registry.observationConfig().observationHandler(new ObservationHandler<>() {
+			@Override
+			public boolean supportsContext(Observation.Context context) {
+				return true;
+			}
+
+			@Override
+			public void onStart(Observation.Context context) {
+				starts.incrementAndGet();
+			}
+		});
+
+		try (MockWebServer server = new MockWebServer()) {
+			server.enqueue(new MockResponse().setResponseCode(200)
+				.setHeader("Content-Type", "application/json")
+				.setBody(CHAT_COMPLETION_RESPONSE));
+			server.start();
+
+			OkHttpClient client = SpringAiOpenAiHttpClient.builder()
+				.observationRegistry(registry)
+				.build()
+				.getOkHttpClient();
+			String url = "http://127.0.0.1:" + server.getPort() + "/v1/chat/completions";
+			try (Response response = client.newCall(newPost(url)).execute()) {
+				assertThat(response.code()).isEqualTo(200);
+			}
+		}
+
+		assertThat(starts.get()).isGreaterThan(0);
+	}
+
+	private static boolean awaitCleared(WeakReference<?> ref) throws InterruptedException {
+		for (int i = 0; i < 50 && ref.get() != null; i++) {
+			System.gc();
+			System.runFinalization();
+			Thread.sleep(20);
+		}
+		return ref.get() == null;
 	}
 
 	private static Request newPost(String url) {
