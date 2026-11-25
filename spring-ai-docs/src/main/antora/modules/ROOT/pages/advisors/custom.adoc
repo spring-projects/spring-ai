@@ -30,6 +30,8 @@ The order decides where the advisor runs, see xref:advisors/index.adoc#_order[Or
 * A higher order puts it inside the tool loop: it runs for every tool round and sees each intermediate request and response.
 * An order close to `LOWEST_PRECEDENCE` puts it next to the model call.
 
+The same holds for any other recursive advisor in the chain: an advisor after it runs for every one of its rounds.
+
 Let users change the order, through a constructor or a builder, because they may combine your advisor with others.
 
 == Changing the Request: a Re-Reading Advisor
@@ -118,6 +120,34 @@ public class TimingAdvisor implements BaseAdvisor {
 
 Use keys that other advisors will not use by accident, such as names that start with your class name.
 Read the parameters that users pass with `.advisors(a -> a.param(key, value))` the same way, from `request.context()`.
+
+Keep the state of a call in the context, not in the fields of the advisor.
+One advisor instance serves every call of the `ChatClient` it is registered on, also calls that run at the same time.
+
+An entry that an advisor inside a loop adds is there for the rest of that round, down the chain and back up.
+Do not rely on it in the next round: a recursive advisor builds the request of every round itself.
+
+[[repeatable-advisors]]
+== Making an Advisor Repeatable
+
+An advisor can run more than once for the same user request: for every round of a recursive advisor before it, and again when the application sends the request again.
+It must give the same outcome as if it had run once, see xref:advisors/index.adoc#advisors-repeatable[Advisors Run More Than Once].
+
+[cols="2,4", options="header"]
+|===
+| What the advisor does | How to keep it repeatable
+
+| Changes the request or the response
+| Compute the change from the request you receive.
+Do not assume that the last message is the user message, or that the request holds one: inside the tool loop, the request of a later round ends with the tool results, and before a memory advisor that keeps the history of the rounds it may hold little else.
+
+| Does work that must happen once per call, such as starting a timer or counting the call
+| Give the advisor an order before the recursive advisors, lower than `ToolCallingAdvisor.DEFAULT_ORDER`.
+
+| Does work that must not happen twice, such as sending a notification or writing to a store
+| Record that the work is done in a store that outlives the call, for example as an event in the xref:memory/session/index.adoc[session], and check the record before doing the work.
+The context is not enough: it does not carry from one round to the next, and it is gone when the application sends the request again.
+|===
 
 == Observing Both Directions: a Logging Advisor
 
@@ -215,5 +245,6 @@ public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAd
 * Give each advisor one task, and combine advisors in the chain.
 * Choose the order deliberately, relative to the tool loop and to memory, and let users change it.
 * Support both `call()` and `stream()`, or document which one your advisor supports.
-* Use the context to share state, with keys that will not collide with those of other advisors.
+* Use the context to share state, with keys that will not collide with those of other advisors, and keep no state of a call in the fields of the advisor.
+* Make the advisor repeatable: it may run for every round of a loop, and again when the application sends the request again.
 * Return a refusal built with `GuardrailRefusal` when an advisor blocks a request.
