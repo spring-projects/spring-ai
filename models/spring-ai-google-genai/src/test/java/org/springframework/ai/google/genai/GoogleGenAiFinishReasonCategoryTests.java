@@ -36,6 +36,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.retry.RetryUtils;
 
@@ -114,6 +115,32 @@ class GoogleGenAiFinishReasonCategoryTests {
 
 		assertThat(metadata.getFinishReason()).isEqualTo("STOP");
 		assertThat(metadata.getFinishReasonCategory()).isEqualTo(FinishReasonCategory.TOOL_CALL);
+	}
+
+	@Test
+	void finishMessageIsKeptInTheMessageMetadata() {
+		String finishMessage = "Malformed function call: foo(";
+		Candidate candidate = Candidate.builder()
+			.finishReason(new FinishReason(FinishReason.Known.MALFORMED_FUNCTION_CALL))
+			.finishMessage(finishMessage)
+			.build();
+
+		Generation generation = this.chatModel.responseCandidateToGeneration(candidate).get(0);
+
+		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("MALFORMED_FUNCTION_CALL");
+		assertThat(generation.getOutput().getMetadata()).containsKey("finishReason");
+		assertThat(generation.getOutput().getMetadata()).containsEntry("finishMessage", finishMessage);
+	}
+
+	@Test
+	void anAbsentFinishMessageIsNotWrittenToTheMessageMetadata() {
+		Candidate candidate = Candidate.builder().finishReason(new FinishReason(FinishReason.Known.STOP)).build();
+
+		Generation generation = this.chatModel.responseCandidateToGeneration(candidate).get(0);
+
+		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("STOP");
+		assertThat(generation.getOutput().getMetadata()).containsKey("finishReason");
+		assertThat(generation.getOutput().getMetadata()).doesNotContainKey("finishMessage");
 	}
 
 }
