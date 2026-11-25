@@ -828,8 +828,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 		}
 
-		boolean thinkingEnabled = requestOptions.getThinking() != null
-				&& (requestOptions.getThinking().isEnabled() || requestOptions.getThinking().isAdaptive());
+		var thinking = requestOptions.getThinking();
+		boolean adaptiveThinking = thinking != null && thinking.isAdaptive();
+		boolean thinkingEnabled = thinking != null && (thinking.isEnabled() || adaptiveThinking);
 
 		// Citation documents are attached once, to the first user message. Repeating
 		// them on every user turn would re-send the source material on each request
@@ -928,7 +929,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				else {
 					List<ContentBlockParam> blocks = toAssistantBlockParams(assistantMessage);
 					if (thinkingEnabled && onlyToolResponsesFollow(nonSystemMessages, i)) {
-						warnIfThinkingNotReplayed(assistantMessage, blocks);
+						warnIfThinkingNotReplayed(assistantMessage, blocks, adaptiveThinking);
 					}
 					if (blocks.isEmpty()) {
 						// Nothing Anthropic can take from this turn (for example only
@@ -1393,25 +1394,40 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * Warns when an assistant turn whose tool use loop is still open, with extended
-	 * thinking enabled, has tool calls but no thinking block to replay. Anthropic expects
-	 * that turn to start with the thinking block it returned; without it, the API does
-	 * not fail but silently answers the request without extended thinking, and this
-	 * warning says why.
+	 * Warns when an assistant turn whose tool use loop is still open, with explicit
+	 * extended thinking enabled, has tool calls but no thinking block to replay.
+	 * Anthropic expects that turn to start with the thinking block it returned; without
+	 * it, the API does not fail but silently answers the request without extended
+	 * thinking, and this warning says why.
+	 * <p>
+	 * Adaptive thinking is not warned about. With adaptive thinking the model decides per
+	 * response whether to think, so a turn without a thinking block is expected and
+	 * nothing was necessarily dropped.
 	 * @param assistantMessage the assistant message followed only by tool responses
 	 * @param blocks the content blocks the message was converted to
+	 * @param adaptiveThinking whether the request uses adaptive thinking
 	 */
-	private static void warnIfThinkingNotReplayed(AssistantMessage assistantMessage, List<ContentBlockParam> blocks) {
-		if (!assistantMessage.hasToolCalls() || !logger.isWarnEnabled()) {
+	private static void warnIfThinkingNotReplayed(AssistantMessage assistantMessage, List<ContentBlockParam> blocks,
+			boolean adaptiveThinking) {
+		if (!assistantMessage.hasToolCalls()) {
 			return;
 		}
 		boolean replayedThinking = blocks.stream().anyMatch(block -> block.isThinking() || block.isRedactedThinking());
-		if (!replayedThinking) {
-			logger.warn("Extended thinking is enabled but the assistant turn awaiting tool results has no Anthropic "
-					+ "thinking block to replay, so Anthropic is expected to answer without extended thinking. The "
-					+ "conversation history was likely stored or rebuilt without its message parts, or produced by "
-					+ "another provider or with thinking disabled.");
+		if (replayedThinking) {
+			return;
 		}
+		if (adaptiveThinking) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Adaptive thinking may leave the assistant turn awaiting tool results without an "
+						+ "Anthropic thinking block, either because the model chose not to think or because the "
+						+ "turn's parts were not replayed.");
+			}
+			return;
+		}
+		logger.warn("Extended thinking is enabled but the assistant turn awaiting tool results has no Anthropic "
+				+ "thinking block to replay, so Anthropic is expected to answer without extended thinking. The "
+				+ "conversation history was likely stored or rebuilt without its message parts, or produced by "
+				+ "another provider or with thinking disabled.");
 	}
 
 	/**
