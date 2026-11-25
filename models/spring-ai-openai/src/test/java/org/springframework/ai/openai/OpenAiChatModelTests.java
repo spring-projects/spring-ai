@@ -925,8 +925,9 @@ class OpenAiChatModelTests {
 		assertThat(aggregated.getMetadata().get("reasoningContent"))
 			.isEqualTo("Think step one. Now call the tool. One more thought.");
 
-		// Replaying the aggregated message on the next turn must re-attach the wire
-		// field that providers like DeepSeek require on assistant tool-call messages.
+		// Replaying the aggregated message on the next turn must re-attach the field the
+		// reasoning arrived in: DeepSeek requires reasoning_content, OpenRouter-style
+		// servers read reasoning.
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("deepseek-reasoner").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
 			.openAiClient(this.openAiClient)
@@ -946,7 +947,7 @@ class OpenAiChatModelTests {
 			.map(ChatCompletionMessageParam::asAssistant)
 			.findFirst()
 			.orElseThrow();
-		assertThat(assistantParam._additionalProperties()).containsEntry("reasoning_content",
+		assertThat(assistantParam._additionalProperties()).containsEntry(reasoningKey,
 				JsonValue.from("Think step one. Now call the tool. One more thought."));
 	}
 

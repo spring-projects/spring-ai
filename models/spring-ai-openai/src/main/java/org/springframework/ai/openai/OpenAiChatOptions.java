@@ -182,11 +182,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	private final @Nullable String promptCacheKey;
 
 	/**
-	 * Whether to send a previous assistant message's reasoning content back as the
-	 * {@code reasoning_content} property of the next request. When {@code null}, the
-	 * content is replayed whenever it is present, which OpenAI-compatible reasoning
-	 * endpoints such as DeepSeek's thinking mode require. Set to {@code false} for
-	 * endpoints that reject the property, such as Groq.
+	 * Whether to send a previous assistant message's reasoning content back in the
+	 * property it arrived in, {@code reasoning_content} or {@code reasoning}, of the next
+	 * request. When {@code null}, the content is replayed whenever it is present, which
+	 * OpenAI-compatible reasoning endpoints such as DeepSeek's thinking mode require. Set
+	 * to {@code false} for endpoints that reject the property, such as Groq.
 	 */
 	private final @Nullable Boolean replayReasoningContent;
 
@@ -537,8 +537,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	/**
-	 * Gets whether a previous assistant message's reasoning content is sent back as the
-	 * {@code reasoning_content} property of the next request.
+	 * Gets whether a previous assistant message's reasoning content is sent back in the
+	 * property it arrived in, {@code reasoning_content} or {@code reasoning}, of the next
+	 * request.
 	 * @return {@code false} if the reasoning content is never replayed, {@code null} if
 	 * it is replayed whenever present
 	 * @since 2.0.2
@@ -1032,11 +1033,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		}
 
 		/**
-		 * Sets whether a previous assistant message's reasoning content is sent back as
-		 * the {@code reasoning_content} property of the next request. Defaults to
-		 * replaying it whenever present, which OpenAI-compatible reasoning endpoints such
-		 * as DeepSeek's thinking mode require. Set to {@code false} for endpoints that
-		 * reject the property, such as Groq.
+		 * Sets whether a previous assistant message's reasoning content is sent back in
+		 * the property it arrived in, {@code reasoning_content} or {@code reasoning}, of
+		 * the next request. Defaults to replaying it whenever present, which
+		 * OpenAI-compatible reasoning endpoints such as DeepSeek's thinking mode require.
+		 * Set to {@code false} for endpoints that reject the property, such as Groq.
 		 * @param replayReasoningContent whether to replay the reasoning content
 		 * @return this builder
 		 * @since 2.0.2
