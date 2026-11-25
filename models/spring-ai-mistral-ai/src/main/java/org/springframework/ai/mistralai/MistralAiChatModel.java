@@ -16,13 +16,17 @@
 
 package org.springframework.ai.mistralai;
 
+import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -70,6 +74,8 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ContentChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.DocumentUrlChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.FileChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ImageUrlChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ReferenceChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.TextChunk;
@@ -152,6 +158,11 @@ public class MistralAiChatModel implements ChatModel {
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final Log logger = LogFactory.getLog(MistralAiChatModel.class);
+
+	private static final Pattern UUID_PATTERN = Pattern
+		.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$");
+
+	private static final Pattern URI_SCHEME_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9+.-]*:.*");
 
 	/**
 	 * The default options used for the chat completion requests.
@@ -476,6 +487,12 @@ public class MistralAiChatModel implements ChatModel {
 		if (chunk instanceof ImageUrlChunk) {
 			return new UnknownPart(PROVIDER, "image_url", jsonHelper.toJson(chunk), null, Map.of());
 		}
+		if (chunk instanceof DocumentUrlChunk) {
+			return new UnknownPart(PROVIDER, "document_url", jsonHelper.toJson(chunk), null, Map.of());
+		}
+		if (chunk instanceof FileChunk) {
+			return new UnknownPart(PROVIDER, "file", jsonHelper.toJson(chunk), null, Map.of());
+		}
 		throw new IllegalStateException("Unhandled content chunk type: " + chunk.getClass().getName());
 	}
 
@@ -723,7 +740,7 @@ public class MistralAiChatModel implements ChatModel {
 		Assert.state(content != null, "content must not be null");
 
 		if (message instanceof UserMessage userMessage && !CollectionUtils.isEmpty(userMessage.getMedia())) {
-			// One chunk per part, in part order, so that text and images interleave as
+			// One chunk per part, in part order, so that text and media interleave as
 			// the message was built. Messages built with text(...) and media(...) keep
 			// sending the text first.
 			List<ContentChunk> contentChunks = new ArrayList<>();
@@ -734,7 +751,7 @@ public class MistralAiChatModel implements ChatModel {
 					}
 				}
 				else if (part instanceof MediaPart mediaPart) {
-					contentChunks.add(this.mapToImageUrlChunk(mediaPart.media()));
+					contentChunks.add(this.mapToContentChunk(mediaPart.media()));
 				}
 				else {
 					logger.debug("Skipping a user message part of type " + part.getClass().getSimpleName());
@@ -753,22 +770,78 @@ public class MistralAiChatModel implements ChatModel {
 		return new ToolCall(toolCall.id(), toolCall.type(), function, null);
 	}
 
-	private ImageUrlChunk mapToImageUrlChunk(Media media) {
-		return new ImageUrlChunk(this.fromMediaData(media.getMimeType(), media.getData()));
+	private ContentChunk mapToContentChunk(Media media) {
+		String fileId = media.getId();
+		if (StringUtils.hasText(fileId) && isPlaceholderFileData(media, fileId)) {
+			return new FileChunk(fileId);
+		}
+		if ("image".equalsIgnoreCase(media.getMimeType().getType())) {
+			return this.mapToImageUrlChunk(media);
+		}
+		return this.mapToDocumentUrlChunk(media);
 	}
 
-	private ChatCompletionMessage.ImageUrlChunk.ImageUrl fromMediaData(MimeType mimeType, Object mediaData) {
+	private static boolean isPlaceholderFileData(Media media, String fileId) {
+		// Media.Builder requires non-null data, so file_id references pass "" or repeat
+		// the scheme-less id; scheme-bearing values (URLs, data: URIs) preserve content.
+		if (!(media.getData() instanceof String text)) {
+			return false;
+		}
+		if (!StringUtils.hasText(text)) {
+			return true;
+		}
+		return text.equals(fileId) && !URI_SCHEME_PATTERN.matcher(text).matches();
+	}
+
+	private ImageUrlChunk mapToImageUrlChunk(Media media) {
+		String url = toDataUrlOrString(media.getMimeType(), media.getData());
+		return new ImageUrlChunk(new ChatCompletionMessage.ImageUrlChunk.ImageUrl(url, null));
+	}
+
+	private DocumentUrlChunk mapToDocumentUrlChunk(Media media) {
+		String url = toDataUrlOrString(media.getMimeType(), media.getData());
+		return new DocumentUrlChunk(url, resolveDocumentName(media));
+	}
+
+	private static @Nullable String resolveDocumentName(Media media) {
+		String name = media.getName();
+		if (!StringUtils.hasText(name)) {
+			return null;
+		}
+		// Media generates "media-<subtype>-<uuid>" when callers omit .name(...).
+		String defaultPrefix = "media-" + media.getMimeType().getSubtype() + "-";
+		if (name.startsWith(defaultPrefix) && UUID_PATTERN.matcher(name.substring(defaultPrefix.length())).matches()) {
+			return null;
+		}
+		return name;
+	}
+
+	private static String toDataUrlOrString(MimeType mimeType, Object mediaData) {
 		if (mediaData instanceof byte[] bytes) {
-			// Assume the bytes are an image.
-			return ChatCompletionMessage.ImageUrlChunk.ImageUrl.fromImageData(mimeType, bytes);
+			Assert.isTrue(bytes.length > 0, "Media byte array data must not be empty");
+			assertConcreteMimeType(mimeType);
+			return String.format("data:%s;base64,%s", mimeType, Base64.getEncoder().encodeToString(bytes));
 		}
-		else if (mediaData instanceof String text) {
-			// Assume the text is a URL or a base64 encoded image prefixed by the user.
-			return new ChatCompletionMessage.ImageUrlChunk.ImageUrl(text, null);
+		if (mediaData instanceof String text) {
+			Assert.hasText(text, "Media string data must not be empty");
+			if (!URI_SCHEME_PATTERN.matcher(text).matches()) {
+				assertConcreteMimeType(mimeType);
+				return String.format("data:%s;base64,%s", mimeType, text);
+			}
+			return text;
 		}
-		else {
-			throw new IllegalArgumentException("Unsupported media data type: " + mediaData.getClass().getSimpleName());
+		if (mediaData instanceof URI uri) {
+			return uri.toString();
 		}
+		if (mediaData instanceof URL url) {
+			return url.toString();
+		}
+		throw new IllegalArgumentException("Unsupported media data type: " + mediaData.getClass().getSimpleName());
+	}
+
+	private static void assertConcreteMimeType(MimeType mimeType) {
+		Assert.isTrue(!mimeType.isWildcardType() && !mimeType.isWildcardSubtype(),
+				"Media mimeType must not be a wildcard when encoding base64 data: " + mimeType);
 	}
 
 	private List<MistralAiApi.FunctionTool> getFunctionTools(List<ToolDefinition> toolDefinitions) {

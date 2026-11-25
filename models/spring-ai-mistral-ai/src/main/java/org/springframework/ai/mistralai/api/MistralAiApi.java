@@ -1408,6 +1408,8 @@ public class MistralAiApi {
 		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 		// @formatter:off
 		@JsonSubTypes({
+				@JsonSubTypes.Type(value = DocumentUrlChunk.class, name = "document_url"),
+				@JsonSubTypes.Type(value = FileChunk.class, name = "file"),
 				@JsonSubTypes.Type(value = ImageUrlChunk.class, name = "image_url"),
 				@JsonSubTypes.Type(value = ReferenceChunk.class, name = "reference"),
 				@JsonSubTypes.Type(value = TextChunk.class, name = "text"),
@@ -1415,6 +1417,84 @@ public class MistralAiApi {
 		})
 		// @formatter:on
 		public sealed interface ContentChunk {
+
+		}
+
+		/**
+		 * Content chunk referencing a document via URL or base64-encoded data URI.
+		 *
+		 * @param documentUrl the URL or data URI of the document
+		 * @param documentName optional display name of the document
+		 * @since 2.1.1
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record DocumentUrlChunk(
+		// @formatter:off
+				@JsonProperty("document_url") String documentUrl,
+				@JsonProperty("document_name") @Nullable String documentName
+				// @formatter:on
+		) implements ContentChunk {
+
+			public DocumentUrlChunk {
+				Assert.hasText(documentUrl, "documentUrl must not be null or empty");
+				documentName = StringUtils.hasText(documentName) ? documentName : null;
+			}
+
+			/**
+			 * Create a {@link DocumentUrlChunk} without a document name.
+			 * @param documentUrl the URL or data URI of the document
+			 */
+			public DocumentUrlChunk(String documentUrl) {
+				this(documentUrl, null);
+			}
+
+			/**
+			 * Convert the bytes to a base64 encoded data URI.
+			 * @param mimeType the MIME type of the document
+			 * @param data the document bytes
+			 * @param documentName optional display name of the document
+			 * @return the {@link DocumentUrlChunk} holding the encoded data URI
+			 */
+			public static DocumentUrlChunk fromDocumentData(MimeType mimeType, byte[] data,
+					@Nullable String documentName) {
+				Assert.notNull(mimeType, "mimeType must not be null");
+				Assert.isTrue(!mimeType.isWildcardType() && !mimeType.isWildcardSubtype(),
+						"mimeType must not be a wildcard: " + mimeType);
+				Assert.notNull(data, "data must not be null");
+				Assert.isTrue(data.length > 0, "data must not be empty");
+				var url = String.format("data:%s;base64,%s", mimeType, Base64.getEncoder().encodeToString(data));
+
+				return new DocumentUrlChunk(url, documentName);
+			}
+
+			/**
+			 * Convert the bytes to a base64 encoded data URI.
+			 * @param mimeType the MIME type of the document
+			 * @param data the document bytes
+			 * @return the {@link DocumentUrlChunk} holding the encoded data URI
+			 */
+			public static DocumentUrlChunk fromDocumentData(MimeType mimeType, byte[] data) {
+				return fromDocumentData(mimeType, data, null);
+			}
+
+		}
+
+		/**
+		 * Content chunk referencing a previously uploaded file in Mistral's storage.
+		 *
+		 * @param fileId the identifier of the uploaded file
+		 * @since 2.1.1
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record FileChunk(
+		// @formatter:off
+				@JsonProperty("file_id") String fileId
+				// @formatter:on
+		) implements ContentChunk {
+
+			public FileChunk {
+				Assert.hasText(fileId, "fileId must not be null or empty");
+			}
 
 		}
 
