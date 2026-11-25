@@ -18,6 +18,7 @@ package org.springframework.ai.anthropic;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import com.anthropic.errors.BadRequestException;
@@ -334,6 +335,36 @@ class AnthropicChatModelStreamingHttpTests {
 			Disposable subscription = this.chatModel.stream(new Prompt("hi")).subscribe(response -> {
 			}, errors::add);
 			Thread.sleep(200);
+			subscription.dispose();
+			Thread.sleep(500);
+
+			assertThat(errors).isEmpty();
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
+	}
+
+	@Test
+	void streamCancelledWhileReadingIsNotReportedAsAnError() throws Exception {
+		// The events trickle in, so the cancel lands while the stream waits for the next
+		// one.
+		String delta = """
+				event: content_block_delta
+				data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"ok"}}
+
+				""";
+		this.server.enqueue(new MockResponse().setHeader("Content-Type", "text/event-stream")
+			.setChunkedBody(STREAM_RESPONSE.replace(delta, delta.repeat(200)), 256)
+			.throttleBody(512, 500, TimeUnit.MILLISECONDS));
+		List<Throwable> errors = new CopyOnWriteArrayList<>();
+		CountDownLatch firstResponse = new CountDownLatch(1);
+		Hooks.onErrorDropped(errors::add);
+		try {
+			Disposable subscription = this.chatModel.stream(new Prompt("hi"))
+				.subscribe(response -> firstResponse.countDown(), errors::add);
+			assertThat(firstResponse.await(5, TimeUnit.SECONDS)).isTrue();
+			Thread.sleep(100);
 			subscription.dispose();
 			Thread.sleep(500);
 

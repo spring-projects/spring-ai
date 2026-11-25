@@ -68,6 +68,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import okio.BufferedSink;
 import okio.Okio;
 import org.jspecify.annotations.Nullable;
@@ -120,7 +121,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 		HttpRequest preparedRequest = prepareRequest(request);
 		Call call = newCall(preparedRequest, requestOptions);
 		try {
-			return this.backend.prepareResponse(toHttpResponse(call.execute()));
+			return this.backend.prepareResponse(toHttpResponse(call.execute(), call));
 		}
 		catch (IOException e) {
 			throw new AnthropicIoException("Request failed", e);
@@ -139,7 +140,8 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 		call.enqueue(new Callback() {
 			@Override
 			public void onResponse(Call call, Response response) {
-				future.complete(SpringAiAnthropicHttpClient.this.backend.prepareResponse(toHttpResponse(response)));
+				future
+					.complete(SpringAiAnthropicHttpClient.this.backend.prepareResponse(toHttpResponse(response, call)));
 			}
 
 			@Override
@@ -310,8 +312,18 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 		};
 	}
 
-	private static HttpResponse toHttpResponse(Response response) {
+	/**
+	 * Converts an OkHttp response to the SDK's {@link HttpResponse}.
+	 * @param response the OkHttp response
+	 * @param call the call to cancel on a close that races a read, or {@code null} if it
+	 * can't be cancelled
+	 * @return the SDK response
+	 */
+	private static HttpResponse toHttpResponse(Response response, @Nullable Call call) {
 		final Headers headers = toAnthropicHeaders(response.headers());
+		final ResponseBody responseBody = response.body();
+		final @Nullable ResponseBodyInputStream body = responseBody != null
+				? new ResponseBodyInputStream(responseBody, call) : null;
 		return new HttpResponse() {
 			@Override
 			public int statusCode() {
@@ -325,12 +337,14 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 
 			@Override
 			public InputStream body() {
-				return Objects.requireNonNull(response.body()).byteStream();
+				return Objects.requireNonNull(body, "Response has no body");
 			}
 
 			@Override
 			public void close() {
-				Objects.requireNonNull(response.body()).close();
+				if (body != null) {
+					body.close();
+				}
 			}
 		};
 	}
@@ -421,6 +435,115 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 			builder.put(okHttpHeaders.name(i), okHttpHeaders.value(i));
 		}
 		return builder.build();
+	}
+
+	/**
+	 * A response body that one thread can close while another thread reads it, as happens
+	 * when a stream is cancelled.
+	 *
+	 * <p>
+	 * OkHttp's own close drains the rest of the body so the connection can be reused. On
+	 * HTTP/1.1 that reads the socket source, and okio doesn't allow two threads to read
+	 * one source at once, so a close that races a read would throw and leave the read
+	 * blocked. Such a close cancels the call instead, which fails the read, and the
+	 * reading thread closes the body once its read unwinds. A close with no read in
+	 * flight closes the body directly, which keeps the connection reusable.
+	 *
+	 * <p>
+	 * A Java port of {@code ResponseBodyInputStream} from the SDK's {@code OkHttpClient}.
+	 */
+	private static final class ResponseBodyInputStream extends InputStream {
+
+		private final ResponseBody body;
+
+		private final @Nullable Call call;
+
+		private final InputStream delegate;
+
+		private final Object lock = new Object();
+
+		// Guarded by lock. No read starts once closed is set, so exactly one of close()
+		// and the last read in flight closes the body.
+		private boolean closed;
+
+		private int readsInFlight;
+
+		ResponseBodyInputStream(ResponseBody body, @Nullable Call call) {
+			this.body = body;
+			this.call = call;
+			this.delegate = body.byteStream();
+		}
+
+		@Override
+		public int read() throws IOException {
+			readStarts();
+			try {
+				return this.delegate.read();
+			}
+			finally {
+				readEnds();
+			}
+		}
+
+		@Override
+		public int read(byte[] b, int off, int len) throws IOException {
+			readStarts();
+			try {
+				return this.delegate.read(b, off, len);
+			}
+			finally {
+				readEnds();
+			}
+		}
+
+		@Override
+		public int available() throws IOException {
+			readStarts();
+			try {
+				return this.delegate.available();
+			}
+			finally {
+				readEnds();
+			}
+		}
+
+		@Override
+		public void close() {
+			boolean readInFlight;
+			synchronized (this.lock) {
+				if (this.closed) {
+					return;
+				}
+				this.closed = true;
+				readInFlight = this.readsInFlight > 0;
+			}
+			if (!readInFlight) {
+				this.body.close();
+			}
+			else if (this.call != null) {
+				this.call.cancel();
+			}
+		}
+
+		private void readStarts() throws IOException {
+			synchronized (this.lock) {
+				if (this.closed) {
+					throw new IOException("closed");
+				}
+				this.readsInFlight++;
+			}
+		}
+
+		private void readEnds() {
+			boolean closeBody;
+			synchronized (this.lock) {
+				closeBody = --this.readsInFlight == 0 && this.closed;
+			}
+			if (closeBody) {
+				this.body.close();
+			}
+		}
+
 	}
 
 	/**
@@ -597,7 +720,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 				okBuilder.proxyAuthenticator((route, response) -> {
 					Proxy routeProxy = route != null ? route.proxy() : Proxy.NO_PROXY;
 					Optional<HttpRequest> authed = pa.authenticate(routeProxy, toHttpRequest(response.request()),
-							toHttpResponse(response));
+							toHttpResponse(response, null));
 					return authed.map(req -> toRequestComputeUrl(req, null)).orElse(null);
 				});
 			}
