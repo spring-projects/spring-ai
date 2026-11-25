@@ -108,6 +108,8 @@ The default cleaner applies, in this order:
 . `WhitespaceCleaner` trims leading and trailing whitespace.
 . `ThinkingTagCleaner` removes reasoning blocks, such as `<thinking>...</thinking>` (Amazon Nova), `<think>...</think>` (Qwen) and `<reasoning>...</reasoning>`.
 . `MarkdownCodeBlockCleaner` removes a code fence, such as ` ```json `, that surrounds the whole answer.
+. `JsonSurroundingTextCleaner` removes text before and after the JSON object or array, such as `Here are the results:` or `Hope this helps!`.
+If the answer contains no JSON object or array, the text is left unchanged.
 . `WhitespaceCleaner` trims the result again.
 
 To change the cleaning, pass your own cleaner to the `BeanOutputConverter` constructor, together with an optional `JsonMapper`.
