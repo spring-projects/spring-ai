@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -115,6 +116,30 @@ class SyncMcpToolCallbackTests {
 		String response = callback.call("{\"param\":\"value\"}", new ToolContext(Map.of("foo", "bar")));
 
 		assertThat(response).isNotNull();
+	}
+
+	@Test
+	void callShouldPassTheOriginalToolNameToTheMetaConverter() {
+		when(this.tool.name()).thenReturn("getWeather");
+		CallToolResult callResult = mock(CallToolResult.class);
+		when(callResult.isError()).thenReturn(false);
+		when(callResult.content()).thenReturn(List.of());
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+
+		ToolContextToMcpMetaConverter converter = mock(ToolContextToMcpMetaConverter.class);
+		ToolContext toolContext = mock(ToolContext.class);
+		when(converter.convert(toolContext, "getWeather")).thenReturn(Map.of("custom", "meta"));
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("prefix_getWeather")
+			.toolContextToMcpMetaConverter(converter)
+			.build();
+
+		callback.call("{}", toolContext);
+
+		verify(converter).convert(toolContext, "getWeather");
 	}
 
 	@Test

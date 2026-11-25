@@ -171,6 +171,37 @@ class ToolContextToMcpMetaConverterTest {
 	}
 
 	@Test
+	void convertWithToolNameDelegatesToConvertWithoutToolNameByDefault() {
+		ToolContextToMcpMetaConverter converter = toolContext -> Map.of("key", "value");
+
+		Map<String, Object> result = converter.convert(new ToolContext(Map.of("contextKey", "contextValue")),
+				"getWeather");
+
+		assertThat(result).containsEntry("key", "value");
+	}
+
+	@Test
+	void convertWithToolNameCanUseTheToolName() {
+		ToolContextToMcpMetaConverter converter = new ToolContextToMcpMetaConverter() {
+
+			@Override
+			public Map<String, Object> convert(ToolContext toolContext) {
+				return Map.of("source", "context");
+			}
+
+			@Override
+			public Map<String, Object> convert(ToolContext toolContext, String toolName) {
+				return Map.of("tool", toolName);
+			}
+
+		};
+
+		Map<String, Object> result = converter.convert(new ToolContext(Map.of()), "getWeather");
+
+		assertThat(result).containsEntry("tool", "getWeather");
+	}
+
+	@Test
 	void customConverterImplementation() {
 		ToolContextToMcpMetaConverter customConverter = toolContext -> {
 			if (toolContext == null || toolContext.getContext() == null) {

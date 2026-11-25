@@ -157,7 +157,7 @@ public final class AsyncModernMcpToolCallback implements ToolCallback {
 		CallToolResult result;
 		try {
 			McpAsyncClient.ToolSpec callSpec = this.toolSpec.arguments(arguments)
-				.meta(ModernToolCalls.requestMeta(this.toolContextToMcpMetaConverter, toolContext));
+				.meta(ModernToolCalls.requestMeta(this.toolContextToMcpMetaConverter, toolContext, this.tool.name()));
 			if (this.toolCallCustomizer != null && this.connectionInfo != null) {
 				callSpec = this.toolCallCustomizer.customize(this.connectionInfo, callSpec, toolContext);
 				Assert.state(callSpec != null, "toolCallCustomizer must not return null");

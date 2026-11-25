@@ -43,6 +43,21 @@ public interface ToolContextToMcpMetaConverter {
 	 */
 	Map<String, Object> convert(ToolContext toolContext);
 
+	/**
+	 * Convert the given {@link ToolContext} to a Map<String, Object> as MCP tool call
+	 * metadata, for a call of the given tool.
+	 * <p>
+	 * The default implementation delegates to {@link #convert(ToolContext)} and ignores
+	 * the tool name. Override it to vary the metadata by tool.
+	 * @param toolContext the tool context to convert
+	 * @param toolName the name of the tool on the MCP server
+	 * @return a map of metadata to be sent as part of the MCP tool call
+	 * @since 2.1.1
+	 */
+	default Map<String, Object> convert(ToolContext toolContext, String toolName) {
+		return convert(toolContext);
+	}
+
 	static ToolContextToMcpMetaConverter defaultConverter() {
 
 		return toolContext -> {

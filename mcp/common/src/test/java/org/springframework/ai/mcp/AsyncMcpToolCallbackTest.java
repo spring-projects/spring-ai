@@ -290,20 +290,20 @@ class AsyncMcpToolCallbackTest {
 		when(this.mcpClient.callTool(any(McpSchema.CallToolRequest.class))).thenReturn(Mono.just(callToolResult));
 
 		ToolContext toolContext = mock(ToolContext.class);
-		when(customConverter.convert(toolContext)).thenReturn(Map.of("custom", "meta"));
+		when(customConverter.convert(toolContext, "testTool")).thenReturn(Map.of("custom", "meta"));
 
 		// Act
 		var callback = AsyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
 			.tool(this.tool)
-			.prefixedToolName("testTool")
+			.prefixedToolName("prefixedTestTool")
 			.toolContextToMcpMetaConverter(customConverter)
 			.build();
 
 		callback.call("{}", toolContext);
 
 		// Assert
-		verify(customConverter).convert(toolContext);
+		verify(customConverter).convert(toolContext, "testTool");
 	}
 
 	@Test
