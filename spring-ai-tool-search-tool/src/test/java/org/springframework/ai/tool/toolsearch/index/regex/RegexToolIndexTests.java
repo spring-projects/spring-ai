@@ -187,6 +187,32 @@ class RegexToolIndexTests {
 	}
 
 	@Test
+	void singleLongTokenIsStillCapped() {
+		try (RegexToolIndex searcher = new RegexToolIndex()) {
+			String pattern = searcher.convertQueryToRegexPattern("x".repeat(300));
+
+			assertThat(pattern).hasSizeLessThanOrEqualTo(200);
+			assertThat(searcher.isValidPattern(pattern)).isTrue();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Test
+	void truncatingLongTokenDoesNotLeaveDanglingEscape() {
+		try (RegexToolIndex searcher = new RegexToolIndex()) {
+			String pattern = searcher.convertQueryToRegexPattern("a+".repeat(200));
+
+			assertThat(pattern).hasSizeLessThanOrEqualTo(200);
+			assertThat(searcher.isValidPattern(pattern)).isTrue();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Test
 	void convertQueryToRegexPatternInTrLocale() {
 		Locale defaultLocale = Locale.getDefault();
 		try {
