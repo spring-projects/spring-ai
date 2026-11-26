@@ -324,7 +324,7 @@ public class FilterExpressionTextParser {
 		 * Convert the DSL string representation (enclosed in single or double quotes)
 		 * into a java String object. This not only means removing the enclosing quotes,
 		 * but also un-escaping potential inner quotes, as well as unescaping the escaping
-		 * caracter (the backslash).
+		 * character (the backslash).
 		 */
 		private String unescapeStringValue(String in) {
 			char quoteStyle = in.charAt(0);

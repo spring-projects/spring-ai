@@ -76,7 +76,7 @@ To use just the `GemFireVectorStore`, without Spring Boot's Auto-configuration a
 
 For Gradle users, add the following to your `build.gradle` file under the dependencies block to use just the `GemFireVectorStore`:
 
-[souce, xml]
+[source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-gemfire-store'

@@ -171,7 +171,7 @@ public final class PdfDocumentReaderConfig {
 		/**
 		 * Configures the Pdf reader reverse paragraph position. Defaults to false.
 		 * @param reversedParagraphPosition to reverse or not the paragraph position
-		 * withing a page.
+		 * within a page.
 		 * @return this builder
 		 */
 		public Builder withReversedParagraphPosition(boolean reversedParagraphPosition) {

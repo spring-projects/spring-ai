@@ -762,7 +762,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		 */
 		public Builder embeddingDimension(int newEmbeddingDimension) {
 			Assert.isTrue(newEmbeddingDimension >= 1 && newEmbeddingDimension <= 32768,
-					"Dimension has to be withing the boundaries 1 and 32768 (inclusively)");
+					"Dimension has to be within the boundaries 1 and 32768 (inclusively)");
 			this.embeddingDimension = newEmbeddingDimension;
 			return this;
 		}
