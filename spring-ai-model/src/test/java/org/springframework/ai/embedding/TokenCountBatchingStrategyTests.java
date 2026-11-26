@@ -72,6 +72,19 @@ public class TokenCountBatchingStrategyTests {
 	}
 
 	@Test
+	void encodingTypeConstructorValidatesArguments() {
+		assertThatThrownBy(() -> new TokenCountBatchingStrategy(null, 10, 0.0))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("EncodingType must not be null");
+		assertThatThrownBy(() -> new TokenCountBatchingStrategy(EncodingType.CL100K_BASE, 0, 0.0))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("MaxInputTokenCount must be greater than 0");
+		assertThatThrownBy(() -> new TokenCountBatchingStrategy(EncodingType.CL100K_BASE, 10, 1.0))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("ReservePercentage must be in range [0, 1)");
+	}
+
+	@Test
 	void batchEmbeddingWithLargeDocumentExceedsMaxTokenSize() throws IOException {
 		Resource resource = new DefaultResourceLoader().getResource("classpath:text_source.txt");
 		String contentAsString = resource.getContentAsString(StandardCharsets.UTF_8);

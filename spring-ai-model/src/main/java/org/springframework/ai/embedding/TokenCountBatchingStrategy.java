@@ -99,15 +99,8 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 	 */
 	public TokenCountBatchingStrategy(EncodingType encodingType, int maxInputTokenCount, double reservePercentage,
 			ContentFormatter contentFormatter, MetadataMode metadataMode) {
-		Assert.notNull(encodingType, "EncodingType must not be null");
-		Assert.isTrue(maxInputTokenCount > 0, "MaxInputTokenCount must be greater than 0");
-		Assert.isTrue(reservePercentage >= 0 && reservePercentage < 1, "ReservePercentage must be in range [0, 1)");
-		Assert.notNull(contentFormatter, "ContentFormatter must not be null");
-		Assert.notNull(metadataMode, "MetadataMode must not be null");
-		this.tokenCountEstimator = new JTokkitTokenCountEstimator(encodingType);
-		this.maxInputTokenCount = (int) Math.round(maxInputTokenCount * (1 - reservePercentage));
-		this.contentFormatter = contentFormatter;
-		this.metadataMode = metadataMode;
+		this(createTokenCountEstimator(encodingType), maxInputTokenCount, reservePercentage, contentFormatter,
+				metadataMode);
 	}
 
 	/**
@@ -131,6 +124,11 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 		this.maxInputTokenCount = (int) Math.round(maxInputTokenCount * (1 - reservePercentage));
 		this.contentFormatter = contentFormatter;
 		this.metadataMode = metadataMode;
+	}
+
+	private static TokenCountEstimator createTokenCountEstimator(EncodingType encodingType) {
+		Assert.notNull(encodingType, "EncodingType must not be null");
+		return new JTokkitTokenCountEstimator(encodingType);
 	}
 
 	@Override
