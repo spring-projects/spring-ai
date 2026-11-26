@@ -23,14 +23,16 @@ import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpStreamableServerSession;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -47,6 +49,205 @@ class WebMvcStreamableServerTransportProviderTests {
 	private static final String INITIALIZE_REQUEST = """
 			{"jsonrpc":"2.0","id":"1","method":"initialize","params":{"protocolVersion":"2024-11-05",\
 			"capabilities":{},"clientInfo":{"name":"test-client","version":"1.0.0"}}}""";
+
+	@ParameterizedTest
+	@ValueSource(strings = { "{not json", "{}" })
+	void malformedRequestReturnsJsonRpcErrorWithoutExceptionDetails(String body) {
+		WebMvcStreamableServerTransportProvider provider = WebMvcStreamableServerTransportProvider.builder().build();
+		WebTestClient client = MockMvcWebTestClient.bindToRouterFunction(provider.getRouterFunction()).build();
+
+		client.post()
+			.uri("/mcp")
+			.contentType(MediaType.APPLICATION_JSON)
+			.accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+			.bodyValue(body)
+			.exchange()
+			.expectStatus()
+			.isBadRequest()
+			.expectHeader()
+			.contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+			.expectBody()
+			.json("""
+					{"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":"Invalid message format"}}
+					""", JsonCompareMode.STRICT);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "42", "\"request-42\"" })
+	void missingSessionReturnsJsonRpcErrorWithRequestId(String id) {
+		WebMvcStreamableServerTransportProvider provider = WebMvcStreamableServerTransportProvider.builder().build();
+		WebTestClient client = MockMvcWebTestClient.bindToRouterFunction(provider.getRouterFunction()).build();
+
+		client.post()
+			.uri("/mcp")
+			.contentType(MediaType.APPLICATION_JSON)
+			.accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+			.bodyValue("""
+					{"jsonrpc":"2.0","id":%s,"method":"tools/list"}
+					""".formatted(id))
+			.exchange()
+			.expectStatus()
+			.isBadRequest()
+			.expectHeader()
+			.contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+			.expectBody()
+			.json("""
+					{"jsonrpc":"2.0","id":%s,"error":{"code":-32601,"message":"Session ID missing"}}
+					""".formatted(id), JsonCompareMode.STRICT);
+	}
+
+	@Test
+	void invalidAcceptReturnsJsonRpcError() {
+		WebMvcStreamableServerTransportProvider provider = WebMvcStreamableServerTransportProvider.builder().build();
+		WebTestClient client = MockMvcWebTestClient.bindToRouterFunction(provider.getRouterFunction()).build();
+
+		client.post()
+			.uri("/mcp")
+			.contentType(MediaType.APPLICATION_JSON)
+			.accept(MediaType.TEXT_EVENT_STREAM)
+			.bodyValue(INITIALIZE_REQUEST)
+			.exchange()
+			.expectStatus()
+			.isBadRequest()
+			.expectHeader()
+			.contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+			.expectBody()
+			.json("""
+					{"jsonrpc":"2.0","id":null,"error":{"code":-32601,
+					"message":"Invalid Accept headers. Expected TEXT_EVENT_STREAM and APPLICATION_JSON"}}
+					""", JsonCompareMode.STRICT);
+	}
+
+	@Test
+	void unknownSessionReturnsJsonRpcErrorWithRequestId() {
+		WebMvcStreamableServerTransportProvider provider = WebMvcStreamableServerTransportProvider.builder().build();
+		WebTestClient client = MockMvcWebTestClient.bindToRouterFunction(provider.getRouterFunction()).build();
+
+		client.post()
+			.uri("/mcp")
+			.contentType(MediaType.APPLICATION_JSON)
+			.accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+			.header(HttpHeaders.MCP_SESSION_ID, "unknown")
+			.bodyValue("""
+					{"jsonrpc":"2.0","id":"request-42","method":"tools/list"}
+					""")
+			.exchange()
+			.expectStatus()
+			.isNotFound()
+			.expectHeader()
+			.contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+			.expectBody()
+			.json("""
+					{"jsonrpc":"2.0","id":"request-42","error":{"code":-32603,"message":"Session not found: unknown"}}
+					""", JsonCompareMode.STRICT);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}",
+			"{\"jsonrpc\":\"2.0\",\"id\":42,\"result\":{}}" })
+	void rejectedNotificationOrResponseOmitsId(String body) {
+		WebMvcStreamableServerTransportProvider provider = WebMvcStreamableServerTransportProvider.builder().build();
+		WebTestClient client = MockMvcWebTestClient.bindToRouterFunction(provider.getRouterFunction()).build();
+
+		client.post()
+			.uri("/mcp")
+			.contentType(MediaType.APPLICATION_JSON)
+			.accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+			.bodyValue(body)
+			.exchange()
+			.expectStatus()
+			.isBadRequest()
+			.expectHeader()
+			.contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+			.expectBody()
+			.json("""
+					{"jsonrpc":"2.0","error":{"code":-32601,"message":"Session ID missing"}}
+					""", JsonCompareMode.STRICT);
+	}
+
+	@Test
+	void missingSessionFactoryReturnsJsonRpcError() {
+		WebMvcStreamableServerTransportProvider provider = WebMvcStreamableServerTransportProvider.builder().build();
+		WebTestClient client = MockMvcWebTestClient.bindToRouterFunction(provider.getRouterFunction()).build();
+
+		client.post()
+			.uri("/mcp")
+			.contentType(MediaType.APPLICATION_JSON)
+			.accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+			.bodyValue(INITIALIZE_REQUEST)
+			.exchange()
+			.expectStatus()
+			.isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+			.expectHeader()
+			.contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+			.expectBody()
+			.json("""
+					{"jsonrpc":"2.0","id":"1","error":{"code":-32603,"message":"SessionFactory not configured"}}
+					""", JsonCompareMode.STRICT);
+	}
+
+	@Test
+	void synchronousInitializationFailureRetainsRequestId() {
+		WebMvcStreamableServerTransportProvider provider = WebMvcStreamableServerTransportProvider.builder().build();
+		provider.setSessionFactory(initializeRequest -> {
+			throw new IllegalStateException("private initialization detail");
+		});
+		WebTestClient client = MockMvcWebTestClient.bindToRouterFunction(provider.getRouterFunction()).build();
+
+		client.post()
+			.uri("/mcp")
+			.contentType(MediaType.APPLICATION_JSON)
+			.accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+			.bodyValue(INITIALIZE_REQUEST)
+			.exchange()
+			.expectStatus()
+			.isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+			.expectHeader()
+			.contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+			.expectBody()
+			.json("""
+					{"jsonrpc":"2.0","id":"1","error":{"code":-32603,
+					"message":"Internal server error. Check server logs for details."}}
+					""", JsonCompareMode.STRICT);
+	}
+
+	@Test
+	void deleteFailureReturnsJsonRpcErrorWithoutExceptionDetails() {
+		McpStreamableServerSession session = mock(McpStreamableServerSession.class);
+		when(session.getId()).thenReturn("test-session");
+		when(session.delete()).thenReturn(Mono.error(new IllegalStateException("private deletion detail")));
+		McpSchema.InitializeResult initResult = McpSchema.InitializeResult
+			.builder("2024-11-05", McpSchema.ServerCapabilities.builder().build(),
+					McpSchema.Implementation.builder("test-server", "1.0.0").build())
+			.build();
+		WebMvcStreamableServerTransportProvider provider = WebMvcStreamableServerTransportProvider.builder().build();
+		provider.setSessionFactory(initializeRequest -> new McpStreamableServerSession.McpStreamableServerSessionInit(
+				session, Mono.just(initResult)));
+		WebTestClient client = MockMvcWebTestClient.bindToRouterFunction(provider.getRouterFunction()).build();
+
+		client.post()
+			.uri("/mcp")
+			.contentType(MediaType.APPLICATION_JSON)
+			.accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+			.bodyValue(INITIALIZE_REQUEST)
+			.exchange()
+			.expectStatus()
+			.isOk();
+
+		client.delete()
+			.uri("/mcp")
+			.header(HttpHeaders.MCP_SESSION_ID, "test-session")
+			.exchange()
+			.expectStatus()
+			.isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+			.expectHeader()
+			.contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+			.expectBody()
+			.json("""
+					{"jsonrpc":"2.0","id":null,"error":{"code":-32603,
+					"message":"Internal server error. Check server logs for details."}}
+					""", JsonCompareMode.STRICT);
+	}
 
 	@Test
 	void internalErrorResponseDoesNotLeakExceptionMessageToClient() {
@@ -72,9 +273,13 @@ class WebMvcStreamableServerTransportProviderTests {
 			.exchange()
 			.expectStatus()
 			.isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
-			.expectBody(String.class)
-			.value(body -> assertThat(body).contains("Internal server error. Check server logs for details.")
-				.doesNotContain(sensitiveDetail));
+			.expectHeader()
+			.contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+			.expectBody()
+			.json("""
+					{"jsonrpc":"2.0","id":"1","error":{"code":-32603,
+					"message":"Internal server error. Check server logs for details."}}
+					""", JsonCompareMode.STRICT);
 	}
 
 	@Test
@@ -158,8 +363,12 @@ class WebMvcStreamableServerTransportProviderTests {
 			.exchange()
 			.expectStatus()
 			.isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
-			.expectBody(String.class)
-			.value(body -> assertThat(body).contains("Max number of sessions reached"));
+			.expectHeader()
+			.contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+			.expectBody()
+			.json("""
+					{"jsonrpc":"2.0","id":"1","error":{"code":-32603,"message":"Max number of sessions reached"}}
+					""", JsonCompareMode.STRICT);
 	}
 
 	@Test
@@ -189,8 +398,12 @@ class WebMvcStreamableServerTransportProviderTests {
 			.exchange()
 			.expectStatus()
 			.isEqualTo(HttpStatus.BAD_REQUEST)
-			.expectBody(String.class)
-			.value(body -> assertThat(body).contains("Session already initialized"));
+			.expectHeader()
+			.contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+			.expectBody()
+			.json("""
+					{"jsonrpc":"2.0","id":"1","error":{"code":-32603,"message":"Session already initialized"}}
+					""", JsonCompareMode.STRICT);
 	}
 
 }
