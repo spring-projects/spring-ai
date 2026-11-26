@@ -67,7 +67,7 @@ A modern client cannot call a legacy server, and a legacy client cannot call a m
 
 |Client configuration
 |Every connection, unless it sets `protocol: MODERN`.
-|A Streamable HTTP connection with `protocol: MODERN`, or a transport bean for STDIO.
+|A Streamable HTTP or a STDIO connection with `protocol: MODERN`.
 
 |Server configuration
 |`spring.ai.mcp.server.protocol` set to `STREAMABLE` (recommended), `STATELESS` or `SSE` (deprecated), or `spring.ai.mcp.server.stdio=true`.

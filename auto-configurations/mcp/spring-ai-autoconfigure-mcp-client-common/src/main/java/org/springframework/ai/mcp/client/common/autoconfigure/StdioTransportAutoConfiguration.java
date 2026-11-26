@@ -20,13 +20,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import io.modelcontextprotocol.client.transport.ServerParameters;
 import io.modelcontextprotocol.client.transport.StdioClientTransport;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStdioClientProperties;
+import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStdioClientProperties.Parameters;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -47,6 +47,9 @@ import org.springframework.context.annotation.Bean;
  * <li>Supports multiple named server connections with different parameters
  * <li>Configures transport with server-specific parameters
  * </ul>
+ * <p>
+ * A connection that sets {@code protocol=MODERN} is left to
+ * {@link McpClientModernAutoConfiguration}.
  *
  * @see StdioClientTransport
  * @see McpStdioClientProperties
@@ -74,10 +77,16 @@ public class StdioTransportAutoConfiguration {
 
 		List<NamedClientMcpTransport> stdioTransports = new ArrayList<>();
 
-		for (Map.Entry<String, ServerParameters> serverParameters : stdioProperties.toServerParameters().entrySet()) {
-			var transport = new StdioClientTransport(serverParameters.getValue(),
+		for (Map.Entry<String, Parameters> connection : stdioProperties.allConnections().entrySet()) {
+
+			if (connection.getValue().isModern()) {
+				// Modern connections are served by McpClientModernAutoConfiguration.
+				continue;
+			}
+
+			var transport = new StdioClientTransport(connection.getValue().toServerParameters(),
 					new JacksonMcpJsonMapper(JsonMapper.shared()));
-			stdioTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
+			stdioTransports.add(new NamedClientMcpTransport(connection.getKey(), transport));
 
 		}
 

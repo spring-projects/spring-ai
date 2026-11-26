@@ -1,7 +1,7 @@
 [[mcp-modern-connections]]
 = MCP 2026-07-28 ("Modern") Connections
 
-A Streamable-HTTP connection can speak the link:https://modelcontextprotocol.io/specification/2026-07-28[2026-07-28 MCP specification revision] (the "modern" protocol), which is stateless and has no `initialize` handshake.
+A Streamable-HTTP or a STDIO connection can speak the link:https://modelcontextprotocol.io/specification/2026-07-28[2026-07-28 MCP specification revision] (the "modern" protocol), which is stateless and has no `initialize` handshake.
 A connection is modern when its `protocol` property is `MODERN`, and a connection without that property stays on the legacy protocol.
 Legacy and modern connections can be used in the same application, and the auto-configured `SyncMcpToolCallbackProvider` bean returns the tools of both.
 
@@ -21,7 +21,8 @@ spring:
 ----
 
 A modern client is created without contacting the server, so `spring.ai.mcp.client.initialized` does not apply, and nothing is sent to a modern server at startup unless the connection sets `listen=true`, see <<Change Notifications>>.
-Modern connections use the JDK `HttpClient` transport of the MCP Java SDK with both client starters.
+Modern Streamable-HTTP connections use the JDK `HttpClient` transport of the MCP Java SDK with both client starters.
+A modern STDIO connection starts its server process when the application starts, see <<STDIO Connections>>.
 The client and transport types named in this section, such as `McpClient`, `McpSyncClient`, `McpAsyncClient` and `McpHttpRequestCustomizer`, are those of the `io.modelcontextprotocol.modern.client` package and its `transport` subpackage, not the legacy classes of the same name.
 For the server side, see xref:mcp/server/modern.adoc[MCP 2026-07-28 ("Modern") Servers].
 
@@ -30,6 +31,8 @@ They work with both client types.
 The sections that follow describe the default, synchronous type; for `spring.ai.mcp.client.type=ASYNC` see <<Asynchronous Client Type>>.
 
 == Modern Connection Properties
+
+The `protocol`, `client-scope` and `listen` properties below are the same for a STDIO connection, under `spring.ai.mcp.client.stdio.connections.[name]`.
 
 [cols="3,4,2"]
 |===
@@ -97,7 +100,7 @@ Callbacks taken from `getToolCallbacks()` once, for example when a bean is creat
 
 The identity of a caller reaches the server in two steps.
 A `McpClientCustomizer<McpClient.SyncBuilder>` bean sets the `transportContextProvider` of the client, which supplies the `McpTransportContext` of each call.
-`McpHttpRequestCustomizer` beans are added to the transport of every modern connection and turn that context into HTTP headers:
+`McpHttpRequestCustomizer` beans are added to the transport of every modern Streamable-HTTP connection and turn that context into HTTP headers:
 
 [source,java]
 ----
@@ -614,31 +617,81 @@ A lower connect timeout shortens that first wait.
 NOTE: Set the connect timeout on the transport builder.
 A connect timeout set on the JDK `HttpClient` builder through `customizeClient(...)` or `clientBuilder(...)` is replaced by the value of the transport.
 
-== STDIO and Other Transports
+[[mcp-modern-stdio-connections]]
+== STDIO Connections
 
-The `spring.ai.mcp.client.stdio` properties create legacy clients only.
-To reach a modern server over another transport, define a `List<NamedModernClientMcpTransport>` bean.
-Each transport in the list becomes a modern connection, and the same `SyncMcpToolCallbackProvider` bean (`AsyncMcpToolCallbackProvider` with `type=ASYNC`) returns its tools.
-The connection has a client for each request, unless a connection configured with properties has the same name: then the transport takes the `client-scope` of that connection.
+A STDIO connection speaks the modern protocol when it sets `protocol=MODERN`, as a Streamable-HTTP connection does:
 
-The following example runs a modern server as a process, with the `StdioMcpClientTransport` of the MCP Java SDK:
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        stdio:
+          connections:
+            files:
+              command: java
+              args:
+                - -jar
+                - files-mcp-server.jar
+              protocol: MODERN
+              client-scope: SHARED
+              listen: true
+----
+
+NOTE: Modern STDIO connections are available since Spring AI `2.1.1`.
+A STDIO connection without the `protocol` property stays on the legacy protocol.
+
+The `command`, `args` and `env` properties are those of every STDIO connection, see xref:mcp/client/transports.adoc#_stdio_transport_properties[Stdio Transport Properties], and the Windows advice there applies as well.
+A connection of the `servers-configuration` file can be modern too: its entry takes the `protocol`, `clientScope` and `listen` keys.
+In the file the values are written in upper case, as in `"protocol": "MODERN"`.
+A modern STDIO connection cannot have the name of a modern Streamable-HTTP connection: that fails the startup, because the name selects the settings of a connection and prefixes its tools.
+
+A modern STDIO connection differs from a Streamable-HTTP one in the following ways:
+
+* *Startup:* the server process is started when the application starts, and ended when the application context is closed.
+A server process that cannot be started fails the startup.
+* *Client scope:* the default is `PER_REQUEST`, as for every modern connection, so the tools are listed once for each chat request.
+A local server process usually works under the single identity of the application, so `client-scope=SHARED` fits it: one client keeps the tool listing, and `listen=true` drops it when the server reports a change.
+* *Identity:* there are no HTTP requests, so the `McpHttpRequestCustomizer` beans and the `McpHttpAuthorizationErrorHandler` bean do not apply.
+Pass the credentials that the server needs in the `env` of the connection.
+* *A server process that ends:* it is not started again.
+Its tools are left out, as those of a server that cannot be reached, and the tools of the other connections stay usable.
+
+`McpClientCustomizer<StdioMcpClientTransport.Builder>` beans customize the transport of a connection before its server process is started.
+The following example sends what the server process writes to its standard error, which the SDK logs at `INFO` level by default, to a logger of the application:
 
 [source,java]
 ----
 @Bean
-StdioMcpClientTransport filesTransport() {
-    ServerParameters parameters = ServerParameters.builder("java")
-        .args("-jar", "files-mcp-server.jar")
-        .build();
-    return StdioMcpClientTransport.builder(parameters).start();
-}
-
-@Bean
-List<NamedModernClientMcpTransport> modernStdioTransports(StdioMcpClientTransport filesTransport) {
-    return List.of(new NamedModernClientMcpTransport("files", filesTransport));
+McpClientCustomizer<StdioMcpClientTransport.Builder> serverErrorOutput() {
+    return (connectionName, builder) -> builder
+        .stderrConsumer(line -> logger.debug("[{}] {}", connectionName, line))
+        .shutdownTimeout(Duration.ofSeconds(2));
 }
 ----
 
-`start()` spawns the server process when the bean is created.
+== Other Transports
+
+To reach a modern server over a transport of your own, define a `List<NamedModernClientMcpTransport>` bean.
+Each transport in the list becomes a modern connection, and the same `SyncMcpToolCallbackProvider` bean (`AsyncMcpToolCallbackProvider` with `type=ASYNC`) returns its tools.
+The connection has a client for each request, unless a connection configured with properties has the same name: then the transport takes the `client-scope` of that connection.
+
+The following example connects to a modern server over a pair of streams, with the `StdioMcpClientTransport` of the MCP Java SDK:
+
+[source,java]
+----
+@Bean
+StdioMcpClientTransport pipedTransport(InputStream fromServer, OutputStream toServer) {
+    return StdioMcpClientTransport.builder(fromServer, toServer).start();
+}
+
+@Bean
+List<NamedModernClientMcpTransport> pipedTransports(StdioMcpClientTransport pipedTransport) {
+    return List.of(new NamedModernClientMcpTransport("piped", pipedTransport));
+}
+----
+
 A client does not own its transport, so the transport is a bean of its own.
-Spring closes it when the application context is closed, which ends the server process.
+Spring closes it when the application context is closed.
