@@ -33,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.genai.Client;
 import com.google.genai.ResponseStream;
+import com.google.genai.errors.ApiException;
 import com.google.genai.types.Blob;
 import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
@@ -103,7 +104,9 @@ import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
 import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.retry.TransientAiException;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.JacksonUtils;
@@ -1235,9 +1238,25 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		try {
 			return this.genAiClient.models.generateContent(request.modelName, request.contents, request.config);
 		}
+		catch (ApiException e) {
+			throw toAiException(e);
+		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to generate content", e);
 		}
+	}
+
+	/**
+	 * Map a Google GenAI API error to a Spring AI exception, so the retry template can
+	 * tell transient failures (408, 429 and 5xx) from permanent ones.
+	 */
+	private static RuntimeException toAiException(ApiException e) {
+		String message = "Failed to generate content: " + e.code() + " " + e.status() + " " + e.message();
+		int code = e.code();
+		if (code == 408 || code == 429 || code >= 500) {
+			return new TransientAiException(message, e);
+		}
+		return new NonTransientAiException(message, e);
 	}
 
 	/**
