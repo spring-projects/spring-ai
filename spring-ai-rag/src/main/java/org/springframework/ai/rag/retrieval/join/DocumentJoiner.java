@@ -34,7 +34,7 @@ import org.springframework.ai.rag.Query;
 public interface DocumentJoiner extends Function<Map<Query, List<List<Document>>>, List<Document>> {
 
 	/**
-	 * Joins documents retrieved across multiple queries and daa sources.
+	 * Joins documents retrieved across multiple queries and data sources.
 	 * @param documentsForQuery a map of queries and the corresponding list of documents
 	 * retrieved
 	 * @return a single collection of documents
