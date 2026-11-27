@@ -17,9 +17,11 @@
 package org.springframework.ai.converter;
 
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.github.victools.jsonschema.generator.Module;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
@@ -63,6 +65,13 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	/** Holds the generated JSON schema for the target type. */
 	private final String jsonSchema;
 
+	/**
+	 * Additional JSON Schema generator modules to apply when generating the
+	 * schema, for example to reflect validation constraints. May be
+	 * {@code null} or empty, in which case only the default modules apply.
+	 */
+	private final List<Module> jsonSchemaModules;
+
 	/** The text cleaner used to preprocess LLM responses before parsing. */
 	private final ResponseTextCleaner textCleaner;
 
@@ -71,7 +80,21 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param clazz The target type's class.
 	 */
 	public BeanOutputConverter(Class<T> clazz) {
-		this(clazz, null, null);
+		this(clazz, null, null, null);
+	}
+
+	/**
+	 * Constructor to initialize with the target type's class and additional
+	 * JSON Schema generator modules, for example the
+	 * {@code jsonschema-module-jakarta-validation} module to reflect validation
+	 * constraints in the generated schema.
+	 * @param clazz The target type's class.
+	 * @param jsonSchemaModules Additional JSON Schema generator modules to
+	 * apply when generating the schema. May be {@code null} or empty.
+	 * @since 2.1.0
+	 */
+	public BeanOutputConverter(Class<T> clazz, @Nullable List<Module> jsonSchemaModules) {
+		this(clazz, null, null, jsonSchemaModules);
 	}
 
 	/**
@@ -81,7 +104,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param jsonMapper Custom JSON mapper for JSON operations. endings.
 	 */
 	public BeanOutputConverter(Class<T> clazz, @Nullable JsonMapper jsonMapper) {
-		this(clazz, jsonMapper, null);
+		this(clazz, jsonMapper, null, null);
 	}
 
 	/**
@@ -93,7 +116,22 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 */
 	public BeanOutputConverter(Class<T> clazz, @Nullable JsonMapper jsonMapper,
 			@Nullable ResponseTextCleaner textCleaner) {
-		this(ParameterizedTypeReference.forType(clazz), jsonMapper, textCleaner);
+		this(clazz, jsonMapper, textCleaner, null);
+	}
+
+	/**
+	 * Constructor to initialize with the target type's class, a custom JSON mapper, a
+	 * custom text cleaner, and additional JSON Schema generator modules.
+	 * @param clazz The target type's class.
+	 * @param jsonMapper Custom JSON mapper for JSON operations.
+	 * @param textCleaner Custom text cleaner for preprocessing responses.
+	 * @param jsonSchemaModules Additional JSON Schema generator modules to
+	 * apply when generating the schema. May be {@code null} or empty.
+	 * @since 2.1.0
+	 */
+	public BeanOutputConverter(Class<T> clazz, @Nullable JsonMapper jsonMapper,
+			@Nullable ResponseTextCleaner textCleaner, @Nullable List<Module> jsonSchemaModules) {
+		this(ParameterizedTypeReference.forType(clazz), jsonMapper, textCleaner, jsonSchemaModules);
 	}
 
 	/**
@@ -101,7 +139,22 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param typeRef The target class type reference.
 	 */
 	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef) {
-		this(typeRef, null, null);
+		this(typeRef, null, null, null);
+	}
+
+	/**
+	 * Constructor to initialize with the target class type reference and additional
+	 * JSON Schema generator modules, for example the
+	 * {@code jsonschema-module-jakarta-validation} module to reflect validation
+	 * constraints in the generated schema.
+	 * @param typeRef The target class type reference.
+	 * @param jsonSchemaModules Additional JSON Schema generator modules to
+	 * apply when generating the schema. May be {@code null} or empty.
+	 * @since 2.1.0
+	 */
+	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef,
+			@Nullable List<Module> jsonSchemaModules) {
+		this(typeRef, null, null, jsonSchemaModules);
 	}
 
 	/**
@@ -112,7 +165,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param jsonMapper Custom JSON mapper for JSON operations. endings.
 	 */
 	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, @Nullable JsonMapper jsonMapper) {
-		this(typeRef, jsonMapper, null);
+		this(typeRef, jsonMapper, null, null);
 	}
 
 	/**
@@ -124,7 +177,23 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 */
 	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, @Nullable JsonMapper jsonMapper,
 			@Nullable ResponseTextCleaner textCleaner) {
-		this(typeRef.getType(), jsonMapper, textCleaner);
+		this(typeRef, jsonMapper, textCleaner, null);
+	}
+
+	/**
+	 * Constructor to initialize with the target class type reference, a custom JSON
+	 * mapper, a custom text cleaner, and additional JSON Schema generator
+	 * modules.
+	 * @param typeRef The target class type reference.
+	 * @param jsonMapper Custom JSON mapper for JSON operations.
+	 * @param textCleaner Custom text cleaner for preprocessing responses.
+	 * @param jsonSchemaModules Additional JSON Schema generator modules to
+	 * apply when generating the schema. May be {@code null} or empty.
+	 * @since 2.1.0
+	 */
+	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, @Nullable JsonMapper jsonMapper,
+			@Nullable ResponseTextCleaner textCleaner, @Nullable List<Module> jsonSchemaModules) {
+		this(typeRef.getType(), jsonMapper, textCleaner, jsonSchemaModules);
 	}
 
 	/**
@@ -134,12 +203,16 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param type The target class type.
 	 * @param jsonMapper Custom JSON mapper for JSON operations. endings.
 	 * @param textCleaner Custom text cleaner for preprocessing responses.
+	 * @param jsonSchemaModules Additional JSON Schema generator modules to
+	 * apply when generating the schema. May be {@code null} or empty.
 	 */
-	private BeanOutputConverter(Type type, @Nullable JsonMapper jsonMapper, @Nullable ResponseTextCleaner textCleaner) {
+	private BeanOutputConverter(Type type, @Nullable JsonMapper jsonMapper, @Nullable ResponseTextCleaner textCleaner,
+			@Nullable List<Module> jsonSchemaModules) {
 		Objects.requireNonNull(type, "Type cannot be null;");
 		this.type = type;
 		this.jsonMapper = jsonMapper != null ? jsonMapper : getJsonMapper();
 		this.textCleaner = textCleaner != null ? textCleaner : createDefaultTextCleaner();
+		this.jsonSchemaModules = jsonSchemaModules;
 		this.jsonSchema = Objects.requireNonNull(generateSchema(), "JSON schema cannot be null");
 	}
 
@@ -173,11 +246,15 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * Generates the JSON schema for the target type.
 	 * <p>
 	 * This method can be overridden in subclasses to customize the JSON schema generation
-	 * logic.
+	 * logic. Additional schema generator modules supplied via the constructor are
+	 * applied on top of the modules Spring AI applies by default.
 	 * @return the generated JSON schema
 	 */
 	protected String generateSchema() {
-		return JsonSchemaGenerator.generateForType(this.type);
+		if (this.jsonSchemaModules == null || this.jsonSchemaModules.isEmpty()) {
+			return JsonSchemaGenerator.generateForType(this.type);
+		}
+		return JsonSchemaGenerator.generateForType(this.type, this.jsonSchemaModules);
 	}
 
 	/**
