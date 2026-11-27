@@ -74,6 +74,9 @@ spring:
         stdio: true
 ----
 
+The server serves while the standard input of the application is open.
+When the input ends, which is when its client closes the connection or goes away, the server stops serving, and the application ends unless something else keeps it running, such as a web server or `spring.main.keep-alive=true`.
+
 == Configuration Properties
 
 The common properties (`spring.ai.mcp.server.name`, `version`, `instructions`, `type`, `capabilities.*`, `tool-callback-converter`, `tool-response-mime-type`) and the MCP annotation scanner properties apply as they do for the other protocols.
