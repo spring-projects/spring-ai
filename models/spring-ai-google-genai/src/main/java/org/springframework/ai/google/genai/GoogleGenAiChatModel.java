@@ -741,11 +741,13 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		// TODO - The candidateIndex (e.g. choice must be assigned to the generation).
 		int candidateIndex = candidate.index().orElse(0);
-		FinishReason candidateFinishReason = candidate.finishReason().orElse(new FinishReason(FinishReason.Known.STOP));
+		@Nullable FinishReason candidateFinishReason = candidate.finishReason().orElse(null);
 
 		Map<String, Object> messageMetadata = new HashMap<>();
 		messageMetadata.put("candidateIndex", candidateIndex);
-		messageMetadata.put("finishReason", candidateFinishReason);
+		if (candidateFinishReason != null) {
+			messageMetadata.put("finishReason", candidateFinishReason);
+		}
 
 		List<Part> parts = candidate.content().flatMap(Content::parts).orElse(List.of());
 
@@ -773,10 +775,12 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 
 		AssistantMessage assistantMessage = messageBuilder.build();
-		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
-			.finishReason(candidateFinishReason.toString())
-			.finishReasonCategory(finishReasonCategory(candidateFinishReason, assistantMessage.hasToolCalls()))
-			.build();
+		ChatGenerationMetadata chatGenerationMetadata = (candidateFinishReason != null)
+				? ChatGenerationMetadata.builder()
+					.finishReason(candidateFinishReason.toString())
+					.finishReasonCategory(finishReasonCategory(candidateFinishReason, assistantMessage.hasToolCalls()))
+					.build()
+				: ChatGenerationMetadata.NULL;
 
 		return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 	}
@@ -785,7 +789,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	 * Classifies the finish reason of a candidate. Gemini reports an ordinary stop when
 	 * the model asks for a tool.
 	 */
-	static FinishReasonCategory finishReasonCategory(FinishReason finishReason, boolean hasToolCalls) {
+	static FinishReasonCategory finishReasonCategory(@Nullable FinishReason finishReason, boolean hasToolCalls) {
+		if (finishReason == null) {
+			return FinishReasonCategory.UNSPECIFIED;
+		}
 		FinishReason.Known known = finishReason.knownEnum();
 		if (known == FinishReason.Known.FINISH_REASON_UNSPECIFIED && !known.name().equals(finishReason.toString())) {
 			// The SDK reports a value it does not know as unspecified. It is a reason

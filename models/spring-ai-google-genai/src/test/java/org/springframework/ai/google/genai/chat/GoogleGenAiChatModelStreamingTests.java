@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import com.google.genai.Client;
@@ -27,6 +28,7 @@ import com.google.genai.Models;
 import com.google.genai.ResponseStream;
 import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
+import com.google.genai.types.FinishReason;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.Part;
 import io.micrometer.observation.ObservationRegistry;
@@ -38,7 +40,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
@@ -127,6 +131,79 @@ public class GoogleGenAiChatModelStreamingTests {
 		String expectedContent = IntStream.rangeClosed(1, 300).mapToObj(i -> i + " ").reduce("", String::concat);
 
 		assertThat(fullContent.toString()).isEqualTo(expectedContent);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void streamingIntermediateChunksHaveNullFinishReasonUntilFinalChunk() {
+		setupChatModel();
+		Models models = Mockito.mock(Models.class);
+		ReflectionTestUtils.setField(this.client, "models", models);
+
+		List<GenerateContentResponse> chunks = List.of(chunk("Hello ", null), chunk("world", null),
+				chunk("!", new FinishReason(FinishReason.Known.STOP)));
+
+		ResponseStream<GenerateContentResponse> iterable = Mockito.mock(ResponseStream.class);
+		given(iterable.iterator()).willReturn(chunks.iterator());
+		given(iterable.spliterator()).willCallRealMethod();
+		given(models.generateContentStream(any(String.class), any(List.class), any())).willReturn(iterable);
+
+		List<ChatResponse> responses = this.chatModel.stream(new Prompt("Greet")).collectList().block();
+
+		assertThat(responses).hasSize(3);
+		for (int i = 0; i < 2; i++) {
+			ChatResponse intermediate = responses.get(i);
+			assertThat(intermediate.getResult().getMetadata().getFinishReason()).isNull();
+			assertThat(intermediate.getResult().getMetadata().getFinishReasonCategory())
+				.isEqualTo(FinishReasonCategory.UNSPECIFIED);
+			assertThat(intermediate.getResult().getOutput().getMetadata()).doesNotContainKey("finishReason");
+		}
+		ChatResponse last = responses.get(2);
+		assertThat(last.getResult().getMetadata().getFinishReason()).isEqualTo("STOP");
+		assertThat(last.getResult().getMetadata().getFinishReasonCategory()).isEqualTo(FinishReasonCategory.COMPLETED);
+		assertThat(last.getResult().getOutput().getMetadata().get("finishReason"))
+			.isEqualTo(new FinishReason(FinishReason.Known.STOP));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void streamingAggregatedResponseRetainsFinalFinishReasonWhenTrailingChunkHasNone() {
+		setupChatModel();
+		Models models = Mockito.mock(Models.class);
+		ReflectionTestUtils.setField(this.client, "models", models);
+
+		List<GenerateContentResponse> chunks = List.of(chunk("Hello", null),
+				chunk("!", new FinishReason(FinishReason.Known.STOP)), chunk("", null));
+
+		ResponseStream<GenerateContentResponse> iterable = Mockito.mock(ResponseStream.class);
+		given(iterable.iterator()).willReturn(chunks.iterator());
+		given(iterable.spliterator()).willCallRealMethod();
+		given(models.generateContentStream(any(String.class), any(List.class), any())).willReturn(iterable);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(new Prompt("Greet")), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		ChatResponse aggregated = aggregatedRef.get();
+		assertThat(aggregated).isNotNull();
+		assertThat(aggregated.getResult().getOutput().getText()).isEqualTo("Hello!");
+		assertThat(aggregated.getResult().getMetadata().getFinishReason()).isEqualTo("STOP");
+		assertThat(aggregated.getResult().getMetadata().getFinishReasonCategory())
+			.isEqualTo(FinishReasonCategory.COMPLETED);
+	}
+
+	private static GenerateContentResponse chunk(String text, FinishReason finishReason) {
+		Content content = Content.builder().parts(List.of(Part.builder().text(text).build())).build();
+		Candidate.Builder candidate = Candidate.builder().content(content);
+		if (finishReason != null) {
+			candidate.finishReason(finishReason);
+		}
+		return GenerateContentResponse.builder()
+			.responseId("resp_stream")
+			.candidates(List.of(candidate.build()))
+			.modelVersion("gemini-2.5-flash")
+			.build();
 	}
 
 	private void setupChatModel() {
