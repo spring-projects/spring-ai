@@ -87,7 +87,6 @@ public class GoogleGenAiChatModelStreamingTests {
 			}
 			return r;
 		}).iterator());
-		given(iterable.spliterator()).willCallRealMethod();
 
 		given(models.generateContentStream(any(String.class), any(List.class), any())).willReturn(iterable);
 

@@ -623,7 +623,6 @@ class GoogleGenAiChatModelMessagePartsTests {
 		ReflectionTestUtils.setField(this.client, "models", models);
 		ResponseStream<GenerateContentResponse> iterable = Mockito.mock(ResponseStream.class);
 		given(iterable.iterator()).willReturn(chunks.iterator());
-		given(iterable.spliterator()).willCallRealMethod();
 		given(models.generateContentStream(any(String.class), any(List.class), any())).willReturn(iterable);
 	}
 
