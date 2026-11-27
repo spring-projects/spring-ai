@@ -49,4 +49,40 @@ public class OllamaEmbeddingAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	public void dimensionsPropertyTest() {
+
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+			"spring.ai.ollama.base-url=TEST_BASE_URL",
+				"spring.ai.ollama.embedding.model=MODEL_XYZ",
+				"spring.ai.ollama.embedding.dimensions=512"
+				// @formatter:on
+		)
+
+			.withConfiguration(BaseOllamaIT.ollamaAutoConfig(OllamaEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				var embeddingProperties = context.getBean(OllamaEmbeddingProperties.class);
+
+				assertThat(embeddingProperties.getDimensions()).isEqualTo(512);
+
+				var options = embeddingProperties.toOptions();
+				assertThat(options.getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(options.getDimensions()).isEqualTo(512);
+			});
+	}
+
+	@Test
+	public void dimensionsPropertyNotSetByDefault() {
+
+		new ApplicationContextRunner().withPropertyValues("spring.ai.ollama.base-url=TEST_BASE_URL")
+			.withConfiguration(BaseOllamaIT.ollamaAutoConfig(OllamaEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				var embeddingProperties = context.getBean(OllamaEmbeddingProperties.class);
+
+				assertThat(embeddingProperties.getDimensions()).isNull();
+				assertThat(embeddingProperties.toOptions().getDimensions()).isNull();
+			});
+	}
+
 }
