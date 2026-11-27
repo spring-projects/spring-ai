@@ -53,6 +53,21 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 			this.convertOperand(expression.right(), context);
 			context.append(")");
 		}
+		else if (expression.type() == Filter.ExpressionType.NE) {
+			Assert.state(expression.right() != null, "expression.right() must not be null");
+			context.append("NOT ");
+			this.convertOperand(expression.left(), context);
+			this.convertOperand(expression.right(), context);
+		}
+		else if (expression.type() == Filter.ExpressionType.OR) {
+			Assert.state(expression.right() != null, "expression.right() must not be null");
+			// Isolate negation so it does not exclude matches from the other OR operand.
+			context.append("(");
+			this.convertOperand(expression.left(), context);
+			context.append(") OR (");
+			this.convertOperand(expression.right(), context);
+			context.append(")");
+		}
 		else if (expression.type() == Filter.ExpressionType.ISNULL) {
 			context.append("-");
 			this.convertOperand(expression.left(), context);
@@ -86,9 +101,7 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 	private String getOperationSymbol(Expression exp) {
 		return switch (exp.type()) {
 			case AND -> " AND ";
-			case OR -> " OR ";
 			case EQ, IN -> "";
-			case NE -> " NOT ";
 			case LT -> "<";
 			case LTE -> "<=";
 			case GT -> ">";

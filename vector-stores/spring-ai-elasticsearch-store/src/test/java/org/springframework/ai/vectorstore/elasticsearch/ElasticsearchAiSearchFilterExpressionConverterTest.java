@@ -23,6 +23,7 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -92,7 +93,61 @@ class ElasticsearchAiSearchFilterExpressionConverterTest {
 								new Filter.Expression(EQ, new Filter.Key("country"), new Filter.Value("BG")),
 								new Filter.Expression(NE, new Filter.Key("city"), new Filter.Value("Sofia")))));
 		assertThat(vectorExpr)
-			.isEqualTo("metadata.year:>=2020 OR metadata.country:\"BG\" AND metadata.city: NOT \"Sofia\"");
+			.isEqualTo("(metadata.year:>=2020) OR (metadata.country:\"BG\" AND NOT metadata.city:\"Sofia\")");
+	}
+
+	@Test
+	void notEqualWithString() {
+		var b = new FilterExpressionBuilder();
+		assertThat(this.converter.convertExpression(b.ne("label", "second").build()))
+			.isEqualTo("NOT metadata.label:\"second\"");
+	}
+
+	@Test
+	void notEqualWithNumber() {
+		var b = new FilterExpressionBuilder();
+		assertThat(this.converter.convertExpression(b.ne("year", 2020).build())).isEqualTo("NOT metadata.year:2020");
+	}
+
+	@Test
+	void notEqualWithDate() {
+		var b = new FilterExpressionBuilder();
+		// Preserve main's date serialization; date escaping is a separate change.
+		assertThat(this.converter.convertExpression(b.ne("activationDate", new Date(1704637752148L)).build()))
+			.isEqualTo("NOT metadata.activationDate:2024-01-07T14:29:12Z");
+		assertThat(this.converter.convertExpression(b.ne("activationDate", "2024-01-07T14:29:12Z").build()))
+			.isEqualTo("NOT metadata.activationDate:2024-01-07T14:29:12Z");
+	}
+
+	@Test
+	void notEqualWithAnd() {
+		var b = new FilterExpressionBuilder();
+		assertThat(this.converter.convertExpression(b.and(b.eq("a", 1), b.ne("label", "x")).build()))
+			.isEqualTo("metadata.a:1 AND NOT metadata.label:\"x\"");
+	}
+
+	@Test
+	void notEqualWithOr() {
+		var b = new FilterExpressionBuilder();
+		assertThat(this.converter.convertExpression(b.or(b.ne("label", "x"), b.gt("year", 2020)).build()))
+			.isEqualTo("(NOT metadata.label:\"x\") OR (metadata.year:>2020)");
+		assertThat(this.converter.convertExpression(b.or(b.gt("year", 2020), b.ne("label", "x")).build()))
+			.isEqualTo("(metadata.year:>2020) OR (NOT metadata.label:\"x\")");
+	}
+
+	@Test
+	void notEqualWithGroup() {
+		var b = new FilterExpressionBuilder();
+		assertThat(this.converter
+			.convertExpression(b.and(b.group(b.or(b.ne("label", "x"), b.gt("year", 2020))), b.eq("a", 1)).build()))
+			.isEqualTo("((NOT metadata.label:\"x\") OR (metadata.year:>2020)) AND metadata.a:1");
+	}
+
+	@Test
+	void notEqualWithNestedNot() {
+		var b = new FilterExpressionBuilder();
+		assertThat(this.converter.convertExpression(b.not(b.group(b.eq("label", "x"))).build()))
+			.isEqualTo("(NOT metadata.label:\"x\")");
 	}
 
 	@Test
@@ -103,7 +158,7 @@ class ElasticsearchAiSearchFilterExpressionConverterTest {
 						new Filter.Expression(EQ, new Filter.Key("country"), new Filter.Value("BG")))),
 				new Filter.Expression(NIN, new Filter.Key("city"), new Filter.Value(List.of("Sofia", "Plovdiv")))));
 		assertThat(vectorExpr).isEqualTo(
-				"(metadata.year:>=2020 OR metadata.country:\"BG\") AND NOT metadata.city:(\"Sofia\" OR \"Plovdiv\")");
+				"((metadata.year:>=2020) OR (metadata.country:\"BG\")) AND NOT metadata.city:(\"Sofia\" OR \"Plovdiv\")");
 	}
 
 	@Test
