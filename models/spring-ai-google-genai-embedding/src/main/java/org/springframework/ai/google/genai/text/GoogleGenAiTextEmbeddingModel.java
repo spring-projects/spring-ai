@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.genai.Client;
+import com.google.genai.errors.ApiException;
 import com.google.genai.types.ContentEmbedding;
 import com.google.genai.types.ContentEmbeddingStatistics;
 import com.google.genai.types.EmbedContentConfig;
@@ -46,7 +47,9 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationDoc
 import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.retry.TransientAiException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -173,8 +176,14 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 				}
 
 				// Call the embedding API with retry
-				EmbedContentResponse embeddingResponse = RetryUtils.execute(this.retryTemplate,
-						() -> this.genAiClient.models.embedContent(modelName, validTexts, config));
+				EmbedContentResponse embeddingResponse = RetryUtils.execute(this.retryTemplate, () -> {
+					try {
+						return this.genAiClient.models.embedContent(modelName, validTexts, config);
+					}
+					catch (ApiException e) {
+						throw toAiException(e);
+					}
+				});
 
 				// Process the response
 				// Note: We need to handle the case where some texts were filtered out
@@ -260,6 +269,19 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		return new EmbeddingRequest(embeddingRequest.getInstructions(), mergedOptions);
+	}
+
+	/**
+	 * Map a Google GenAI API error to a Spring AI exception, so the retry template can
+	 * tell transient failures (408, 429 and 5xx) from permanent ones.
+	 */
+	private static RuntimeException toAiException(ApiException e) {
+		String message = "Failed to embed content: " + e.code() + " " + e.status() + " " + e.message();
+		int code = e.code();
+		if (code == 408 || code == 429 || code >= 500) {
+			return new TransientAiException(message, e);
+		}
+		return new NonTransientAiException(message, e);
 	}
 
 	private EmbeddingResponseMetadata generateResponseMetadata(String model, Integer totalTokens) {

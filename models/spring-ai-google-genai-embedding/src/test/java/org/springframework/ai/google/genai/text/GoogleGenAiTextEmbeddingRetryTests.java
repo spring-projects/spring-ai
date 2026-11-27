@@ -21,6 +21,8 @@ import java.util.List;
 
 import com.google.genai.Client;
 import com.google.genai.Models;
+import com.google.genai.errors.ClientException;
+import com.google.genai.errors.ServerException;
 import com.google.genai.types.ContentEmbedding;
 import com.google.genai.types.EmbedContentConfig;
 import com.google.genai.types.EmbedContentResponse;
@@ -34,6 +36,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
+import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.core.retry.RetryListener;
@@ -53,6 +56,7 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Mark Pollack
  * @author Dan Dobrin
+ * @author Shreya Wanisha
  */
 @ExtendWith(MockitoExtension.class)
 public class GoogleGenAiTextEmbeddingRetryTests {
@@ -133,6 +137,41 @@ public class GoogleGenAiTextEmbeddingRetryTests {
 
 		// Verify that embedContent was called only once (no retries for non-transient
 		// errors)
+		verify(this.mockModels, times(1)).embedContent(anyString(), any(List.class), any(EmbedContentConfig.class));
+	}
+
+	@Test
+	public void sdkServerErrorIsRetried() {
+		ContentEmbedding mockEmbedding = mock(ContentEmbedding.class);
+		given(mockEmbedding.values()).willReturn(java.util.Optional.of(List.of(9.9f, 8.8f)));
+		given(mockEmbedding.statistics()).willReturn(java.util.Optional.empty());
+		EmbedContentResponse mockResponse = mock(EmbedContentResponse.class);
+		given(mockResponse.embeddings()).willReturn(java.util.Optional.of(List.of(mockEmbedding)));
+
+		// The SDK reports HTTP errors as ApiException subclasses, not
+		// TransientAiException
+		given(this.mockModels.embedContent(anyString(), any(List.class), any(EmbedContentConfig.class)))
+			.willThrow(new ServerException(503, "UNAVAILABLE", "The model is overloaded"))
+			.willReturn(mockResponse);
+
+		EmbeddingOptions options = GoogleGenAiTextEmbeddingOptions.builder().model("model").build();
+		EmbeddingResponse result = this.embeddingModel.call(new EmbeddingRequest(List.of("text1"), options));
+
+		assertThat(result.getResults()).hasSize(1);
+		verify(this.mockModels, times(2)).embedContent(anyString(), any(List.class), any(EmbedContentConfig.class));
+	}
+
+	@Test
+	public void sdkClientErrorIsNotRetried() {
+		given(this.mockModels.embedContent(anyString(), any(List.class), any(EmbedContentConfig.class)))
+			.willThrow(new ClientException(400, "INVALID_ARGUMENT", "Bad request"));
+
+		EmbeddingOptions options = GoogleGenAiTextEmbeddingOptions.builder().model("model").build();
+		assertThatThrownBy(() -> this.embeddingModel.call(new EmbeddingRequest(List.of("text1"), options)))
+			.isInstanceOf(NonTransientAiException.class)
+			.hasMessageContaining("400")
+			.hasCauseInstanceOf(ClientException.class);
+
 		verify(this.mockModels, times(1)).embedContent(anyString(), any(List.class), any(EmbedContentConfig.class));
 	}
 
