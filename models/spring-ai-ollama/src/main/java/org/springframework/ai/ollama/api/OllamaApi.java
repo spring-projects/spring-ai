@@ -159,7 +159,7 @@ public final class OllamaApi {
 				return List.of(monoChunk);
 			})
 			// Flux<Mono<ChatChatResponse>> -> Flux<ChatChatResponse>
-			.flatMap(mono -> mono)
+			.concatMap(mono -> mono)
 			.handle((data, sink) -> {
 				if (logger.isTraceEnabled()) {
 					logger.trace(data);
