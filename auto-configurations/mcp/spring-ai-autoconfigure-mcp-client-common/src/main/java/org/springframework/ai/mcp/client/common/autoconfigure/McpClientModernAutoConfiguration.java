@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import io.modelcontextprotocol.json.McpJsonMapper;
@@ -33,6 +34,7 @@ import io.modelcontextprotocol.modern.client.McpSyncClient;
 import io.modelcontextprotocol.modern.client.transport.HttpClientMcpTransport;
 import io.modelcontextprotocol.modern.client.transport.McpHttpAuthorizationErrorHandler;
 import io.modelcontextprotocol.modern.client.transport.McpHttpRequestCustomizer;
+import io.modelcontextprotocol.modern.client.transport.StdioMcpClientTransport;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
@@ -49,6 +51,7 @@ import org.springframework.ai.mcp.annotation.spring.ClientMcpAsyncHandlersRegist
 import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientModernProperties;
+import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStdioClientProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties.ConnectionParameters;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
@@ -79,16 +82,19 @@ import org.springframework.util.StringUtils;
  * Auto-configuration of the MCP client connections that speak the 2026-07-28 ("modern")
  * protocol revision. A connection is modern when its {@code protocol} property is
  * {@code MODERN}, for example
- * {@code spring.ai.mcp.client.streamable-http.connections.tickets.protocol=MODERN}.
- * Connections without that property stay on the legacy protocol, so an application can
- * talk to legacy and modern servers at the same time.
+ * {@code spring.ai.mcp.client.streamable-http.connections.tickets.protocol=MODERN} or
+ * {@code spring.ai.mcp.client.stdio.connections.files.protocol=MODERN}. Connections
+ * without that property stay on the legacy protocol, so an application can talk to legacy
+ * and modern servers at the same time.
  * <p>
  * It creates three kinds of beans, the first two being the modern counterparts of the
  * legacy transports and clients:
  * <ul>
  * <li>a {@link NamedModernClientMcpTransport} for each modern connection under
  * {@code spring.ai.mcp.client.streamable-http.connections}, on the JDK
- * {@code HttpClient};</li>
+ * {@code HttpClient}, and for each modern connection under
+ * {@code spring.ai.mcp.client.stdio.connections}, on the standard streams of the server
+ * process that it starts;</li>
  * <li>a {@link SyncModernMcpConnection} for each transport, or an
  * {@link AsyncModernMcpConnection} with {@code spring.ai.mcp.client.type=ASYNC}, which
  * creates a client for each request, or holds one shared client if the connection sets
@@ -111,7 +117,9 @@ import org.springframework.util.StringUtils;
  * {@code ToolCallbackProvider}.
  * <p>
  * Modern clients are created without contacting the server, so nothing is sent at startup
- * and {@code spring.ai.mcp.client.initialized} does not apply to them.
+ * and {@code spring.ai.mcp.client.initialized} does not apply to them. The server process
+ * of a modern STDIO connection is started at startup, though, and ended when the
+ * application context is closed.
  * <p>
  * With the asynchronous client type the tools are listed and called through the
  * asynchronous client of the SDK, which holds no caller: an
@@ -132,10 +140,12 @@ import org.springframework.util.StringUtils;
  * Customization points:
  * <ul>
  * <li>{@code McpClientCustomizer<HttpClientMcpTransport.Builder>} beans customize a
+ * Streamable HTTP transport, and
+ * {@code McpClientCustomizer<StdioMcpClientTransport.Builder>} beans a STDIO
  * transport;</li>
  * <li>{@link McpHttpRequestCustomizer} beans and a
- * {@link McpHttpAuthorizationErrorHandler} bean are added to every transport, for example
- * to send an access token;</li>
+ * {@link McpHttpAuthorizationErrorHandler} bean are added to every Streamable HTTP
+ * transport, for example to send an access token;</li>
  * <li>{@code McpClientCustomizer<McpClient.SyncBuilder>} beans customize a client, for
  * example to set its {@code transportContextProvider}. With the default
  * {@code PER_REQUEST} client scope they run for each new client, on the thread that
@@ -161,7 +171,7 @@ import org.springframework.util.StringUtils;
 @AutoConfiguration
 @ConditionalOnClass(McpClient.class)
 @EnableConfigurationProperties({ McpClientCommonProperties.class, McpClientModernProperties.class,
-		McpStreamableHttpClientProperties.class })
+		McpStreamableHttpClientProperties.class, McpStdioClientProperties.class })
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 public class McpClientModernAutoConfiguration {
@@ -235,13 +245,61 @@ public class McpClientModernAutoConfiguration {
 	}
 
 	/**
+	 * Starts the server process of each modern STDIO connection, and ends the processes
+	 * when the application context is closed. A modern client neither starts nor closes
+	 * the transport it is given, so, unlike a modern Streamable HTTP connection, a modern
+	 * STDIO connection does something at startup: a server process that cannot be started
+	 * fails it.
+	 * <p>
+	 * The name of a modern connection selects its settings and prefixes its tools, so a
+	 * modern STDIO connection must not share its name with a modern Streamable HTTP
+	 * connection. That is checked before any process is started.
+	 * @param stdioProperties the configured STDIO connections
+	 * @param streamableProperties the configured Streamable HTTP connections
+	 * @param jsonMapperProvider the JSON mapper of the application, if any
+	 * @param transportCustomizers the customizers of the transport builders
+	 * @return the started transports
+	 */
+	@Bean
+	ModernStdioTransports modernStdioServerProcesses(McpStdioClientProperties stdioProperties,
+			McpStreamableHttpClientProperties streamableProperties, ObjectProvider<JsonMapper> jsonMapperProvider,
+			ObjectProvider<McpClientCustomizer<StdioMcpClientTransport.Builder>> transportCustomizers) {
+
+		Map<String, McpStdioClientProperties.Parameters> stdioConnections = stdioProperties.allConnections();
+
+		stdioConnections.forEach((name, parameters) -> {
+			ConnectionParameters streamable = streamableProperties.getConnections().get(name);
+			if (parameters.isModern() && streamable != null && streamable.isModern()) {
+				throw new IllegalStateException("The MCP connection name '" + name + "' is used by a modern "
+						+ "Streamable HTTP connection and by a modern STDIO connection. Give them different names: "
+						+ "the name selects the settings of a modern connection and prefixes its tools.");
+			}
+		});
+
+		return ModernStdioTransports.start(stdioConnections, mcpJsonMapper(jsonMapperProvider),
+				transportCustomizers.orderedStream().toList());
+	}
+
+	/**
+	 * Creates a transport on the standard streams of the server process of each modern
+	 * STDIO connection.
+	 * @param serverProcesses the started server processes
+	 * @return the named transports
+	 */
+	@Bean
+	List<NamedModernClientMcpTransport> modernStdioConnectionTransports(ModernStdioTransports serverProcesses) {
+		return serverProcesses.transports();
+	}
+
+	/**
 	 * Creates a connection for each named transport. All clients of a connection share
 	 * its transport. The client scope is read from the configured connection of the same
 	 * name, so a transport contributed by the application without such a connection gets
 	 * a client for each request.
 	 * @param transportsProvider the named transports, auto-configured or contributed by
 	 * the application
-	 * @param streamableProperties the configured connections
+	 * @param streamableProperties the configured Streamable HTTP connections
+	 * @param stdioProperties the configured STDIO connections
 	 * @param commonProperties the common MCP client properties
 	 * @param modernProperties the modern MCP client properties
 	 * @param jsonMapperProvider the JSON mapper of the application, if any
@@ -258,14 +316,16 @@ public class McpClientModernAutoConfiguration {
 			matchIfMissing = true)
 	public List<SyncModernMcpConnection> modernMcpSyncConnections(
 			ObjectProvider<List<NamedModernClientMcpTransport>> transportsProvider,
-			McpStreamableHttpClientProperties streamableProperties, McpClientCommonProperties commonProperties,
-			McpClientModernProperties modernProperties, ObjectProvider<JsonMapper> jsonMapperProvider,
+			McpStreamableHttpClientProperties streamableProperties, McpStdioClientProperties stdioProperties,
+			McpClientCommonProperties commonProperties, McpClientModernProperties modernProperties,
+			ObjectProvider<JsonMapper> jsonMapperProvider,
 			ObjectProvider<McpClientCustomizer<McpClient.SyncBuilder>> clientCustomizers,
 			ObjectProvider<ClientMcpSyncHandlersRegistry> handlersRegistry,
 			ObjectProvider<SyncModernMcpClientScope> clientScopeProvider) {
 
 		ClientMcpSyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
 		McpJsonMapper jsonMapper = mcpJsonMapper(jsonMapperProvider);
+		Function<String, ConnectionSettings> settingsByName = connectionSettings(streamableProperties, stdioProperties);
 
 		Implementation clientInfo = Implementation.builder(commonProperties.getName(), commonProperties.getVersion())
 			.build();
@@ -282,19 +342,18 @@ public class McpClientModernAutoConfiguration {
 
 			McpModernConnectionInfo connectionInfo = new McpModernConnectionInfo(namedTransport.name(), clientInfo);
 
-			ConnectionParameters parameters = streamableProperties.getConnections().get(namedTransport.name());
+			ConnectionSettings settings = settingsByName.apply(namedTransport.name());
 
 			if (handlers != null) {
-				warnAboutUnsupportedHandlers(namedTransport.name(), handlers,
-						parameters != null && parameters.isListening());
+				warnAboutUnsupportedHandlers(namedTransport.name(), handlers, settings.listening());
 			}
 
 			Supplier<McpSyncClient> clientFactory = () -> buildClient(namedTransport, clientInfo, commonProperties,
 					modernProperties, jsonMapper, handlers, customizers);
-			if (parameters != null && parameters.isSharedClient()) {
+			if (settings.sharedClient()) {
 				connections.add(SyncModernMcpConnection.shared(connectionInfo, clientFactory.get()));
 			}
-			else if (parameters != null && parameters.isCustomClientScope()) {
+			else if (settings.customClientScope()) {
 				// Asked for only by a connection that needs it.
 				SyncModernMcpClientScope clientScope = clientScopeProvider.getIfAvailable();
 				if (clientScope == null) {
@@ -323,7 +382,8 @@ public class McpClientModernAutoConfiguration {
 	 * that resolves the tools.
 	 * @param transportsProvider the named transports, auto-configured or contributed by
 	 * the application
-	 * @param streamableProperties the configured connections
+	 * @param streamableProperties the configured Streamable HTTP connections
+	 * @param stdioProperties the configured STDIO connections
 	 * @param commonProperties the common MCP client properties
 	 * @param modernProperties the modern MCP client properties
 	 * @param jsonMapperProvider the JSON mapper of the application, if any
@@ -340,8 +400,9 @@ public class McpClientModernAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public List<AsyncModernMcpConnection> modernMcpAsyncConnections(
 			ObjectProvider<List<NamedModernClientMcpTransport>> transportsProvider,
-			McpStreamableHttpClientProperties streamableProperties, McpClientCommonProperties commonProperties,
-			McpClientModernProperties modernProperties, ObjectProvider<JsonMapper> jsonMapperProvider,
+			McpStreamableHttpClientProperties streamableProperties, McpStdioClientProperties stdioProperties,
+			McpClientCommonProperties commonProperties, McpClientModernProperties modernProperties,
+			ObjectProvider<JsonMapper> jsonMapperProvider,
 			ObjectProvider<McpClientCustomizer<McpClient.AsyncBuilder>> clientCustomizers,
 			ObjectProvider<AsyncModernMcpClientScope> clientScopeProvider,
 			ObjectProvider<AsyncModernMcpTransportContextProvider> transportContextProvider,
@@ -349,6 +410,7 @@ public class McpClientModernAutoConfiguration {
 
 		ClientMcpAsyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
 		McpJsonMapper jsonMapper = mcpJsonMapper(jsonMapperProvider);
+		Function<String, ConnectionSettings> settingsByName = connectionSettings(streamableProperties, stdioProperties);
 
 		Implementation clientInfo = Implementation.builder(commonProperties.getName(), commonProperties.getVersion())
 			.build();
@@ -365,17 +427,16 @@ public class McpClientModernAutoConfiguration {
 			.toList()) {
 
 			McpModernConnectionInfo connectionInfo = new McpModernConnectionInfo(namedTransport.name(), clientInfo);
-			ConnectionParameters parameters = streamableProperties.getConnections().get(namedTransport.name());
+			ConnectionSettings settings = settingsByName.apply(namedTransport.name());
 
 			if (handlers != null) {
-				warnAboutUnsupportedAsyncHandlers(namedTransport.name(), handlers,
-						parameters != null && parameters.isListening());
+				warnAboutUnsupportedAsyncHandlers(namedTransport.name(), handlers, settings.listening());
 			}
 
 			Supplier<McpAsyncClient> clientFactory = () -> buildAsyncClient(namedTransport, clientInfo,
 					commonProperties, modernProperties, jsonMapper, handlers, customizers);
 			AsyncModernMcpConnection connection;
-			if (parameters != null && parameters.isSharedClient()) {
+			if (settings.sharedClient()) {
 				if (callerProvider != null) {
 					logger.warn("The MCP connection '" + namedTransport.name() + "' sets client-scope=SHARED, and an "
 							+ "AsyncModernMcpTransportContextProvider bean supplies the caller of each request. A "
@@ -384,7 +445,7 @@ public class McpClientModernAutoConfiguration {
 				}
 				connection = AsyncModernMcpConnection.shared(connectionInfo, clientFactory.get());
 			}
-			else if (parameters != null && parameters.isCustomClientScope()) {
+			else if (settings.customClientScope()) {
 				// Asked for only by a connection that needs it.
 				AsyncModernMcpClientScope clientScope = clientScopeProvider.getIfAvailable();
 				if (clientScope == null) {
@@ -412,7 +473,8 @@ public class McpClientModernAutoConfiguration {
 	 * any request, so it carries the identity of the application and not that of a
 	 * caller.
 	 * @param connectionsProvider the modern connections
-	 * @param streamableProperties the configured connections
+	 * @param streamableProperties the configured Streamable HTTP connections
+	 * @param stdioProperties the configured STDIO connections
 	 * @param modernProperties the modern MCP client properties
 	 * @param changeListeners the listeners of the application, which hear about what the
 	 * servers report next to the tool callback provider
@@ -427,8 +489,8 @@ public class McpClientModernAutoConfiguration {
 			matchIfMissing = true)
 	public SyncModernMcpChangeSubscriber modernMcpChangeSubscriber(
 			ObjectProvider<List<SyncModernMcpConnection>> connectionsProvider,
-			McpStreamableHttpClientProperties streamableProperties, McpClientModernProperties modernProperties,
-			ObjectProvider<SyncModernMcpChangeListener> changeListeners,
+			McpStreamableHttpClientProperties streamableProperties, McpStdioClientProperties stdioProperties,
+			McpClientModernProperties modernProperties, ObjectProvider<SyncModernMcpChangeListener> changeListeners,
 			ObjectProvider<ClientMcpSyncHandlersRegistry> handlersRegistry) {
 
 		ClientMcpSyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
@@ -437,10 +499,11 @@ public class McpClientModernAutoConfiguration {
 		SyncModernMcpChangeSubscriber.Builder subscriber = SyncModernMcpChangeSubscriber.builder()
 			.maxReopenDelay(coolDown.compareTo(MIN_LISTEN_REOPEN_DELAY) < 0 ? MIN_LISTEN_REOPEN_DELAY : coolDown);
 
+		Function<String, ConnectionSettings> settingsByName = connectionSettings(streamableProperties, stdioProperties);
+
 		connectionsProvider.stream().flatMap(List::stream).forEach(connection -> {
 			String name = connection.info().name();
-			ConnectionParameters parameters = streamableProperties.getConnections().get(name);
-			if (parameters != null && parameters.isListening()) {
+			if (settingsByName.apply(name).listening()) {
 				// The tools are always listened for. The prompts and the resources only
 				// if an annotated method wants to hear about them.
 				subscriber.connection(connection,
@@ -449,7 +512,7 @@ public class McpClientModernAutoConfiguration {
 			}
 		});
 
-		warnAboutListeningLegacyConnections(streamableProperties);
+		warnAboutListeningLegacyConnections(streamableProperties, stdioProperties);
 
 		changeListeners.orderedStream().forEach(subscriber::listener);
 
@@ -461,7 +524,8 @@ public class McpClientModernAutoConfiguration {
 	 * counterpart of {@link #modernMcpChangeSubscriber}. It tells
 	 * {@link AsyncModernMcpChangeListener} beans what the servers report.
 	 * @param connectionsProvider the modern connections
-	 * @param streamableProperties the configured connections
+	 * @param streamableProperties the configured Streamable HTTP connections
+	 * @param stdioProperties the configured STDIO connections
 	 * @param modernProperties the modern MCP client properties
 	 * @param changeListeners the listeners of the application, which hear about what the
 	 * servers report next to the tool callback provider
@@ -475,8 +539,8 @@ public class McpClientModernAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public AsyncModernMcpChangeSubscriber modernMcpAsyncChangeSubscriber(
 			ObjectProvider<List<AsyncModernMcpConnection>> connectionsProvider,
-			McpStreamableHttpClientProperties streamableProperties, McpClientModernProperties modernProperties,
-			ObjectProvider<AsyncModernMcpChangeListener> changeListeners,
+			McpStreamableHttpClientProperties streamableProperties, McpStdioClientProperties stdioProperties,
+			McpClientModernProperties modernProperties, ObjectProvider<AsyncModernMcpChangeListener> changeListeners,
 			ObjectProvider<ClientMcpAsyncHandlersRegistry> handlersRegistry) {
 
 		ClientMcpAsyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
@@ -485,10 +549,11 @@ public class McpClientModernAutoConfiguration {
 		AsyncModernMcpChangeSubscriber.Builder subscriber = AsyncModernMcpChangeSubscriber.builder()
 			.maxReopenDelay(coolDown.compareTo(MIN_LISTEN_REOPEN_DELAY) < 0 ? MIN_LISTEN_REOPEN_DELAY : coolDown);
 
+		Function<String, ConnectionSettings> settingsByName = connectionSettings(streamableProperties, stdioProperties);
+
 		connectionsProvider.stream().flatMap(List::stream).forEach(connection -> {
 			String name = connection.info().name();
-			ConnectionParameters parameters = streamableProperties.getConnections().get(name);
-			if (parameters != null && parameters.isListening()) {
+			if (settingsByName.apply(name).listening()) {
 				// The tools are always listened for. The prompts and the resources only
 				// if an annotated method wants to hear about them.
 				subscriber.connection(connection,
@@ -497,7 +562,7 @@ public class McpClientModernAutoConfiguration {
 			}
 		});
 
-		warnAboutListeningLegacyConnections(streamableProperties);
+		warnAboutListeningLegacyConnections(streamableProperties, stdioProperties);
 
 		changeListeners.orderedStream().forEach(subscriber::listener);
 
@@ -507,13 +572,51 @@ public class McpClientModernAutoConfiguration {
 	/**
 	 * Only a connection that uses the modern protocol has a listen stream.
 	 */
-	private static void warnAboutListeningLegacyConnections(McpStreamableHttpClientProperties streamableProperties) {
+	private static void warnAboutListeningLegacyConnections(McpStreamableHttpClientProperties streamableProperties,
+			McpStdioClientProperties stdioProperties) {
+		List<String> names = new ArrayList<>();
 		streamableProperties.getConnections().forEach((name, parameters) -> {
 			if (parameters.isListening() && !parameters.isModern()) {
-				logger.warn("The MCP connection '" + name + "' sets listen=true but does not use the MODERN "
-						+ "protocol; no listen stream is opened for it.");
+				names.add(name);
 			}
 		});
+		stdioProperties.allConnections().forEach((name, parameters) -> {
+			if (parameters.isListening() && !parameters.isModern()) {
+				names.add(name);
+			}
+		});
+		for (String name : names) {
+			logger.warn("The MCP connection '" + name + "' sets listen=true but does not use the MODERN "
+					+ "protocol; no listen stream is opened for it.");
+		}
+	}
+
+	/**
+	 * Finds the settings of a modern connection by its name, among the configured
+	 * Streamable HTTP and STDIO connections. A transport contributed by the application
+	 * takes the settings of the configured connection of the same name, if there is one,
+	 * and the defaults otherwise.
+	 */
+	private static Function<String, ConnectionSettings> connectionSettings(
+			McpStreamableHttpClientProperties streamableProperties, McpStdioClientProperties stdioProperties) {
+
+		Map<String, McpStdioClientProperties.Parameters> stdioConnections = stdioProperties.allConnections();
+
+		return name -> {
+			ConnectionParameters streamable = streamableProperties.getConnections().get(name);
+			McpStdioClientProperties.Parameters stdio = stdioConnections.get(name);
+
+			// If both transports have a connection of that name, the modern one is meant.
+			// Both cannot be modern: that fails the startup.
+			if (stdio != null && (streamable == null || (stdio.isModern() && !streamable.isModern()))) {
+				return new ConnectionSettings(stdio.isSharedClient(), stdio.isCustomClientScope(), stdio.isListening());
+			}
+			if (streamable != null) {
+				return new ConnectionSettings(streamable.isSharedClient(), streamable.isCustomClientScope(),
+						streamable.isListening());
+			}
+			return ConnectionSettings.DEFAULT;
+		};
 	}
 
 	/**
@@ -861,6 +964,16 @@ public class McpClientModernAutoConfiguration {
 					+ ". Remove the endpoint from the url if the server listens at " + base + ".");
 		}
 		return URI.create(base + endpoint + rest);
+	}
+
+	/**
+	 * The client scope and the listen setting of a modern connection.
+	 */
+	private record ConnectionSettings(boolean sharedClient, boolean customClientScope, boolean listening) {
+
+		/** A client for each request and no listen stream. */
+		static final ConnectionSettings DEFAULT = new ConnectionSettings(false, false, false);
+
 	}
 
 }

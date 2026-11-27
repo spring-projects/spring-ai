@@ -38,6 +38,11 @@ Properties for Standard I/O transport are prefixed with `spring.ai.mcp.client.st
 |`connections.[name].env`
 |Map of environment variables for the server process
 |-
+
+|`connections.[name].protocol`
+|The protocol the connection speaks: `LEGACY` or `MODERN`.
+See xref:mcp/client/modern.adoc#mcp-modern-stdio-connections[STDIO Connections] for the modern protocol and for the `client-scope` and `listen` properties of a modern connection.
+|`LEGACY`
 |===
 
 Example configuration:
