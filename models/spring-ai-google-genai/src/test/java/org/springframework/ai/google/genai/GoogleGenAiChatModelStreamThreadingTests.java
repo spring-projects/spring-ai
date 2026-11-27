@@ -22,10 +22,12 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -172,6 +174,58 @@ class GoogleGenAiChatModelStreamThreadingTests {
 	}
 
 	@Test
+	void waitsForDemandBeforeReadingPastSdkLookahead() throws Exception {
+		BlockingReadSource source = new BlockingReadSource();
+		ResponseBody body = spy(ResponseBody.create(MediaType.get("text/event-stream"), -1, Okio.buffer(source)));
+		GoogleGenAiChatModel model = createChatModel(body);
+		LinkedBlockingQueue<ChatResponse> responses = new LinkedBlockingQueue<>();
+		CompletableFuture<Void> completion = new CompletableFuture<>();
+		BaseSubscriber<ChatResponse> subscriber = new BaseSubscriber<>() {
+
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				request(1);
+			}
+
+			@Override
+			protected void hookOnNext(ChatResponse response) {
+				responses.add(response);
+			}
+
+			@Override
+			protected void hookOnComplete() {
+				completion.complete(null);
+			}
+
+			@Override
+			protected void hookOnError(Throwable failure) {
+				completion.completeExceptionally(failure);
+			}
+
+		};
+		try {
+			model.stream(new Prompt("Hello")).subscribe(subscriber);
+
+			assertThat(responses.poll(5, TimeUnit.SECONDS)).isNotNull();
+			assertThat(source.readBlocked.await(500, TimeUnit.MILLISECONDS))
+				.as("reading the third SSE event must wait for more downstream demand")
+				.isFalse();
+
+			subscriber.request(2);
+			assertThat(source.readBlocked.await(5, TimeUnit.SECONDS)).isTrue();
+			source.releaseRead.countDown();
+
+			completion.get(5, TimeUnit.SECONDS);
+			assertThat(responses).hasSize(2);
+			verify(body).close();
+		}
+		finally {
+			subscriber.dispose();
+			source.releaseRead.countDown();
+		}
+	}
+
+	@Test
 	void cancellationDoesNotBlockEventLoopWhileSdkIsReading() throws Exception {
 		BlockingReadSource source = new BlockingReadSource();
 		ResponseBody body = spy(ResponseBody.create(MediaType.get("text/event-stream"), -1, Okio.buffer(source)));
@@ -202,6 +256,7 @@ class GoogleGenAiChatModelStreamThreadingTests {
 		try {
 			model.stream(new Prompt("Hello")).subscribe(subscriber);
 			assertThat(firstResponse.await(5, TimeUnit.SECONDS)).isTrue();
+			subscriber.request(1);
 			assertThat(source.readBlocked.await(5, TimeUnit.SECONDS)).isTrue();
 			eventLoop.schedule(() -> {
 				cancelStarted.countDown();
@@ -365,13 +420,15 @@ class GoogleGenAiChatModelStreamThreadingTests {
 
 		@Override
 		public long read(Buffer sink, long byteCount) throws IOException {
-			if (this.reads++ < 2) {
-				sink.writeUtf8(RESPONSE);
-				return RESPONSE.getBytes(StandardCharsets.UTF_8).length;
+			if (this.reads == 3) {
+				return -1;
 			}
-			this.readBlocked.countDown();
-			awaitIgnoringInterrupts(this.releaseRead);
-			return -1;
+			if (this.reads++ == 2) {
+				this.readBlocked.countDown();
+				awaitIgnoringInterrupts(this.releaseRead);
+			}
+			sink.writeUtf8(RESPONSE);
+			return RESPONSE.getBytes(StandardCharsets.UTF_8).length;
 		}
 
 		@Override

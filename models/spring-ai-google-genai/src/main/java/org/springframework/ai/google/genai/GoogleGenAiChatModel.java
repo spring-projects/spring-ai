@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -674,7 +675,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				Flux<GenerateContentResponse> responses = Flux
 					.using(() -> resource,
 							streamResource -> openStream(request, observation, streamResource)
-								.flatMapMany(responseStream -> Flux.fromIterable(responseStream)
+								.flatMapMany(responseStream -> readResponses(responseStream)
 									.subscribeOn(Schedulers.boundedElastic())),
 							ResponseStreamResource::close)
 					.cancelOn(Schedulers.boundedElastic())
@@ -686,7 +687,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				// single
 				// index sequence across chunks.
 				Map<Integer, StreamingPartIndexer> indexers = new HashMap<>();
-				Flux<ChatResponse> chatResponseFlux = responses.concatMap(response -> {
+				Flux<ChatResponse> chatResponseFlux = responses.map(response -> {
 					List<Generation> generations = response.candidates()
 						.orElse(List.of())
 						.stream()
@@ -702,9 +703,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					Usage currentUsage = usage.isPresent() ? getDefaultUsage(usage.get(), options)
 							: getDefaultUsage(null, options);
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-					ChatResponse chatResponse = new ChatResponse(generations,
-							toChatResponseMetadata(cumulativeUsage, response));
-					return Flux.just(chatResponse);
+					return new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage, response));
 				});
 
 				AtomicReference<ChatResponse> aggregatedResponseRef = new AtomicReference<>();
@@ -741,6 +740,24 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				throw new RuntimeException("Failed to generate content", ex);
 			}
 		}).subscribeOn(Schedulers.boundedElastic());
+	}
+
+	private Flux<GenerateContentResponse> readResponses(ResponseStream<GenerateContentResponse> responseStream) {
+		return Flux.defer(() -> {
+			Iterator<GenerateContentResponse> responses = responseStream.iterator();
+			if (!responses.hasNext()) {
+				return Flux.empty();
+			}
+			// The SDK reads ahead in next(), while hasNext() only checks the buffered
+			// event.
+			// Advance the iterator once per requested response.
+			return Flux.generate(sink -> {
+				sink.next(responses.next());
+				if (!responses.hasNext()) {
+					sink.complete();
+				}
+			});
+		});
 	}
 
 	/**
