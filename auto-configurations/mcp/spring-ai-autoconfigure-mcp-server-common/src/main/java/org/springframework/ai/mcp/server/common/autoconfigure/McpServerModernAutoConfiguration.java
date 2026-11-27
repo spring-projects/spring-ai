@@ -44,6 +44,7 @@ import io.modelcontextprotocol.modern.server.feature.ResourcesFeature;
 import io.modelcontextprotocol.modern.server.feature.ToolsFeature;
 import io.modelcontextprotocol.modern.server.transport.StdioMcpTransport;
 import org.jspecify.annotations.Nullable;
+import reactor.core.publisher.Mono;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.customizer.McpServerCustomizer;
@@ -421,12 +422,22 @@ public class McpServerModernAutoConfiguration {
 
 	/**
 	 * Starts the stdio transport with the application and closes it on shutdown.
+	 * <p>
+	 * The threads of the transport are daemon threads, so they do not keep the JVM alive.
+	 * A thread of this lifecycle, which is not a daemon, waits while the transport
+	 * serves: until the standard input ends or the application is closed. A server on the
+	 * standard streams therefore stays up for its client. When the input ends, the JVM
+	 * ends as well, unless something else keeps it running.
+	 * <p>
+	 * The transport can be started once, so the lifecycle is not pauseable.
 	 */
 	public static final class StdioMcpTransportLifecycle implements SmartLifecycle {
 
 		private final StdioMcpTransport transport;
 
 		private volatile boolean running;
+
+		private volatile @Nullable Thread servingThread;
 
 		StdioMcpTransportLifecycle(StdioMcpTransport transport) {
 			this.transport = transport;
@@ -435,8 +446,26 @@ public class McpServerModernAutoConfiguration {
 		@Override
 		public void start() {
 			if (!this.running) {
+				Mono<Void> served = this.transport.start();
 				this.running = true;
-				this.transport.start().subscribe();
+				Thread thread = new Thread(() -> awaitEndOfServing(served), "mcp-stdio-server");
+				thread.setDaemon(false);
+				this.servingThread = thread;
+				thread.start();
+			}
+		}
+
+		private void awaitEndOfServing(Mono<Void> served) {
+			try {
+				served.block();
+			}
+			catch (RuntimeException ex) {
+				logger.error(ex, "The MCP server on the standard streams failed");
+			}
+			if (this.running) {
+				// Not closed by stop(): the transport has ended by itself.
+				this.running = false;
+				logger.info("The standard input has ended: the MCP server on the standard streams no longer serves");
 			}
 		}
 
@@ -451,6 +480,19 @@ public class McpServerModernAutoConfiguration {
 		@Override
 		public boolean isRunning() {
 			return this.running;
+		}
+
+		@Override
+		public boolean isPauseable() {
+			return false;
+		}
+
+		/**
+		 * The thread that waits while the transport serves.
+		 * @return the thread, or {@code null} before the lifecycle is started
+		 */
+		@Nullable Thread servingThread() {
+			return this.servingThread;
 		}
 
 	}
