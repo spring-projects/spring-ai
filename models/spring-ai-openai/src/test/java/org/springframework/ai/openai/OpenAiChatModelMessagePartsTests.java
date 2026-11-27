@@ -135,6 +135,63 @@ class OpenAiChatModelMessagePartsTests {
 	}
 
 	@Test
+	void reasoningFromReasoningFieldIsReplayedAsReasoning() {
+		givenCompletion(assistantMessage().content("100")
+			.putAdditionalProperty("reasoning", JsonValue.from("25 * 4 = 100."))
+			.build());
+
+		AssistantMessage message = chatModel("gpt-oss-120b").call(new Prompt("Calculate.")).getResult().getOutput();
+
+		assertThat(message.getParts()).containsExactly(
+				ReasoningPart.of("25 * 4 = 100.")
+					.withAttributes(Map.of(OpenAiChatModel.REASONING_FIELD_ATTRIBUTE, "reasoning")),
+				TextPart.of("100"));
+
+		ChatCompletionAssistantMessageParam param = assistantParam(chatModel("gpt-oss-120b"), message);
+
+		assertThat(param._additionalProperties()).containsEntry("reasoning", JsonValue.from("25 * 4 = 100."))
+			.doesNotContainKey("reasoning_content");
+	}
+
+	@Test
+	void reasoningContentWinsWhenBothReasoningFieldsCarryText() {
+		givenCompletion(assistantMessage().content("100")
+			.putAdditionalProperty("reasoning_content", JsonValue.from("from reasoning_content"))
+			.putAdditionalProperty("reasoning", JsonValue.from("from reasoning"))
+			.build());
+
+		AssistantMessage message = chatModel("gpt-oss-120b").call(new Prompt("Calculate.")).getResult().getOutput();
+
+		assertThat(message.getParts()).containsExactly(ReasoningPart.of("from reasoning_content"), TextPart.of("100"));
+
+		ChatCompletionAssistantMessageParam param = assistantParam(chatModel("gpt-oss-120b"), message);
+
+		assertThat(param._additionalProperties())
+			.containsEntry("reasoning_content", JsonValue.from("from reasoning_content"))
+			.doesNotContainKey("reasoning");
+	}
+
+	@Test
+	void emptyReasoningContentFallsBackToReasoningField() {
+		givenCompletion(assistantMessage().content("100")
+			.putAdditionalProperty("reasoning_content", JsonValue.from(""))
+			.putAdditionalProperty("reasoning", JsonValue.from("from reasoning"))
+			.build());
+
+		AssistantMessage message = chatModel("gpt-oss-120b").call(new Prompt("Calculate.")).getResult().getOutput();
+
+		assertThat(message.getParts()).containsExactly(
+				ReasoningPart.of("from reasoning")
+					.withAttributes(Map.of(OpenAiChatModel.REASONING_FIELD_ATTRIBUTE, "reasoning")),
+				TextPart.of("100"));
+
+		ChatCompletionAssistantMessageParam param = assistantParam(chatModel("gpt-oss-120b"), message);
+
+		assertThat(param._additionalProperties()).containsEntry("reasoning", JsonValue.from("from reasoning"))
+			.doesNotContainKey("reasoning_content");
+	}
+
+	@Test
 	void plainAnswerIsASingleTextPart() {
 		givenCompletion(assistantMessage().content("hello").build());
 
@@ -483,6 +540,25 @@ class OpenAiChatModelMessagePartsTests {
 	}
 
 	@Test
+	void streamedReasoningFromReasoningFieldIsReplayedAsReasoning() {
+		List<ChatCompletionChunk> chunks = List.of(
+				streamingChunk(delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT)
+					.putAdditionalProperty("reasoning", JsonValue.from("Think ")), null),
+				streamingChunk(delta -> delta.putAdditionalProperty("reasoning", JsonValue.from("again.")), null),
+				streamingChunk(delta -> delta.content("100"), null), streamingChunk(delta -> {
+				}, ChatCompletionChunk.Choice.FinishReason.STOP));
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(streamResponses(chunks), aggregatedRef::set).collectList().block();
+
+		ChatCompletionAssistantMessageParam param = assistantParam(chatModel("gpt-oss-120b"),
+				aggregatedRef.get().getResult().getOutput());
+
+		assertThat(param._additionalProperties()).containsEntry("reasoning", JsonValue.from("Think again."))
+			.doesNotContainKey("reasoning_content");
+	}
+
+	@Test
 	void streamingReasoningAfterTheToolCallStartsContinuesTheReasoningPart() {
 		List<ChatCompletionChunk> chunks = List
 			.of(streamingChunk(
@@ -520,7 +596,10 @@ class OpenAiChatModelMessagePartsTests {
 		new MessageAggregator().aggregate(streamResponses(chunks), aggregatedRef::set).blockLast();
 
 		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
-		assertThat(aggregated.getParts()).containsExactly(ReasoningPart.of("Quick thought."), TextPart.of("Hello!"));
+		assertThat(aggregated.getParts()).containsExactly(
+				ReasoningPart.of("Quick thought.")
+					.withAttributes(Map.of(OpenAiChatModel.REASONING_FIELD_ATTRIBUTE, "reasoning")),
+				TextPart.of("Hello!"));
 		assertThat(aggregated.getMetadata()).containsEntry("reasoningContent", "Quick thought.");
 	}
 
@@ -563,11 +642,14 @@ class OpenAiChatModelMessagePartsTests {
 			.block();
 
 		assertThat(responses.get(0).getResult().getOutput().getParts())
-			.containsExactly(StreamingParts.partial(ReasoningPart.of("Think "), 0));
+			.containsExactly(StreamingParts.partial(ReasoningPart.of("Think ")
+				.withAttributes(Map.of(OpenAiChatModel.REASONING_FIELD_ATTRIBUTE, "reasoning")), 0));
 		assertThat(responses.get(2).getResult().getOutput().getParts())
 			.containsExactly(StreamingParts.partial(TextPart.of("Hello"), 1));
-		assertThat(aggregatedRef.get().getResult().getOutput().getParts())
-			.containsExactly(ReasoningPart.of("Think first."), TextPart.of("Hello!"));
+		assertThat(aggregatedRef.get().getResult().getOutput().getParts()).containsExactly(
+				ReasoningPart.of("Think first.")
+					.withAttributes(Map.of(OpenAiChatModel.REASONING_FIELD_ATTRIBUTE, "reasoning")),
+				TextPart.of("Hello!"));
 	}
 
 	@Test

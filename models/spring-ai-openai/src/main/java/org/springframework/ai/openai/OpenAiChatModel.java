@@ -142,10 +142,11 @@ import org.springframework.util.StringUtils;
  * </ul>
  * Chat Completions has no way to interleave these items on the wire, so an assistant
  * message is replayed as one message: the text parts are joined into the {@code content},
- * the reasoning parts are joined into {@code reasoning_content}, unless another provider
- * signed some of them, and the tool call parts become the {@code tool_calls}. Media and
- * other parts are not replayed. User message parts are sent in their order, so text and
- * media can interleave.
+ * the reasoning parts are joined into the {@code reasoning_content} property, or into the
+ * {@code reasoning} property when that is the field they arrived in, unless another
+ * provider signed some of them, and the tool call parts become the {@code tool_calls}.
+ * Media and other parts are not replayed. User message parts are sent in their order, so
+ * text and media can interleave.
  *
  * @author Julien Dubois
  * @author Christian Tzolov
@@ -185,6 +186,18 @@ public final class OpenAiChatModel implements ChatModel {
 	 * by an earlier version.
 	 */
 	private static final String REASONING_CONTENT = "reasoningContent";
+
+	/**
+	 * Attribute of a {@link ReasoningPart} that records that the reasoning arrived in the
+	 * {@code reasoning} field of the response rather than the {@code reasoning_content}
+	 * field. The reasoning is replayed in the field it arrived in, so that servers which
+	 * read only one of them receive it again.
+	 */
+	static final String REASONING_FIELD_ATTRIBUTE = "reasoningField";
+
+	private static final String REASONING_CONTENT_FIELD = "reasoning_content";
+
+	private static final String REASONING_FIELD = "reasoning";
 
 	/**
 	 * Message metadata key holding a map from tool call id to the JSON string of the
@@ -533,7 +546,13 @@ public final class OpenAiChatModel implements ChatModel {
 		// hasLength, not hasText: a streamed reasoning delta is often a single
 		// whitespace or newline token that must be kept.
 		if (StringUtils.hasLength(reasoning)) {
-			parts.add(ReasoningPart.of(reasoning));
+			ReasoningPart reasoningPart = ReasoningPart.of(reasoning);
+			// Keep the field the reasoning arrived in, so that the replay uses the same
+			// one. reasoning_content is the default and needs no marker.
+			if (REASONING_FIELD.equals(reasoningContentField(choice))) {
+				reasoningPart = reasoningPart.withAttributes(Map.of(REASONING_FIELD_ATTRIBUTE, REASONING_FIELD));
+			}
+			parts.add(reasoningPart);
 		}
 		// An empty content has no text part: a tool-call answer or a reasoning-only
 		// chunk carries none, and the "" some servers stream next to every reasoning
@@ -990,10 +1009,11 @@ public final class OpenAiChatModel implements ChatModel {
 	 * <li>the text of the {@link TextPart}s, joined, becomes its {@code content};</li>
 	 * <li>the {@link ToolCallPart}s become its {@code tool_calls}, in part order;</li>
 	 * <li>the text of the {@link ReasoningPart}s, joined, becomes its
-	 * {@code reasoning_content} additional property, unless
-	 * {@code replayReasoningContent} is {@code false} (see
-	 * {@link OpenAiChatOptions#getReplayReasoningContent()}) or the reasoning cannot be
-	 * replayed (see {@link #reasoningContent(AssistantMessage)}).</li>
+	 * {@code reasoning_content} additional property, or its {@code reasoning} property
+	 * when the reasoning arrived in that field, unless {@code replayReasoningContent} is
+	 * {@code false} (see {@link OpenAiChatOptions#getReplayReasoningContent()}) or the
+	 * reasoning cannot be replayed (see
+	 * {@link #reasoningContent(AssistantMessage)}).</li>
 	 * </ul>
 	 * Any other part, such as a {@link MediaPart} holding the audio output of an earlier
 	 * turn, has no field and is not sent.
@@ -1017,9 +1037,9 @@ public final class OpenAiChatModel implements ChatModel {
 		// unaffected
 		String reasoningContent = reasoningContent(assistantMessage);
 		if (replayReasoningContent && StringUtils.hasText(reasoningContent)) {
-			// "reasoning_content" is the wire field; REASONING_CONTENT is the metadata
-			// key
-			builder.putAdditionalProperty("reasoning_content", JsonValue.from(reasoningContent));
+			// Send the reasoning back in the field it arrived in. reasoning_content is
+			// the default for a message that does not record the field.
+			builder.putAdditionalProperty(reasoningContentField(assistantMessage), JsonValue.from(reasoningContent));
 		}
 
 		return builder.build();
@@ -1118,6 +1138,21 @@ public final class OpenAiChatModel implements ChatModel {
 	private static boolean isSignedByAnotherProvider(ReasoningPart part) {
 		OpaquePayload payload = part.payload();
 		return payload != null && !CHAT_COMPLETIONS_PROVIDER.equals(payload.provider());
+	}
+
+	/**
+	 * The field to replay an assistant message's reasoning in: {@code reasoning} when a
+	 * reasoning part records that it arrived in that field, or {@code reasoning_content}
+	 * otherwise. The latter is the default, also used by a message that does not record
+	 * the field, such as one built by the application or persisted by an earlier version.
+	 */
+	private static String reasoningContentField(AssistantMessage assistantMessage) {
+		return assistantMessage.getReasoning()
+			.stream()
+			.map(part -> part.attributes().get(REASONING_FIELD_ATTRIBUTE))
+			.filter(REASONING_FIELD::equals)
+			.findFirst()
+			.orElse(REASONING_CONTENT_FIELD);
 	}
 
 	/**
@@ -1626,12 +1661,37 @@ public final class OpenAiChatModel implements ChatModel {
 	 * neither.
 	 */
 	private static String getReasoningContent(ChatCompletion.Choice choice) {
-		Map<String, JsonValue> additionalProperties = choice.message()._additionalProperties();
-		JsonValue reasoningContent = additionalProperties.get("reasoning_content");
-		if (reasoningContent == null) {
-			reasoningContent = additionalProperties.get("reasoning");
+		String field = reasoningContentField(choice);
+		if (field == null) {
+			return "";
 		}
+		JsonValue reasoningContent = choice.message()._additionalProperties().get(field);
 		return reasoningContent != null ? (String) reasoningContent.asString().orElse("") : "";
+	}
+
+	/**
+	 * The field a response carries its reasoning in, or {@code null} if neither field
+	 * carries text. {@code reasoning_content} wins when both do, as it does in
+	 * {@link #getReasoningContent(ChatCompletion.Choice)}. A field that is present but
+	 * empty, or JSON {@code null}, does not hide the other one.
+	 */
+	private static @Nullable String reasoningContentField(ChatCompletion.Choice choice) {
+		Map<String, JsonValue> additionalProperties = choice.message()._additionalProperties();
+		if (hasReasoningText(additionalProperties.get(REASONING_CONTENT_FIELD))) {
+			return REASONING_CONTENT_FIELD;
+		}
+		if (hasReasoningText(additionalProperties.get(REASONING_FIELD))) {
+			return REASONING_FIELD;
+		}
+		return null;
+	}
+
+	private static boolean hasReasoningText(@Nullable JsonValue value) {
+		if (value == null) {
+			return false;
+		}
+		String text = (String) value.asString().orElse("");
+		return !text.isEmpty();
 	}
 
 	/**
