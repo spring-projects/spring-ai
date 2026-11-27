@@ -746,6 +746,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		Map<String, Object> messageMetadata = new HashMap<>();
 		messageMetadata.put("candidateIndex", candidateIndex);
 		messageMetadata.put("finishReason", candidateFinishReason);
+		candidate.finishMessage().ifPresent(m -> messageMetadata.put("finishMessage", m));
 
 		List<Part> parts = candidate.content().flatMap(Content::parts).orElse(List.of());
 
