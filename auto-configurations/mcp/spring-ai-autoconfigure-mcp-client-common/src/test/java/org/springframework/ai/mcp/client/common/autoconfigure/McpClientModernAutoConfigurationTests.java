@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import io.micrometer.context.ContextAccessor;
+import io.micrometer.context.ContextRegistry;
 import io.modelcontextprotocol.modern.McpSchema.ElicitFormRequest;
 import io.modelcontextprotocol.modern.McpSchema.ElicitResult;
 import io.modelcontextprotocol.modern.McpSchema.ProgressParams;
@@ -93,6 +95,21 @@ class McpClientModernAutoConfigurationTests {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpClientAutoConfiguration.class,
 				McpToolCallbackAutoConfiguration.class, McpClientModernAutoConfiguration.class));
+
+	@Test
+	void contextRegistryReadsTheReactorContextOnceTheConnectionsAreConfigured() {
+		ContextRegistry registry = ContextRegistry.getInstance();
+		List<ContextAccessor<?, ?>> removed = ModernMcpContextRegistryTests.removeReactorContextAccessors(registry);
+		try {
+			this.contextRunner.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL).run(context -> {
+				assertThat(context).hasBean("modernMcpSyncConnections");
+				assertThat(ModernMcpContextRegistry.readsReactorContext(registry)).isTrue();
+			});
+		}
+		finally {
+			ModernMcpContextRegistryTests.restoreReactorContextAccessors(registry, removed);
+		}
+	}
 
 	@Test
 	void onlyConnectionsWithTheModernProtocolBecomeModernConnections() {
