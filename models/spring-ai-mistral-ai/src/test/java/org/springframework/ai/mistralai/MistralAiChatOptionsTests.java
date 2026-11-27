@@ -23,6 +23,8 @@ import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mistralai.MistralAiChatOptions.Builder;
@@ -446,6 +448,15 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 		assertThat(json).contains("\"json_schema\"");
 		assertThat(json).contains("\"name\":\"custom_schema\"");
 		assertThat(json).contains("\"strict\":true");
+	}
+
+	@ParameterizedTest
+	@CsvSource({ "NONE, none", "LOW, low", "MEDIUM, medium", "HIGH, high" })
+	void testJsonSerializationOfReasoningEffort(ReasoningEffort reasoningEffort, String value) {
+		JsonMapper jsonMapper = new JsonMapper();
+
+		assertThat(jsonMapper.writeValueAsString(reasoningEffort)).isEqualTo("\"" + value + "\"");
+		assertThat(jsonMapper.readValue("\"" + value + "\"", ReasoningEffort.class)).isEqualTo(reasoningEffort);
 	}
 
 	@Test
