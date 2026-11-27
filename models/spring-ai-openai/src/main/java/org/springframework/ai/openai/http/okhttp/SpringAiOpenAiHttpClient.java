@@ -71,6 +71,8 @@ import okio.BufferedSink;
 import okio.Okio;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.observation.WeakObservationRegistry;
+
 /**
  * OkHttp-backed {@link HttpClient} for the OpenAI Java SDK, with Micrometer's
  * {@link OkHttpObservationInterceptor} attached so each HTTP attempt produces an
@@ -540,8 +542,11 @@ public final class SpringAiOpenAiHttpClient implements HttpClient {
 				.callTimeout(this.timeout.request())
 				.proxy(this.proxy);
 
+			// Weak wrapper: the interceptor holds the registry strongly, and the
+			// SDK Cleaner can retain this client after the Spring context closes
+			// (gh-7455). A weak ref lets the context become unreachable.
 			OkHttpObservationInterceptor observationInterceptor = OkHttpObservationInterceptor
-				.builder(this.observationRegistry, OBSERVATION_NAME)
+				.builder(new WeakObservationRegistry(this.observationRegistry), OBSERVATION_NAME)
 				.build();
 			okBuilder.addInterceptor(observationInterceptor);
 

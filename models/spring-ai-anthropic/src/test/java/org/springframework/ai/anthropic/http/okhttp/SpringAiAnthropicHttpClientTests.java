@@ -18,17 +18,22 @@ package org.springframework.ai.anthropic.http.okhttp;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.anthropic.backends.AnthropicBackend;
 import com.anthropic.core.RequestOptions;
 import com.anthropic.core.http.HttpMethod;
 import com.anthropic.core.http.HttpRequest;
 import com.anthropic.core.http.HttpResponse;
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationHandler;
+import io.micrometer.observation.ObservationRegistry;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -199,6 +204,69 @@ class SpringAiAnthropicHttpClientTests {
 
 			assertThat(client.getOkHttpClient().connectionPool().idleConnectionCount()).isEqualTo(1);
 		}
+	}
+
+	@Test
+	void observationInterceptorDoesNotPinTheObservationRegistry() throws Exception {
+		// The SDK Cleaner can retain the HTTP client after the Spring context
+		// closes. The interceptor must not keep a strong ref to the context's
+		// ObservationRegistry (gh-7455).
+		ObservationRegistry registry = ObservationRegistry.create();
+		WeakReference<ObservationRegistry> ref = new WeakReference<>(registry);
+		SpringAiAnthropicHttpClient client = SpringAiAnthropicHttpClient.builder()
+			.backend(AnthropicBackend.builder().apiKey("test-key").build())
+			.observationRegistry(registry)
+			.build();
+		registry = null;
+
+		assertThat(awaitCleared(ref)).as("registry should be collectable once only weakly held by the interceptor")
+			.isTrue();
+		client.close();
+	}
+
+	@Test
+	void observationsAreRecordedWhileRegistryIsReachable() throws Exception {
+		ObservationRegistry registry = ObservationRegistry.create();
+		AtomicInteger starts = new AtomicInteger();
+		registry.observationConfig().observationHandler(new ObservationHandler<>() {
+			@Override
+			public boolean supportsContext(Observation.Context context) {
+				return true;
+			}
+
+			@Override
+			public void onStart(Observation.Context context) {
+				starts.incrementAndGet();
+			}
+		});
+
+		try (MockWebServer server = new MockWebServer()) {
+			server.enqueue(new MockResponse().setResponseCode(200)
+				.setHeader("Content-Type", "application/json")
+				.setBody(MESSAGES_RESPONSE));
+			server.start();
+
+			OkHttpClient client = SpringAiAnthropicHttpClient.builder()
+				.backend(AnthropicBackend.builder().apiKey("test-key").build())
+				.observationRegistry(registry)
+				.build()
+				.getOkHttpClient();
+			String url = "http://127.0.0.1:" + server.getPort() + "/v1/messages";
+			try (Response response = client.newCall(newPost(url)).execute()) {
+				assertThat(response.code()).isEqualTo(200);
+			}
+		}
+
+		assertThat(starts.get()).isGreaterThan(0);
+	}
+
+	private static boolean awaitCleared(WeakReference<?> ref) throws InterruptedException {
+		for (int i = 0; i < 50 && ref.get() != null; i++) {
+			System.gc();
+			System.runFinalization();
+			Thread.sleep(20);
+		}
+		return ref.get() == null;
 	}
 
 	private static Request newPost(String url) {
