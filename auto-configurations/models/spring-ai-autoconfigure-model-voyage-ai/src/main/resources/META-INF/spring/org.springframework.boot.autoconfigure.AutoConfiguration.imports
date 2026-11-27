@@ -1,0 +1,4 @@
+org.springframework.ai.model.voyageai.autoconfigure.VoyageAiEmbeddingAutoConfiguration
+org.springframework.ai.model.voyageai.autoconfigure.VoyageAiContextualizedEmbeddingAutoConfiguration
+org.springframework.ai.model.voyageai.autoconfigure.VoyageAiMultimodalEmbeddingAutoConfiguration
+org.springframework.ai.model.voyageai.autoconfigure.VoyageAiRerankAutoConfiguration

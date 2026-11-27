@@ -153,6 +153,7 @@
 *** xref:integrations/models/systemone.adoc[System One]
 *** xref:integrations/models/transformers.adoc[Transformers (ONNX)]
 *** xref:integrations/models/postgresml.adoc[PostgresML]
+*** xref:integrations/models/voyage-ai.adoc[Voyage AI]
 *** xref:integrations/models/jinfer/index.adoc[Qxotic jinfer (Community)]
 **** xref:integrations/models/jinfer/chat.adoc[Chat]
 **** xref:integrations/models/jinfer/embeddings.adoc[Embeddings]

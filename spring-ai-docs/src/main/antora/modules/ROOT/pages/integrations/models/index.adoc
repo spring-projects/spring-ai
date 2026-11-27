@@ -80,6 +80,11 @@ Follow a link for the dependency, configuration properties and provider-specific
 | xref:integrations/models/postgresml.adoc[Yes]
 | | | | |
 
+| xref:integrations/models/voyage-ai.adoc[Voyage AI]
+|
+| xref:integrations/models/voyage-ai.adoc[Yes]
+| | | | |
+
 | xref:integrations/models/jinfer/index.adoc[Qxotic jinfer] (Community)
 | xref:integrations/models/jinfer/chat.adoc[Yes]
 | xref:integrations/models/jinfer/embeddings.adoc[Yes]
