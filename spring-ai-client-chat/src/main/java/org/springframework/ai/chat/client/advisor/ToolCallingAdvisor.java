@@ -17,8 +17,10 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -197,10 +199,15 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			if (isToolCall) {
 				Assert.notNull(chatResponse, "redundant check that should never fail, but here to help NullAway");
 
+				// Only the tool execution sees what the hook returns: the next iteration
+				// still starts from the options that were sent to the model.
+				ToolCallingChatOptions executionOptions = this.doPrepareToolExecution(toolCallingChatOptions,
+						chatResponse, processedChatClientRequest.context());
+
 				ToolExecutionResult toolExecutionResult;
 				try {
 					toolExecutionResult = this.toolCallingManager
-						.executeToolCalls(new Prompt(fullTurnHistory, toolCallingChatOptions), chatResponse);
+						.executeToolCalls(new Prompt(fullTurnHistory, executionOptions), chatResponse);
 				}
 				catch (ToolCallLimitExceededException ex) {
 					// Return the breach as a single generation - directly to the
@@ -285,6 +292,26 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 	protected ChatClientResponse doAfterCall(ChatClientResponse chatClientResponse, CallAdvisorChain callAdvisorChain) {
 		return chatClientResponse;
+	}
+
+	/**
+	 * Hook method called right before the tool calls of a response are executed, in both
+	 * the call and the stream loop. Subclasses can override it to make extra tools
+	 * resolvable for execution without sending them to the model: the returned options
+	 * are only passed to
+	 * {@link ToolCallingManager#executeToolCalls(Prompt, ChatResponse)}, the next
+	 * iteration still starts from the options that were sent to the model.
+	 * <p>
+	 * The default implementation returns {@code options} unchanged.
+	 * @param options the options sent to the model in the current iteration
+	 * @param chatResponse the response whose tool calls are about to be executed
+	 * @param context the context of the current request
+	 * @return the options to execute the tool calls with
+	 * @since 2.1.1
+	 */
+	protected ToolCallingChatOptions doPrepareToolExecution(ToolCallingChatOptions options, ChatResponse chatResponse,
+			Map<String, @Nullable Object> context) {
+		return options;
 	}
 
 	// -------------------------------------------------------------------------
@@ -399,8 +426,12 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			ToolExecutionResult toolExecutionResult;
 			try {
 				ToolCallReactiveContextHolder.setContext(ctx);
-				toolExecutionResult = this.toolCallingManager.executeToolCalls(new Prompt(fullTurnHistory, optionsCopy),
-						chatResponse);
+				// Only the tool execution sees what the hook returns: the next iteration
+				// still starts from the options that were sent to the model.
+				ToolCallingChatOptions executionOptions = this.doPrepareToolExecution(optionsCopy, chatResponse,
+						finalRequest.context());
+				toolExecutionResult = this.toolCallingManager
+					.executeToolCalls(new Prompt(fullTurnHistory, executionOptions), chatResponse);
 			}
 			catch (ToolCallLimitExceededException ex) {
 				// A configured tool call limit was hit. Return the breach as a single

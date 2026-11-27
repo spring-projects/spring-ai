@@ -36,10 +36,13 @@ import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
@@ -77,7 +80,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	private static final String CACHED_TOOL_CALLBACKS_KEY = ToolSearchToolCallingAdvisor.class.getName()
+	static final String CACHED_TOOL_CALLBACKS_KEY = ToolSearchToolCallingAdvisor.class.getName()
 			+ ".cachedToolCallbacks";
 
 	/**
@@ -180,6 +183,58 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 			return prepareIteration(chatClientRequest);
 		}
 		return super.doBeforeStream(chatClientRequest, streamAdvisorChain);
+	}
+
+	// -------------------------------------------------------------------------
+	// Tool execution hook
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Makes the tools the model calls directly, without them being offered in the current
+	 * iteration, resolvable for execution when they are among the session's tool
+	 * callbacks. That happens when the model sees a tool discovered in an earlier turn in
+	 * the conversation history (e.g. with a memory advisor) and calls it again. Such
+	 * tools are only added to the options the tool calls are executed with, never to the
+	 * ones sent to the model. A tool that is not among the session's tool callbacks is
+	 * not added, so its call still fails.
+	 */
+	@Override
+	@SuppressWarnings("unchecked")
+	protected ToolCallingChatOptions doPrepareToolExecution(ToolCallingChatOptions options, ChatResponse chatResponse,
+			Map<String, @Nullable Object> context) {
+
+		var cachedToolCallbacks = (Map<String, ToolCallback>) context.get(CACHED_TOOL_CALLBACKS_KEY);
+		if (CollectionUtils.isEmpty(cachedToolCallbacks)) {
+			return options;
+		}
+
+		List<ToolCallback> offeredToolCallbacks = options.getToolCallbacks();
+		Set<String> resolvableToolNames = new HashSet<>();
+		if (offeredToolCallbacks != null) {
+			offeredToolCallbacks.forEach(tc -> resolvableToolNames.add(tc.getToolDefinition().name()));
+		}
+
+		List<ToolCallback> rememberedToolCallbacks = new ArrayList<>();
+		for (Generation generation : chatResponse.getResults()) {
+			for (AssistantMessage.ToolCall toolCall : generation.getOutput().getToolCalls()) {
+				ToolCallback cached = cachedToolCallbacks.get(toolCall.name());
+				if (cached != null && resolvableToolNames.add(toolCall.name())) {
+					rememberedToolCallbacks.add(cached);
+				}
+			}
+		}
+
+		if (rememberedToolCallbacks.isEmpty()) {
+			return options;
+		}
+
+		List<ToolCallback> executionToolCallbacks = new ArrayList<>();
+		if (offeredToolCallbacks != null) {
+			executionToolCallbacks.addAll(offeredToolCallbacks);
+		}
+		executionToolCallbacks.addAll(rememberedToolCallbacks);
+
+		return ((ToolCallingChatOptions.Builder<?>) options.mutate()).toolCallbacks(executionToolCallbacks).build();
 	}
 
 	// -------------------------------------------------------------------------

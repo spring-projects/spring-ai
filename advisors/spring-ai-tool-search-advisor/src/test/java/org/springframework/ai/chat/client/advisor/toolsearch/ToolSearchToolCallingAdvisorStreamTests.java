@@ -49,10 +49,12 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.toolsearch.ToolIndex;
 import org.springframework.ai.tool.toolsearch.ToolReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
@@ -172,9 +174,101 @@ class ToolSearchToolCallingAdvisorStreamTests {
 		assertThat(idCaptor.getValue()).isEqualTo(conversationId);
 	}
 
+	@Test
+	void streamExecutesCachedToolCalledDirectlyWithoutBeingOffered() {
+		// The model calls a tool it saw in the history (e.g. discovered in an earlier
+		// turn) although the current iteration only offers the tool search tool.
+		List<String> weatherCalls = new ArrayList<>();
+		TestToolCallingChatOptions toolOptions = new TestToolCallingChatOptions();
+		toolOptions.toolCallbacks = List.of(weatherCallback(weatherCalls), functionCallback("clothing"));
+
+		ToolSearchToolCallingAdvisor advisor = advisorWithRealToolCallingManager();
+		List<ChatClientRequest> modelRequests = new ArrayList<>();
+		StreamAdvisorChain chain = buildChain(advisor, (req, ch) -> {
+			modelRequests.add(req);
+			return Flux.just(withContext((modelRequests.size() == 1)
+					? toolCallResponse("weather", "{\"city\":\"Lisbon\"}") : response(false), req));
+		});
+
+		advisor.adviseStream(requestWith(toolOptions), chain).collectList().block();
+
+		assertThat(weatherCalls).containsExactly("Lisbon");
+		assertThat(modelRequests).hasSize(2);
+		assertThat(modelRequests.get(1).prompt().getInstructions()).last()
+			.isInstanceOfSatisfying(ToolResponseMessage.class,
+					trm -> assertThat(trm.getResponses()).extracting(ToolResponseMessage.ToolResponse::name)
+						.containsExactly("weather"));
+		// The tool definitions sent to the model are unchanged.
+		assertThat(modelRequests).allSatisfy(req -> assertThat(toolNames(req)).containsExactly("toolSearchTool"));
+	}
+
+	@Test
+	void streamToolNotInCacheStillFails() {
+		TestToolCallingChatOptions toolOptions = new TestToolCallingChatOptions();
+		toolOptions.toolCallbacks = List.of(functionCallback("weather"));
+
+		ToolSearchToolCallingAdvisor advisor = advisorWithRealToolCallingManager();
+		StreamAdvisorChain chain = buildChain(advisor,
+				(req, ch) -> Flux.just(withContext(toolCallResponse("unknownTool", "{\"city\":\"Lisbon\"}"), req)));
+
+		assertThatThrownBy(() -> advisor.adviseStream(requestWith(toolOptions), chain).collectList().block())
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessage("No ToolCallback found for tool name: unknownTool");
+	}
+
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
+
+	private ToolSearchToolCallingAdvisor advisorWithRealToolCallingManager() {
+		return ToolSearchToolCallingAdvisor.builder()
+			.toolCallingManager(ToolCallingManager.builder().build())
+			.toolIndex(this.toolIndex)
+			.build();
+	}
+
+	private static ToolCallback weatherCallback(List<String> calls) {
+		return FunctionToolCallback.builder("weather", (City city) -> {
+			calls.add(city.city());
+			return "Sunny in " + city.city();
+		}).description("weather desc").inputType(City.class).build();
+	}
+
+	private static ToolCallback functionCallback(String name) {
+		return FunctionToolCallback.builder(name, (City city) -> name + " in " + city.city())
+			.description(name + " desc")
+			.inputType(City.class)
+			.build();
+	}
+
+	private static ChatClientRequest requestWith(ToolCallingChatOptions toolOptions) {
+		Map<String, Object> context = new ConcurrentHashMap<>();
+		context.put(MemoryAdvisor.CONVERSATION_ID, "test-session-id");
+		return ChatClientRequest.builder()
+			.prompt(new Prompt(List.of(new SystemMessage("System message"), new UserMessage("test")), toolOptions))
+			.build()
+			.mutate()
+			.context(context)
+			.build();
+	}
+
+	private static ChatClientResponse toolCallResponse(String toolName, String arguments) {
+		AssistantMessage msg = AssistantMessage.builder()
+			.content("")
+			.toolCalls(List.of(new AssistantMessage.ToolCall("id1", "function", toolName, arguments)))
+			.build();
+		return ChatClientResponse.builder()
+			.chatResponse(ChatResponse.builder().generations(List.of(new Generation(msg))).build())
+			.context(new ConcurrentHashMap<>())
+			.build();
+	}
+
+	private static List<String> toolNames(ChatClientRequest request) {
+		return ((ToolCallingChatOptions) request.prompt().getOptions()).getToolCallbacks()
+			.stream()
+			.map(tc -> tc.getToolDefinition().name())
+			.toList();
+	}
 
 	private ToolSearchToolCallingAdvisor advisor() {
 		return advisor("\n\nDefault suffix");
@@ -322,6 +416,9 @@ class ToolSearchToolCallingAdvisorStreamTests {
 			return null;
 		}
 
+	}
+
+	record City(String city) {
 	}
 
 }
