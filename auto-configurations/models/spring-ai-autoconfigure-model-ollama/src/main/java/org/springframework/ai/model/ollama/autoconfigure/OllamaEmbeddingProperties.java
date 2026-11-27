@@ -40,6 +40,8 @@ public class OllamaEmbeddingProperties {
 
 	private @Nullable String keepAlive;
 
+	private @Nullable Integer dimensions;
+
 	public @Nullable String getModel() {
 		return this.model;
 	}
@@ -64,11 +66,20 @@ public class OllamaEmbeddingProperties {
 		this.keepAlive = keepAlive;
 	}
 
+	public @Nullable Integer getDimensions() {
+		return this.dimensions;
+	}
+
+	public void setDimensions(@Nullable Integer dimensions) {
+		this.dimensions = dimensions;
+	}
+
 	public OllamaEmbeddingOptions toOptions() {
 		return OllamaEmbeddingOptions.builder()
 			.model(this.model)
 			.truncate(this.truncate)
 			.keepAlive(this.keepAlive)
+			.dimensions(this.dimensions)
 			.build();
 	}
 
