@@ -741,11 +741,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		// TODO - The candidateIndex (e.g. choice must be assigned to the generation).
 		int candidateIndex = candidate.index().orElse(0);
-		FinishReason candidateFinishReason = candidate.finishReason().orElse(new FinishReason(FinishReason.Known.STOP));
 
 		Map<String, Object> messageMetadata = new HashMap<>();
 		messageMetadata.put("candidateIndex", candidateIndex);
-		messageMetadata.put("finishReason", candidateFinishReason);
+		messageMetadata.put("finishReason", candidate.finishReason().orElse(null));
 
 		List<Part> parts = candidate.content().flatMap(Content::parts).orElse(List.of());
 
@@ -774,8 +773,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		AssistantMessage assistantMessage = messageBuilder.build();
 		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
-			.finishReason(candidateFinishReason.toString())
-			.finishReasonCategory(finishReasonCategory(candidateFinishReason, assistantMessage.hasToolCalls()))
+			.finishReason(candidate.finishReason().map(FinishReason::toString).orElse(null))
+			.finishReasonCategory(candidate.finishReason()
+				.map(finishReason -> finishReasonCategory(finishReason, assistantMessage.hasToolCalls()))
+				.orElse(null))
 			.build();
 
 		return List.of(new Generation(assistantMessage, chatGenerationMetadata));
