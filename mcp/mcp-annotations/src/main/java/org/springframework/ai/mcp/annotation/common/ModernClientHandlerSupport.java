@@ -21,8 +21,6 @@ import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.modelcontextprotocol.json.McpJsonDefaults;
-import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.modern.McpSchema.ElicitFormRequest;
 import io.modelcontextprotocol.modern.McpSchema.ElicitRequest;
 import io.modelcontextprotocol.modern.McpSchema.ElicitResult;
@@ -39,6 +37,7 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.mcp.annotation.context.StructuredElicitResult;
+import org.springframework.ai.mcp.modern.McpSchemaConverter;
 import org.springframework.util.Assert;
 
 /**
@@ -422,11 +421,10 @@ public final class ModernClientHandlerSupport {
 	 */
 	private static <T> List<T> convert(List<?> definitions, Class<T> targetType) {
 		Assert.notNull(definitions, "definitions must not be null");
-		McpJsonMapper jsonMapper = McpJsonDefaults.getMapper();
 		List<T> converted = new ArrayList<>(definitions.size());
 		for (Object definition : definitions) {
 			try {
-				converted.add(jsonMapper.convertValue(definition, targetType));
+				converted.add(McpSchemaConverter.convert(definition, targetType));
 			}
 			catch (RuntimeException ex) {
 				// The two schemas do not accept the same values everywhere, for example

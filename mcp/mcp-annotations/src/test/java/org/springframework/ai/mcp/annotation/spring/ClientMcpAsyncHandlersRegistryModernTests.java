@@ -16,10 +16,13 @@
 
 package org.springframework.ai.mcp.annotation.spring;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 
+import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.modern.McpSchema.ElicitFormRequest;
 import io.modelcontextprotocol.modern.McpSchema.ElicitRequest;
 import io.modelcontextprotocol.modern.McpSchema.ElicitResult;
@@ -147,6 +150,42 @@ class ClientMcpAsyncHandlersRegistryModernTests {
 		assertThat(handlers.seen).containsExactlyInAnyOrder("legacy tools [search]", "modern tools [search]",
 				"legacy prompts [daily-summary]", "modern prompts [daily-summary]", "legacy resources [tickets://all]",
 				"modern resources [tickets://all]");
+	}
+
+	@Test
+	void listChangedMethodsOfTheLegacySchemaHearOnAThreadWhoseClassLoaderDoesNotSeeTheJsonMapperOfTheSdk()
+			throws Exception {
+		var beanFactory = new DefaultListableBeanFactory();
+		ClientMcpAsyncHandlersRegistry registry = resolved(beanFactory, ListChangedHandlers.class);
+		ListChangedHandlers handlers = beanFactory.getBean(ListChangedHandlers.class);
+
+		AtomicReference<Throwable> failure = new AtomicReference<>();
+		Thread thread = new Thread(() -> {
+			try {
+				registry.handleModernToolListChanged("lists", TOOLS)
+					.then(registry.handleModernPromptListChanged("lists", PROMPTS))
+					.then(registry.handleModernResourceListChanged("lists", RESOURCES))
+					.block(Duration.ofSeconds(10));
+			}
+			catch (Throwable ex) {
+				failure.set(ex);
+			}
+		});
+		// The changes of a modern client arrive on a thread of the common ForkJoinPool,
+		// whose context class loader does not see the nested jars of an executable jar,
+		// and so no service of the application.
+		thread.setContextClassLoader(new ClassLoader(null) {
+		});
+
+		// Drops the default mapper that the MCP SDK may have looked up already: a lookup
+		// on that thread would not find it again.
+		new McpJsonDefaults();
+		thread.start();
+		thread.join(15_000);
+
+		assertThat(failure.get()).isNull();
+		assertThat(handlers.seen).contains("legacy tools [search]", "legacy prompts [daily-summary]",
+				"legacy resources [tickets://all]");
 	}
 
 	@Test

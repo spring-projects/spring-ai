@@ -19,11 +19,12 @@ package org.springframework.ai.mcp.modern;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.modern.McpException;
 import io.modelcontextprotocol.modern.McpSchema;
 import io.modelcontextprotocol.spec.McpError;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.util.Assert;
 
@@ -42,11 +43,15 @@ import org.springframework.util.Assert;
  */
 public final class McpSchemaConverter {
 
-	private McpSchemaConverter() {
-	}
+	/**
+	 * The mapper that the MCP Java SDK uses by default. It is built here, not asked from
+	 * {@code McpJsonDefaults}: the SDK looks its default up with the context class loader
+	 * of the calling thread, which does not see it on every thread. In an executable jar,
+	 * a thread of the common {@code ForkJoinPool} sees the classes of the launcher only.
+	 */
+	private static final McpJsonMapper JSON_MAPPER = new JacksonMcpJsonMapper(JsonMapper.shared());
 
-	private static McpJsonMapper mapper() {
-		return McpJsonDefaults.getMapper();
+	private McpSchemaConverter() {
 	}
 
 	/**
@@ -60,7 +65,7 @@ public final class McpSchemaConverter {
 	public static <T> T convert(Object source, Class<T> targetType) {
 		Assert.notNull(source, "source must not be null");
 		Assert.notNull(targetType, "targetType must not be null");
-		return mapper().convertValue(source, targetType);
+		return JSON_MAPPER.convertValue(source, targetType);
 	}
 
 	// ---------------------------------------------------------------------------------
