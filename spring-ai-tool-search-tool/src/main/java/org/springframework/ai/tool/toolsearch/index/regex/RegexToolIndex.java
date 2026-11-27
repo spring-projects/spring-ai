@@ -202,6 +202,20 @@ public class RegexToolIndex implements Closeable, ToolIndex {
 				processedTokens.remove(processedTokens.size() - 1);
 				pattern = "(?i)(" + String.join("|", processedTokens) + ")";
 			}
+			// A single remaining token can still be too long after escaping.
+			if (pattern.length() > MAX_PATTERN_LENGTH) {
+				int maxTokenLength = MAX_PATTERN_LENGTH - "(?i)()".length();
+				String token = processedTokens.get(0).substring(0, maxTokenLength);
+				int trailingBackslashes = 0;
+				for (int i = token.length() - 1; i >= 0 && token.charAt(i) == '\\'; i--) {
+					trailingBackslashes++;
+				}
+				if (trailingBackslashes % 2 != 0) {
+					token = token.substring(0, token.length() - 1);
+				}
+				processedTokens.set(0, token);
+				pattern = "(?i)(" + String.join("|", processedTokens) + ")";
+			}
 			if (logger.isDebugEnabled()) {
 				logger.debug("Pattern truncated to " + processedTokens.size() + " tokens to fit max length");
 			}
