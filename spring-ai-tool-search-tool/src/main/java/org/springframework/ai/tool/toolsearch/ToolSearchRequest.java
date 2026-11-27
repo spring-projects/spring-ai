@@ -28,8 +28,7 @@ import org.jspecify.annotations.Nullable;
  * @param maxResults maximum number of results to return; {@code null} lets the tool index
  * apply its own default
  * @param categoryFilter optional hint to narrow the search to a specific tool category;
- * support depends on the
- * {@link org.springframework.ai.chat.client.advisor.toolsearch.ToolIndex} implementation
+ * support depends on the {@link ToolIndex} implementation
  * @author Christian Tzolov
  * @since 2.0.0
  */
