@@ -28,9 +28,11 @@ import io.micrometer.observation.ObservationView;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -880,6 +882,71 @@ class DefaultToolCallingManagerTests {
 		assertThatExceptionOfType(ToolCallLimitExceededException.class)
 			.isThrownBy(() -> toolCallingManager.executeToolCalls(prompt, chatResponse))
 			.satisfies(ex -> assertThat(ex.getToolName()).isEqualTo("toolA"));
+	}
+
+	@Test
+	void whenThePromptEndsWithTheReplyThenTheStoredReplyIsReplayed() {
+		ToolCallback toolCallback = new TestToolCallback("toolA");
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("call_1", "function", "toolA", "{}");
+		AssistantMessage reply = AssistantMessage.builder().content("Hello ").toolCalls(List.of(toolCall)).build();
+		AssistantMessage pausedChunk = AssistantMessage.builder().content("").toolCalls(List.of(toolCall)).build();
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("Hello"), reply),
+				ToolCallingChatOptions.builder().toolCallbacks(toolCallback).build());
+		ChatResponse chatResponse = ChatResponse.builder().generations(List.of(new Generation(pausedChunk))).build();
+
+		ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, chatResponse,
+				ToolCallDecisions.of(ToolCallDecision.allow("call_1")));
+
+		List<Message> history = result.conversationHistory();
+		AssistantMessage replayed = (AssistantMessage) history.get(history.size() - 2);
+		assertThat(replayed.getText()).isEqualTo("Hello ");
+	}
+
+	@Test
+	void whenThePausedChunkHasNoReasoningThenTheStoredReasoningIsReplayed() {
+		ToolCallback toolCallback = new TestToolCallback("toolA");
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("call_1", "function", "toolA", "{}");
+		AssistantMessage reply = AssistantMessage.builder()
+			.parts(List.of(ReasoningPart.of("Think first."), ToolCallPart.of(toolCall)))
+			.build();
+		AssistantMessage pausedChunk = AssistantMessage.builder().content("").toolCalls(List.of(toolCall)).build();
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("Hello"), reply),
+				ToolCallingChatOptions.builder().toolCallbacks(toolCallback).build());
+		ChatResponse chatResponse = ChatResponse.builder().generations(List.of(new Generation(pausedChunk))).build();
+
+		ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, chatResponse,
+				ToolCallDecisions.of(ToolCallDecision.allow("call_1")));
+
+		List<Message> history = result.conversationHistory();
+		AssistantMessage replayed = (AssistantMessage) history.get(history.size() - 2);
+		assertThat(replayed.getReasoning()).containsExactly(ReasoningPart.of("Think first."));
+	}
+
+	@Test
+	void whenTheReplyCarriesTextThenTheStoredReplyIsNotUsed() {
+		ToolCallback toolCallback = new TestToolCallback("toolA");
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("call_1", "function", "toolA", "{}");
+		AssistantMessage storedReply = AssistantMessage.builder().content("").toolCalls(List.of(toolCall)).build();
+		AssistantMessage reply = AssistantMessage.builder().content("Hello ").toolCalls(List.of(toolCall)).build();
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("Hello"), storedReply),
+				ToolCallingChatOptions.builder().toolCallbacks(toolCallback).build());
+		ChatResponse chatResponse = ChatResponse.builder().generations(List.of(new Generation(reply))).build();
+
+		ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, chatResponse,
+				ToolCallDecisions.of(ToolCallDecision.allow("call_1")));
+
+		List<Message> history = result.conversationHistory();
+		AssistantMessage replayed = (AssistantMessage) history.get(history.size() - 2);
+		assertThat(replayed.getText()).isEqualTo("Hello ");
 	}
 
 	static class TestToolCallback implements ToolCallback {

@@ -234,9 +234,15 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				decisions);
 
 		// A resumed batch may come with the conversation up to and including the reply;
-		// the history then holds the reply once
+		// the history then holds the reply once. A paused streamed reply carries only
+		// the tool calls, while the reply the application kept still has the text and
+		// reasoning that were streamed before the pause: keep that one.
 		List<Message> previousMessages = prompt.getInstructions();
 		if (endsWith(previousMessages, assistantMessage)) {
+			AssistantMessage storedReply = (AssistantMessage) previousMessages.get(previousMessages.size() - 1);
+			if (!hasTextOrReasoning(assistantMessage) && hasTextOrReasoning(storedReply)) {
+				assistantMessage = storedReply;
+			}
 			previousMessages = previousMessages.subList(0, previousMessages.size() - 1);
 		}
 		List<Message> conversationHistory = buildConversationHistoryAfterToolExecution(previousMessages,
@@ -257,6 +263,13 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		}
 
 		return new ToolContext(toolContextMap);
+	}
+
+	/**
+	 * Whether the reply carries text or reasoning the next request must replay.
+	 */
+	private static boolean hasTextOrReasoning(AssistantMessage assistantMessage) {
+		return StringUtils.hasText(assistantMessage.getText()) || !assistantMessage.getReasoning().isEmpty();
 	}
 
 	/**

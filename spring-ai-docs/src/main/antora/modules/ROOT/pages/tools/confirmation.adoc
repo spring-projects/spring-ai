@@ -288,6 +288,8 @@ String answer = chatClient.prompt()
 ----
 
 The prompt may end with the paused reply itself, the history then holds it once.
+When streaming, aggregate the chunks to keep the reply with the text it streamed.
+Let the conversation you resume with end with that reply: the paused last chunk carries only the tool calls, so the stored reply is the one replayed on resumption.
 
 [[resuming-chat-memory]]
 === A Chat Memory Advisor Keeps the Conversation
