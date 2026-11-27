@@ -52,6 +52,8 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk.Chu
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ContentChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.DocumentUrlChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.FileChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ImageUrlChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ReferenceChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.Role;
@@ -288,6 +290,22 @@ class MistralAiChatModelMessagePartsTests {
 			.build();
 
 		assertThatIllegalArgumentException().isThrownBy(() -> assistantParam(assistant));
+	}
+
+	@Test
+	void fileAndDocumentChunksAreHandledAsUnknownPartsOnInboundAndReplay() {
+		List<ContentChunk> content = List.of(new TextChunk("Attached:"), new FileChunk("file-123"),
+				new DocumentUrlChunk("https://example.com/doc.pdf", "doc.pdf"));
+		givenCompletion(new ChatCompletionMessage(content, Role.ASSISTANT));
+
+		AssistantMessage message = chatModel().call(new Prompt("Review")).getResult().getOutput();
+
+		assertThat(message.getParts()).hasSize(3);
+		assertThat(message.getParts().get(1)).isInstanceOfSatisfying(UnknownPart.class,
+				part -> assertThat(part.kind()).isEqualTo("file"));
+		assertThat(message.getParts().get(2)).isInstanceOfSatisfying(UnknownPart.class,
+				part -> assertThat(part.kind()).isEqualTo("document_url"));
+		assertThat(assistantParam(message).content()).isEqualTo(content);
 	}
 
 	@Test

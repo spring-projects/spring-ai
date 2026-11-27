@@ -32,6 +32,8 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ContentChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ContentDeserializer;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ContentSerializer;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.DocumentUrlChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.FileChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ImageUrlChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ImageUrlChunk.ImageUrl;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ImageUrlChunk.ImageUrl.ImageDetail;
@@ -43,6 +45,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.T
 import org.springframework.boot.test.json.BasicJsonTester;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -436,6 +439,89 @@ class MistralAiChatCompletionMessageTests {
 			assertThat(chatCompletionMessage.extractThinkingTextContent()).startsWith(THINKING_TEXT)
 				.contains(System.lineSeparator())
 				.endsWith(anotherThinkingText);
+		}
+
+	}
+
+	@Nested
+	class FileAndDocumentUrlChunkTests {
+
+		@Test
+		void serializeAndDeserializeFileChunk() throws IOException {
+			var message = new ChatCompletionMessage(
+					List.of(new TextChunk("Summarize"), new FileChunk("uploaded-file-uuid")), Role.USER);
+
+			var json = chatCompletionMessageTester.write(message);
+			assertThat(json).isEqualToJson("""
+					{
+						"role": "user",
+						"content": [
+							{ "type": "text", "text": "Summarize" },
+							{ "type": "file", "file_id": "uploaded-file-uuid" }
+						]
+					}
+					""");
+			assertThat(chatCompletionMessageTester.parse(json.getJson())).isEqualTo(message);
+		}
+
+		@Test
+		void serializeAndDeserializeDocumentUrlChunkWithoutName() throws IOException {
+			var message = new ChatCompletionMessage(List.of(new DocumentUrlChunk("https://example.com/report.pdf")),
+					Role.USER);
+
+			var json = chatCompletionMessageTester.write(message);
+			assertThat(json).isEqualToJson("""
+					{
+						"role": "user",
+						"content": [
+							{ "type": "document_url", "document_url": "https://example.com/report.pdf" }
+						]
+					}
+					""");
+			assertThat(chatCompletionMessageTester.parse(json.getJson())).isEqualTo(message);
+		}
+
+		@Test
+		void serializeAndDeserializeDocumentUrlChunkWithName() throws IOException {
+			var message = new ChatCompletionMessage(
+					List.of(new DocumentUrlChunk("https://example.com/report.pdf", "report.pdf")), Role.USER);
+
+			var json = chatCompletionMessageTester.write(message);
+			assertThat(json).isEqualToJson("""
+					{
+						"role": "user",
+						"content": [
+							{
+								"type": "document_url",
+								"document_url": "https://example.com/report.pdf",
+								"document_name": "report.pdf"
+							}
+						]
+					}
+					""");
+			assertThat(chatCompletionMessageTester.parse(json.getJson())).isEqualTo(message);
+		}
+
+		@Test
+		void fromDocumentDataEncodesBase64DataUri() {
+			byte[] pdfBytes = "%PDF-1.4".getBytes(StandardCharsets.UTF_8);
+			DocumentUrlChunk chunk = DocumentUrlChunk.fromDocumentData(MimeTypeUtils.parseMimeType("application/pdf"),
+					pdfBytes, "sample.pdf");
+
+			assertThat(chunk.documentUrl()).startsWith("data:application/pdf;base64,");
+			assertThat(chunk.documentName()).isEqualTo("sample.pdf");
+		}
+
+		@Test
+		void validatesFileAndDocumentUrlChunks() {
+			assertThatThrownBy(() -> new FileChunk("")).isInstanceOf(IllegalArgumentException.class);
+			assertThatThrownBy(() -> new DocumentUrlChunk("   ")).isInstanceOf(IllegalArgumentException.class);
+			assertThatThrownBy(() -> DocumentUrlChunk.fromDocumentData(MimeTypeUtils.ALL, new byte[] { 1 }))
+				.isInstanceOf(IllegalArgumentException.class);
+			assertThatThrownBy(() -> DocumentUrlChunk.fromDocumentData(MimeTypeUtils.parseMimeType("application/pdf"),
+					new byte[0]))
+				.isInstanceOf(IllegalArgumentException.class);
+			assertThat(new DocumentUrlChunk("https://example.com/report.pdf", "   ").documentName()).isNull();
 		}
 
 	}

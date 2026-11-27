@@ -416,6 +416,27 @@ for carrying. The bowl is placed on a flat surface with a neutral-colored backgr
 view of the fruit inside.
 ----
 
+=== Documents and Uploaded Files
+
+Mistral AI supports referencing PDFs and other documents via URL (`document_url`) or previously uploaded Mistral file IDs (`file_id`).
+Pass a document `Media` to `UserMessage` or `ChatClient` to send a `DocumentUrlChunk`, or set `Media.Builder#id(String)` to send a `FileChunk`:
+
+[source,java]
+----
+var pdfMedia = new Media(Media.Format.DOC_PDF, URI.create("https://example.com/report.pdf"));
+
+var uploadedFile = Media.builder()
+    .mimeType(Media.Format.DOC_PDF)
+    .id("uploaded-file-uuid")
+    .data("")
+    .build();
+
+var userMessage = UserMessage.builder()
+    .text("Compare these two documents.")
+    .media(pdfMedia, uploadedFile)
+    .build();
+----
+
 == OpenAI API Compatibility
 
 Mistral is OpenAI API-compatible and you can use the xref:integrations/models/openai/chat.adoc[Spring AI OpenAI] client to talk to Mistrial.

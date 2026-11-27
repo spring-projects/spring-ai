@@ -16,7 +16,9 @@
 
 package org.springframework.ai.mistralai;
 
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -30,8 +32,15 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ContentChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.DocumentUrlChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.FileChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ImageUrlChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.TextChunk;
+import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * @author Ricken Bazolo
@@ -117,6 +126,104 @@ class MistralAiChatCompletionRequestTests {
 		var prompt = createPrompt(userMessage);
 		var chatCompletionRequest = this.chatModel.createRequest(prompt, false);
 		verifyUserChatCompletionMessages(chatCompletionRequest.messages());
+	}
+
+	@Test
+	void createChatCompletionMessagesWithMultipleUploadedFileIds() {
+		Media fileOne = Media.builder().mimeType(Media.Format.DOC_PDF).id("file-uuid-1").data("file-uuid-1").build();
+		Media fileTwo = Media.builder().mimeType(Media.Format.DOC_PDF).id("file-uuid-2").data("").build();
+		var userMessage = UserMessage.builder().text("Classify these documents").media(fileOne, fileTwo).build();
+
+		var request = this.chatModel.createRequest(createPrompt(userMessage), false);
+		assertThat(request.messages()).hasSize(1);
+		@SuppressWarnings("unchecked")
+		var chunks = (List<ContentChunk>) request.messages().get(0).content();
+		assertThat(chunks).containsExactly(new TextChunk("Classify these documents"), new FileChunk("file-uuid-1"),
+				new FileChunk("file-uuid-2"));
+	}
+
+	@Test
+	void createChatCompletionMessagesWithDocumentUrlAndBytesAndMixedMedia() throws MalformedURLException {
+		Media pdfUri = new Media(Media.Format.DOC_PDF, URI.create("https://example.com/report.pdf"));
+		Media pdfNamedUrl = Media.builder()
+			.mimeType(Media.Format.DOC_PDF)
+			.data(URI.create("https://example.com/named.pdf").toURL())
+			.name("named.pdf")
+			.build();
+		Media pdfBytes = Media.builder()
+			.mimeType(Media.Format.DOC_PDF)
+			.data("%PDF-1.4".getBytes(StandardCharsets.UTF_8))
+			.build();
+		var userMessage = UserMessage.builder()
+			.text("Inspect all")
+			.media(IMAGE_MEDIA, pdfUri, pdfNamedUrl, pdfBytes)
+			.build();
+
+		var request = this.chatModel.createRequest(createPrompt(userMessage), false);
+		assertThat(request.messages()).hasSize(1);
+		@SuppressWarnings("unchecked")
+		var chunks = (List<ContentChunk>) request.messages().get(0).content();
+		assertThat(chunks).hasSize(5);
+		assertThat(chunks.get(0)).isEqualTo(new TextChunk("Inspect all"));
+		assertThat(chunks.get(1)).isInstanceOf(ImageUrlChunk.class);
+		assertThat(chunks.get(2)).isEqualTo(new DocumentUrlChunk("https://example.com/report.pdf", null));
+		assertThat(chunks.get(3)).isEqualTo(new DocumentUrlChunk("https://example.com/named.pdf", "named.pdf"));
+		assertThat(chunks.get(4)).isInstanceOfSatisfying(DocumentUrlChunk.class, chunk -> {
+			assertThat(chunk.documentUrl()).startsWith("data:application/pdf;base64,");
+			assertThat(chunk.documentName()).isNull();
+		});
+	}
+
+	@Test
+	void createChatCompletionMessagesWithDocumentEdgeCases() {
+		// Omitted text + bare base64 string gets formatted as a data URI
+		Media bareBase64Pdf = Media.builder().mimeType(Media.Format.DOC_PDF).data("JVBERi0xLjQ=").build();
+		var bareMsg = UserMessage.builder().media(bareBase64Pdf).build();
+		@SuppressWarnings("unchecked")
+		var bareChunks = (List<ContentChunk>) this.chatModel.createRequest(createPrompt(bareMsg), false)
+			.messages()
+			.get(0)
+			.content();
+		assertThat(bareChunks).containsExactly(new DocumentUrlChunk("data:application/pdf;base64,JVBERi0xLjQ=", null));
+
+		// Image or document with tracking id + URL preserves the URL; id + empty data
+		// routes to FileChunk
+		Media imageWithTrackingId = Media.builder()
+			.mimeType(Media.Format.IMAGE_PNG)
+			.id("tracking-1")
+			.data(IMAGE_URL)
+			.build();
+		Media pdfWithTrackingId = Media.builder()
+			.mimeType(Media.Format.DOC_PDF)
+			.id("tracking-2")
+			.data("https://example.com/tracked.pdf")
+			.build();
+		Media uploadedImageFile = Media.builder().mimeType(Media.Format.IMAGE_PNG).id("file-img-1").data("").build();
+		Media urlMatchingId = Media.builder().mimeType(Media.Format.IMAGE_PNG).id(IMAGE_URL).data(IMAGE_URL).build();
+		var mixedImageMsg = UserMessage.builder()
+			.media(imageWithTrackingId, pdfWithTrackingId, uploadedImageFile, urlMatchingId)
+			.build();
+		@SuppressWarnings("unchecked")
+		var imageChunks = (List<ContentChunk>) this.chatModel.createRequest(createPrompt(mixedImageMsg), false)
+			.messages()
+			.get(0)
+			.content();
+		assertThat(imageChunks).hasSize(4);
+		assertThat(imageChunks.get(0)).isInstanceOf(ImageUrlChunk.class);
+		assertThat(imageChunks.get(1)).isEqualTo(new DocumentUrlChunk("https://example.com/tracked.pdf", null));
+		assertThat(imageChunks.get(2)).isEqualTo(new FileChunk("file-img-1"));
+		assertThat(imageChunks.get(3)).isInstanceOf(ImageUrlChunk.class);
+
+		// Blank string data, empty byte[], and wildcard MimeType fail fast
+		Media emptyText = Media.builder().mimeType(Media.Format.DOC_PDF).data("   ").build();
+		Media emptyBytes = Media.builder().mimeType(Media.Format.DOC_PDF).data(new byte[0]).build();
+		Media wildcardMime = Media.builder().mimeType(MimeTypeUtils.ALL).data(new byte[] { 1 }).build();
+		assertThatIllegalArgumentException().isThrownBy(() -> this.chatModel
+			.createRequest(createPrompt(UserMessage.builder().media(emptyText).build()), false));
+		assertThatIllegalArgumentException().isThrownBy(() -> this.chatModel
+			.createRequest(createPrompt(UserMessage.builder().media(emptyBytes).build()), false));
+		assertThatIllegalArgumentException().isThrownBy(() -> this.chatModel
+			.createRequest(createPrompt(UserMessage.builder().media(wildcardMime).build()), false));
 	}
 
 	@Test
