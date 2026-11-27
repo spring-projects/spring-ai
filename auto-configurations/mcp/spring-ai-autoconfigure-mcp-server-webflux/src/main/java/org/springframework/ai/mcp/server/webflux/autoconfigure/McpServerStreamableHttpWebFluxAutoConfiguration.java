@@ -39,6 +39,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 /**
  * @author Christian Tzolov
  * @author Yanming Zhou
+ * @author Armen Petrosyan
  */
 // before: McpServerAutoConfiguration defines a low priority
 // McpServerTransportProviderBase bean and this conf should have priority
@@ -59,7 +60,9 @@ public class McpServerStreamableHttpWebFluxAutoConfiguration {
 			.jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
 			.messageEndpoint(serverProperties.getMcpEndpoint())
 			.keepAliveInterval(serverProperties.getKeepAliveInterval())
-			.disallowDelete(serverProperties.isDisallowDelete());
+			.disallowDelete(serverProperties.isDisallowDelete())
+			.maxSessions(serverProperties.getMaxSessions())
+			.sessionIdleTimeout(serverProperties.getSessionIdleTimeout());
 		customizers.orderedStream().forEach(customizer -> customizer.customize(builder));
 		return builder.build();
 	}
