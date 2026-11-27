@@ -16,8 +16,13 @@
 
 package org.springframework.ai.tool.toolsearch;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.ai.tool.toolsearch.index.regex.RegexToolIndex;
@@ -30,6 +35,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 class ToolSearchToolTests {
+
+	private static final String SESSION_ID = "tool-session";
+
+	private static final String QUERY = "weather";
 
 	/**
 	 * Regression guard for the {@code -parameters} javac flag being dropped by a
@@ -56,6 +65,83 @@ class ToolSearchToolTests {
 			// than supplied by the model, so it must not appear in the schema at all.
 			assertThat(schema).doesNotContain("\"toolContext\"", "\"arg3\"");
 		}
+	}
+
+	@Test
+	void passesSessionIdQueryAndCategoryFilterToIndex() {
+		CapturingToolIndex toolIndex = new CapturingToolIndex();
+		ToolSearchTool tool = new ToolSearchTool(toolIndex, null);
+
+		tool.toolSearchTool(QUERY, null, "utility", toolContext());
+
+		assertThat(toolIndex.requests).singleElement().satisfies(request -> {
+			assertThat(request.sessionId()).isEqualTo(SESSION_ID);
+			assertThat(request.query()).isEqualTo(QUERY);
+			assertThat(request.categoryFilter()).isEqualTo("utility");
+			assertThat(request.maxResults()).isNull();
+		});
+	}
+
+	@Test
+	void usesAdvisorMaxResultsWhenModelOmitsIt() {
+		CapturingToolIndex toolIndex = new CapturingToolIndex();
+		ToolSearchTool tool = new ToolSearchTool(toolIndex, 7);
+
+		tool.toolSearchTool(QUERY, null, null, toolContext());
+
+		assertThat(toolIndex.requests).singleElement().extracting(ToolSearchRequest::maxResults).isEqualTo(7);
+	}
+
+	@Test
+	void explicitMaxResultsOverridesAdvisorConfig() {
+		CapturingToolIndex toolIndex = new CapturingToolIndex();
+		ToolSearchTool tool = new ToolSearchTool(toolIndex, 7);
+
+		tool.toolSearchTool(QUERY, 3, null, toolContext());
+
+		assertThat(toolIndex.requests).singleElement().extracting(ToolSearchRequest::maxResults).isEqualTo(3);
+	}
+
+	@Test
+	void returnsOnlyToolNamesFromSearchResponse() {
+		CapturingToolIndex toolIndex = new CapturingToolIndex(
+				ToolReference.builder().toolName("currentWeather").summary("Returns the weather").build(),
+				ToolReference.builder().toolName("sendEmail").summary("Sends an email").build());
+		ToolSearchTool tool = new ToolSearchTool(toolIndex, null);
+
+		List<String> toolNames = tool.toolSearchTool(QUERY, null, null, toolContext());
+
+		assertThat(toolNames).containsExactly("currentWeather", "sendEmail");
+	}
+
+	private static ToolContext toolContext() {
+		return new ToolContext(Map.of(ToolSearchTool.TOOL_SEARCH_TOOL_SESSION_ID_KEY, SESSION_ID));
+	}
+
+	private static final class CapturingToolIndex implements ToolIndex {
+
+		private final List<ToolReference> references;
+
+		private final List<ToolSearchRequest> requests = new ArrayList<>();
+
+		private CapturingToolIndex(ToolReference... references) {
+			this.references = List.of(references);
+		}
+
+		@Override
+		public void indexTool(String sessionId, ToolReference toolReference) {
+		}
+
+		@Override
+		public ToolSearchResponse search(ToolSearchRequest toolSearchRequest) {
+			this.requests.add(toolSearchRequest);
+			return ToolSearchResponse.builder().toolReferences(this.references).build();
+		}
+
+		@Override
+		public void clearIndex(String sessionId) {
+		}
+
 	}
 
 }
