@@ -81,15 +81,16 @@ final class ModernToolCalls {
 	 * @param toolContextToMcpMetaConverter turns the tool context into {@code _meta}
 	 * entries
 	 * @param toolContext the tool context of the call, if any
+	 * @param toolName the name of the tool on the MCP server
 	 * @return the {@code _meta} entries
 	 */
 	static Map<String, Object> requestMeta(ToolContextToMcpMetaConverter toolContextToMcpMetaConverter,
-			@Nullable ToolContext toolContext) {
+			@Nullable ToolContext toolContext, String toolName) {
 		if (toolContext == null) {
 			return Map.of();
 		}
 		Map<String, Object> meta = new LinkedHashMap<>();
-		toolContextToMcpMetaConverter.convert(toolContext).forEach((key, value) -> {
+		toolContextToMcpMetaConverter.convert(toolContext, toolName).forEach((key, value) -> {
 			if (!MetaKeys.PROGRESS_TOKEN.equals(key) && !key.startsWith(RESERVED_META_PREFIX)) {
 				meta.put(key, value);
 			}
