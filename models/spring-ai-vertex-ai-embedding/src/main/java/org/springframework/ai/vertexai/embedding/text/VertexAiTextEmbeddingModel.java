@@ -263,7 +263,14 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public int dimensions() {
-		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.options.getModel(), super.dimensions());
+		Integer dimensions = this.options.getDimensions();
+		if (dimensions != null) {
+			return dimensions;
+		}
+		// Not getOrDefault: its default argument would call the API even for a known
+		// model
+		Integer knownDimensions = KNOWN_EMBEDDING_DIMENSIONS.get(this.options.getModel());
+		return (knownDimensions != null) ? knownDimensions : super.dimensions();
 	}
 
 	/**
