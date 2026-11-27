@@ -18,7 +18,9 @@ package org.springframework.ai.mcp.modern;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
+import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.modern.McpException;
 import io.modelcontextprotocol.modern.McpSchema;
 import io.modelcontextprotocol.modern.McpSchema.CacheScope;
@@ -31,6 +33,33 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 class McpSchemaConverterTests {
+
+	@Test
+	void convertsOnAThreadWhoseClassLoaderDoesNotSeeTheJsonMapperOfTheSdk() throws Exception {
+		var legacy = io.modelcontextprotocol.spec.McpSchema.CallToolResult.builder().addTextContent("hello").build();
+		AtomicReference<Object> outcome = new AtomicReference<>();
+		Thread thread = new Thread(() -> {
+			try {
+				outcome.set(McpSchemaConverter.toModern(legacy));
+			}
+			catch (Throwable ex) {
+				outcome.set(ex);
+			}
+		});
+		// Sees no service of the application, as the context class loader of a thread of
+		// the common ForkJoinPool does not see the nested jars of an executable jar.
+		thread.setContextClassLoader(new ClassLoader(null) {
+		});
+
+		// Drops the default mapper that the MCP SDK may have looked up already: a lookup
+		// on that thread would not find it again.
+		new McpJsonDefaults();
+		thread.start();
+		thread.join(10_000);
+
+		assertThat(outcome.get()).isInstanceOfSatisfying(McpSchema.CallToolResult.class,
+				modern -> assertThat(((McpSchema.TextContent) modern.content().get(0)).text()).isEqualTo("hello"));
+	}
 
 	@Test
 	void convertsCallToolResultWithMixedContent() {
