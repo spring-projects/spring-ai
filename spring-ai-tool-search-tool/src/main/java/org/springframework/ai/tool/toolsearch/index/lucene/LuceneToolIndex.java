@@ -55,6 +55,7 @@ import org.springframework.ai.tool.toolsearch.ToolReference;
 import org.springframework.ai.tool.toolsearch.ToolSearchRequest;
 import org.springframework.ai.tool.toolsearch.ToolSearchResponse;
 import org.springframework.ai.tool.toolsearch.ToolSearchResponse.SearchMetadata;
+import org.springframework.util.Assert;
 
 /**
  * Lucene-based tool searcher for indexing and searching tool descriptions.
@@ -99,8 +100,20 @@ public class LuceneToolIndex implements Closeable, ToolIndex {
 	}
 
 	public LuceneToolIndex(float minScoreThreshold) {
+		this(new StandardAnalyzer(), minScoreThreshold);
+	}
+
+	/**
+	 * Creates a new LuceneToolIndex that analyzes tool names, descriptions and queries
+	 * with the given analyzer, for example one that splits snake_case and camelCase tool
+	 * names into words. The index closes the analyzer on {@link #close()}.
+	 * @param analyzer the analyzer for indexing and querying
+	 * @param minScoreThreshold the minimum score a result must reach
+	 */
+	public LuceneToolIndex(Analyzer analyzer, float minScoreThreshold) {
+		Assert.notNull(analyzer, "analyzer must not be null");
+		this.analyzer = analyzer;
 		this.minScoreThreshold = minScoreThreshold;
-		this.analyzer = new StandardAnalyzer();
 	}
 
 	/**
