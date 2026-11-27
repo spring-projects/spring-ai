@@ -64,6 +64,7 @@ import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeSubscriber;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpClientScope;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallCustomizer;
+import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -73,6 +74,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -164,11 +166,13 @@ import org.springframework.util.StringUtils;
 		McpStreamableHttpClientProperties.class })
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
-public class McpClientModernAutoConfiguration {
+public class McpClientModernAutoConfiguration implements BeanClassLoaderAware {
 
 	private static final Log logger = LogFactory.getLog(McpClientModernAutoConfiguration.class);
 
 	private static final String DEFAULT_ENDPOINT = "/mcp";
+
+	private static final String CONTEXT_REGISTRY_CLASS_NAME = "io.micrometer.context.ContextRegistry";
 
 	/** The pauses before a listen stream is opened again grow to at least this. */
 	private static final Duration MIN_LISTEN_REOPEN_DELAY = Duration.ofSeconds(1);
@@ -186,6 +190,9 @@ public class McpClientModernAutoConfiguration {
 	 */
 	private static final List<Class<? extends Annotation>> LIST_CHANGED_HANDLER_ANNOTATIONS = List
 		.of(McpToolListChanged.class, McpPromptListChanged.class, McpResourceListChanged.class);
+
+	/** The class loader of the application, which sees the services of its libraries. */
+	private @Nullable ClassLoader beanClassLoader;
 
 	/**
 	 * Creates a transport on the JDK {@code HttpClient} for each modern Streamable HTTP
@@ -263,6 +270,8 @@ public class McpClientModernAutoConfiguration {
 			ObjectProvider<McpClientCustomizer<McpClient.SyncBuilder>> clientCustomizers,
 			ObjectProvider<ClientMcpSyncHandlersRegistry> handlersRegistry,
 			ObjectProvider<SyncModernMcpClientScope> clientScopeProvider) {
+
+		loadContextRegistry();
 
 		ClientMcpSyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
 		McpJsonMapper jsonMapper = mcpJsonMapper(jsonMapperProvider);
@@ -346,6 +355,8 @@ public class McpClientModernAutoConfiguration {
 			ObjectProvider<AsyncModernMcpClientScope> clientScopeProvider,
 			ObjectProvider<AsyncModernMcpTransportContextProvider> transportContextProvider,
 			ObjectProvider<ClientMcpAsyncHandlersRegistry> handlersRegistry) {
+
+		loadContextRegistry();
 
 		ClientMcpAsyncHandlersRegistry handlers = handlersRegistry.getIfAvailable();
 		McpJsonMapper jsonMapper = mcpJsonMapper(jsonMapperProvider);
@@ -589,6 +600,26 @@ public class McpClientModernAutoConfiguration {
 				subscriber.addListener(listChangedHandlers);
 			}
 		};
+	}
+
+	@Override
+	public void setBeanClassLoader(ClassLoader classLoader) {
+		this.beanClassLoader = classLoader;
+	}
+
+	/**
+	 * Makes sure that the registry of the context-propagation library, with which Reactor
+	 * restores thread locals, reads the Reactor context before a modern connection is
+	 * used. A modern connection sends nothing at startup, so its first request could be
+	 * the first use of that registry, on a thread chosen by the application.
+	 * @see ModernMcpContextRegistry
+	 */
+	private void loadContextRegistry() {
+		ClassLoader classLoader = (this.beanClassLoader != null) ? this.beanClassLoader
+				: McpClientModernAutoConfiguration.class.getClassLoader();
+		if (ClassUtils.isPresent(CONTEXT_REGISTRY_CLASS_NAME, classLoader)) {
+			ModernMcpContextRegistry.load(classLoader);
+		}
 	}
 
 	/**
