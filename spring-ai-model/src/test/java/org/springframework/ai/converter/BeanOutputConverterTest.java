@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.core.exc.StreamReadException;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -37,6 +38,7 @@ import org.springframework.ai.util.TextBlockAssertion;
 import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Sebastian Ullrich
@@ -332,6 +334,67 @@ class BeanOutputConverterTest {
 					""";
 			var testClass = converter.convert(complexText);
 			assertThat(testClass.getSomeString()).isEqualTo("complex test");
+		}
+
+		@Test
+		void convertWithPreambleBeforeJson() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithPreamble = """
+					I'll analyze and evaluate that for you. Here are the results
+					{
+					  "someString" : "PASS"
+					}
+					""";
+			var testClass = converter.convert(textWithPreamble);
+			assertThat(testClass.getSomeString()).isEqualTo("PASS");
+		}
+
+		@Test
+		void convertWithPreambleBeforeMarkdownCodeBlock() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithPreamble = """
+					Here you go:
+					```json
+					{"someString":"PASS"}
+					```
+					""";
+			var testClass = converter.convert(textWithPreamble);
+			assertThat(testClass.getSomeString()).isEqualTo("PASS");
+		}
+
+		@Test
+		void convertWithTrailingTextAfterJson() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithTrailingText = """
+					{"someString":"PASS"}
+					Hope this helps!
+					""";
+			var testClass = converter.convert(textWithTrailingText);
+			assertThat(testClass.getSomeString()).isEqualTo("PASS");
+		}
+
+		@Test
+		void convertTypeReferenceArrayWithPreamble() {
+			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<List<TestClass>>() {
+
+			});
+			List<TestClass> testClass = converter
+				.convert("Here are the results: [{ \"someString\": \"PASS\" }, { \"someString\": \"FAIL\" }]");
+			assertThat(testClass).extracting(TestClass::getSomeString).containsExactly("PASS", "FAIL");
+		}
+
+		@Test
+		void convertWithoutJsonStillFails() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			assertThatExceptionOfType(StreamReadException.class)
+				.isThrownBy(() -> converter.convert("Sorry, I cannot evaluate that."));
+		}
+
+		@Test
+		void convertTruncatedJsonStillFails() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			assertThatExceptionOfType(StreamReadException.class)
+				.isThrownBy(() -> converter.convert("{\"someString\":\"PASS\",\"nested\":{\"a\":\"b\"},\"other\":"));
 		}
 
 	}

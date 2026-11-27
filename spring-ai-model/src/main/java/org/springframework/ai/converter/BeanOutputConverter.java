@@ -153,6 +153,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * and Qwen. For models that don't generate thinking tags, this has minimal
 	 * performance impact due to fast-path optimization.</li>
 	 * <li>{@link MarkdownCodeBlockCleaner} - Removes markdown code block formatting.</li>
+	 * <li>{@link JsonSurroundingTextCleaner} - Removes text before and after the JSON
+	 * object or array, such as a preamble added by the model.</li>
 	 * <li>{@link WhitespaceCleaner} - Trims whitespace.</li>
 	 * </ul>
 	 * <p>
@@ -165,6 +167,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 			.addCleaner(new WhitespaceCleaner())
 			.addCleaner(new ThinkingTagCleaner())
 			.addCleaner(new MarkdownCodeBlockCleaner())
+			.addCleaner(new JsonSurroundingTextCleaner())
 			.addCleaner(new WhitespaceCleaner()) // Final trim after all cleanups
 			.build();
 	}
