@@ -626,6 +626,58 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
+	void adaptiveThinkingToolTurnWithoutAnthropicReasoningIsNotWarned(CapturedOutput output) {
+		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.maxTokens(4096)
+			.thinkingAdaptive()
+			.toolCallbacks(List.of(new TestToolCallback("getWeather")))
+			.build();
+		Prompt prompt = new Prompt(toolCallingConversation(), options);
+
+		this.chatModel.call(prompt);
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService).create(captor.capture());
+		List<ContentBlockParam> blocks = assistantBlockParams(captor.getValue());
+		assertThat(blocks).hasSize(1);
+		assertThat(blocks.get(0).isToolUse()).isTrue();
+		assertThat(captor.getValue().thinking())
+			.hasValueSatisfying(thinking -> assertThat(thinking.isAdaptive()).isTrue());
+		// Adaptive thinking may legitimately return no thinking block to replay.
+		assertThat(output).doesNotContain("has no Anthropic thinking block to replay");
+	}
+
+	@Test
+	void adaptiveThinkingToolTurnWithAReplayedThinkingBlockIsNotWarned(CapturedOutput output) {
+		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+		AssistantMessage assistant = AssistantMessage.builder()
+			.part(new ReasoningPart("thinking text", null, new OpaquePayload("anthropic", "signature", "sig"),
+					Map.of()))
+			.part(ToolCallPart
+				.of(new AssistantMessage.ToolCall("toolu_1", "function", "getWeather", "{\"city\":\"Paris\"}")))
+			.build();
+		List<org.springframework.ai.chat.messages.Message> conversation = List.of(
+				new UserMessage("What's the weather in Paris?"), assistant,
+				toolResult("toolu_1", "Sunny and 25C in Paris."));
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.maxTokens(4096)
+			.thinkingAdaptive()
+			.toolCallbacks(List.of(new TestToolCallback("getWeather")))
+			.build();
+
+		this.chatModel.call(new Prompt(conversation, options));
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService).create(captor.capture());
+		List<ContentBlockParam> blocks = assistantBlockParams(captor.getValue());
+		assertThat(blocks.stream().anyMatch(ContentBlockParam::isThinking)).isTrue();
+		assertThat(output).doesNotContain("has no Anthropic thinking block to replay");
+	}
+
+	@Test
 	void thinkingEnabledToolTurnWithoutAnthropicReasoningIsNotWarnedOnceTheToolLoopIsClosed(CapturedOutput output) {
 		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
 		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
