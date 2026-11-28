@@ -230,7 +230,7 @@ public final class DefaultContentFormatter implements ContentFormatter {
 		 */
 		public Builder withExcludedInferenceMetadataKeys(List<String> excludedInferenceMetadataKeys) {
 			Assert.notNull(excludedInferenceMetadataKeys, "Excluded inference metadata keys must not be null");
-			this.excludedInferenceMetadataKeys = excludedInferenceMetadataKeys;
+			this.excludedInferenceMetadataKeys = new ArrayList<>(excludedInferenceMetadataKeys);
 			return this;
 		}
 
@@ -247,7 +247,7 @@ public final class DefaultContentFormatter implements ContentFormatter {
 		 */
 		public Builder withExcludedEmbedMetadataKeys(List<String> excludedEmbedMetadataKeys) {
 			Assert.notNull(excludedEmbedMetadataKeys, "Excluded Embed metadata keys must not be null");
-			this.excludedEmbedMetadataKeys = excludedEmbedMetadataKeys;
+			this.excludedEmbedMetadataKeys = new ArrayList<>(excludedEmbedMetadataKeys);
 			return this;
 		}
 
