@@ -83,10 +83,10 @@ class JdbcSessionRepositoryBuilderTests {
 
 	@Test
 	void unsupportedDatabaseWithoutDialectFailsFast() throws SQLException {
-		DataSource oracle = dataSourceReporting("Oracle");
+		DataSource sqlite = dataSourceReporting("SQLite");
 
-		assertThatIllegalStateException().isThrownBy(() -> JdbcSessionRepository.builder().dataSource(oracle).build())
-			.withMessageContaining("Oracle")
+		assertThatIllegalStateException().isThrownBy(() -> JdbcSessionRepository.builder().dataSource(sqlite).build())
+			.withMessageContaining("SQLite")
 			.withMessageContaining("dialect(");
 	}
 

@@ -53,6 +53,8 @@ class JdbcSessionRepositoryDialectTests {
 			.isInstanceOf(MysqlJdbcSessionRepositoryDialect.class);
 		assertThat(JdbcSessionRepositoryDialect.from(dataSourceReporting("Microsoft SQL Server")))
 			.isInstanceOf(SqlServerJdbcSessionRepositoryDialect.class);
+		assertThat(JdbcSessionRepositoryDialect.from(dataSourceReporting("Oracle")))
+			.isInstanceOf(OracleJdbcSessionRepositoryDialect.class);
 	}
 
 	// -------------------------------------------------------------------------
@@ -114,10 +116,24 @@ class JdbcSessionRepositoryDialectTests {
 	}
 
 	@Test
+	void oracleLimitsRowsWithFetchFirst() {
+		OracleJdbcSessionRepositoryDialect dialect = new OracleJdbcSessionRepositoryDialect();
+		assertThat(dialect.getLimitClause()).isEqualTo("FETCH FIRST ? ROWS ONLY");
+		// A PL/SQL block, so that metadata larger than a VARCHAR2 bind reaches the CLOB,
+		// and an update keeps created_at
+		assertThat(dialect.getUpsertSessionSql().strip()).startsWith("DECLARE").endsWith("END;");
+		assertThat(dialect.getUpsertSessionSql()).contains("v_metadata   CLOB := ?")
+			.contains("SET t.expires_at = v_expires_at, t.metadata = v_metadata")
+			.doesNotContain("created_at = v_created_at");
+		// A CLOB cannot be coalesced with '', which Oracle reads as a NULL CHAR
+		assertThat(dialect.getKeywordPredicate()).isEqualTo("LOWER(e.message_content) LIKE LOWER(?) ESCAPE '!'");
+	}
+
+	@Test
 	void unsupportedDatabaseFailsFast() throws SQLException {
-		DataSource oracle = dataSourceReporting("Oracle");
-		assertThatIllegalStateException().isThrownBy(() -> JdbcSessionRepositoryDialect.from(oracle))
-			.withMessageContaining("Oracle")
+		DataSource sqlite = dataSourceReporting("SQLite");
+		assertThatIllegalStateException().isThrownBy(() -> JdbcSessionRepositoryDialect.from(sqlite))
+			.withMessageContaining("SQLite")
 			.withMessageContaining("dialect(");
 	}
 

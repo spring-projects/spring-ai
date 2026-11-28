@@ -99,6 +99,11 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>com.oracle.database.jdbc</groupId>
+			<artifactId>ojdbc11</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers-mariadb</artifactId>
 			<scope>test</scope>
@@ -106,6 +111,11 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers-mssqlserver</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-oracle-free</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
