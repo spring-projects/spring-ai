@@ -18,6 +18,7 @@ package org.springframework.ai.model.google.genai.autoconfigure.embedding;
 
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
 import org.springframework.ai.google.genai.text.GoogleGenAiTextEmbeddingModel;
@@ -51,7 +52,7 @@ import org.springframework.core.retry.RetryTemplate;
 public class GoogleGenAiTextEmbeddingAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean
+	@ConditionalOnMissingBean(EmbeddingModel.class)
 	public GoogleGenAiTextEmbeddingModel googleGenAiTextEmbedding(
 			GoogleGenAiEmbeddingConnectionDetails connectionDetails,
 			GoogleGenAiTextEmbeddingProperties textEmbeddingProperties, ObjectProvider<RetryTemplate> retryTemplate,
