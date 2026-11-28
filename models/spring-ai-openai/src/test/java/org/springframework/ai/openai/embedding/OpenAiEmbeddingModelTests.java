@@ -28,7 +28,9 @@ import com.openai.models.embeddings.EmbeddingCreateParams;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 
@@ -36,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -54,7 +57,7 @@ class OpenAiEmbeddingModelTests {
 		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
 		CreateEmbeddingResponse mockResponse = mock(CreateEmbeddingResponse.class);
 		when(mockResponse.data()).thenReturn(List.of());
-		when(mockResponse.usage()).thenReturn(mock(CreateEmbeddingResponse.Usage.class));
+		doReturn(JsonField.of(usage(0L, 0L))).when(mockResponse)._usage();
 		when(mockClient.embeddings().create(any(EmbeddingCreateParams.class), any(RequestOptions.class)))
 			.thenReturn(mockResponse);
 
@@ -84,7 +87,8 @@ class OpenAiEmbeddingModelTests {
 		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
 		CreateEmbeddingResponse mockResponse = mock(CreateEmbeddingResponse.class);
 		when(mockResponse.data()).thenReturn(List.of(e0, e1));
-		when(mockResponse.usage()).thenReturn(mock(CreateEmbeddingResponse.Usage.class));
+		when(mockResponse._usage())
+			.thenReturn(JsonField.of(CreateEmbeddingResponse.Usage.builder().promptTokens(1L).totalTokens(1L).build()));
 		when(mockClient.embeddings().create(any(EmbeddingCreateParams.class), any(RequestOptions.class)))
 			.thenReturn(mockResponse);
 
@@ -119,6 +123,85 @@ class OpenAiEmbeddingModelTests {
 			.hasMessageContaining("promptTokens")
 			.hasMessageContaining(String.valueOf(promptTokens))
 			.hasCauseInstanceOf(ArithmeticException.class);
+	}
+
+	@Test
+	void testEmbeddingWithoutUsageDoesNotFail() {
+		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
+		CreateEmbeddingResponse mockResponse = mock(CreateEmbeddingResponse.class);
+		when(mockResponse.data()).thenReturn(List.of());
+		when(mockResponse._usage()).thenReturn(JsonMissing.of());
+		when(mockClient.embeddings().create(any(EmbeddingCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(mockResponse);
+
+		OpenAiEmbeddingModel model = OpenAiEmbeddingModel.builder().openAiClient(mockClient).build();
+
+		EmbeddingResponse response = model
+			.call(new EmbeddingRequest(List.of("hi"), OpenAiEmbeddingOptions.builder().build()));
+
+		assertThat(response).isNotNull();
+		// Gemini's OpenAI-compatible embeddings responses may omit usage; no NPE should
+		// be thrown
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isNotNull();
+	}
+
+	@Test
+	void usageWithPartialCountsDoesNotFail() {
+		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
+		// Some OpenAI-compatible providers report usage with only part of the counts
+		// present, e.g. `{"prompt_tokens": 8}` with no `total_tokens`. The required
+		// accessors throw OpenAIInvalidDataException for the absent one.
+		CreateEmbeddingResponse mockResponse = mock(CreateEmbeddingResponse.class);
+		when(mockResponse.data()).thenReturn(List.of());
+		doReturn(JsonField.of(usage(8L, null))).when(mockResponse)._usage();
+		when(mockClient.embeddings().create(any(EmbeddingCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(mockResponse);
+
+		OpenAiEmbeddingModel model = OpenAiEmbeddingModel.builder().openAiClient(mockClient).build();
+		EmbeddingRequest request = new EmbeddingRequest(List.of("hi"), OpenAiEmbeddingOptions.builder().build());
+
+		Usage usage = model.call(request).getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(8);
+		assertThat(usage.getCompletionTokens()).isZero();
+		// DefaultUsage derives a missing total from the other counts
+		assertThat(usage.getTotalTokens()).isEqualTo(8);
+	}
+
+	@Test
+	void usageWithoutAnyCountsDoesNotFail() {
+		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
+		// A provider may report an empty `usage` object; every count is then absent.
+		CreateEmbeddingResponse mockResponse = mock(CreateEmbeddingResponse.class);
+		when(mockResponse.data()).thenReturn(List.of());
+		doReturn(JsonField.of(usage(null, null))).when(mockResponse)._usage();
+		when(mockClient.embeddings().create(any(EmbeddingCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(mockResponse);
+
+		OpenAiEmbeddingModel model = OpenAiEmbeddingModel.builder().openAiClient(mockClient).build();
+		EmbeddingRequest request = new EmbeddingRequest(List.of("hi"), OpenAiEmbeddingOptions.builder().build());
+
+		Usage usage = model.call(request).getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isZero();
+		assertThat(usage.getCompletionTokens()).isZero();
+		assertThat(usage.getTotalTokens()).isZero();
+	}
+
+	/**
+	 * A usage object whose raw counts are present or missing independently. The
+	 * openai-java builder rejects an absent required count, so the absent case is
+	 * expressed here.
+	 * @param promptTokens the {@code prompt_tokens} count, or {@code null} to leave it
+	 * absent
+	 * @param totalTokens the {@code total_tokens} count, or {@code null} to leave it
+	 * absent
+	 * @return the stubbed usage object
+	 */
+	private static CreateEmbeddingResponse.Usage usage(Long promptTokens, Long totalTokens) {
+		CreateEmbeddingResponse.Usage nativeUsage = mock(CreateEmbeddingResponse.Usage.class);
+		doReturn(promptTokens != null ? JsonField.of(promptTokens) : JsonMissing.of()).when(nativeUsage)
+			._promptTokens();
+		doReturn(totalTokens != null ? JsonField.of(totalTokens) : JsonMissing.of()).when(nativeUsage)._totalTokens();
+		return nativeUsage;
 	}
 
 }
