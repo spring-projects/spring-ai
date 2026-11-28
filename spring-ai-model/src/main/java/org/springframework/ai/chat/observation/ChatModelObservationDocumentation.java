@@ -102,6 +102,17 @@ public enum ChatModelObservationDocumentation implements ObservationDocumentatio
 	public enum HighCardinalityKeyNames implements KeyName {
 
 		/**
+		 * Describes a class of error the operation ended with. Only present when the
+		 * operation failed.
+		 */
+		ERROR_TYPE {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.ERROR_TYPE.value();
+			}
+		},
+
+		/**
 		 * The frequency penalty setting for the model request.
 		 */
 		REQUEST_FREQUENCY_PENALTY {

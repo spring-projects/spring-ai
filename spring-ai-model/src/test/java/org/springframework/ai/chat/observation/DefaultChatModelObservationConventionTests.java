@@ -33,6 +33,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.observation.conventions.AiObservationAttributes;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -83,6 +84,65 @@ class DefaultChatModelObservationConventionTests {
 			.build();
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
 		assertThat(this.observationConvention.supportsContext(new Observation.Context())).isFalse();
+	}
+
+	@Test
+	void shouldHaveErrorTypeOnTheSpanWhenErrorIsSet() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		observationContext.setError(new IllegalStateException("boom"));
+
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(KeyValue
+			.of(AiObservationAttributes.ERROR_TYPE.value(), IllegalStateException.class.getCanonicalName()));
+		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(AiObservationAttributes.ERROR_TYPE.value());
+	}
+
+	@Test
+	void shouldNotHaveErrorTypeWhenNoError() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+
+		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(AiObservationAttributes.ERROR_TYPE.value());
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(AiObservationAttributes.ERROR_TYPE.value());
+	}
+
+	@Test
+	void shouldUseTheCanonicalNameOfANestedException() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		observationContext.setError(new NestedFailure());
+
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
+			.contains(KeyValue.of(AiObservationAttributes.ERROR_TYPE.value(), NestedFailure.class.getCanonicalName()));
+	}
+
+	@Test
+	void shouldFallBackToTheBinaryNameOfAnAnonymousException() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		RuntimeException anonymous = new RuntimeException("boom") {
+		};
+		observationContext.setError(anonymous);
+
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
+			.contains(KeyValue.of(AiObservationAttributes.ERROR_TYPE.value(), anonymous.getClass().getName()));
 	}
 
 	@Test
@@ -293,6 +353,10 @@ class DefaultChatModelObservationConventionTests {
 		public String call(String toolInput) {
 			return "Mission accomplished!";
 		}
+
+	}
+
+	static final class NestedFailure extends RuntimeException {
 
 	}
 

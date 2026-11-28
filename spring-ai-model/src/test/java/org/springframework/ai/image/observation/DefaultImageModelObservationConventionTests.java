@@ -71,6 +71,39 @@ class DefaultImageModelObservationConventionTests {
 	}
 
 	@Test
+	void shouldHaveErrorTypeOnTheSpanWhenErrorIsSet() {
+		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(generateImagePrompt(ImageOptionsBuilder.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		observationContext.setError(new IllegalStateException("boom"));
+
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(KeyValue
+			.of(AiObservationAttributes.ERROR_TYPE.value(), IllegalStateException.class.getCanonicalName()));
+		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(AiObservationAttributes.ERROR_TYPE.value());
+	}
+
+	@Test
+	void shouldNotHaveErrorTypeWhenNoError() {
+		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(generateImagePrompt(ImageOptionsBuilder.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+
+		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(AiObservationAttributes.ERROR_TYPE.value());
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(AiObservationAttributes.ERROR_TYPE.value());
+	}
+
+	@Test
 	void shouldHaveLowCardinalityKeyValuesWhenDefined() {
 		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt(ImageOptionsBuilder.builder().model("mistral").build()))
