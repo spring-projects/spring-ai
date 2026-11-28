@@ -313,6 +313,15 @@ public class GoogleGenAiTextToSpeechModel implements TextToSpeechModel {
 					.audioEncoding(ModelOptionsUtils.mergeOption(googleOptions.getAudioEncoding(),
 							this.defaultOptions.getAudioEncoding()));
 			}
+			else {
+				// portable options have no Google-specific settings: keep the defaults
+				builder.replicatedVoice(this.defaultOptions.getReplicatedVoice())
+					.languageCode(this.defaultOptions.getLanguageCode())
+					.stylePrompt(this.defaultOptions.getStylePrompt())
+					.speakerVoiceConfigs(this.defaultOptions.getSpeakerVoiceConfigs())
+					.multiSpeakerTurns(this.defaultOptions.getMultiSpeakerTurns())
+					.audioEncoding(this.defaultOptions.getAudioEncoding());
+			}
 
 			mergedOptions = builder.build();
 		}
