@@ -136,6 +136,25 @@ public final class DefaultSessionService implements SessionService {
 
 	@Override
 	public void appendEvent(SessionEvent event) {
+		checkSystemMessage(event);
+		this.sessionRepository.appendEvent(event);
+	}
+
+	@Override
+	public boolean appendEvents(String sessionId, List<SessionEvent> events, long expectedVersion) {
+		Assert.hasText(sessionId, "sessionId must not be null or empty");
+		Assert.notEmpty(events, "events must not be null or empty");
+		events.forEach(this::checkSystemMessage);
+		return this.sessionRepository.appendEvents(sessionId, events, expectedVersion);
+	}
+
+	@Override
+	public long getEventVersion(String sessionId) {
+		Assert.hasText(sessionId, "sessionId must not be null or empty");
+		return this.sessionRepository.getEventVersion(sessionId);
+	}
+
+	private void checkSystemMessage(SessionEvent event) {
 		Assert.notNull(event, "event must not be null");
 		if (!this.allowSystemMessages && event.hasMessage() && event.getMessageType() == MessageType.SYSTEM) {
 			throw new IllegalArgumentException("Storing a SystemMessage in session '" + event.getSessionId()
@@ -145,7 +164,6 @@ public final class DefaultSessionService implements SessionService {
 					+ "DefaultSessionService.builder().allowSystemMessages(true) or set "
 					+ "spring.ai.session.allow-system-messages=true. See the \"System Messages\" reference page.");
 		}
-		append(event);
 	}
 
 	@Override
@@ -155,8 +173,11 @@ public final class DefaultSessionService implements SessionService {
 		return this.sessionRepository.findEvents(sessionId, filter);
 	}
 
-	private void append(SessionEvent event) {
-		this.sessionRepository.appendEvent(event);
+	@Override
+	public List<SessionEvent> searchEvents(String sessionId, EventQuery query) {
+		Assert.hasText(sessionId, "sessionId must not be null or empty");
+		Assert.notNull(query, "query must not be null");
+		return this.sessionRepository.searchEvents(sessionId, query);
 	}
 
 	@Override
@@ -262,7 +283,8 @@ public final class DefaultSessionService implements SessionService {
 		}
 
 		/**
-		 * Whether {@link #appendEvent(SessionEvent)} may store a
+		 * Whether {@link #appendEvent(SessionEvent)} and
+		 * {@link #appendEvents(String, List, long)} may store a
 		 * {@link org.springframework.ai.chat.messages.SystemMessage}; {@code false} by
 		 * default. A system prompt is configuration, best supplied on every request, so
 		 * storing one is rejected with an {@link IllegalArgumentException} that says how

@@ -38,8 +38,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 
-import org.springframework.ai.mcp.customizer.McpStatelessAsyncServerCustomizer;
-import org.springframework.ai.mcp.customizer.McpStatelessSyncServerCustomizer;
+import org.springframework.ai.mcp.customizer.McpServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -83,7 +82,7 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<SyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions, Environment environment,
-			ObjectProvider<McpStatelessSyncServerCustomizer> customizers) {
+			ObjectProvider<McpServerCustomizer<StatelessSyncSpecification>> customizers) {
 
 		McpSchema.Implementation serverInfo = Implementation
 			.builder(serverProperties.getName(), serverProperties.getVersion())
@@ -177,7 +176,7 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<AsyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions,
-			ObjectProvider<McpStatelessAsyncServerCustomizer> customizers) {
+			ObjectProvider<McpServerCustomizer<StatelessAsyncSpecification>> customizers) {
 
 		McpSchema.Implementation serverInfo = Implementation
 			.builder(serverProperties.getName(), serverProperties.getVersion())

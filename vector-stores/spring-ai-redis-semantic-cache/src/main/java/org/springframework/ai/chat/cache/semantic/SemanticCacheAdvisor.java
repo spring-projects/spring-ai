@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.cache.semantic;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -32,7 +33,9 @@ import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.GuardrailRefusal;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * An advisor implementation that provides semantic caching capabilities for chat
@@ -53,13 +56,31 @@ import org.springframework.util.Assert;
  * <li>Configurable execution order in the advisor chain</li>
  * </ul>
  *
+ * <p>
+ * Cached responses are isolated by the scope returned by the mandatory
+ * {@link SemanticCacheScopeResolver}. Requests for which the resolver returns no scope
+ * bypass the cache entirely.
+ * </p>
+ *
+ * <p>
+ * Cached responses never expire unless a time-to-live is configured with
+ * {@link Builder#ttl(Duration)}.
+ * </p>
+ *
+ * <p>
+ * The refusal of a guardrail (see {@link GuardrailRefusal}) is returned and not cached.
+ *
  * @author Brian Sam-Bodden
  * @author Soby Chacko
+ * @author Dimitar Proynov
  */
 public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 
 	/** The underlying semantic cache implementation. */
 	private final SemanticCache cache;
+
+	/** Resolves the scope that isolates cached responses. */
+	private final SemanticCacheScopeResolver scopeResolver;
 
 	/** The order of this advisor in the chain. */
 	private final int order;
@@ -67,33 +88,63 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 	/** The scheduler for async operations. */
 	private final Scheduler scheduler;
 
+	/** The time-to-live of cached responses, or null for no expiration. */
+	private final @Nullable Duration ttl;
+
 	/**
 	 * Creates a new semantic cache advisor with default order and scheduler.
 	 * @param cache The semantic cache implementation to use
+	 * @param scopeResolver The resolver of the scope that isolates cached responses
+	 * @since 2.0.2
 	 */
-	public SemanticCacheAdvisor(SemanticCache cache) {
-		this(cache, DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER, Schedulers.boundedElastic());
+	public SemanticCacheAdvisor(SemanticCache cache, SemanticCacheScopeResolver scopeResolver) {
+		this(cache, scopeResolver, DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER, Schedulers.boundedElastic());
 	}
 
 	/**
 	 * Creates a new semantic cache advisor with specified order and default scheduler.
 	 * @param cache The semantic cache implementation to use
+	 * @param scopeResolver The resolver of the scope that isolates cached responses
 	 * @param order The order of this advisor in the chain
+	 * @since 2.0.2
 	 */
-	public SemanticCacheAdvisor(SemanticCache cache, int order) {
-		this(cache, order, Schedulers.boundedElastic());
+	public SemanticCacheAdvisor(SemanticCache cache, SemanticCacheScopeResolver scopeResolver, int order) {
+		this(cache, scopeResolver, order, Schedulers.boundedElastic());
 	}
 
 	/**
 	 * Creates a new semantic cache advisor with specified order and scheduler.
 	 * @param cache The semantic cache implementation to use
+	 * @param scopeResolver The resolver of the scope that isolates cached responses
 	 * @param order The order of this advisor in the chain
 	 * @param scheduler The scheduler for async operations
+	 * @since 2.0.2
 	 */
-	public SemanticCacheAdvisor(SemanticCache cache, int order, Scheduler scheduler) {
+	public SemanticCacheAdvisor(SemanticCache cache, SemanticCacheScopeResolver scopeResolver, int order,
+			Scheduler scheduler) {
+		this(cache, scopeResolver, order, scheduler, null);
+	}
+
+	/**
+	 * Creates a new semantic cache advisor with specified order, scheduler and
+	 * time-to-live.
+	 * @param cache The semantic cache implementation to use
+	 * @param scopeResolver The resolver of the scope that isolates cached responses
+	 * @param order The order of this advisor in the chain
+	 * @param scheduler The scheduler for async operations
+	 * @param ttl The time-to-live of cached responses, or null for no expiration
+	 * @since 2.0.2
+	 */
+	public SemanticCacheAdvisor(SemanticCache cache, SemanticCacheScopeResolver scopeResolver, int order,
+			Scheduler scheduler, @Nullable Duration ttl) {
+		Assert.notNull(cache, "Cache must not be null");
+		Assert.notNull(scopeResolver, "Scope resolver must not be null");
+		Assert.isTrue(ttl == null || ttl.toMillis() > 0, "TTL must be positive");
 		this.cache = cache;
+		this.scopeResolver = scopeResolver;
 		this.order = order;
 		this.scheduler = scheduler;
+		this.ttl = ttl;
 	}
 
 	@Override
@@ -109,17 +160,21 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 	/**
 	 * Handles synchronous chat requests by checking the cache before proceeding. If a
 	 * semantically similar response is found in the cache, it is returned immediately.
-	 * Otherwise, the request proceeds through the chain and the response is cached.
+	 * Otherwise, the request proceeds through the chain and the response is cached. If no
+	 * scope is resolved for the request, the cache is bypassed.
 	 * @param request The chat client request to process
 	 * @param chain The advisor chain to continue processing if needed
 	 * @return The response, either from cache or from the model
 	 */
 	@Override
 	public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+		// Extract context hash for isolation (different scopes = different cache)
+		String contextHash = extractContextHash(request);
+		if (contextHash == null) {
+			return chain.nextCall(request);
+		}
 		// Extract user text for semantic similarity search
 		String userText = extractUserText(request);
-		// Extract context hash for isolation (different system prompts = different cache)
-		String contextHash = extractContextHash(request);
 
 		// Check cache first (with context filtering)
 		Optional<ChatResponse> cached = this.cache.get(userText, contextHash);
@@ -132,9 +187,12 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 		// Cache miss - call the model
 		ChatClientResponse response = chain.nextCall(request);
 
-		// Cache the response (with context hash for isolation)
-		if (response.chatResponse() != null) {
-			this.cache.set(userText, response.chatResponse(), contextHash);
+		// Cache the response (with context hash for isolation). The refusal of a
+		// guardrail is not cached: it is not an answer of the model, and the cache keeps
+		// the text of a response without the finish reason that marks it as a refusal.
+		ChatResponse chatResponse = response.chatResponse();
+		if (chatResponse != null && !GuardrailRefusal.isRefusal(chatResponse)) {
+			cacheResponse(userText, chatResponse, contextHash);
 		}
 
 		return response;
@@ -145,17 +203,21 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 	 * semantically similar response is found in the cache, it is returned as a single
 	 * item flux. Otherwise, the request proceeds through the chain with true streaming -
 	 * tokens are returned to the user as they arrive, while the response is aggregated
-	 * and cached asynchronously when the stream completes.
+	 * and cached asynchronously when the stream completes. If no scope is resolved for
+	 * the request, the cache is bypassed.
 	 * @param request The chat client request to process
 	 * @param chain The advisor chain to continue processing if needed
 	 * @return A Flux of responses, either from cache or from the model
 	 */
 	@Override
 	public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
+		// Extract context hash for isolation (different scopes = different cache)
+		String contextHash = extractContextHash(request);
+		if (contextHash == null) {
+			return chain.nextStream(request);
+		}
 		// Extract user text for semantic similarity search
 		String userText = extractUserText(request);
-		// Extract context hash for isolation (different system prompts = different cache)
-		String contextHash = extractContextHash(request);
 
 		// Check cache first (with context filtering)
 		Optional<ChatResponse> cached = this.cache.get(userText, contextHash);
@@ -172,9 +234,12 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 		return chain.nextStream(request)
 			.transform(
 					flux -> new ChatClientMessageAggregator().aggregateChatClientResponse(flux, aggregatedResponse -> {
-						// Cache the aggregated response when the stream completes
-						if (aggregatedResponse.chatResponse() != null) {
-							this.cache.set(userText, aggregatedResponse.chatResponse(), contextHash);
+						// Cache the aggregated response when the stream completes, unless
+						// it
+						// is the refusal of a guardrail
+						ChatResponse chatResponse = aggregatedResponse.chatResponse();
+						if (chatResponse != null && !GuardrailRefusal.isRefusal(chatResponse)) {
+							cacheResponse(userText, chatResponse, contextHash);
 						}
 					}));
 	}
@@ -196,6 +261,21 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 	}
 
 	/**
+	 * Stores the response in the cache, with the time-to-live if configured.
+	 * @param userText the user message text
+	 * @param response the chat response to cache
+	 * @param contextHash the context hash for isolation
+	 */
+	private void cacheResponse(String userText, ChatResponse response, String contextHash) {
+		if (this.ttl != null) {
+			this.cache.set(userText, response, contextHash, this.ttl);
+		}
+		else {
+			this.cache.set(userText, response, contextHash);
+		}
+	}
+
+	/**
 	 * Extracts the user message text from the ChatClientRequest to use for semantic
 	 * similarity search.
 	 * @param request the chat client request containing the prompt
@@ -207,17 +287,17 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 
 	/**
 	 * Extracts a context hash from the ChatClientRequest for cache isolation. Different
-	 * system prompts will produce different hashes, ensuring that cached responses are
-	 * only returned for queries with matching context.
+	 * scopes will produce different hashes, ensuring that cached responses are only
+	 * returned for queries with matching scope.
 	 * @param request the chat client request containing the prompt
-	 * @return the context hash if a system prompt is present, null otherwise
+	 * @return the context hash, or null if no scope is resolved for the request
 	 */
 	private @Nullable String extractContextHash(ChatClientRequest request) {
-		var systemMessage = request.prompt().getSystemMessage();
-		if (systemMessage.getText() != null && !systemMessage.getText().isEmpty()) {
-			return computeHash(systemMessage.getText());
+		String scope = this.scopeResolver.resolveScope(request);
+		if (!StringUtils.hasText(scope)) {
+			return null;
 		}
-		return null;
+		return computeHash(scope);
 	}
 
 	/**
@@ -255,9 +335,13 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 
 		private @Nullable SemanticCache cache;
 
+		private @Nullable SemanticCacheScopeResolver scopeResolver;
+
 		private int order = DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
 
 		private Scheduler scheduler = Schedulers.boundedElastic();
+
+		private @Nullable Duration ttl;
 
 		/**
 		 * Sets the semantic cache implementation.
@@ -266,6 +350,17 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 		 */
 		public Builder cache(SemanticCache cache) {
 			this.cache = cache;
+			return this;
+		}
+
+		/**
+		 * Sets the resolver of the scope that isolates cached responses. Mandatory.
+		 * @param scopeResolver The scope resolver to use
+		 * @return This builder instance
+		 * @since 2.0.2
+		 */
+		public Builder scopeResolver(SemanticCacheScopeResolver scopeResolver) {
+			this.scopeResolver = scopeResolver;
 			return this;
 		}
 
@@ -290,12 +385,25 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 		}
 
 		/**
+		 * Sets the time-to-live of cached responses. By default, cached responses never
+		 * expire.
+		 * @param ttl The time-to-live of cached responses
+		 * @return This builder instance
+		 * @since 2.0.2
+		 */
+		public Builder ttl(Duration ttl) {
+			this.ttl = ttl;
+			return this;
+		}
+
+		/**
 		 * Builds and returns a new SemanticCacheAdvisor instance.
 		 * @return A new SemanticCacheAdvisor configured with this builder's settings
 		 */
 		public SemanticCacheAdvisor build() {
 			Assert.notNull(this.cache, "Cache must not be null");
-			return new SemanticCacheAdvisor(this.cache, this.order, this.scheduler);
+			Assert.notNull(this.scopeResolver, "Scope resolver must not be null");
+			return new SemanticCacheAdvisor(this.cache, this.scopeResolver, this.order, this.scheduler, this.ttl);
 		}
 
 	}

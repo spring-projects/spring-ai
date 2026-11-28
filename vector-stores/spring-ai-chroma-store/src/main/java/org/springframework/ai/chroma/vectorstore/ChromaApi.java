@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
@@ -236,6 +237,30 @@ public class ChromaApi {
 		}
 	}
 
+	/**
+	 * Read the size of the embeddings in a collection. Chroma fixes it from the first
+	 * embedding the collection sees, so it is {@code null} until then.
+	 * @param tenantName the tenant
+	 * @param databaseName the database
+	 * @param collectionName the collection
+	 * @return the size, or {@code null} when the collection has none yet or does not
+	 * exist
+	 */
+	@Nullable Integer getCollectionDimension(String tenantName, String databaseName, String collectionName) {
+		try {
+			CollectionDimension collection = this.restClient.get()
+				.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections/{collection_name}",
+						tenantName, databaseName, collectionName)
+				.headers(this::httpHeaders)
+				.retrieve()
+				.body(CollectionDimension.class);
+			return (collection != null) ? collection.dimension() : null;
+		}
+		catch (HttpClientErrorException.NotFound e) {
+			return null;
+		}
+	}
+
 	public @Nullable List<Collection> listCollections(String tenantName, String databaseName) {
 
 		return this.restClient.get()
@@ -395,6 +420,17 @@ public class ChromaApi {
 	}
 
 	/**
+	 * The part of a collection response that holds the embedding size, kept apart from
+	 * {@link Collection} so that the public record keeps its shape.
+	 *
+	 * @param dimension the size of the embeddings, or {@code null} until the first one
+	 */
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	record CollectionDimension(@JsonProperty("dimension") @Nullable Integer dimension) {
+
+	}
+
+	/**
 	 * Request to create a new collection with the given name and metadata.
 	 *
 	 * @param name The name of the collection to create.
@@ -433,13 +469,15 @@ public class ChromaApi {
 
 		public AddEmbeddingsRequest {
 			// Process metadata to ensure all values are Integer, Boolean, or String.
-			// Other types are converted to JSON string using JsonParser.toJson().
+			// Other types are converted to JSON string using JsonParser.toJson(). A null
+			// value is kept, because Chroma removes a key sent with a null value.
 			List<Map<String, Object>> processedMetadatas = new ArrayList<>();
 			for (Map<String, Object> meta : metadata) {
 				Map<String, Object> processed = new HashMap<>();
 				for (Map.Entry<String, Object> entry : meta.entrySet()) {
 					Object value = entry.getValue();
-					if (value instanceof Number || value instanceof Boolean || value instanceof String) {
+					if (value == null || value instanceof Number || value instanceof Boolean
+							|| value instanceof String) {
 						processed.put(entry.getKey(), value);
 					}
 					else {

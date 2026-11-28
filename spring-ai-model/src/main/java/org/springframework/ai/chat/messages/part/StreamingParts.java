@@ -30,19 +30,33 @@ import org.springframework.util.Assert;
  * The contract for a streamed {@code ChatResponse} chunk:
  * <ul>
  * <li>A chunk's assistant message carries at most one part per content block index.</li>
- * <li>A part stamped with {@link #partial(MessagePart, int)} is a delta: text and
- * arguments are appended to what was already received for that index, a non-null payload
- * replaces the accumulated one.</li>
+ * <li>A part stamped with {@link #partial(MessagePart, int)} is a delta: text is appended
+ * to what was already received for that index, a non-null payload replaces the
+ * accumulated one.</li>
  * <li>A part stamped with {@link #complete(MessagePart, int)} replaces whatever was
  * accumulated for that index.</li>
+ * <li>A {@link ToolCallPart} stamped partial is a tool-call argument delta, streamed so
+ * that a consumer can show the call while the model is still writing it. It carries the
+ * id, type and name of its call and only the arguments fragment of its chunk. It is not a
+ * tool call: {@code AssistantMessage.getToolCalls()} skips it, the aggregator does not
+ * accumulate it and the chat models do not send it back to their API. The chat model
+ * emits the complete {@link ToolCallPart} later in the same response, at the same index,
+ * so a stream that is cancelled or fails before then has no tool call.</li>
  * <li>Parts without an index are aggregated the pre-streaming way: text is concatenated,
- * tool calls are appended, other parts are carried in arrival order.</li>
+ * tool calls are appended, except for argument deltas, other parts are carried in arrival
+ * order.</li>
  * <li>The chat model sets {@code ChatResponseMetadata.id} on every chunk of one model
  * response; the aggregator groups indexed parts by that id so that consecutive tool-call
  * rounds flowing through one stream do not merge into each other.</li>
  * </ul>
  * The part index and partial attributes are removed from the aggregated message, so they
  * never take part in message equality or persistence.
+ * <p>
+ * The parts of a chunk are only meant for the consumers of the stream. To continue the
+ * conversation, send back the aggregated message rather than a message built from the
+ * parts of the chunks: the API of the chat model may reject a request holding a delta,
+ * for instance a signature delta without its reasoning text, and a text delta is replayed
+ * as the fragment it holds.
  *
  * @author Christian Tzolov
  * @since 2.1.0

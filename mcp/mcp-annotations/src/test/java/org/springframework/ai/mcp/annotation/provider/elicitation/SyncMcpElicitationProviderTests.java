@@ -16,8 +16,10 @@
 
 package org.springframework.ai.mcp.annotation.provider.elicitation;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import io.modelcontextprotocol.spec.McpSchema.ElicitFormRequest;
@@ -29,7 +31,9 @@ import org.springframework.ai.mcp.annotation.McpElicitation;
 import org.springframework.ai.mcp.annotation.method.elicitation.SyncElicitationSpecification;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for {@link SyncMcpElicitationProvider}.
@@ -56,6 +60,31 @@ public class SyncMcpElicitationProviderTests {
 		assertEquals(ElicitResult.Action.ACCEPT, result.action());
 		assertNotNull(result.content());
 		assertEquals("Test User", result.content().get("name"));
+	}
+
+	@Test
+	public void legacyAndModernSpecificationsShareOneScanOfTheObjects() {
+		AtomicInteger scans = new AtomicInteger();
+		var provider = new SyncMcpElicitationProvider(List.of(new TestElicitationHandler())) {
+			@Override
+			protected Method[] doGetClassMethods(Object bean) {
+				scans.incrementAndGet();
+				return super.doGetClassMethods(bean);
+			}
+		};
+
+		assertEquals(1, provider.getElicitationSpecifications().size());
+		var modernSpecification = provider.getModernElicitationSpecifications().get(0);
+
+		// The method takes the legacy types and answers a modern form request as well.
+		assertTrue(modernSpecification.form());
+		assertFalse(modernSpecification.url());
+		var result = modernSpecification.elicitationHandler()
+			.apply(new io.modelcontextprotocol.modern.McpSchema.ElicitFormRequest("Please provide your name",
+					Map.of("type", "object"), null), null);
+		assertEquals("Test User", result.content().get("name"));
+
+		assertEquals(1, scans.get());
 	}
 
 	public static class TestElicitationHandler {

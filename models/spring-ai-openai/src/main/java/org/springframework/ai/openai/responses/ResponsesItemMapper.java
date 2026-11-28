@@ -58,6 +58,7 @@ import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
@@ -66,6 +67,7 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.content.Media;
@@ -145,6 +147,16 @@ final class ResponsesItemMapper {
 	 * has to agree with the non-streaming path.
 	 */
 	static final String REASONING_ITEM_SEPARATOR = "\n";
+
+	/**
+	 * What separates the summary entries of one {@code reasoning} item. Each entry is a
+	 * separate paragraph, usually opening with its own bold heading, so joining them
+	 * without a separator runs the last sentence of one into the heading of the next.
+	 * Shared with {@link ResponsesStreamAssembler}, which inserts it where the
+	 * {@code summary_index} of the deltas changes, so that a streamed summary and a
+	 * non-streamed one are the same text.
+	 */
+	static final String REASONING_SUMMARY_ENTRY_SEPARATOR = "\n\n";
 
 	private static final MimeType IMAGE_WEBP = MimeType.valueOf("image/webp");
 
@@ -311,8 +323,9 @@ final class ResponsesItemMapper {
 
 	/**
 	 * The replay rule: one input item per part, in part order, rebuilt from what the part
-	 * carries. Dispatch is an {@code instanceof} chain ending in a throw, so a part type
-	 * added to the sealed hierarchy later cannot be dropped silently.
+	 * carries, except for the tool-call argument deltas of a stream. Dispatch is an
+	 * {@code instanceof} chain ending in a throw, so a part type added to the sealed
+	 * hierarchy later cannot be dropped silently.
 	 */
 	private static List<ResponseInputItem> assistantItems(AssistantMessage message) {
 		List<ResponseInputItem> items = new ArrayList<>();
@@ -326,6 +339,11 @@ final class ResponsesItemMapper {
 			}
 			else if (part instanceof ReasoningPart reasoningPart) {
 				reasoningItem(reasoningPart).ifPresent(items::add);
+			}
+			else if (part instanceof ToolCallPart && StreamingParts.isPartial(part)) {
+				// A tool-call argument delta of a stream, not a tool call
+				// (see StreamingParts)
+				continue;
 			}
 			else if (part instanceof ToolCallPart toolCallPart) {
 				items.add(functionCallItem(toolCallPart));
@@ -520,10 +538,14 @@ final class ResponsesItemMapper {
 		ReportedValues reported = reportedValues(outputItems);
 		String status = response.status().map(ResponseStatus::asString).orElse("completed");
 
+		String finishReason = finishReason(response, status, reported.hasToolCalls());
+		String refusal = Objects.requireNonNullElse(streamedRefusal, reported.refusal());
+
 		ChatGenerationMetadata.Builder metadata = ChatGenerationMetadata.builder()
-			.finishReason(finishReason(response, status, reported.hasToolCalls()))
+			.finishReason(finishReason)
+			.finishReasonCategory(finishReasonCategory(finishReason, refusal))
 			.metadata(OpenAiResponsesMetadata.STATUS, status)
-			.metadata(OpenAiResponsesMetadata.REFUSAL, Objects.requireNonNullElse(streamedRefusal, reported.refusal()))
+			.metadata(OpenAiResponsesMetadata.REFUSAL, refusal)
 			.metadata(OpenAiResponsesMetadata.ANNOTATIONS, reported.annotations())
 			.metadata(OpenAiResponsesMetadata.REASONING_CONTENT,
 					Objects.requireNonNullElse(streamedReasoning, reported.reasoning()))
@@ -614,7 +636,9 @@ final class ResponsesItemMapper {
 	 * reasoning text for display, the item id in the attributes.
 	 */
 	static ReasoningPart reasoningPart(ResponseReasoningItem item) {
-		String text = join(item.content().orElse(List.of()).stream().map(ResponseReasoningItem.Content::text));
+		// Joined with nothing: reasoning text streams as one run with no index to
+		// separate on, and both paths have to produce the same text.
+		String text = join(item.content().orElse(List.of()).stream().map(ResponseReasoningItem.Content::text), "");
 		String summary = summaryText(item);
 		Map<String, String> attributes = new LinkedHashMap<>();
 		attributes.put(OpenAiResponsesMetadata.ITEM_ID_ATTRIBUTE, item.id());
@@ -655,16 +679,19 @@ final class ResponsesItemMapper {
 	}
 
 	/**
-	 * The summary entries of one {@code reasoning} item, concatenated without a separator
-	 * the way their deltas arrive on the stream, or {@code null} when the item has none.
+	 * The summary entries of one {@code reasoning} item, one paragraph each, or
+	 * {@code null} when the item has none. An empty entry is skipped: it streams no
+	 * delta, so joining it would add a paragraph break the streamed summary does not
+	 * have.
 	 */
 	private static @Nullable String summaryText(ResponseReasoningItem item) {
-		return join(item.summary().stream().map(ResponseReasoningItem.Summary::text));
+		return join(item.summary().stream().map(ResponseReasoningItem.Summary::text).filter(StringUtils::hasLength),
+				REASONING_SUMMARY_ENTRY_SEPARATOR);
 	}
 
-	private static @Nullable String join(Stream<String> texts) {
+	private static @Nullable String join(Stream<String> texts, String separator) {
 		List<String> values = texts.toList();
-		return values.isEmpty() ? null : String.join("", values);
+		return values.isEmpty() ? null : String.join(separator, values);
 	}
 
 	/**
@@ -688,6 +715,24 @@ final class ResponsesItemMapper {
 			return hasToolCalls ? "TOOL_CALLS" : "STOP";
 		}
 		return status.toUpperCase(Locale.ROOT);
+	}
+
+	/**
+	 * Classifies the finish reason that {@link #finishReason} derived. A refusal of the
+	 * model is a content part of a completed response, so it is looked at first.
+	 */
+	static FinishReasonCategory finishReasonCategory(String finishReason, String refusal) {
+		if (StringUtils.hasText(refusal)) {
+			return FinishReasonCategory.FILTERED;
+		}
+		return switch (finishReason) {
+			case "STOP" -> FinishReasonCategory.COMPLETED;
+			case "LENGTH" -> FinishReasonCategory.TRUNCATED;
+			case "TOOL_CALLS" -> FinishReasonCategory.TOOL_CALL;
+			case "CONTENT_FILTER" -> FinishReasonCategory.FILTERED;
+			// INCOMPLETE for another reason, or a status that is not final
+			default -> FinishReasonCategory.OTHER;
+		};
 	}
 
 	private static Media toImageMedia(ResponseOutputItem.ImageGenerationCall call, String base64Result) {

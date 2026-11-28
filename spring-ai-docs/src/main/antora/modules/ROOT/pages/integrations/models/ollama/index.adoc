@@ -1,0 +1,12 @@
+[[ollama]]
+= Ollama
+
+The `spring-ai-ollama` module integrates https://ollama.com[Ollama], which runs models on your own machine and serves them over a local HTTP API.
+Add the `spring-ai-starter-model-ollama` starter to auto-configure it.
+No API key is needed.
+
+* xref:integrations/models/ollama/chat.adoc[Chat]
+* xref:integrations/models/ollama/embeddings.adoc[Embeddings]
+* xref:integrations/models/ollama/decision.adoc[Decision]
+
+To start an Ollama container for tests or at development time, see xref:evaluation/testcontainers.adoc[Testcontainers] and xref:evaluation/docker-compose.adoc[Docker Compose Dev Services].

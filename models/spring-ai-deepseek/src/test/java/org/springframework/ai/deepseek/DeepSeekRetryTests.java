@@ -123,7 +123,7 @@ public class DeepSeekRetryTests {
 
 	@Test
 	public void deepSeekChatStreamNonTransientError() {
-		given(this.deepSeekApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
+		given(this.deepSeekApi.chatCompletionStreamRaw(isA(ChatCompletionRequest.class)))
 			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.chatModel.stream(new Prompt("text")).collectList().block());
 	}

@@ -1,0 +1,10 @@
+[[vertex-ai]]
+= Google Vertex AI
+
+The `spring-ai-vertex-ai-embedding` module provides embedding models hosted on Google Cloud Vertex AI.
+Add the `spring-ai-starter-model-vertex-ai-embedding` starter to auto-configure it.
+
+* xref:integrations/models/vertex-ai/text-embeddings.adoc[Text Embeddings]
+* xref:integrations/models/vertex-ai/multimodal-embeddings.adoc[Multimodal Embeddings]
+
+For chat, image and audio models from Google, see xref:integrations/models/google-genai/index.adoc[Google GenAI].

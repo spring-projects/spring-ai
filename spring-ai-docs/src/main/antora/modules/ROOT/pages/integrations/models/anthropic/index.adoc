@@ -1,0 +1,20 @@
+[[anthropic]]
+= Anthropic
+:page-aliases: api/chat/minimax-chat.adoc
+
+The `spring-ai-anthropic` module integrates the Anthropic Claude models.
+Add the `spring-ai-starter-model-anthropic` starter to auto-configure it.
+
+* xref:integrations/models/anthropic/chat.adoc[Chat] covers setup, authentication, chat options, tool calling, streaming, extended thinking, multimodal input and structured output.
+* xref:integrations/models/anthropic/prompt-caching.adoc[Prompt Caching] covers caching strategies and cache token usage.
+* xref:integrations/models/anthropic/citations.adoc[Citations] covers citation documents and reading citations from a response.
+* xref:integrations/models/anthropic/skills-and-web-search.adoc[Skills and Web Search] covers Anthropic skills and the web search tool.
+
+If you are moving from the earlier implementation of this module, see xref:upgrading/anthropic-sdk.adoc[Migrating the Anthropic Module to the Official Java SDK].
+
+== Anthropic-Compatible Endpoints
+
+=== MiniMax
+
+As of Spring AI 2.0 and https://platform.minimax.io/docs/api-reference/text-anthropic-api[as recommended in the MiniMax documentation], MiniMax models should be accessed via the Anthropic support.
+Set `spring.ai.anthropic.base-url=https://api.minimax.io/anthropic` and select one of the MiniMax models, for example `spring.ai.anthropic.chat.model=MiniMax-M3`.

@@ -1,0 +1,431 @@
+= Redis
+:page-aliases: api/vectordbs/redis.adoc
+
+This section walks you through setting up `RedisVectorStore` to store document embeddings and perform similarity searches.
+
+link:https://redis.io[Redis] is an open source (BSD licensed), in-memory data structure store used as a database, cache, message broker, and streaming engine.
+Redis provides data structures such as strings, hashes, lists, sets, sorted sets with range queries, bitmaps, hyperloglogs, geospatial indexes, and streams.
+
+link:https://redis.io/docs/interact/search-and-query/[Redis Search and Query] extends the core features of Redis OSS and allows you to use Redis as a vector database:
+
+* Store vectors and the associated metadata within hashes or JSON documents
+* Retrieve vectors
+* Perform vector similarity searches (KNN)
+* Perform range-based vector searches with radius threshold
+* Perform full-text searches on TEXT fields
+* Support for multiple distance metrics (COSINE, L2, IP) and vector algorithms (HNSW, FLAT)
+
+== Prerequisites
+
+1. A Redis Stack instance
+- https://app.redislabs.com/#/[Redis Cloud] (recommended)
+- link:https://hub.docker.com/r/redis/redis-stack[Docker] image _redis/redis-stack:latest_
+
+2. `EmbeddingModel` instance to compute the document embeddings.
+Several options are available:
+- If required, an API key for the xref:models/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `RedisVectorStore`.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Redis Vector Store.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-vector-store-redis</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-redis'
+}
+----
+
+IMPORTANT: The auto-configured `RedisVectorStore` reads its connection from a `JedisConnectionFactory`.
+The starter brings both Jedis and Lettuce, and Spring Boot creates a Lettuce connection factory when both are present.
+Set `spring.data.redis.client-type=jedis`, or the `RedisVectorStore` bean cannot be created.
+
+TIP: Refer to the xref:get-started/project-setup.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+TIP: Refer to the xref:get-started/project-setup.adoc#artifact-repositories[Artifact Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
+
+The vector store implementation can initialize the requisite schema for you, but you must opt-in by specifying the `initializeSchema` boolean in the appropriate constructor or by setting `...initialize-schema=true` in the `application.properties` file.
+
+NOTE: Schema initialization is opt-in.
+The `initialize-schema` property and the `initializeSchema` builder option both default to `false`.
+
+Please have a look at the list of <<redisvector-properties,configuration parameters>> for the vector store to learn about the default values and configuration options.
+
+Additionally, you will need a configured `EmbeddingModel` bean.
+Refer to the xref:models/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
+
+Now you can auto-wire the `RedisVectorStore` as a vector store in your application.
+
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+List <Document> documents = List.of(
+    new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
+    new Document("The World is Big and Salvation Lurks Around the Corner"),
+    new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+
+// Add the documents to Redis
+vectorStore.add(documents);
+
+// Retrieve documents similar to a query
+List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
+----
+
+To include custom metadata fields in the auto-configured Redis schema, define a `List<RedisVectorStore.MetadataField>` bean:
+
+[source,java]
+----
+@Bean
+List<RedisVectorStore.MetadataField> redisMetadataFields() {
+    return List.of(RedisVectorStore.MetadataField.tag("conversationId"));
+}
+----
+
+[[redisvector-properties]]
+=== Configuration Properties
+
+To connect to Redis and use the `RedisVectorStore`, you need to provide access details for your instance.
+A simple configuration can be provided via Spring Boot's `application.yml`,
+
+[source,yaml]
+----
+spring:
+  data:
+    redis:
+      client-type: jedis
+      url: <redis instance url>
+  ai:
+    vectorstore:
+      redis:
+        initialize-schema: true
+        index-name: custom-index
+        prefix: custom-prefix
+----
+
+For redis connection configuration, alternatively, a simple configuration can be provided via Spring Boot's _application.properties_.
+
+[source,properties]
+----
+spring.data.redis.client-type=jedis
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+spring.data.redis.username=default
+spring.data.redis.password=
+
+----
+
+Properties starting with `spring.ai.vectorstore.redis.*` are used to configure the `RedisVectorStore`:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+
+|`spring.ai.vectorstore.redis.initialize-schema`| Whether to initialize the required schema | `false`
+|`spring.ai.vectorstore.redis.index-name` | The name of the index to store the vectors | `default-index`
+|`spring.ai.vectorstore.redis.prefix` | The prefix for Redis keys | `default:`
+|`spring.ai.vectorstore.redis.dimensions` | The vector size of the index. Sizes an index created by `initialize-schema` and is the size `upsert` checks vectors against. If not set, it is read from the existing index, or taken from the `EmbeddingModel`. | -
+|`spring.ai.vectorstore.redis.hnsw.m` | HNSW: Number of maximum outgoing connections | `16`
+|`spring.ai.vectorstore.redis.hnsw.ef-construction` | HNSW: Number of maximum connections during index building | `200`
+|`spring.ai.vectorstore.redis.hnsw.ef-runtime` | HNSW: Number of connections to consider during search | `10`
+|===
+
+The distance metric, the vector algorithm, the text scorer and the default range threshold have no properties.
+To change them, define your own `RedisVectorStore` bean and set them on `RedisVectorStore.builder()`, as described in the Manual Configuration section.
+
+== Metadata Filtering
+
+You can leverage the generic, portable xref:rag/vector-store/filters.adoc[metadata filters] with Redis as well.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(SearchRequest.builder()
+        .query("The World")
+        .topK(TOP_K)
+        .similarityThreshold(SIMILARITY_THRESHOLD)
+        .filterExpression("country in ['UK', 'NL'] && year >= 2020").build());
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.builder()
+        .query("The World")
+        .topK(TOP_K)
+        .similarityThreshold(SIMILARITY_THRESHOLD)
+        .filterExpression(b.and(
+                b.in("country", "UK", "NL"),
+                b.gte("year", 2020)).build()).build());
+----
+
+NOTE: Those (portable) filter expressions get automatically converted into link:https://redis.io/docs/interact/search-and-query/query/[Redis search queries].
+
+For example, this portable filter expression:
+
+[source,sql]
+----
+country in ['UK', 'NL'] && year >= 2020
+----
+
+is converted into the proprietary Redis filter format:
+
+[source,text]
+----
+@country:{UK | NL} @year:[2020 inf]
+----
+
+== Upsert support
+
+`RedisVectorStore` implements `upsert(List<EmbeddedDocument>)`, so you can write documents together with embeddings you computed elsewhere instead of having the store embed them.
+Writing the same id again replaces the existing row, so a re-run with stable ids does not create duplicates.
+See xref:rag/vector-store/index.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings] for details.
+
+Redis stores every metadata key you write, but a search returns only the fields declared through `metadataFields`, so anything else comes back missing.
+Declare the keys you need returned, not just the ones you filter on:
+
+[source,java]
+----
+RedisVectorStore.builder(jedisClient, embeddingModel)
+    .metadataFields(MetadataField.tag(DocumentMetadata.CONTENT_REF.value()))
+    .initializeSchema(true)
+    .build();
+----
+
+The store logs a warning the first time it writes a document carrying an undeclared field.
+
+CAUTION: A vector whose width does not match the index is written successfully and then never indexed, so the row exists but no search returns it.
+The only trace is the `hash_indexing_failures` counter in `FT.INFO`.
+Adding a field to a store that already has an index means recreating the index.
+
+== Manual Configuration
+
+Instead of using the Spring Boot auto-configuration, you can manually configure the Redis vector store.
+For this you need to add the `spring-ai-redis-store` to your project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-redis-store</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-redis-store'
+}
+----
+
+Create a `RedisClient` bean:
+
+[source,java]
+----
+@Bean
+public RedisClient jedisClient() {
+    return RedisClient.builder().hostAndPort("<host>", 6379).build();
+}
+----
+
+Then create the `RedisVectorStore` bean using the builder pattern:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(RedisClient jedisClient, EmbeddingModel embeddingModel) {
+    return RedisVectorStore.builder(jedisClient, embeddingModel)
+        .indexName("custom-index")                // Optional: defaults to "spring-ai-index"
+        .prefix("custom-prefix")                  // Optional: defaults to "embedding:"
+        .contentFieldName("content")              // Optional: field for document content
+        .embeddingFieldName("embedding")          // Optional: field for vector embeddings
+        .vectorAlgorithm(Algorithm.HNSW)          // Optional: HNSW or FLAT (defaults to HNSW)
+        .distanceMetric(DistanceMetric.COSINE)    // Optional: COSINE, L2, or IP (defaults to COSINE)
+        .hnswM(16)                                // Optional: HNSW connections (defaults to 16)
+        .hnswEfConstruction(200)                  // Optional: HNSW build parameter (defaults to 200)
+        .hnswEfRuntime(10)                        // Optional: HNSW search parameter (defaults to 10)
+        .defaultRangeThreshold(0.8)               // Optional: default radius for range searches
+        .textScorer(TextScorer.BM25)              // Optional: text scoring algorithm (defaults to BM25)
+        .metadataFields(                          // Optional: define metadata fields for filtering
+            MetadataField.tag("country"),
+            MetadataField.numeric("year"),
+            MetadataField.text("description"))
+        .initializeSchema(true)                   // Optional: defaults to false
+        .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy
+        .build();
+}
+
+// This can be any EmbeddingModel implementation
+@Bean
+public EmbeddingModel embeddingModel() {
+    return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
+}
+----
+
+[NOTE]
+====
+You must list explicitly all metadata field names and types (`TAG`, `TEXT`, or `NUMERIC`) for any metadata field used in filter expressions.
+The `metadataFields` above registers filterable metadata fields: `country` of type `TAG`, `year` of type `NUMERIC`.
+====
+
+== Accessing the Native Client
+
+The Redis Vector Store implementation provides access to the underlying native Redis client (`RedisClient`) through the `getNativeClient()` method:
+
+[source,java]
+----
+RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
+Optional<RedisClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    RedisClient jedisClient = nativeClient.get();
+    // Use the native client for Redis-specific operations
+}
+----
+
+The native client gives you access to Redis-specific features and operations that might not be exposed through the `VectorStore` interface.
+
+== Distance Metrics
+
+The Redis Vector Store supports three distance metrics for vector similarity:
+
+* **COSINE**: Cosine similarity (default) - measures the cosine of the angle between vectors
+* **L2**: Euclidean distance - measures the straight-line distance between vectors
+* **IP**: Inner Product - measures the dot product between vectors
+
+Each metric is automatically normalized to a 0-1 similarity score, where 1 is most similar.
+
+[source,java]
+----
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
+    .distanceMetric(DistanceMetric.COSINE)  // or L2, IP
+    .build();
+----
+
+== HNSW Algorithm Configuration
+
+The Redis Vector Store uses the HNSW (Hierarchical Navigable Small World) algorithm by default for efficient approximate nearest neighbor search.
+You can tune the HNSW parameters for your specific use case:
+
+[source,java]
+----
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
+    .vectorAlgorithm(Algorithm.HNSW)
+    .hnswM(32)                    // Maximum outgoing connections per node (default: 16)
+    .hnswEfConstruction(100)      // Connections during index building (default: 200)
+    .hnswEfRuntime(50)            // Connections during search (default: 10)
+    .build();
+----
+
+Parameter guidelines:
+
+* **M**: Higher values improve recall but increase memory usage and index time.
+Typical values: 12-48.
+* **EF_CONSTRUCTION**: Higher values improve index quality but increase build time.
+Typical values: 100-500.
+* **EF_RUNTIME**: Higher values improve search accuracy but increase latency.
+Typical values: 10-100.
+
+For smaller datasets or when exact results are required, use the FLAT algorithm instead:
+
+[source,java]
+----
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
+    .vectorAlgorithm(Algorithm.FLAT)
+    .build();
+----
+
+== Text Search
+
+The Redis Vector Store provides text search capabilities using Redis Query Engine's full-text search features.
+This allows you to find documents based on keywords and phrases in TEXT fields:
+
+[source,java]
+----
+// Search for documents containing specific text
+List<Document> textResults = vectorStore.searchByText(
+    "machine learning",   // search query
+    "content",            // field to search (must be TEXT type)
+    10,                   // limit
+    "category == 'AI'"    // optional filter expression
+);
+----
+
+Text search supports:
+
+* Single word searches
+* Phrase searches with exact matching when `inOrder` is true
+* Term-based searches with OR semantics when `inOrder` is false
+* Stopword filtering to ignore common words
+* Multiple text scoring algorithms
+
+Configure text search behavior at construction time:
+
+[source,java]
+----
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
+    .textScorer(TextScorer.TFIDF)                    // Text scoring algorithm
+    .inOrder(true)                                   // Match terms in order
+    .stopwords(Set.of("is", "a", "the", "and"))      // Ignore common words
+    .metadataFields(MetadataField.text("description")) // Define TEXT fields
+    .build();
+----
+
+=== Text Scoring Algorithms
+
+Several text scoring algorithms are available:
+
+* **BM25**: Modern version of TF-IDF with term saturation (default)
+* **TFIDF**: Classic term frequency-inverse document frequency
+* **BM25STD**: Standardized BM25
+* **DISMAX**: Disjunction max
+* **DOCSCORE**: Document score
+
+Scores are normalized to a 0-1 range for consistency with vector similarity scores.
+
+== Range Search
+
+The range search returns all documents within a specified radius threshold, rather than a fixed number of nearest neighbors:
+
+[source,java]
+----
+// Search with explicit radius
+List<Document> rangeResults = vectorStore.searchByRange(
+    "AI and machine learning",  // query
+    0.8,                        // radius (similarity threshold)
+    "category == 'AI'"          // optional filter expression
+);
+----
+
+You can also set a default range threshold at construction time:
+
+[source,java]
+----
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
+    .defaultRangeThreshold(0.8)  // Set default threshold
+    .build();
+
+// Use default threshold
+List<Document> results = vectorStore.searchByRange("query");
+----
+
+Range search is useful when you want to retrieve all relevant documents above a similarity threshold, rather than limiting to a specific count.

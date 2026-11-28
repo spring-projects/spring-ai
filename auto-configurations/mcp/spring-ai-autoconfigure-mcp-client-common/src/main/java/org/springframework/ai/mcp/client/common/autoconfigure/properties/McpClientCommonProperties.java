@@ -91,6 +91,28 @@ public class McpClientCommonProperties {
 	}
 
 	/**
+	 * The MCP protocol revision a client connection speaks. It is set for each
+	 * connection, so an application can talk to legacy and modern servers at the same
+	 * time.
+	 *
+	 * @since 2.1.0
+	 */
+	public enum Protocol {
+
+		/**
+		 * The protocol revisions up to 2025-11-25, with an initialization handshake and
+		 * sessions. This is the default.
+		 */
+		LEGACY,
+
+		/**
+		 * The 2026-07-28 protocol revision, without handshake or sessions.
+		 */
+		MODERN
+
+	}
+
+	/**
 	 * Flag to enable/disable root change notifications.
 	 * <p>
 	 * When enabled, the client will be notified of changes to the root configuration.

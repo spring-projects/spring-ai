@@ -1,0 +1,96 @@
+[[tutorial-sessions]]
+= A Conversational App with Sessions
+
+A model does not remember earlier requests.
+This tutorial adds xref:memory/session/index.adoc[session memory] to the application from the xref:get-started/quickstart.adoc[Quickstart], so that each user can hold a conversation.
+
+== Add the Dependencies
+
+Add the session starter and a database.
+This tutorial uses H2, an embedded database:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-session-jdbc</artifactId>
+</dependency>
+<dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+    <scope>runtime</scope>
+</dependency>
+----
+
+With a `DataSource` available, Spring Boot creates a `JdbcSessionRepository` and a `SessionService` bean, and initializes the schema of an embedded database.
+
+== Wire Sessions into ChatClient
+
+Add the session advisors to the `ChatClient`:
+
+[source,java]
+----
+@Bean
+ChatClient chatClient(ChatModel chatModel, SessionService sessionService) {
+    return ChatClient.builder(chatModel)
+        .defaultAdvisors(SessionAdvisors.builder(sessionService)
+            .compaction(new TurnCountTrigger(20), WindowCompactionStrategy.builder().lastTurns(10).build())
+            .build())
+        .build();
+}
+----
+
+The advisors store every message of a conversation in the session, and build the prompt from it on the next request.
+The compaction settings keep a long conversation from outgrowing the model's context window: when the part of the conversation that is sent to the model reaches 20 turns, it is reduced to the last 10.
+The older messages stay in the stored session.
+
+== Pass a Session ID with Every Call
+
+A session ID identifies one conversation.
+Take it from the request and pass it to the advisors:
+
+[source,java]
+----
+@RestController
+class ConversationController {
+
+    private final ChatClient chatClient;
+
+    ConversationController(ChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
+
+    @GetMapping("/chat/{sessionId}")
+    String chat(@PathVariable String sessionId, @RequestParam String message) {
+        return this.chatClient.prompt()
+            .user(message)
+            .advisors(SessionAdvisors.session(sessionId))
+            .call()
+            .content();
+    }
+}
+----
+
+A session that does not exist yet is created on first use.
+The session ID is required on every call.
+There is no default session, because a shared one would merge the history of different users.
+
+== Run and Test
+
+Tell the model something, then ask about it in a second request with the same session ID:
+
+[source,shell]
+----
+curl 'http://localhost:8080/chat/alice?message=My+name+is+Alice'
+curl 'http://localhost:8080/chat/alice?message=What+is+my+name'
+----
+
+The second answer contains the name.
+A request with a different session ID, such as `/chat/bob`, starts a separate conversation.
+
+== Next Steps
+
+* xref:memory/session/concepts.adoc[Session Concepts] explains sessions, events, turns and views.
+* xref:memory/session/compaction.adoc[Compaction] describes the triggers and strategies for long conversations.
+* xref:integrations/stores/session-jdbc.adoc[JDBC Session Repository] lists the supported databases and the schema options.
+* xref:memory/session/chat-client.adoc[ChatClient Integration] covers the advisors in detail.

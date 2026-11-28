@@ -1,0 +1,31 @@
+== Sample Controller
+
+The starter creates a `DecisionModel` bean that you can inject into your classes.
+Here is a simple `@RestController` that uses it to sort customer messages:
+
+[source,java]
+----
+@RestController
+public class DecisionController {
+
+    private final DecisionModel decisionModel;
+
+    public DecisionController(DecisionModel decisionModel) {
+        this.decisionModel = decisionModel;
+    }
+
+    @GetMapping("/ai/decision")
+    public Map<String, Object> triage(@RequestParam(value = "message",
+            defaultValue = "Where is my order? I ordered it two weeks ago.") String message) {
+        DecisionResponse response = this.decisionModel.call(DecisionPrompt.builder()
+            .text(message)
+            .question("defect", YesNoQuestion.of("Does the customer report a defect?"))
+            .question("topic", ChoiceQuestion.of("What is the message about?",
+                    "delivery", "product", "account", "other"))
+            .build());
+        return Map.of("defect", response.getYesNo("defect").isYes(),
+                "topic", response.getChoice("topic").getValue());
+    }
+
+}
+----

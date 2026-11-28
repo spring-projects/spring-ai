@@ -22,6 +22,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import io.modelcontextprotocol.modern.McpSchema.CacheScope;
 import io.modelcontextprotocol.spec.McpSchema.Role;
 
 import org.springframework.ai.mcp.annotation.context.DefaultMetaProvider;
@@ -80,6 +81,65 @@ public @interface McpResource {
 	 * @return the meta provider class to use for this resource
 	 */
 	Class<? extends MetaProvider> metaProvider() default DefaultMetaProvider.class;
+
+	/**
+	 * Optional icons for clients that render a catalogue.
+	 * @since 2.1.0
+	 */
+	McpIcon[] icons() default {};
+
+	/**
+	 * Optional size of the resource content in bytes, when known up front. {@code -1}
+	 * (the default) leaves it unset.
+	 * @since 2.1.0
+	 */
+	long size() default -1;
+
+	/**
+	 * How long, in milliseconds, a client may cache the result of reading this resource.
+	 * {@code 0} (the default) means the result must not be cached.
+	 * <p>
+	 * Only honoured by the 2026-07-28 ("modern") MCP server, which puts the value into
+	 * the {@code ttlMs} field of the {@code resources/read} result when the method
+	 * returns a legacy type. A method that returns a modern {@code ReadResourceResult}
+	 * sets its own hints and this attribute is ignored. The legacy servers log a warning
+	 * and ignore it, because the legacy protocol has no cache hints.
+	 * @since 2.1.0
+	 */
+	long ttlMs() default 0;
+
+	/**
+	 * Who may reuse a cached result of reading this resource. {@link CacheScope#PRIVATE}
+	 * (the default) restricts reuse to the same authorization context.
+	 * {@link CacheScope#PUBLIC} asserts the result carries no user-specific data and may
+	 * be served to any client.
+	 * <p>
+	 * Only honoured by the 2026-07-28 ("modern") MCP server, under the same rules as
+	 * {@link #ttlMs()}.
+	 * @since 2.1.0
+	 */
+	CacheScope cacheScope() default CacheScope.PRIVATE;
+
+	/**
+	 * Client capabilities the resource cannot work without. A client whose request does
+	 * not declare all of them is answered with JSON-RPC error
+	 * {@code -32021 Missing required
+	 * client capability}, listing the missing ones, before the method runs.
+	 * <p>
+	 * Input the resource can do without is requested only when
+	 * {@code McpModernSyncRequestContext.clientCapabilities()} declares its capability,
+	 * and needs no entry here.
+	 * <p>
+	 * Only honoured by the 2026-07-28 ("modern") MCP server. The legacy servers ignore
+	 * it, because their request context checks the capabilities the client sent at
+	 * initialization.
+	 * <p>
+	 * {@code experimental} and extension capabilities cannot be required this way; a
+	 * method that depends on one is registered programmatically with
+	 * {@code ClientCapabilities}.
+	 * @since 2.1.0
+	 */
+	McpClientCapability[] requiredCapabilities() default {};
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.ANNOTATION_TYPE)

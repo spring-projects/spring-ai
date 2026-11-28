@@ -18,6 +18,7 @@ package org.springframework.ai.anthropic;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import com.anthropic.errors.BadRequestException;
@@ -59,6 +60,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
 /**
  * Tests the HTTP side of {@link AnthropicChatModel} streaming against a fake Anthropic
@@ -147,6 +149,30 @@ class AnthropicChatModelStreamingHttpTests {
 
 		assertThat(responses).isNotEmpty();
 		assertHttpObservationIsChildOfChatObservation();
+	}
+
+	@Test
+	void streamingUsageAndObservationIncludeCacheTokensFromMessageStart() {
+		String cachedStream = STREAM_RESPONSE.replace("\"input_tokens\":1,\"output_tokens\":1",
+				"\"input_tokens\":50,\"output_tokens\":1,\"cache_read_input_tokens\":1000,\"cache_creation_input_tokens\":200");
+		this.server.enqueue(streamResponse().setBody(cachedStream));
+
+		ChatResponse response = this.chatModel.stream(new Prompt("hi")).blockLast();
+
+		assertThat(response).isNotNull();
+		var usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(1250);
+		assertThat(usage.getCompletionTokens()).isEqualTo(1);
+		assertThat(usage.getTotalTokens()).isEqualTo(1251);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(1000L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(200L);
+		// The observation stops in doFinally, after the subscriber receives completion.
+		await().untilAsserted(() -> TestObservationRegistryAssert.assertThat(this.observationRegistry)
+			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
+			.that()
+			.hasHighCardinalityKeyValue("gen_ai.usage.input_tokens", "1250")
+			.hasHighCardinalityKeyValue("gen_ai.usage.output_tokens", "1")
+			.hasHighCardinalityKeyValue("gen_ai.usage.total_tokens", "1251"));
 	}
 
 	@Test
@@ -309,6 +335,36 @@ class AnthropicChatModelStreamingHttpTests {
 			Disposable subscription = this.chatModel.stream(new Prompt("hi")).subscribe(response -> {
 			}, errors::add);
 			Thread.sleep(200);
+			subscription.dispose();
+			Thread.sleep(500);
+
+			assertThat(errors).isEmpty();
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
+	}
+
+	@Test
+	void streamCancelledWhileReadingIsNotReportedAsAnError() throws Exception {
+		// The events trickle in, so the cancel lands while the stream waits for the next
+		// one.
+		String delta = """
+				event: content_block_delta
+				data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"ok"}}
+
+				""";
+		this.server.enqueue(new MockResponse().setHeader("Content-Type", "text/event-stream")
+			.setChunkedBody(STREAM_RESPONSE.replace(delta, delta.repeat(200)), 256)
+			.throttleBody(512, 500, TimeUnit.MILLISECONDS));
+		List<Throwable> errors = new CopyOnWriteArrayList<>();
+		CountDownLatch firstResponse = new CountDownLatch(1);
+		Hooks.onErrorDropped(errors::add);
+		try {
+			Disposable subscription = this.chatModel.stream(new Prompt("hi"))
+				.subscribe(response -> firstResponse.countDown(), errors::add);
+			assertThat(firstResponse.await(5, TimeUnit.SECONDS)).isTrue();
+			Thread.sleep(100);
 			subscription.dispose();
 			Thread.sleep(500);
 

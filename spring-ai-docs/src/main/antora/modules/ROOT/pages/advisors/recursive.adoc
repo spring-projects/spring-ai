@@ -1,0 +1,162 @@
+[[Advisors-Recursive]]
+= Recursive Advisors
+:page-aliases: api/advisors-recursive.adoc
+
+A recursive advisor calls the rest of the advisor chain more than once in a single `ChatClient` call.
+It is the pattern for any loop around the model:
+
+* running tools until the model stops asking for them;
+* validating structured output and asking again when it is invalid;
+* evaluating an answer and asking for a better one;
+* retrying with a changed request.
+
+image::spring-ai-advisor-recursive.svg[A recursive advisor,560,opts=inline]
+
+== How It Works
+
+`CallAdvisorChain.copy(CallAdvisor after)` returns a new chain made of the advisors that follow `after` in the current chain.
+A recursive advisor calls such a copy, made with `copy(this)`, once for every round:
+
+* The advisors before the recursive advisor run once per call.
+* The advisors after it, and the model, run on every round, and can observe and change each one.
+* Recursive advisors nest: an advisor after two of them runs for every round of both.
+* Each round starts from the request that the recursive advisor passes to the copy.
+A change that a following advisor made to the request of an earlier round is not in it.
+* Each round is observed like any other call of the chain.
+
+The advisors after a recursive advisor must be repeatable, see xref:advisors/index.adoc#advisors-repeatable[Advisors Run More Than Once].
+
+Make a new copy for every round.
+A chain is used up as it runs: each advisor takes the next one from it, so a chain that has run cannot run again.
+
+For streaming, `StreamAdvisorChain.copy(StreamAdvisor after)` does the same.
+
+Because the order decides which advisors repeat, choose it carefully, see xref:advisors/index.adoc#_order[Order].
+For example, `ToolCallingAdvisor` runs at `HIGHEST_PRECEDENCE + 300`, so that memory placed after it sees every tool round.
+
+== Writing a Recursive Advisor
+
+The following advisor asks the model again when it returns an empty answer, at most a given number of times:
+
+[source,java]
+----
+public class RetryOnEmptyAnswerAdvisor implements CallAdvisor {
+
+	private final int maxRetries;
+
+	public RetryOnEmptyAnswerAdvisor(int maxRetries) {
+		this.maxRetries = maxRetries;
+	}
+
+	@Override
+	public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+		UsageAccumulator usage = new UsageAccumulator();
+		ChatClientResponse response = chain.copy(this).nextCall(request);
+		usage.addRoundResponse(response.chatResponse());
+
+		for (int retry = 0; retry < this.maxRetries && isEmpty(response); retry++) {
+			response = chain.copy(this).nextCall(request);
+			usage.addRoundResponse(response.chatResponse());
+		}
+		return usage.applyAccumulatedUsage(response);
+	}
+
+	private boolean isEmpty(ChatClientResponse response) {
+		ChatResponse chatResponse = response.chatResponse();
+		return chatResponse == null || chatResponse.getResult() == null
+				|| !StringUtils.hasText(chatResponse.getResult().getOutput().getText());
+	}
+
+	@Override
+	public String getName() {
+		return "RetryOnEmptyAnswerAdvisor";
+	}
+
+	@Override
+	public int getOrder() {
+		return Ordered.LOWEST_PRECEDENCE - 1000;
+	}
+}
+----
+
+=== Accumulating Token Usage
+
+A recursive advisor calls the model more than once, but the response it returns comes from the last round.
+To report the usage of all rounds, collect it with `UsageAccumulator`, as the example does:
+
+* Create one `UsageAccumulator` for each call of `adviseCall(...)`.
+For streaming, create it inside `Flux.defer(...)`, so that each subscription has its own.
+* Add the response of each round with `addRoundResponse(...)`.
+* Return the last response with the total usage applied, from `applyAccumulatedUsage(...)`.
+
+`UsageAccumulator` uses `UsageCalculator` (`accumulateResponseUsage` and `withUsage`) from the `org.springframework.ai.support` package.
+See xref:chatclient/response-metadata.adoc#_cumulative_usage_across_multi_step_flows[Cumulative Usage Across Multi-Step Flows].
+
+== Built-in Recursive Advisors
+
+[[toolcallingadvisor]]
+=== `ToolCallingAdvisor`
+
+`ToolCallingAdvisor` runs the tool calling loop.
+`ChatClient` registers it on every call, unless it is disabled or the chain already has a `ToolAdvisor`.
+
+* It calls the rest of the chain, executes the tools that the model asks for, and calls the rest of the chain again with the results, until the `ToolExecutionEligibilityChecker` finds no more tool calls.
+* When a tool is marked to return its result directly, it ends the loop and returns the tool result without sending it to the model.
+* It supports both `call()` and `stream()`.
+* It accumulates the token usage of all rounds.
+* It implements the `ToolAdvisor` marker interface, so a subclass that you register replaces the default one.
+
+To configure it yourself, register your own instance:
+
+[source,java]
+----
+var toolCallingAdvisor = ToolCallingAdvisor.builder()
+	.toolCallingManager(toolCallingManager)
+	.build();
+
+var chatClient = ChatClient.builder(chatModel)
+	.defaultAdvisors(toolCallingAdvisor)
+	.build();
+----
+
+See xref:tools/tool-calling-advisor.adoc[ToolCallingAdvisor] for its options and extension points, xref:tools/loop.adoc[The Tool Calling Loop] for the concepts, and xref:tools/tool-search.adoc[Tool Search] for a subclass.
+
+[[structured-output-validation-advisor]]
+=== `StructuredOutputValidationAdvisor`
+
+`StructuredOutputValidationAdvisor` validates the answer against a JSON schema, and asks again when it does not match.
+
+* It derives the schema from a type, with `outputType(...)`, or takes a schema, with `outputJsonSchema(...)`.
+The two options exclude each other.
+* When the answer does not match, it adds the validation error to the user message and calls the rest of the chain again.
+* `maxRepeatAttempts(...)` sets how many times it asks again after the first call, 3 by default, so the model is called up to four times.
+* It does not validate a round in which the model asks for tools, but returns it to the tool calling advisor.
+* It stops without asking again when the answer is a xref:resilience/guardrails.adoc#_refusals[guardrail refusal], or when a safety filter of the provider stopped the answer.
+* It accumulates the token usage of all attempts.
+* It supports only `call()`: with `stream()`, it fails with an `UnsupportedOperationException`.
+
+Its default order, `LOWEST_PRECEDENCE - 2000`, places it next to the model call, so that a retry repeats only the model call.
+
+[source,java]
+----
+var validationAdvisor = StructuredOutputValidationAdvisor.builder()
+	.outputType(ActorFilms.class)
+	.maxRepeatAttempts(3)
+	.build();
+
+var chatClient = ChatClient.builder(chatModel)
+	.defaultAdvisors(validationAdvisor)
+	.build();
+----
+
+Most applications do not register it themselves, but turn it on for one `entity(...)` call:
+
+[source,java]
+----
+ActorFilms actorFilms = chatClient.prompt()
+	.user("Generate the filmography for a random actor.")
+	.call()
+	.entity(ActorFilms.class, spec -> spec.validateSchema());
+----
+
+See xref:structured-output/validation.adoc[Schema Validation and Self-Correction].

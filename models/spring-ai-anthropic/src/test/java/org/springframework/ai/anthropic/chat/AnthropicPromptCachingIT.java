@@ -96,7 +96,6 @@ class AnthropicPromptCachingIT {
 			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
 			.maxTokens(150)
-			.temperature(0.3)
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(
@@ -138,7 +137,6 @@ class AnthropicPromptCachingIT {
 			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS).build())
 			.maxTokens(200)
-			.temperature(0.3)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get current weather for a location")
 				.inputType(MockWeatherService.Request.class)
@@ -185,7 +183,6 @@ class AnthropicPromptCachingIT {
 				.messageTypeMinContentLength(MessageType.USER, 0)
 				.build())
 			.maxTokens(200)
-			.temperature(0.3)
 			.build();
 
 		List<Message> conversationHistory = new ArrayList<>();
@@ -226,7 +223,6 @@ class AnthropicPromptCachingIT {
 				.messageTypeMinContentLength(MessageType.SYSTEM, systemPrompt.length() + 1)
 				.build())
 			.maxTokens(60)
-			.temperature(0.2)
 			.build();
 
 		ChatResponse response = this.chatModel
@@ -251,7 +247,6 @@ class AnthropicPromptCachingIT {
 				.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
 				.build())
 			.maxTokens(100)
-			.temperature(0.3)
 			.build();
 
 		ChatResponse response = this.chatModel
@@ -274,7 +269,6 @@ class AnthropicPromptCachingIT {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.NONE).build())
 			.maxTokens(50)
-			.temperature(0.3)
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt(
@@ -300,7 +294,6 @@ class AnthropicPromptCachingIT {
 				.messageTypeMinContentLength(MessageType.USER, 0)
 				.build())
 			.maxTokens(200)
-			.temperature(0.3)
 			.build();
 
 		List<Message> conversationHistory = new ArrayList<>();
@@ -389,7 +382,6 @@ class AnthropicPromptCachingIT {
 				.inputType(MockWeatherService.Request.class)
 				.build())
 			.maxTokens(80)
-			.temperature(0.3)
 			.build();
 
 		List<Message> conversation = List.of(new SystemMessage("You are a weather assistant. " + runMarker),
@@ -442,7 +434,6 @@ class AnthropicPromptCachingIT {
 				.multiBlockSystemCaching(true)
 				.build())
 			.maxTokens(150)
-			.temperature(0.3)
 			.build();
 
 		ChatResponse response = this.chatModel
@@ -476,7 +467,6 @@ class AnthropicPromptCachingIT {
 			.citationDocuments(document)
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
 			.maxTokens(150)
-			.temperature(0.0)
 			.build();
 
 		ChatResponse first = this.chatModel

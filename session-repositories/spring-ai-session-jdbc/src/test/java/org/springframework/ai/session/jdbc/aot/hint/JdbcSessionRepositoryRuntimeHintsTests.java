@@ -43,7 +43,7 @@ class JdbcSessionRepositoryRuntimeHintsTests {
 	private final JdbcSessionRepositoryRuntimeHints registrar = new JdbcSessionRepositoryRuntimeHints();
 
 	static Stream<String> schemaFileNames() {
-		return Stream.of("schema-h2.sql", "schema-mysql.sql", "schema-postgresql.sql");
+		return Stream.of("schema-h2.sql", "schema-mysql.sql", "schema-postgresql.sql", "schema-sqlserver.sql");
 	}
 
 	@Test

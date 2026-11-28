@@ -35,6 +35,10 @@ public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private @Nullable String databaseName;
 
+	/**
+	 * The dimension of the vectors in the vector index. When not set, it is read from the
+	 * index or, for a new index, from the embedding model.
+	 */
 	private @Nullable Integer embeddingDimension;
 
 	private Neo4jVectorStore.Neo4jDistanceType distanceType = Neo4jVectorStore.Neo4jDistanceType.COSINE;

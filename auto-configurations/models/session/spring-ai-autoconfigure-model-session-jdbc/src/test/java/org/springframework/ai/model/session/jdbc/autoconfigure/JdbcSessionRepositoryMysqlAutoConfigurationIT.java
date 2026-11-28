@@ -44,11 +44,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class JdbcSessionRepositoryMysqlAutoConfigurationIT {
 
+	// continue-on-error is true by default and would hide a statement that fails, on the
+	// first run or on a later one; with false such a statement fails the startup.
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(JdbcSessionRepositoryAutoConfiguration.class,
 				JdbcTemplateAutoConfiguration.class, DataSourceAutoConfiguration.class))
 		.withPropertyValues("spring.datasource.url=jdbc:tc:mysql:8.0:///sessiontest",
-				JdbcSessionRepositoryProperties.CONFIG_PREFIX + ".initialize-schema=always");
+				JdbcSessionRepositoryProperties.CONFIG_PREFIX + ".initialize-schema=always",
+				JdbcSessionRepositoryProperties.CONFIG_PREFIX + ".continue-on-error=false");
 
 	@Test
 	void schemaInitializerIsCreated() {

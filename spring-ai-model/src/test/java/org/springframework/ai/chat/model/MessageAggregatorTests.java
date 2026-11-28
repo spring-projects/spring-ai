@@ -123,20 +123,46 @@ class MessageAggregatorTests {
 	}
 
 	@Test
-	void toolCallDeltasKeepTheIdAndNameSeenOnAnEarlierChunk() {
-		// Matches how OpenAI-style APIs actually stream tool calls: id, type and name
-		// arrive on the first delta for an index, later deltas carry only an arguments
-		// fragment.
-		ToolCall started = new ToolCall("call_1", "function", "getWeather", "{\"city\":\"Pa");
-		ToolCall continued = new ToolCall(null, null, null, "ris\"}");
-		Flux<ChatResponse> responses = Flux.just(
-				indexed("msg_1", StreamingParts.partial(new ToolCallPart(started, null, Map.of()), 0)),
-				indexed("msg_1", StreamingParts.partial(new ToolCallPart(continued, null, Map.of()), 0)));
+	void toolCallDeltasAreSkippedAndOnlyTheCompleteCallIsAggregated() {
+		ToolCall complete = new ToolCall("call_1", "function", "getWeather", "{\"city\":\"Paris\"}");
+		Flux<ChatResponse> responses = Flux.just(indexed("msg_1", StreamingParts.partial(TextPart.of("Checking."), 0)),
+				indexed("msg_1", StreamingParts.partial(toolCallDelta(""), 1)),
+				indexed("msg_1", StreamingParts.partial(toolCallDelta("{\"city\":\"Pa"), 1)),
+				indexed("msg_1", StreamingParts.partial(toolCallDelta("ris\"}"), 1)),
+				indexed("msg_1", StreamingParts.complete(ToolCallPart.of(complete), 1)));
 
 		AssistantMessage output = aggregate(responses);
 
-		assertThat(output.getToolCalls())
-			.containsExactly(new ToolCall("call_1", "function", "getWeather", "{\"city\":\"Paris\"}"));
+		assertThat(output.getParts()).containsExactly(TextPart.of("Checking."), ToolCallPart.of(complete));
+		assertThat(output.getToolCalls()).containsExactly(complete);
+	}
+
+	@Test
+	void toolCallDeltasWithoutTheCompleteCallDoNotAggregateToAToolCall() {
+		// What an advisor outside ToolCallingAdvisor, such as a chat memory advisor,
+		// receives: the deltas reach it, the chunk of the complete call is filtered out.
+		Flux<ChatResponse> responses = Flux.just(indexed("msg_1", StreamingParts.partial(TextPart.of("Checking."), 0)),
+				indexed("msg_1", StreamingParts.partial(toolCallDelta("{\"city\":"), 1)),
+				indexed("msg_1", StreamingParts.partial(toolCallDelta("\"Paris\"}"), 1)),
+				indexed("msg_2", StreamingParts.partial(TextPart.of("Sunny."), 0)));
+
+		AssistantMessage output = aggregate(responses);
+
+		assertThat(output.getParts()).containsExactly(TextPart.of("Checking."), TextPart.of("Sunny."));
+		assertThat(output.hasToolCalls()).isFalse();
+	}
+
+	@Test
+	void unindexedToolCallDeltasAreSkipped() {
+		ToolCallPart delta = new ToolCallPart(new ToolCall("call_1", "function", "getWeather", "{}"), null,
+				Map.of(StreamingParts.PARTIAL_ATTRIBUTE, "true"));
+		Flux<ChatResponse> responses = Flux
+			.just(new ChatResponse(List.of(new Generation(AssistantMessage.builder().part(delta).build()))));
+
+		AssistantMessage output = aggregate(responses);
+
+		assertThat(output.hasToolCalls()).isFalse();
+		assertThat(output.getParts()).containsExactly(TextPart.of(""));
 	}
 
 	@Test
@@ -324,6 +350,10 @@ class MessageAggregatorTests {
 		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
 		new MessageAggregator().aggregate(responses, aggregated::set).blockLast();
 		return aggregated.get().getResult().getOutput();
+	}
+
+	private static ToolCallPart toolCallDelta(String arguments) {
+		return ToolCallPart.of(new ToolCall("call_1", "function", "getWeather", arguments));
 	}
 
 	private static ChatResponse indexed(String responseId, MessagePart part) {

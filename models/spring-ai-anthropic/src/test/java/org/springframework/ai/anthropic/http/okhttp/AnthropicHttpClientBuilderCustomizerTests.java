@@ -48,13 +48,38 @@ class AnthropicHttpClientBuilderCustomizerTests {
 			""";
 
 	@Test
+	void usesBearerAuthenticationAndNewApiVersion() throws Exception {
+		try (MockWebServer server = new MockWebServer()) {
+			server.enqueue(mockMessagesResponse());
+			server.start();
+			AnthropicClient client = AnthropicSetup.setupSyncClient(server.url("/").toString(), "test-key",
+					Duration.ofSeconds(10), 0, null, null);
+			try {
+				client.messages()
+					.create(MessageCreateParams.builder()
+						.model(Model.CLAUDE_HAIKU_4_5)
+						.maxTokens(10)
+						.addUserMessage("Hi")
+						.build());
+				RecordedRequest request = server.takeRequest();
+				assertThat(request.getHeader("Authorization")).isEqualTo("Bearer test-key");
+				assertThat(request.getHeader("x-api-key")).isNull();
+				assertThat(request.getHeader("anthropic-version")).isEqualTo("2026-10-21");
+			}
+			finally {
+				client.close();
+			}
+		}
+	}
+
+	@Test
 	void userInterceptorCanOverrideApiKeyHeader() throws Exception {
 		try (MockWebServer server = new MockWebServer()) {
 			server.enqueue(mockMessagesResponse());
 			server.start();
 
-			AnthropicHttpClientBuilderCustomizer customizer = builder -> builder.interceptor(
-					chain -> chain.proceed(chain.request().newBuilder().header("x-api-key", "custom-token").build()));
+			AnthropicHttpClientBuilderCustomizer customizer = builder -> builder.interceptor(chain -> chain
+				.proceed(chain.request().newBuilder().header("Authorization", "Bearer custom-token").build()));
 
 			AnthropicClient client = AnthropicSetup.setupSyncClient(server.url("/").toString(), "original-api-key",
 					Duration.ofSeconds(10), 0, null, null, ObservationRegistry.NOOP, null, null, List.of(customizer));
@@ -67,9 +92,9 @@ class AnthropicHttpClientBuilderCustomizerTests {
 					.build());
 
 			RecordedRequest request = server.takeRequest();
-			assertThat(request.getHeader("x-api-key"))
+			assertThat(request.getHeader("Authorization"))
 				.as("User interceptor runs last so it can override the API key header")
-				.isEqualTo("custom-token");
+				.isEqualTo("Bearer custom-token");
 		}
 	}
 

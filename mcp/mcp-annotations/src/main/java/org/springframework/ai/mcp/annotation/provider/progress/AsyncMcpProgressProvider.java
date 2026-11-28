@@ -20,15 +20,14 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-import io.modelcontextprotocol.spec.McpSchema.ProgressNotification;
-import reactor.core.publisher.Mono;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mcp.annotation.McpProgress;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.method.progress.AsyncMcpProgressMethodCallback;
+import org.springframework.ai.mcp.annotation.method.progress.AsyncModernProgressSpecification;
 import org.springframework.ai.mcp.annotation.method.progress.AsyncProgressSpecification;
 
 /**
@@ -63,6 +62,9 @@ public class AsyncMcpProgressProvider {
 
 	private final List<Object> progressObjects;
 
+	/** The annotated methods and their callbacks, found on first use. */
+	private @Nullable List<HandlerMethod> handlerMethods;
+
 	/**
 	 * Create a new AsyncMcpProgressProvider.
 	 * @param progressObjects the objects containing methods annotated with
@@ -77,40 +79,63 @@ public class AsyncMcpProgressProvider {
 	 * @return the list of progress specifications
 	 */
 	public List<AsyncProgressSpecification> getProgressSpecifications() {
-
-		List<AsyncProgressSpecification> progressHandlers = this.progressObjects.stream()
-			.map(progressObject -> Stream.of(doGetClassMethods(progressObject))
-				.filter(method -> method.isAnnotationPresent(McpProgress.class))
-				.filter(McpPredicates.filterNonReactiveReturnTypeMethod())
-				.filter(method -> {
-					// Check if it's specifically Mono<Void>
-					Type genericReturnType = method.getGenericReturnType();
-					if (genericReturnType instanceof ParameterizedType) {
-						ParameterizedType paramType = (ParameterizedType) genericReturnType;
-						Type[] typeArguments = paramType.getActualTypeArguments();
-						if (typeArguments.length == 1) {
-							return typeArguments[0] == Void.class;
-						}
-					}
-					return false;
-				})
-				.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
-				.map(mcpProgressMethod -> {
-					var progressAnnotation = mcpProgressMethod.getAnnotation(McpProgress.class);
-
-					Function<ProgressNotification, Mono<Void>> methodCallback = AsyncMcpProgressMethodCallback.builder()
-						.method(mcpProgressMethod)
-						.bean(progressObject)
-						.progress(progressAnnotation)
-						.build();
-
-					return new AsyncProgressSpecification(progressAnnotation.clients(), methodCallback);
-				})
-				.toList())
-			.flatMap(List::stream)
+		return this.handlerMethods()
+			.stream()
+			.map(handlerMethod -> new AsyncProgressSpecification(handlerMethod.clients(), handlerMethod.callback()))
 			.toList();
+	}
 
-		return progressHandlers;
+	/**
+	 * Get the progress specifications for the connections that speak the 2026-07-28
+	 * ("modern") MCP revision. They are created from the same {@code @McpProgress}
+	 * methods as {@link #getProgressSpecifications()}, and with the same callbacks.
+	 * @return the modern progress specifications
+	 * @since 2.1.0
+	 */
+	public List<AsyncModernProgressSpecification> getModernProgressSpecifications() {
+		return this.handlerMethods()
+			.stream()
+			.map(handlerMethod -> new AsyncModernProgressSpecification(handlerMethod.clients(),
+					handlerMethod.callback()::acceptModern))
+			.toList();
+	}
+
+	private List<HandlerMethod> handlerMethods() {
+		List<HandlerMethod> handlerMethods = this.handlerMethods;
+		if (handlerMethods == null) {
+			handlerMethods = this.progressObjects.stream()
+				.flatMap(progressObject -> Stream.of(doGetClassMethods(progressObject))
+					.filter(method -> method.isAnnotationPresent(McpProgress.class))
+					.filter(McpPredicates.filterNonReactiveReturnTypeMethod())
+					.filter(AsyncMcpProgressProvider::returnsMonoOfVoid)
+					.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
+					.map(mcpProgressMethod -> {
+						var progressAnnotation = mcpProgressMethod.getAnnotation(McpProgress.class);
+						AsyncMcpProgressMethodCallback methodCallback = AsyncMcpProgressMethodCallback.builder()
+							.method(mcpProgressMethod)
+							.bean(progressObject)
+							.progress(progressAnnotation)
+							.build();
+						return new HandlerMethod(progressAnnotation.clients(), methodCallback);
+					}))
+				.toList();
+			this.handlerMethods = handlerMethods;
+		}
+		return handlerMethods;
+	}
+
+	/**
+	 * Whether the method returns specifically {@code Mono<Void>}.
+	 */
+	private static boolean returnsMonoOfVoid(Method method) {
+		Type genericReturnType = method.getGenericReturnType();
+		if (genericReturnType instanceof ParameterizedType paramType) {
+			Type[] typeArguments = paramType.getActualTypeArguments();
+			if (typeArguments.length == 1) {
+				return typeArguments[0] == Void.class;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -120,6 +145,12 @@ public class AsyncMcpProgressProvider {
 	 */
 	protected Method[] doGetClassMethods(Object bean) {
 		return bean.getClass().getDeclaredMethods();
+	}
+
+	/**
+	 * The clients an annotated method names, and its callback.
+	 */
+	private record HandlerMethod(String[] clients, AsyncMcpProgressMethodCallback callback) {
 	}
 
 }

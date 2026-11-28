@@ -26,6 +26,7 @@ import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.UnknownPart;
@@ -130,6 +131,25 @@ class AssistantMessagePartsTests {
 		assertThat(message.hasToolCalls()).isFalse();
 		assertThat(message.getToolCalls()).isEmpty();
 		assertThat(message.getReasoning()).isEmpty();
+	}
+
+	@Test
+	void streamedToolCallArgumentDeltaIsNotAToolCall() {
+		MessagePart delta = StreamingParts
+			.partial(ToolCallPart.of(new ToolCall("toolu_01", "function", "getWeather", "{\"city\":")), 0);
+
+		AssistantMessage deltaOnly = AssistantMessage.builder().part(delta).build();
+		AssistantMessage withCompleteCall = AssistantMessage.builder()
+			.part(delta)
+			.part(StreamingParts.complete(ToolCallPart.of(TIME_CALL), 1))
+			.build();
+
+		assertThat(deltaOnly.getParts()).containsExactly(delta);
+		assertThat(deltaOnly.hasToolCalls()).isFalse();
+		assertThat(deltaOnly.getToolCalls()).isEmpty();
+		assertThat(deltaOnly.getText()).isEmpty();
+		assertThat(withCompleteCall.hasToolCalls()).isTrue();
+		assertThat(withCompleteCall.getToolCalls()).containsExactly(TIME_CALL);
 	}
 
 	@Test

@@ -36,6 +36,8 @@ import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.core.client.config.SdkAdvancedClientOption;
 import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
@@ -92,6 +94,7 @@ import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
@@ -159,6 +162,11 @@ public class BedrockProxyChatModel implements ChatModel {
 	private static final Log logger = LogFactory.getLog(BedrockProxyChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
+
+	/**
+	 * Appended to the AWS SDK User-Agent of the clients created by the {@link Builder}.
+	 */
+	private static final String USER_AGENT_SUFFIX = "spring-ai";
 
 	private final BedrockRuntimeClient bedrockRuntimeClient;
 
@@ -657,6 +665,11 @@ public class BedrockProxyChatModel implements ChatModel {
 							+ (payload != null ? payload.provider() : "none") + " on replay to Bedrock");
 				}
 			}
+			else if (part instanceof ToolCallPart && StreamingParts.isPartial(part)) {
+				// A tool-call argument delta of a stream, not a tool call
+				// (see StreamingParts)
+				continue;
+			}
 			else if (part instanceof ToolCallPart toolCallPart) {
 				AssistantMessage.ToolCall toolCall = toolCallPart.toolCall();
 				var argumentsDocument = ConverseApiUtils
@@ -800,14 +813,19 @@ public class BedrockProxyChatModel implements ChatModel {
 		List<MessagePart> parts = toAssistantParts(message);
 		if (!parts.isEmpty() || response.stopReasonAsString() != null) {
 			allGenerations.add(new Generation(AssistantMessage.builder().parts(parts).build(),
-					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()));
+					ChatGenerationMetadata.builder()
+						.finishReason(response.stopReasonAsString())
+						.finishReasonCategory(ConverseApiUtils.finishReasonCategory(response.stopReason()))
+						.build()));
 		}
 
-		Integer promptTokens = response.usage().inputTokens();
+		Integer inputTokens = response.usage().inputTokens();
 		Integer generationTokens = response.usage().outputTokens();
 		int totalTokens = response.usage().totalTokens();
 		Integer cacheReadInputTokens = response.usage().cacheReadInputTokens();
 		Integer cacheWriteInputTokens = response.usage().cacheWriteInputTokens();
+		Integer promptTokens = inputTokens + (cacheReadInputTokens != null ? cacheReadInputTokens : 0)
+				+ (cacheWriteInputTokens != null ? cacheWriteInputTokens : 0);
 
 		if (perviousChatResponse != null && perviousChatResponse.getMetadata() != null
 				&& perviousChatResponse.getMetadata().getUsage() != null) {
@@ -821,6 +839,9 @@ public class BedrockProxyChatModel implements ChatModel {
 				TokenUsage previousTokenUsage = (TokenUsage) perviousChatResponse.getMetadata()
 					.getUsage()
 					.getNativeUsage();
+				if (previousTokenUsage.inputTokens() != null) {
+					inputTokens += previousTokenUsage.inputTokens();
+				}
 				if (cacheReadInputTokens == null) {
 					cacheReadInputTokens = previousTokenUsage.cacheReadInputTokens();
 				}
@@ -838,7 +859,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		// Create native TokenUsage with cache metrics
 		TokenUsage nativeTokenUsage = TokenUsage.builder()
-			.inputTokens(promptTokens)
+			.inputTokens(inputTokens)
 			.outputTokens(generationTokens)
 			.totalTokens(totalTokens)
 			.cacheReadInputTokens(cacheReadInputTokens)
@@ -983,7 +1004,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		private Duration connectionAcquisitionTimeout = Duration.ofSeconds(30L);
 
-		private Duration socketTimeout = Duration.ofSeconds(30L);
+		private Duration socketTimeout = Duration.ofSeconds(90L);
 
 		private @Nullable ToolCallingManager toolCallingManager;
 
@@ -996,6 +1017,8 @@ public class BedrockProxyChatModel implements ChatModel {
 		private @Nullable BedrockRuntimeClient bedrockRuntimeClient;
 
 		private @Nullable BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
+
+		private @Nullable MediaFetcher mediaFetcher;
 
 		private Builder() {
 		}
@@ -1083,6 +1106,21 @@ public class BedrockProxyChatModel implements ChatModel {
 			return this;
 		}
 
+		/**
+		 * Sets the {@link MediaFetcher} used to retrieve user-supplied media URLs.
+		 * Configure one with a host allowlist (e.g.
+		 * {@code new MediaFetcher(Set.of("*.trusted-cdn.com"))}) to restrict media
+		 * fetching to known-good hosts instead of relying solely on the SSRF blocklist.
+		 * Defaults to {@code new MediaFetcher()} (blocklist-only) when not set.
+		 * @param mediaFetcher the media fetcher to use
+		 * @return this builder
+		 */
+		public Builder mediaFetcher(MediaFetcher mediaFetcher) {
+			Assert.notNull(mediaFetcher, "'mediaFetcher' must not be null.");
+			this.mediaFetcher = mediaFetcher;
+			return this;
+		}
+
 		public BedrockProxyChatModel build() {
 
 			if (this.bedrockRuntimeClient == null) {
@@ -1096,7 +1134,7 @@ public class BedrockProxyChatModel implements ChatModel {
 					.region(getRegion())
 					.httpClientBuilder(httpClientBuilder)
 					.credentialsProvider(this.credentialsProvider)
-					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout))
+					.overrideConfiguration(this::configureClientOverrides)
 					.build();
 			}
 
@@ -1113,7 +1151,7 @@ public class BedrockProxyChatModel implements ChatModel {
 					.region(getRegion())
 					.httpClientBuilder(httpClientBuilder)
 					.credentialsProvider(this.credentialsProvider)
-					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout))
+					.overrideConfiguration(this::configureClientOverrides)
 					.build();
 			}
 
@@ -1121,13 +1159,19 @@ public class BedrockProxyChatModel implements ChatModel {
 					: ToolCallingManager.builder().observationRegistry(this.observationRegistry).build();
 
 			BedrockProxyChatModel bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
-					this.bedrockRuntimeAsyncClient, this.options, this.observationRegistry, this.toolCallingManager);
+					this.bedrockRuntimeAsyncClient, this.options, this.observationRegistry, this.toolCallingManager,
+					this.mediaFetcher != null ? this.mediaFetcher : new MediaFetcher());
 
 			if (this.customObservationConvention != null) {
 				bedrockProxyChatModel.setObservationConvention(this.customObservationConvention);
 			}
 
 			return bedrockProxyChatModel;
+		}
+
+		private void configureClientOverrides(ClientOverrideConfiguration.Builder overrides) {
+			overrides.apiCallTimeout(this.timeout)
+				.putAdvancedOption(SdkAdvancedClientOption.USER_AGENT_SUFFIX, USER_AGENT_SUFFIX);
 		}
 
 		private Region getRegion() {

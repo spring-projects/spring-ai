@@ -73,6 +73,36 @@ class StreamingPartIndexerTests {
 	}
 
 	@Test
+	void toolCallDeltasAndTheirCompleteCallShareTheIndexOfTheFirstDelta() {
+		ToolCallPart announced = ToolCallPart.of(new ToolCall("call_1", "function", "getWeather", ""));
+		ToolCallPart delta = ToolCallPart.of(new ToolCall("call_1", "function", "getWeather", "{}"));
+		ToolCallPart complete = ToolCallPart.of(new ToolCall("call_1", "function", "getWeather", "{}"));
+		ToolCallPart other = ToolCallPart.of(new ToolCall("call_2", "function", "getTime", "{}"));
+
+		this.indexer.stamp(TextPart.of("Let me check."));
+
+		assertThat(this.indexer.stampToolCallDelta(announced)).isEqualTo(StreamingParts.partial(announced, 1));
+		assertThat(this.indexer.stampToolCallDelta(delta)).isEqualTo(StreamingParts.partial(delta, 1));
+		assertThat(this.indexer.stamp(complete)).isEqualTo(StreamingParts.complete(complete, 1));
+		// A call streamed without deltas, and the text after the calls, get the next
+		// index
+		assertThat(this.indexer.stamp(other)).isEqualTo(StreamingParts.complete(other, 2));
+		assertThat(this.indexer.stamp(TextPart.of("Done"))).isEqualTo(StreamingParts.partial(TextPart.of("Done"), 3));
+	}
+
+	@Test
+	void toolCallDeltaDoesNotEndTheCurrentRun() {
+		ToolCallPart delta = ToolCallPart.of(new ToolCall("call_1", "function", "getWeather", "{}"));
+
+		this.indexer.stamp(ReasoningPart.of("Think. "));
+
+		assertThat(this.indexer.stampToolCallDelta(delta)).isEqualTo(StreamingParts.partial(delta, 1));
+		assertThat(this.indexer.stamp(ReasoningPart.of("More.")))
+			.isEqualTo(StreamingParts.partial(ReasoningPart.of("More."), 0));
+		assertThat(this.indexer.stamp(delta)).isEqualTo(StreamingParts.complete(delta, 1));
+	}
+
+	@Test
 	void mediaIsStampedComplete() {
 		MediaPart media = MediaPart.of(Media.builder()
 			.mimeType(MimeTypeUtils.IMAGE_PNG)

@@ -6,7 +6,7 @@
 
 	<groupId>org.springframework.ai</groupId>
 	<artifactId>spring-ai-bom</artifactId>
-	<version>2.1.0-SNAPSHOT</version>
+	<version>2.1.1-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
 
@@ -57,7 +57,7 @@
 	</scm>
 
 	<properties>
-		<project.build.outputTimestamp>2026-10-23T09:09:51Z</project.build.outputTimestamp>
+		<project.build.outputTimestamp>1980-02-01T00:00:00Z</project.build.outputTimestamp>
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
 	</properties>
 
@@ -344,6 +344,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-systemone</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-transformers</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -600,6 +606,14 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Decision model observation autoconfiguration -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-decision-observation</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Audio (text-to-speech, transcription) model observation autoconfiguration -->
 
 			<dependency>
@@ -709,6 +723,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-stability-ai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-systemone</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -1043,6 +1063,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-stability-ai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-systemone</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 

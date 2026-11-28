@@ -73,14 +73,18 @@ public class TypesenseVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		return TypesenseVectorStore.builder(typesenseClient, embeddingModel)
+		TypesenseVectorStore.Builder builder = TypesenseVectorStore.builder(typesenseClient, embeddingModel)
 			.collectionName(properties.getCollectionName())
-			.embeddingDimension(properties.getEmbeddingDimension())
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable())
-			.batchingStrategy(batchingStrategy)
-			.build();
+			.batchingStrategy(batchingStrategy);
+		// When not set, the size is read from the collection schema or, for a new
+		// collection, from the embedding model
+		if (properties.getEmbeddingDimension() > 0) {
+			builder.embeddingDimension(properties.getEmbeddingDimension());
+		}
+		return builder.build();
 	}
 
 	@Bean

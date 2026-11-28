@@ -35,6 +35,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 /**
  * Audio Speech {@link AutoConfiguration Auto-configuration} for OpenAI SDK.
@@ -49,20 +50,21 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiAudioSpeechProperties.class })
+@Import(OpenAiConnectionDetailsConfiguration.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.AUDIO_SPEECH_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
 public class OpenAiAudioSpeechAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiAudioSpeechModel openAiSdkAudioSpeechModel(OpenAiCommonProperties commonProperties,
-			OpenAiAudioSpeechProperties speechProperties, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<MeterRegistry> meterRegistry,
+	public OpenAiAudioSpeechModel openAiSdkAudioSpeechModel(OpenAiConnectionDetails connectionDetails,
+			OpenAiCommonProperties commonProperties, OpenAiAudioSpeechProperties speechProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<TextToSpeechModelObservationConvention> observationConvention,
 			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
-		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
-				speechProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(connectionDetails,
+				commonProperties, speechProperties);
 
 		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
 

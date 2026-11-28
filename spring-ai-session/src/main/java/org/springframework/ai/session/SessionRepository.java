@@ -21,6 +21,8 @@ import java.util.List;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.util.Assert;
+
 /**
  * The store of sessions and their logs. Implementations are thread-safe. The log is
  * append-only: nothing updates, moves or removes an event, and a compaction is recorded
@@ -43,9 +45,9 @@ public interface SessionRepository {
 
 	/**
 	 * Inserts the session unless one with the same id exists, atomically: a
-	 * primary-key-guarded {@code INSERT}, or a compare-and-set put.
-	 * {@link SessionService#create} relies on it, so two concurrent creates of one id
-	 * cannot both succeed.
+	 * primary-key-guarded {@code INSERT} or an insert-only {@code MERGE}, or a
+	 * compare-and-set put. {@link SessionService#create} relies on it, so two concurrent
+	 * creates of one id cannot both succeed.
 	 * @return {@code true} if the session was inserted, {@code false} if one with the
 	 * same id exists; the existing session is left untouched
 	 */
@@ -141,5 +143,22 @@ public interface SessionRepository {
 	 * {@code apply}, as {@code JdbcSessionRepository} does.
 	 */
 	List<SessionEvent> findEvents(String sessionId, EventFilter filter);
+
+	/**
+	 * The message events of the session the query finds, oldest first, cut to the query's
+	 * page; an empty list for a session that does not exist. The search covers the whole
+	 * log, the events a compaction covered included, and never synthetic events.
+	 * <p>
+	 * {@link EventQuery#apply(List)} is the reference implementation, and the default
+	 * here: it reads the session's log and matches in memory. A store that can match text
+	 * in its query overrides this, so that a search does not cost the whole log, and
+	 * agrees with the reference, as {@code JdbcSessionRepository} does.
+	 * @since 2.1.0
+	 */
+	default List<SessionEvent> searchEvents(String sessionId, EventQuery query) {
+		Assert.hasText(sessionId, "sessionId must not be null or empty");
+		Assert.notNull(query, "query must not be null");
+		return query.apply(findEvents(sessionId, EventFilter.all()));
+	}
 
 }

@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Bean;
  *
  * @author Julien Dubois
  * @author Soby Chacko
+ * @author Thomas Vitale
  */
 @SpringBootConfiguration
 public class OpenAiTestConfiguration {
@@ -56,6 +57,11 @@ public class OpenAiTestConfiguration {
 	@Bean
 	public OpenAiModerationModel openAiModerationModel() {
 		return OpenAiModerationModel.builder().build();
+	}
+
+	@Bean
+	public OpenAiDecisionModel openAiDecisionModel() {
+		return OpenAiDecisionModel.builder().build();
 	}
 
 }

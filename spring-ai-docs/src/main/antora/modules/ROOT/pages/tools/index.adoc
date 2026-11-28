@@ -1,0 +1,126 @@
+[[Tools]]
+= Tool Calling
+:page-aliases: api/tools.adoc
+
+_Tool calling_ — the ability for an AI model to invoke application-defined functions and act on their results — is the essential building block of agentic AI systems.
+A model that can only generate text is a chatbot; a model that can discover information, take action, and loop until a goal is reached is an agent.
+
+image::tools/spring-ai-agent-loop.png[The agent loop, width=300, float="right", align="center"]
+
+Tools are used for two broad purposes:
+
+* **Information retrieval** — augmenting the model's knowledge with data from databases, web services, file systems, or search engines.
+Examples: fetching the current weather, querying customer records, looking up the latest news.
+* **Taking action** — executing operations in your system.
+Examples: sending an email, booking a flight, updating a record, triggering a workflow.
+
+Although we speak of "tool calling" as a model capability, it is the application that owns the tool calling logic.
+The model can request a tool call and provide input arguments; the application is responsible for executing the tool and returning the result.
+The model never receives direct access to the APIs behind your tools — a critical security consideration.
+
+== Architecture Overview
+
+Spring AI 2.0 makes the tool calling loop a first-class, composable component of the `ChatClient`'s advisor chain.
+The flow at a glance:
+
+1. You define tools (xref:tools/defining.adoc#defining-tools[Defining Tools]) and pass them to `ChatClient`.
+2. `ChatClient` auto-registers a `ToolCallingAdvisor` (xref:tools/loop.adoc#the-tool-calling-loop[The Tool Calling Loop]) that drives the loop.
+3. The model decides which tools to call; `ToolCallingManager` executes them; the loop continues until the model produces a response without tool calls.
+4. Other advisors in the chain — memory, observability, retries, custom logic — compose with the loop through a single dial: **advisor ordering** (xref:tools/loop.adoc#memory-and-the-tool-loop[Memory and the Tool Loop]).
+
+NOTE: This architecture replaces the per-`ChatModel` tool execution loops of Spring AI 1.x.
+Calling `ChatModel` directly is still supported for low-level use cases — see xref:tools/chatmodel.adoc[ChatModel Tool Calling].
+
+TIP: Check the xref:integrations/models/comparison.adoc[Chat Model Comparisons] to see which models support tool calling.
+
+[[quick-start]]
+== Quick Start
+
+Define a tool by annotating a method with `@Tool`:
+
+[source,java]
+----
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.context.i18n.LocaleContextHolder;
+
+class DateTimeTools {
+
+    @Tool(description = "Get the current date and time in the user's timezone")
+    String getCurrentDateTime() {
+        return LocalDateTime.now().atZone(LocaleContextHolder.getTimeZone().toZoneId()).toString();
+    }
+
+    @Tool(description = "Set a user alarm for the given time, provided in ISO-8601 format")
+    void setAlarm(String time) {
+        LocalDateTime alarmTime = LocalDateTime.parse(time, DateTimeFormatter.ISO_DATE_TIME);
+        System.out.println("Alarm set for " + alarmTime);
+    }
+}
+----
+
+Pass the tools to `ChatClient` via `.tools()` and ask a question that requires them:
+
+[source,java]
+----
+ChatModel chatModel = ...
+
+String response = ChatClient.create(chatModel)
+        .prompt("Can you set an alarm 10 minutes from now?")
+        .tools(new DateTimeTools())
+        .call()
+        .content();
+----
+
+The model decides to call `getCurrentDateTime()`, then `setAlarm(...)` with the computed time.
+Spring AI handles the full round-trip automatically.
+
+[[scaling-to-hundreds-of-tools]]
+== Scaling to Hundreds of Tools
+
+The default `ToolCallingAdvisor` sends all registered tool definitions to the model on every request.
+With a small tool library this is fine.
+At 30+ tools — or in multi-server MCP setups where a session may aggregate hundreds of tool definitions — it creates context bloat, accuracy degradation, and unnecessary token cost.
+
+`ToolSearchToolCallingAdvisor` is a drop-in replacement that implements the *progressive tool disclosure* pattern: it indexes the full tool set once per session and injects only a built-in `toolSearchTool` the model uses to retrieve relevant tools by natural language query.
+Only discovered tools are included in subsequent requests.
+
+Enable it with a single property:
+
+[source,properties]
+----
+spring.ai.chat.client.tool-search-advisor.enabled=true
+----
+
+See xref:tools/tool-search.adoc[Tool Search Tool] for the full configuration, indexing strategies, session-ID semantics, and tuning options.
+
+[[chatmodel-tool-calling]]
+== ChatModel Tool Calling
+
+For users who want to drive `ChatModel` directly — without `ChatClient` and without `ToolCallingAdvisor` — Spring AI supports a low-level tool calling path.
+This is the right choice when you need full control over the request/response cycle and don't need the advisor chain's composition features.
+
+See xref:tools/chatmodel.adoc[ChatModel Tool Calling] for the API, precedence rules between default and runtime tools, and worked examples.
+
+NOTE: The per-`ChatModel` internal tool execution loop of Spring AI 1.x has been removed.
+Calling `ChatModel` with tools sends the tool definitions to the model and returns the model's response — tool calls in that response are **not** executed automatically.
+You drive the loop yourself, or use `ChatClient` (which auto-registers `ToolCallingAdvisor` for you).
+
+== Ready-Made Tools
+
+.Community: Spring AI Agent Utils
+[TIP]
+====
+xref:agents/agent-utils.adoc[Spring AI Agent Utils] provides ready-made tools for agents: file system, grep, glob, shell, web fetch and web search tools, task lists and Agent Skills.
+====
+
+== In This Section
+
+* xref:tools/defining.adoc[Defining Tools]
+* xref:tools/loop.adoc[The Tool Calling Loop]
+* xref:tools/tool-calling-advisor.adoc[ToolCallingAdvisor]
+* xref:tools/confirmation.adoc[Tool Call Confirmation]
+* xref:tools/tool-search.adoc[Tool Search]
+* xref:tools/argument-augmentation.adoc[Tool Argument Augmentation]
+* xref:tools/mcp.adoc[Using MCP Tools]
+* xref:tools/chatmodel.adoc[Tool Calling with ChatModel]
+* xref:tools/reference.adoc[Tool Specification Reference]

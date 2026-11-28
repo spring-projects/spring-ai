@@ -290,13 +290,16 @@ class DeepSeekChatModelMessagePartsTests {
 
 	@Test
 	void streamingReasoningTextAndToolCallProduceIndexedParts() {
-		// DeepSeekApi merges the chunks of a tool call into one chunk
-		ChatCompletionMessage toolCallDelta = new ChatCompletionMessage(null, null, null, null, List
-			.of(new ToolCall("call_1", "function", new ChatCompletionFunction("getWeather", "{\"city\":\"Seoul\"}"))),
-				null, null);
+		// As DeepSeek streams a tool call: the first delta carries the id and name, the
+		// later ones an empty id and an arguments fragment
 		givenStream(chunk(new ChatCompletionMessage("", Role.ASSISTANT), null), chunk(delta(null, "Think "), null),
 				chunk(delta(null, "first."), null), chunk(delta("Let me ", null), null),
-				chunk(delta("check.", null), null), chunk(toolCallDelta, ChatCompletionFinishReason.TOOL_CALLS));
+				chunk(delta("check.", null), null),
+				chunk(toolCallDelta(
+						new ToolCall(0, "call_1", "function", new ChatCompletionFunction("getWeather", "{\"city\":"))),
+						null),
+				chunk(toolCallDelta(new ToolCall(0, "", null, new ChatCompletionFunction(null, "\"Seoul\"}"))), null),
+				chunk(delta(null, null), ChatCompletionFinishReason.TOOL_CALLS));
 
 		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
 		List<ChatResponse> responses = new MessageAggregator()
@@ -304,7 +307,9 @@ class DeepSeekChatModelMessagePartsTests {
 			.collectList()
 			.block();
 
-		assertThat(responses).hasSize(6);
+		// the role chunk, reasoning deltas, text deltas, tool call argument deltas, then
+		// one merged tool call chunk
+		assertThat(responses).hasSize(8);
 		assertThat(responses).allSatisfy(r -> assertThat(r.getMetadata().getId()).isEqualTo("chatcmpl-123"));
 		// The role-only first chunk keeps an empty text
 		assertThat(output(responses.get(0)).getParts()).containsExactly(TextPart.of(""));
@@ -317,11 +322,20 @@ class DeepSeekChatModelMessagePartsTests {
 		assertThat(output(responses.get(3)).getParts())
 			.containsExactly(StreamingParts.partial(TextPart.of("Let me "), 1));
 		assertThat(output(responses.get(3)).getText()).isEqualTo("Let me ");
-		assertThat(output(responses.get(5)).getParts())
+		// The argument deltas carry the id and name of the call, and are not tool calls
+		assertThat(output(responses.get(5)).getParts()).containsExactly(StreamingParts.partial(
+				ToolCallPart.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":")), 2));
+		assertThat(output(responses.get(6)).getParts()).containsExactly(StreamingParts.partial(
+				ToolCallPart.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "\"Seoul\"}")), 2));
+		assertThat(responses.subList(5, 7)).allSatisfy(response -> {
+			assertThat(response.hasToolCalls()).isFalse();
+			assertThat(output(response).getText()).isEmpty();
+		});
+		assertThat(output(responses.get(7)).getParts())
 			.containsExactly(StreamingParts.complete(ToolCallPart.of(WEATHER_CALL), 2));
-		assertThat(responses.get(5).hasToolCalls()).isTrue();
+		assertThat(responses.get(7).hasToolCalls()).isTrue();
 		// The role of the first chunk
-		assertThat(output(responses.get(5)).getMetadata()).containsEntry("role", "ASSISTANT")
+		assertThat(output(responses.get(7)).getMetadata()).containsEntry("role", "ASSISTANT")
 			.doesNotContainKey("reasoningContent");
 		// Streamed chunks are still DeepSeekAssistantMessages; the aggregated message is
 		// a plain AssistantMessage, as before
@@ -355,12 +369,12 @@ class DeepSeekChatModelMessagePartsTests {
 	@Test
 	void streamedToolCallTurnIsReplayedWithItsReasoning() {
 		// DeepSeek documents that in thinking mode every assistant message of a request
-		// with tools must carry its reasoning_content, so the aggregated turn keeps it
-		ChatCompletionMessage toolCallDelta = new ChatCompletionMessage(null, null, null, null, List
-			.of(new ToolCall("call_1", "function", new ChatCompletionFunction("getWeather", "{\"city\":\"Seoul\"}"))),
-				null, null);
+		// with tools must carry its reasoning_content, so the aggregated turn keeps it.
+		// The whole tool call arrives in one chunk here.
 		givenStream(chunk(delta(null, "Need "), null), chunk(delta(null, "the weather."), null),
-				chunk(toolCallDelta, ChatCompletionFinishReason.TOOL_CALLS));
+				chunk(toolCallDelta(new ToolCall("call_1", "function",
+						new ChatCompletionFunction("getWeather", "{\"city\":\"Seoul\"}"))),
+						ChatCompletionFinishReason.TOOL_CALLS));
 
 		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
 		new MessageAggregator().aggregate(chatModel().stream(new Prompt("Weather?")), aggregatedRef::set).blockLast();
@@ -391,7 +405,7 @@ class DeepSeekChatModelMessagePartsTests {
 	}
 
 	private void givenStream(ChatCompletionChunk... chunks) {
-		given(this.deepSeekApi.chatCompletionStream(any(ChatCompletionRequest.class))).willReturn(Flux.just(chunks));
+		given(this.deepSeekApi.chatCompletionStreamRaw(any(ChatCompletionRequest.class))).willReturn(Flux.just(chunks));
 	}
 
 	private ChatCompletionMessage assistantParam(AssistantMessage assistant) {
@@ -421,6 +435,10 @@ class DeepSeekChatModelMessagePartsTests {
 
 	private static ChatCompletionMessage delta(String content, String reasoning) {
 		return new ChatCompletionMessage(content, null, null, null, null, null, reasoning);
+	}
+
+	private static ChatCompletionMessage toolCallDelta(ToolCall toolCall) {
+		return new ChatCompletionMessage(null, null, null, null, List.of(toolCall), null, null);
 	}
 
 	private static ChatCompletionChunk chunk(ChatCompletionMessage delta, ChatCompletionFinishReason finishReason) {

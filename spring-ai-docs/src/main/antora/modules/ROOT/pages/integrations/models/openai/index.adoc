@@ -1,0 +1,39 @@
+[[openai]]
+= OpenAI
+
+The `spring-ai-openai` module integrates the OpenAI platform.
+Add the `spring-ai-starter-model-openai` starter to auto-configure it.
+
+All OpenAI model types share the same connection properties, `spring.ai.openai.api-key` and `spring.ai.openai.base-url`.
+xref:integrations/models/openai/chat.adoc[OpenAI Chat] describes how to obtain an API key and how to manage it.
+
+[cols="1,3", options="header"]
+|===
+| Model type | Page
+
+| Chat
+| xref:integrations/models/openai/chat.adoc[Chat], or the xref:integrations/models/openai/responses.adoc[Responses API]
+
+| Embedding
+| xref:integrations/models/openai/embeddings.adoc[Embeddings]
+
+| Image
+| xref:integrations/models/openai/image.adoc[Image Generation]
+
+| Text to speech
+| xref:integrations/models/openai/speech.adoc[Text to Speech]
+
+| Transcription
+| xref:integrations/models/openai/transcription.adoc[Transcription]
+
+| Moderation
+| xref:integrations/models/openai/moderation.adoc[Moderation]
+
+| Decision
+| xref:integrations/models/openai/decision.adoc[Decision]
+|===
+
+The same module also reaches:
+
+* OpenAI models deployed on Azure, see xref:integrations/models/openai/azure.adoc[Azure and Microsoft Foundry].
+* Other servers that implement the OpenAI API, see xref:integrations/models/openai-compatible/index.adoc[OpenAI-Compatible Endpoints].

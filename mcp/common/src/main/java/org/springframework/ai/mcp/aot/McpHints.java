@@ -66,6 +66,13 @@ public class McpHints implements RuntimeHintsRegistrar {
 		for (var tr : typeReferences) {
 			hints.reflection().registerType(tr, mcs);
 		}
+		// 2026-07-28 ("modern") schema and JSON-RPC envelope types
+		for (var tr : AiRuntimeHints.findInnerClassesFor(io.modelcontextprotocol.modern.McpSchema.class)) {
+			hints.reflection().registerType(tr, mcs);
+		}
+		for (var tr : AiRuntimeHints.findInnerClassesFor(io.modelcontextprotocol.modern.JsonRpc.class)) {
+			hints.reflection().registerType(tr, mcs);
+		}
 	}
 
 }

@@ -16,7 +16,12 @@
 
 package org.springframework.ai.chat.messages.part;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jspecify.annotations.Nullable;
+
+import org.springframework.util.StringUtils;
 
 /**
  * Synthesizes the {@link StreamingParts} index for providers that stream message content
@@ -39,6 +44,11 @@ import org.jspecify.annotations.Nullable;
  * <li>Any other part, such as a tool call, is complete when it arrives and gets the next
  * index for itself. It also ends the current run, so a text delta that follows it starts
  * a new text part.</li>
+ * <li>A tool-call argument delta, stamped through {@link #stampToolCallDelta}, gets the
+ * next index on the first delta of its call. The later deltas of the call and the
+ * complete call keep that index, matched by tool call id. As the aggregator skips the
+ * deltas, they do not end the current run: a reasoning delta that arrives next to them
+ * still continues the reasoning part. The complete call ends it.</li>
  * <li>An empty {@link TextPart} without a payload, such as the placeholder of a chunk
  * that only carries usage, carries nothing. It is returned unchanged and does not end the
  * current run, so that such a chunk in the middle of the reasoning does not split it in
@@ -66,9 +76,14 @@ import org.jspecify.annotations.Nullable;
 public final class StreamingPartIndexer {
 
 	/**
-	 * The index of the most recently stamped part, {@code -1} before the first one.
+	 * The most recently assigned index, {@code -1} before the first one.
 	 */
 	private int index = -1;
+
+	/**
+	 * The index of the current run of deltas, or of the most recent complete part.
+	 */
+	private int runIndex = -1;
 
 	/**
 	 * The type of the most recently stamped delta, {@link TextPart} or
@@ -78,24 +93,58 @@ public final class StreamingPartIndexer {
 	private @Nullable Class<? extends MessagePart> lastDeltaKind;
 
 	/**
+	 * The index of each tool call streamed as argument deltas, by tool call id, until its
+	 * complete part is stamped.
+	 */
+	private final Map<String, Integer> toolCallDeltaIndexById = new HashMap<>();
+
+	/**
 	 * Returns a copy of the part with its stream index set, and advances this indexer.
 	 * Call it once per part, in the order the parts appear in the stream.
 	 * @param part the part of a streamed chunk, without an index
 	 * @return an empty {@link TextPart} without a payload unchanged; any other
 	 * {@link TextPart} or a {@link ReasoningPart} stamped as partial, with the index of
 	 * the current run of deltas of its kind, or the next index when it starts a new run;
-	 * any other part stamped as complete, with the next index
+	 * a {@link ToolCallPart} streamed as argument deltas stamped as complete, with the
+	 * index of its deltas; any other part stamped as complete, with the next index
 	 */
 	public MessagePart stamp(MessagePart part) {
 		if (part instanceof TextPart textPart && textPart.text().isEmpty() && textPart.payload() == null) {
 			return part;
 		}
+		if (part instanceof ToolCallPart toolCallPart) {
+			Integer deltaIndex = this.toolCallDeltaIndexById.remove(toolCallPart.toolCall().id());
+			if (deltaIndex != null) {
+				this.lastDeltaKind = null;
+				return StreamingParts.complete(part, deltaIndex);
+			}
+		}
 		boolean delta = part instanceof TextPart || part instanceof ReasoningPart;
 		if (!delta || part.getClass() != this.lastDeltaKind) {
-			this.index++;
+			this.runIndex = ++this.index;
 		}
 		this.lastDeltaKind = delta ? part.getClass() : null;
-		return delta ? StreamingParts.partial(part, this.index) : StreamingParts.complete(part, this.index);
+		return delta ? StreamingParts.partial(part, this.runIndex) : StreamingParts.complete(part, this.runIndex);
+	}
+
+	/**
+	 * Returns a copy of a tool-call argument delta stamped as partial, see
+	 * {@link StreamingParts}. The first delta of a call gets the next index; its later
+	 * deltas, and its complete part once passed to {@link #stamp(MessagePart)}, get the
+	 * same index. The current run of deltas is not ended.
+	 * @param delta the delta, carrying the id of its tool call
+	 * @return the delta stamped as partial
+	 */
+	public MessagePart stampToolCallDelta(ToolCallPart delta) {
+		String id = delta.toolCall().id();
+		Integer index = this.toolCallDeltaIndexById.get(id);
+		if (index == null) {
+			index = ++this.index;
+			if (StringUtils.hasText(id)) {
+				this.toolCallDeltaIndexById.put(id, index);
+			}
+		}
+		return StreamingParts.partial(delta, index);
 	}
 
 }

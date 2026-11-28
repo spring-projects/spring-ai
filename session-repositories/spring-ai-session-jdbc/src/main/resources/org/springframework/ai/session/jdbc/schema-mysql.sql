@@ -1,8 +1,8 @@
 -- MySQL has no CREATE INDEX IF NOT EXISTS, so indexes are declared inline to keep the
 -- script safe to re-run (spring.ai.session.repository.jdbc.initialize-schema=always).
 CREATE TABLE IF NOT EXISTS AI_SESSION (
-    -- Keys compare byte for byte, as on the other databases, not with the server's
-    -- case-insensitive default collation
+    -- Keys are case-sensitive, as on the other databases, not compared with the server's
+    -- case-insensitive default collation. utf8mb4_bin still ignores trailing spaces.
     id            VARCHAR(255)  COLLATE utf8mb4_bin NOT NULL PRIMARY KEY,
     created_at    DATETIME(6)   NOT NULL,
     expires_at    DATETIME(6),

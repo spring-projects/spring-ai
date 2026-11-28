@@ -1,0 +1,69 @@
+[[moderation-models]]
+= Moderation Models
+:page-aliases: api/moderation.adoc
+
+A moderation model checks text for harmful content, such as hate, harassment, violence or self-harm.
+It returns, for each check, whether the text was flagged, which categories it was flagged for, and a score for each category.
+
+Use it to check what users send to your application, or what a chat model answers, before it is passed on.
+xref:resilience/guardrails.adoc[Guardrails] shows how moderation fits with the other ways to block unwanted content.
+
+== API Overview
+
+`ModerationModel` follows the shape of the other xref:models/index.adoc[model APIs]:
+
+[source,java]
+----
+public interface ModerationModel extends Model<ModerationPrompt, ModerationResponse> {
+
+	ModerationResponse call(ModerationPrompt request);
+}
+----
+
+* A `ModerationPrompt` holds the text to check, as a `ModerationMessage`, and optional `ModerationOptions`, whose only portable option is the model name.
+* A `ModerationResponse` holds one `Generation`, whose output is a `Moderation`.
+* A `Moderation` holds the id of the request, the model that answered, and a list of `ModerationResult` entries.
+* A `ModerationResult` holds:
+** `isFlagged()`, whether the text was flagged at all.
+** `getCategories()`, a `Categories` object with a flag for each category, such as `isHate()` or `isViolence()`.
+** `getCategoryScores()`, a `CategoryScores` object with a score for each category, such as `getHate()` or `getViolence()`.
+
+== Checking Text
+
+[source,java]
+----
+ModerationResponse response = moderationModel.call(new ModerationPrompt("Text to check"));
+Moderation moderation = response.getResult().getOutput();
+
+for (ModerationResult result : moderation.getResults()) {
+    if (result.isFlagged()) {
+        Categories categories = result.getCategories();
+        System.out.println("Hate: " + categories.isHate() + ", violence: " + categories.isViolence());
+    }
+}
+----
+
+To choose a model, pass options:
+
+[source,java]
+----
+ModerationOptions options = ModerationOptionsBuilder.builder()
+    .model("omni-moderation-latest")
+    .build();
+
+ModerationResponse response = moderationModel.call(new ModerationPrompt("Text to check", options));
+----
+
+== Categories
+
+`Categories` and `CategoryScores` hold the union of the categories that the providers check.
+Each provider fills the categories it supports, and the others stay `false` and `0`.
+For example, the health, financial, law and personal information categories come from Mistral AI.
+See the provider pages for the categories each one checks.
+
+== Available Implementations
+
+* xref:integrations/models/openai/moderation.adoc[OpenAI Moderation]
+* xref:integrations/models/mistral-ai/moderation.adoc[Mistral AI Moderation]
+
+A xref:models/decision.adoc[decision model] can also act as a guardrail, for checks that a moderation model does not cover, such as prompt injection.

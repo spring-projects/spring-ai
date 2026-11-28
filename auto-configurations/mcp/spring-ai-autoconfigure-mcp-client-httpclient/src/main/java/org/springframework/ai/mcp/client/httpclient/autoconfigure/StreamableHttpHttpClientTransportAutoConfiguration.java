@@ -121,6 +121,11 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 		for (Map.Entry<String, ConnectionParameters> serverParameters : streamableProperties.getConnections()
 			.entrySet()) {
 
+			if (serverParameters.getValue().isModern()) {
+				// Modern connections are served by McpClientModernAutoConfiguration.
+				continue;
+			}
+
 			String name = serverParameters.getKey();
 			String baseUrl = serverParameters.getValue().url();
 			String streamableHttpEndpoint = serverParameters.getValue().endpoint() != null

@@ -20,11 +20,13 @@ import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mcp.customizer.McpServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
 import org.springframework.ai.mcp.server.webflux.transport.WebFluxStreamableServerTransportProvider;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -50,15 +52,16 @@ public class McpServerStreamableHttpWebFluxAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebFluxStreamableServerTransportProvider webFluxStreamableServerTransportProvider(
-			@Qualifier("mcpServerJsonMapper") JsonMapper jsonMapper,
-			McpServerStreamableHttpProperties serverProperties) {
+			@Qualifier("mcpServerJsonMapper") JsonMapper jsonMapper, McpServerStreamableHttpProperties serverProperties,
+			ObjectProvider<McpServerCustomizer<WebFluxStreamableServerTransportProvider.Builder>> customizers) {
 
-		return WebFluxStreamableServerTransportProvider.builder()
+		WebFluxStreamableServerTransportProvider.Builder builder = WebFluxStreamableServerTransportProvider.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
 			.messageEndpoint(serverProperties.getMcpEndpoint())
 			.keepAliveInterval(serverProperties.getKeepAliveInterval())
-			.disallowDelete(serverProperties.isDisallowDelete())
-			.build();
+			.disallowDelete(serverProperties.isDisallowDelete());
+		customizers.orderedStream().forEach(customizer -> customizer.customize(builder));
+		return builder.build();
 	}
 
 	// Router function for streamable http transport used by Spring WebFlux to start an

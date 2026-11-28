@@ -200,7 +200,7 @@ class AnthropicChatModelTimeoutTests {
 
 		ArgumentCaptor<RequestOptions> captor = ArgumentCaptor.forClass(RequestOptions.class);
 		verify(messageServiceWithRawResponse).createStreaming(any(MessageCreateParams.class), captor.capture());
-		assertThat(captor.getValue().getTimeout().request()).isEqualTo(Duration.ofSeconds(5));
+		assertThat(captor.getValue().timeout().orElseThrow().request()).isEqualTo(Duration.ofSeconds(5));
 	}
 
 }

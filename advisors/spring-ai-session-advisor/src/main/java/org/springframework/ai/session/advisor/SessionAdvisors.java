@@ -84,6 +84,8 @@ public final class SessionAdvisors {
 
 		private boolean asyncCompaction;
 
+		private boolean sessionIdInToolContext;
+
 		private Consumer<SessionMemoryAdvisor.Builder> memory = memory -> {
 		};
 
@@ -118,6 +120,18 @@ public final class SessionAdvisors {
 		}
 
 		/**
+		 * Whether the session id also goes into the tool context of each call, so that
+		 * the session tools find it without {@code toolContext(..)} on the call;
+		 * {@code false} by default. Every tool of the call then sees the id; see
+		 * {@link SessionTurnAdvisor.Builder#sessionIdInToolContext(boolean)} for what
+		 * that means.
+		 */
+		public Builder sessionIdInToolContext(boolean sessionIdInToolContext) {
+			this.sessionIdInToolContext = sessionIdInToolContext;
+			return this;
+		}
+
+		/**
 		 * Customizes the {@link SessionMemoryAdvisor}, its filters for example.
 		 * Customizers run in the order they are added, after the shared settings, so they
 		 * can override them.
@@ -134,7 +148,8 @@ public final class SessionAdvisors {
 
 			SessionTurnAdvisor.Builder turn = SessionTurnAdvisor.builder(this.sessionService)
 				.scheduler(scheduler)
-				.asyncCompaction(this.asyncCompaction);
+				.asyncCompaction(this.asyncCompaction)
+				.sessionIdInToolContext(this.sessionIdInToolContext);
 			if (this.compactionTrigger != null && this.compactionStrategy != null) {
 				turn.compactionTrigger(this.compactionTrigger).compactionStrategy(this.compactionStrategy);
 			}

@@ -77,6 +77,14 @@ public abstract class BaseOllamaIT {
 		return api;
 	}
 
+	/**
+	 * Get the base URL of the Ollama server the tests run against.
+	 * @return the base URL
+	 */
+	protected static String getOllamaBaseUrl() {
+		return SKIP_CONTAINER_CREATION ? OLLAMA_LOCAL_URL : ollamaContainer.getEndpoint();
+	}
+
 	@AfterAll
 	public static void tearDown() {
 		if (ollamaContainer != null) {
@@ -85,8 +93,7 @@ public abstract class BaseOllamaIT {
 	}
 
 	private static OllamaApi buildOllamaApiWithModel(String... models) {
-		final String baseUrl = SKIP_CONTAINER_CREATION ? OLLAMA_LOCAL_URL : ollamaContainer.getEndpoint();
-		final OllamaApi api = OllamaApi.builder().baseUrl(baseUrl).build();
+		final OllamaApi api = OllamaApi.builder().baseUrl(getOllamaBaseUrl()).build();
 		ensureModelIsPresent(api, models);
 		return api;
 	}

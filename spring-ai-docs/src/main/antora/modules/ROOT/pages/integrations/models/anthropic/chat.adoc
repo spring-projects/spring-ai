@@ -1,0 +1,1017 @@
+= Anthropic Chat
+:page-aliases: api/chat/anthropic-chat.adoc
+
+Spring AI supports Anthropic's Claude models through the official link:https://github.com/anthropics/anthropic-sdk-java[Anthropic Java SDK], providing access to Claude through Anthropic's API.
+
+== Prerequisites
+
+Create an account at the https://console.anthropic.com/[Anthropic Console] and generate an API key on the https://console.anthropic.com/settings/keys[API Keys page].
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:get-started/project-setup.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project.
+Refer to the xref:get-started/project-setup.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+== Auto-Configuration
+
+Spring Boot auto-configuration is available via the `spring-ai-starter-model-anthropic` starter.
+
+[tabs]
+======
+Maven::
++
+Add it to your project's Maven `pom.xml` file:
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-anthropic</artifactId>
+</dependency>
+----
+
+Gradle::
++
+or to your Gradle `build.gradle` build file:
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-anthropic'
+}
+----
+======
+
+TIP: Refer to the xref:get-started/project-setup.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Configuration Properties
+
+Use the `spring.ai.anthropic.*` properties to configure the Anthropic connection and chat options:
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| `spring.ai.anthropic.api-key` | Anthropic API key | -
+| `spring.ai.anthropic.base-url` | API base URL | `https://api.anthropic.com`
+| `spring.ai.anthropic.timeout` | Construction-time default timeout baked into the shared HTTP client at startup.
+Can be overridden per call via `AnthropicChatOptions.timeout()` set on a `ChatClient` or per-request prompt options. | `60s`
+| `spring.ai.anthropic.max-retries` | Maximum number of retries for failed requests | `2`
+| `spring.ai.anthropic.custom-headers.*` | Custom HTTP headers to add to all Anthropic client requests | -
+| `spring.ai.anthropic.chat.model` | Model name | `claude-haiku-4-5`
+| `spring.ai.anthropic.chat.max-tokens` | Maximum tokens | `4096`
+| `spring.ai.anthropic.chat.temperature` | Deprecated and ignored with a `WARN` log; remove this property. | -
+| `spring.ai.anthropic.chat.top-p` | Deprecated and ignored with a `WARN` log; remove this property. | -
+| `spring.ai.anthropic.chat.top-k` | Deprecated and ignored with a `WARN` log; remove this property. | -
+| `spring.ai.anthropic.chat.cache-options.strategy` | Caching strategy to use | `NONE`
+| `spring.ai.anthropic.chat.cache-options.multi-block-system-caching` | Use separate blocks for each system message | `false`
+| `spring.ai.anthropic.chat.http-headers` | Per-request HTTP headers to pass to individual API calls. | -
+| `spring.ai.anthropic.chat.inference-geo` | Geographic region where the request is processed (`us` or `eu`) | -
+| `spring.ai.anthropic.chat.web-search-tool.max-uses` | Maximum number of web searches per request | -
+| `spring.ai.anthropic.chat.web-search-tool.allowed-domains` | Comma-separated list of domains to restrict search results to | -
+| `spring.ai.anthropic.chat.web-search-tool.blocked-domains` | Comma-separated list of domains to exclude from search results | -
+| `spring.ai.anthropic.chat.web-search-tool.user-location.city` | City for localizing search results | -
+| `spring.ai.anthropic.chat.web-search-tool.user-location.country` | ISO 3166-1 alpha-2 country code | -
+| `spring.ai.anthropic.chat.web-search-tool.user-location.region` | Region or state | -
+| `spring.ai.anthropic.chat.web-search-tool.user-location.timezone` | IANA timezone identifier | -
+| `spring.ai.anthropic.chat.service-tier` | Capacity routing: `auto` (use priority if available) or `standard_only` (always standard). See https://docs.claude.com/en/api/service-tiers[Service Tiers]. | -
+|====
+
+== Manual Configuration
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatModel.java[AnthropicChatModel] implements the `ChatModel` interface and uses the official Anthropic Java SDK to connect to Claude.
+
+[tabs]
+======
+Maven::
++
+Add the `spring-ai-anthropic` dependency to your project's Maven `pom.xml` file:
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-anthropic</artifactId>
+</dependency>
+----
+
+Gradle::
++
+or to your Gradle `build.gradle` build file:
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-anthropic'
+}
+----
+======
+
+TIP: Refer to the xref:get-started/project-setup.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Authentication
+
+Configure your API key either programmatically or via environment variable:
+
+[source,java]
+----
+var chatOptions = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .maxTokens(1024)
+    .apiKey(System.getenv("ANTHROPIC_API_KEY"))
+    .build();
+
+var chatModel = AnthropicChatModel.builder()
+    .options(chatOptions)
+    .build();
+----
+
+Or set the environment variable and let the SDK auto-detect it:
+
+[source,bash]
+----
+export ANTHROPIC_API_KEY=<your-api-key>
+----
+
+[source,java]
+----
+// API key will be detected from ANTHROPIC_API_KEY environment variable
+var chatModel = AnthropicChatModel.builder()
+    .options(AnthropicChatOptions.builder()
+        .model("claude-sonnet-4-6")
+        .maxTokens(1024)
+        .build())
+    .build();
+----
+
+=== Basic Usage
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+// Or with streaming responses
+Flux<ChatResponse> stream = chatModel.stream(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+== Runtime Options [[chat-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions.java] class provides model configurations such as the model to use, max tokens and stop sequences.
+
+On start-up, configure default options with `AnthropicChatModel.builder().options(options).build()`.
+
+At run-time, you can override the default options by adding new, request-specific options to the `Prompt` call.
+For example, to override the default model and maximum token count for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-6")
+            .maxTokens(2048)
+        .build()
+    ));
+----
+
+=== Chat Options
+
+[cols="3,5,1", stripes=even]
+|====
+| Option | Description | Default
+
+| model | Name of the Claude model to use. Models include: `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-sonnet-4-6`, `claude-haiku-4-5`, etc. See https://docs.anthropic.com/en/docs/about-claude/models[Claude Models]. | `claude-haiku-4-5`
+| maxTokens | The maximum number of tokens to generate in the response. | 4096
+| temperature | Deprecated and ignored with a `WARN` log; remove this option. | -
+| topP | Deprecated and ignored with a `WARN` log; remove this option. | -
+| topK | Deprecated and ignored with a `WARN` log; remove this option. | -
+| stopSequences | Custom sequences that will cause the model to stop generating. | -
+| apiKey | The API key for authentication. Auto-detects from `ANTHROPIC_API_KEY` environment variable if not set. | -
+| baseUrl | The base URL for the Anthropic API. | https://api.anthropic.com
+| timeout | Per-call timeout override.
+When set via `ChatClient.Builder.defaultOptions()` or a per-request `ChatClient.prompt().options(...)`, it bounds only that call and overrides the `spring.ai.anthropic.timeout` construction-time default. | 60 seconds
+| maxRetries | Maximum number of retry attempts for failed requests. | 2
+| proxy | Proxy settings for the HTTP client. | -
+| customHeaders | Custom HTTP headers to include on all requests (client-level). | -
+| httpHeaders | Per-request HTTP headers. These are added to individual API calls via `MessageCreateParams.putAdditionalHeader()`. Useful for request-level tracking, beta API headers, or routing. | -
+| cacheOptions | Options for configuring prompt caching behavior. Includes caching strategy, multi-block caching, TTL, and content length requirements. | -
+| thinking | Thinking configuration. Use the convenience builders `thinkingEnabled(budgetTokens)`, `thinkingEnabled(budgetTokens, display)`, `thinkingAdaptive()`, `thinkingAdaptive(display)`, or `thinkingDisabled()`, or pass a raw `ThinkingConfigParam`. The `display` parameter controls how thinking content appears in the response: `SUMMARIZED` (condensed summary) or `OMITTED` (redacted, signature only). | -
+| outputConfig | Output configuration for structured output (JSON schema) and effort control. Use `outputConfig(OutputConfig)` for full control, or the convenience methods `outputSchema(String)` and `effort(OutputConfig.Effort)`. Requires `claude-sonnet-4-6` or newer. | -
+| inferenceGeo | Controls the geographic region where the request is processed. Supported values: `us`, `eu`. Used for data residency compliance. Configurable via `spring.ai.anthropic.chat.inference-geo`. | -
+| serviceTier | Controls capacity routing for the request. Use `AnthropicServiceTier.AUTO` to opportunistically use priority capacity, or `STANDARD_ONLY` to always use standard capacity. See https://docs.claude.com/en/api/service-tiers[Service Tiers]. | -
+|====
+
+=== Tool Calling Options
+
+[cols="3,5,1", stripes=even]
+|====
+| Option | Description | Default
+
+| toolChoice | Controls which tool (if any) is called by the model. Use `ToolChoiceAuto`, `ToolChoiceAny`, `ToolChoiceTool`, or `ToolChoiceNone`. | AUTO
+| toolCallbacks | List of tool callbacks to register with the model. | -
+| disableParallelToolUse | When true, the model will use at most one tool per response. | false
+|====
+
+TIP: In addition to the model-specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions], you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
+
+== Rate Limit Metadata
+
+The Anthropic API includes https://docs.anthropic.com/en/api/rate-limits#response-headers[rate limit headers] on every response that report your current request and token budgets along with when each window resets.
+Spring AI exposes this data through the standard `ChatResponseMetadata#getRateLimit()` accessor, which returns an `AnthropicRateLimit` populated from the response headers.
+
+The portable `RateLimit` interface exposes the request and token families:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(prompt);
+
+RateLimit rateLimit = response.getMetadata().getRateLimit();
+rateLimit.getRequestsLimit();      // overall request ceiling
+rateLimit.getRequestsRemaining();  // requests left in the current window
+rateLimit.getRequestsReset();      // time until the request window resets
+
+rateLimit.getTokensLimit();        // overall token ceiling
+rateLimit.getTokensRemaining();    // tokens left in the current window
+rateLimit.getTokensReset();        // time until the token window resets
+----
+
+Anthropic also reports separate buckets for input tokens and output tokens.
+These are exposed by the `AnthropicRateLimit` concrete type:
+
+[source,java]
+----
+if (response.getMetadata().getRateLimit() instanceof AnthropicRateLimit anthropic) {
+    anthropic.getInputTokensLimit();
+    anthropic.getInputTokensRemaining();
+    anthropic.getInputTokensReset();
+
+    anthropic.getOutputTokensLimit();
+    anthropic.getOutputTokensRemaining();
+    anthropic.getOutputTokensReset();
+}
+----
+
+If Anthropic does not return any rate-limit headers on a given response, `getRateLimit()` returns an `EmptyRateLimit` instance instead, matching the convention used by other Spring AI providers.
+
+Rate-limit metadata is populated on both the synchronous `call(Prompt)` and the streaming `stream(Prompt)` paths.
+For streaming responses the headers are read once at stream start and attached to the response chunk that carries the final usage, so `getRateLimit()` resolves to a populated `AnthropicRateLimit` there.
+
+NOTE: To read the response headers, the streaming path consumes the Anthropic SDK's blocking stream on a `Schedulers.boundedElastic()` worker, so a streaming call holds a worker thread for the duration of the stream.
+
+== Tool Calling
+
+`AnthropicChatModel` supports tool calling.
+Claude can request tool execution but does not run tools itself — Spring AI handles execution.
+
+For most applications, use `ChatClient` with the auto-registered `ToolCallingAdvisor` — see xref:tools/index.adoc[Tool Calling].
+For low-level control where you drive the loop yourself (for example, when combining tool calling with xref:integrations/models/anthropic/prompt-caching.adoc[prompt caching]), see xref:tools/chatmodel.adoc[ChatModel Tool Calling].
+
+=== Tool Choice Options
+
+Control which tool Claude selects with the `toolChoice` option:
+
+[source,java]
+----
+import com.anthropic.models.messages.ToolChoiceAny;
+import com.anthropic.models.messages.ToolChoiceTool;
+import com.anthropic.models.messages.ToolChoiceNone;
+
+// Force Claude to use any available tool
+var options = AnthropicChatOptions.builder()
+    .toolChoice(ToolChoiceAny.builder().build())
+    .toolCallbacks(...)
+    .build();
+
+// Force Claude to use a specific tool
+var options = AnthropicChatOptions.builder()
+    .toolChoice(ToolChoiceTool.builder().name("getCurrentWeather").build())
+    .toolCallbacks(...)
+    .build();
+
+// Prevent tool use entirely
+var options = AnthropicChatOptions.builder()
+    .toolChoice(ToolChoiceNone.builder().build())
+    .toolCallbacks(...)
+    .build();
+----
+
+[TIP]
+====
+The Anthropic Java SDK provides convenient static factory methods for common tool choices, which can make your code more concise:
+
+* `ToolChoice.auto()` can be used instead of `ToolChoice.ofAuto(...)`.
+* `ToolChoice.any()` can be used instead of `ToolChoice.ofAny(...)`.
+* `ToolChoice.none()` can be used instead of `ToolChoice.ofNone(...)`.
+====
+
+== Streaming
+
+The Anthropic SDK module supports both synchronous and streaming responses.
+Streaming allows Claude to return responses incrementally as they're generated.
+
+[source,java]
+----
+Flux<ChatResponse> stream = chatModel.stream(new Prompt("Tell me a story"));
+
+stream.subscribe(response -> {
+    String content = response.getResult().getOutput().getText();
+    if (content != null) {
+        System.out.print(content);
+    }
+});
+----
+
+== Extended Thinking
+
+Anthropic Claude models support a "thinking" feature that allows the model to show its reasoning process before providing a final answer.
+This is especially useful for complex questions that require step-by-step reasoning, such as math, logic, and analysis tasks.
+
+[NOTE]
+====
+*Supported Models*
+
+All current Claude models support thinking, but the configuration that a model accepts depends on the model:
+
+* *Claude Sonnet 4.6 and Claude Opus 4.6*: adaptive thinking (`thinkingAdaptive()`).
+A thinking budget (`thinkingEnabled(budget)`) still works, but is deprecated.
+* *Claude Opus 4.7 and later, and the Claude 5 models*: adaptive thinking only.
+A thinking budget is rejected with a 400 error.
+* *Claude Haiku 4.5*, the default model: a thinking budget only.
+Adaptive thinking is rejected with a 400 error.
+
+On the Claude 5 models, thinking is on by default, and some of them reject `thinkingDisabled()`.
+See link:https://platform.claude.com/docs/en/build-with-claude/thinking[Thinking] in the Anthropic documentation for the configuration of each model.
+====
+
+=== Thinking Configuration
+
+To enable thinking, use adaptive thinking or set a thinking budget, depending on the model.
+The `budgetTokens` of a thinking budget must be >= 1024 and less than `maxTokens`.
+
+=== Convenience Builder Methods
+
+`AnthropicChatOptions.Builder` provides convenience methods for thinking configuration:
+
+[source,java]
+----
+// Enable thinking with a specific token budget
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .maxTokens(16000)
+    .thinkingEnabled(10000L)    // budget must be >= 1024 and < maxTokens
+    .build();
+
+// Let Claude adaptively decide whether to think
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .thinkingAdaptive()
+    .build();
+
+// Explicitly disable thinking
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .thinkingDisabled()
+    .build();
+----
+
+You can also use the raw SDK `ThinkingConfigParam` directly:
+
+[source,java]
+----
+import com.anthropic.models.messages.ThinkingConfigParam;
+import com.anthropic.models.messages.ThinkingConfigEnabled;
+
+var options = AnthropicChatOptions.builder()
+    .thinking(ThinkingConfigParam.ofEnabled(
+        ThinkingConfigEnabled.builder().budgetTokens(10000L).build()))
+    .build();
+----
+
+=== Thinking Display Setting
+
+The default depends on the model: Claude Sonnet 4.6, Claude Opus 4.6 and earlier models return summarized thinking, and later models omit it.
+You can control this with the `display` parameter to reduce token costs:
+
+* **`SUMMARIZED`** — Claude still thinks fully, but returns a condensed summary instead of the raw chain-of-thought.
+Reduces output tokens while still providing insight into the reasoning.
+* **`OMITTED`** — Thinking is performed but completely redacted from the response.
+Only a cryptographic signature is returned (needed for multi-turn continuity).
+Lowest output token cost.
+
+[source,java]
+----
+import com.anthropic.models.messages.ThinkingConfigEnabled;
+import com.anthropic.models.messages.ThinkingConfigAdaptive;
+
+// Enabled thinking with summarized display
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .maxTokens(16000)
+    .thinkingEnabled(10000L, ThinkingConfigEnabled.Display.SUMMARIZED)
+    .build();
+
+// Enabled thinking with omitted display
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .maxTokens(16000)
+    .thinkingEnabled(10000L, ThinkingConfigEnabled.Display.OMITTED)
+    .build();
+
+// Adaptive thinking with summarized display
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .maxTokens(16000)
+    .thinkingAdaptive(ThinkingConfigAdaptive.Display.SUMMARIZED)
+    .build();
+----
+
+NOTE: The display setting does not affect the quality of the final answer — Claude performs the same amount of thinking regardless.
+It only controls what thinking content is returned in the response.
+
+=== Non-streaming Example
+
+[source,java]
+----
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .maxTokens(16000)
+    .thinkingEnabled(10000L)
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt("Are there an infinite number of prime numbers such that n mod 4 == 3?", options));
+
+// The response is a single generation whose message holds the content blocks in
+// order: ReasoningPart (thinking or redacted thinking), TextPart, ToolCallPart, ...
+AssistantMessage message = response.getResult().getOutput();
+for (MessagePart part : message.getParts()) {
+    if (part instanceof ReasoningPart reasoning) {
+        if (AnthropicChatModel.PAYLOAD_REDACTED_THINKING.equals(reasoning.payload().kind())) {
+            // Safety-redacted reasoning: no text, only the opaque payload to replay
+            System.out.println("Redacted thinking");
+        }
+        else {
+            // Claude's reasoning; the signature is in reasoning.payload().data()
+            System.out.println("Thinking: " + reasoning.text());
+        }
+    }
+    else if (part instanceof TextPart text) {
+        System.out.println("Answer: " + text.text());
+    }
+}
+// Convenience views
+System.out.println(message.getReasoning());  // the ReasoningParts
+System.out.println(message.getText());       // the TextParts joined
+----
+
+=== Streaming Example
+
+Thinking is fully supported in streaming mode.
+Every streamed chunk carries one part stamped with the content block index it belongs to (see `StreamingParts`): thinking deltas arrive as partial `ReasoningPart`s, the signature as a partial `ReasoningPart` carrying only the payload, and text deltas as partial `TextPart`s.
+A redacted thinking block, and any block Spring AI does not model yet (such as a server tool use or its result), arrives as one complete part once the block is done.
+A tool use is announced when its block starts and each of its input deltas follows, as partial `ToolCallPart`s that are not tool calls (see xref:tools/loop.adoc#streaming-tool-call-arguments[Streaming Tool Call Arguments]).
+The complete tool calls arrive in the final chunk of the response, exactly as before.
+`MessageAggregator` (used by `ChatClient` and the advisors) rebuilds the ordered parts from these chunks.
+
+[source,java]
+----
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .maxTokens(16000)
+    .thinkingEnabled(10000L)
+    .build();
+
+Flux<ChatResponse> stream = chatModel.stream(
+    new Prompt("Are there an infinite number of prime numbers such that n mod 4 == 3?", options));
+
+stream.subscribe(response -> {
+    AssistantMessage message = response.getResult().getOutput();
+    for (MessagePart part : message.getParts()) {
+        if (part instanceof ReasoningPart reasoning && reasoning.text() != null) {
+            // Thinking delta; getText() is empty on these chunks
+            System.out.print(reasoning.text());
+        }
+        else if (part instanceof TextPart text) {
+            // Answer delta
+            System.out.print(text.text());
+        }
+    }
+});
+----
+
+The aggregated message at the end of the stream is the same shape as the non-streaming response above: `getParts()` holds the complete `ReasoningPart` (text plus signature), the `TextPart`s and any `ToolCallPart`s in block order.
+
+NOTE: For one release the streamed chunks also carry the metadata keys `thinking` (`AnthropicChatModel.THINKING_METADATA_KEY`, `true` on thinking deltas), `thinkingText` (`AnthropicChatModel.THINKING_TEXT_METADATA_KEY`, the thinking delta), `signature` and `data` from earlier versions.
+They are deprecated; read the parts instead.
+
+=== Response Structure
+
+When thinking is enabled, the response message holds these parts:
+
+[cols="2,3,3", stripes=even]
+|====
+| Part | Payload | Description
+
+| **`ReasoningPart`** | `OpaquePayload("anthropic", "signature", ...)` | Claude's reasoning in `text()`. The payload is the cryptographic signature that must be replayed unchanged.
+| **`ReasoningPart` (redacted)** | `OpaquePayload("anthropic", "redacted_thinking", ...)` | Safety-redacted reasoning, identified by the `AnthropicChatModel.PAYLOAD_REDACTED_THINKING` payload kind. `text()` is `null`.
+| **`TextPart`** | _(none)_ | The answer text, also available joined through `getText()`.
+| **`ToolCallPart`** | _(none)_ | A tool call, also available through `getToolCalls()`.
+| **`UnknownPart`** | _(none)_ | A block Spring AI does not model yet (server tool use, web search and code execution results, container upload), kept as raw JSON. It is replayed to Anthropic as is, for example to continue a turn paused with `pause_turn`, or to keep citing web search results. A part from another provider is not replayed.
+|====
+
+=== Thinking with Tool Calls
+
+When thinking is enabled and Claude decides to call a tool, the thinking blocks from
+that response are automatically preserved and replayed in the follow-up request
+alongside the tool results.
+Omitting the thinking blocks from the replay does not fail the request, but Anthropic then silently answers it without extended thinking; Spring AI logs a warning when this happens.
+
+No special configuration is needed.
+Spring AI handles the replay transparently whether you use the auto-managed tool loop
+(`ChatClient` with `ToolCallingAdvisor`) or drive the loop manually via `ToolCallingManager`.
+
+== Multi-Modal Support
+
+The Anthropic SDK module supports multi-modal inputs, allowing you to send images and PDF documents alongside text in your prompts.
+
+=== Image Input
+
+Send images to Claude for analysis using the `Media` class:
+
+[tabs]
+======
+MediaPart::
++
+[source,java]
+----
+var imageResource = new ClassPathResource("/test-image.png");
+
+var userMessage = UserMessage.builder()
+    .part(TextPart.of("What do you see in this image?"))
+    .part(MediaPart.of(new Media(MimeTypeUtils.IMAGE_PNG, imageResource)))
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
+----
+
+media(...)::
++
+[source,java]
+----
+var imageResource = new ClassPathResource("/test-image.png");
+
+var userMessage = UserMessage.builder()
+    .text("What do you see in this image?")
+    .media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageResource)))
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
+----
+======
+
+Supported image formats: PNG, JPEG, GIF, WebP.
+Images can be provided as:
+
+* Byte arrays (automatically base64-encoded)
+* HTTPS URLs (passed directly to the API)
+
+=== PDF Document Input
+
+Send PDF documents for Claude to analyze:
+
+[tabs]
+======
+MediaPart::
++
+[source,java]
+----
+var pdfResource = new ClassPathResource("/document.pdf");
+
+var userMessage = UserMessage.builder()
+    .part(TextPart.of("Please summarize this document."))
+    .part(MediaPart.of(new Media(new MimeType("application", "pdf"), pdfResource)))
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
+----
+
+media(...)::
++
+[source,java]
+----
+var pdfResource = new ClassPathResource("/document.pdf");
+
+var userMessage = UserMessage.builder()
+    .text("Please summarize this document.")
+    .media(List.of(new Media(new MimeType("application", "pdf"), pdfResource)))
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
+----
+======
+
+=== Multiple Media Items
+
+You can include multiple images or documents in a single message:
+
+[tabs]
+======
+MediaPart::
++
+[source,java]
+----
+var userMessage = UserMessage.builder()
+    .part(TextPart.of("Compare these two images."))
+    .part(MediaPart.of(new Media(MimeTypeUtils.IMAGE_PNG, image1Resource)))
+    .part(MediaPart.of(new Media(MimeTypeUtils.IMAGE_PNG, image2Resource)))
+    .build();
+----
+
+media(...)::
++
+[source,java]
+----
+var userMessage = UserMessage.builder()
+    .text("Compare these two images.")
+    .media(List.of(
+        new Media(MimeTypeUtils.IMAGE_PNG, image1Resource),
+        new Media(MimeTypeUtils.IMAGE_PNG, image2Resource)))
+    .build();
+----
+======
+
+The text is sent first, followed by the media, one content block each.
+
+=== Interleaving Text and Media
+
+To control where each image sits relative to the text, build the message from parts.
+Each `MessagePart` becomes one content block, in the order the parts were added:
+
+[source,java]
+----
+var userMessage = UserMessage.builder()
+    .part(TextPart.of("The first chart:"))
+    .part(MediaPart.of(new Media(MimeTypeUtils.IMAGE_PNG, image1Resource)))
+    .part(TextPart.of("The second chart:"))
+    .part(MediaPart.of(new Media(MimeTypeUtils.IMAGE_PNG, image2Resource)))
+    .part(TextPart.of("Which one shows the larger growth?"))
+    .build();
+----
+
+When prompt caching applies to the user message, the cache breakpoint goes on the last text block.
+
+== Structured Output
+
+Structured output constrains Claude to produce responses conforming to a JSON schema.
+The Anthropic SDK module also supports Anthropic's effort control for tuning response quality vs speed.
+
+[NOTE]
+====
+*Model Requirement*
+
+Structured output is available on every Claude model.
+Effort control needs a model that supports it, such as `claude-sonnet-4-6`; the default model, `claude-haiku-4-5`, does not.
+See link:https://platform.claude.com/docs/en/build-with-claude/effort[Effort] in the Anthropic documentation for the supported models.
+
+*Schema Requirements*
+
+When using JSON schema output, Anthropic requires `"additionalProperties": false` for all object types in the schema.
+====
+
+=== JSON Schema Output
+
+Constrain Claude's responses to a specific JSON schema using the `outputSchema` convenience method:
+
+[source,java]
+----
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .outputSchema("""
+        {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "capital": {"type": "string"},
+                "population": {"type": "integer"}
+            },
+            "required": ["name", "capital"],
+            "additionalProperties": false
+        }
+        """)
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("Tell me about France.", options));
+// Response text will be valid JSON conforming to the schema
+----
+
+=== Effort Control
+
+Control how much compute Claude spends on its response.
+Lower effort means faster, cheaper responses; higher effort means more thorough reasoning.
+
+[cols="2,5", stripes=even]
+|====
+| Effort Level | Description
+
+| `LOW` | Fast and concise responses with minimal reasoning
+| `MEDIUM` | Balanced trade-off between speed and thoroughness
+| `HIGH` | More thorough reasoning and detailed responses
+| `MAX` | Maximum compute for the most thorough possible responses
+|====
+
+[source,java]
+----
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .effort(OutputConfig.Effort.LOW)
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("What is the capital of France?", options));
+----
+
+=== Combined Schema and Effort
+
+You can combine JSON schema output with effort control:
+
+[source,java]
+----
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .outputSchema("""
+        {
+            "type": "object",
+            "properties": {
+                "answer": {"type": "integer"},
+                "explanation": {"type": "string"}
+            },
+            "required": ["answer", "explanation"],
+            "additionalProperties": false
+        }
+        """)
+    .effort(OutputConfig.Effort.HIGH)
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt("What is 15 * 23? Show your reasoning.", options));
+----
+
+=== Direct OutputConfig
+
+For full control, use the SDK's `OutputConfig` directly:
+
+[source,java]
+----
+import com.anthropic.models.messages.OutputConfig;
+import com.anthropic.models.messages.JsonOutputFormat;
+import com.anthropic.core.JsonValue;
+
+var outputConfig = OutputConfig.builder()
+    .effort(OutputConfig.Effort.HIGH)
+    .format(JsonOutputFormat.builder()
+        .schema(JsonOutputFormat.Schema.builder()
+            .putAdditionalProperty("type", JsonValue.from("object"))
+            .putAdditionalProperty("properties", JsonValue.from(Map.of(
+                "name", Map.of("type", "string"))))
+            .putAdditionalProperty("additionalProperties", JsonValue.from(false))
+            .build())
+        .build())
+    .build();
+
+var options = AnthropicChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .outputConfig(outputConfig)
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("Tell me about France.", options));
+----
+
+=== StructuredOutputChatOptions Interface
+
+`AnthropicChatOptions` implements the `StructuredOutputChatOptions` interface, which provides portable `getOutputSchema()` method.
+This allows structured output to work with Spring AI's generic structured output infrastructure.
+
+== Service Tier
+
+Anthropic offers different https://docs.claude.com/en/api/service-tiers[service tiers] that control capacity routing for API requests.
+You can use `AnthropicServiceTier.AUTO` to opportunistically use priority capacity (lower latency) when available, or `STANDARD_ONLY` to always use standard capacity.
+
+Via Spring Boot properties:
+
+[source,properties]
+----
+spring.ai.anthropic.chat.service-tier=auto
+----
+
+Or programmatically per-request:
+
+[source,java]
+----
+var options = AnthropicChatOptions.builder()
+    .serviceTier(AnthropicServiceTier.AUTO)
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("Hello", options));
+----
+
+== Per-Request HTTP Headers
+
+The Anthropic SDK module supports per-request HTTP headers, which are injected into individual API calls.
+This is distinct from `customHeaders` (which are set at the client level for all requests).
+
+Per-request headers are useful for:
+
+* **Request tracking**: Adding correlation IDs or trace headers per request
+* **Beta API access**: Including beta feature headers for specific requests
+* **Routing**: Adding routing or priority headers for load balancing
+
+[source,java]
+----
+var options = AnthropicChatOptions.builder()
+    .httpHeaders(Map.of(
+        "X-Request-Id", "req-12345",
+        "X-Custom-Tracking", "my-tracking-value"))
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("Hello", options));
+----
+
+NOTE: `httpHeaders` are per-request and set via `MessageCreateParams.putAdditionalHeader()`.
+They do not affect other requests.
+For headers that should apply to all requests, use `customHeaders` instead.
+
+== Sample Controller
+
+Here is an example of a simple `@RestController` class that uses the chat model for text generations:
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final AnthropicChatModel chatModel;
+
+    public ChatController() {
+        var options = AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-6")
+            .maxTokens(1024)
+            .apiKey(System.getenv("ANTHROPIC_API_KEY"))
+            .build();
+        this.chatModel = AnthropicChatModel.builder()
+            .options(options)
+            .build();
+    }
+
+    @GetMapping("/ai/generate")
+    public Map<String, String> generate(
+            @RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatModel.call(message));
+    }
+
+    @GetMapping("/ai/generateStream")
+    public Flux<ChatResponse> generateStream(
+            @RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        Prompt prompt = new Prompt(new UserMessage(message));
+        return chatModel.stream(prompt);
+    }
+}
+----
+
+== Accessing the Raw Response
+
+The full Anthropic SDK `Message` object is available in the response metadata under the `"anthropic-response"` key.
+This provides access to any fields not explicitly mapped by Spring AI's abstraction:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(new Prompt("Hello"));
+
+com.anthropic.models.messages.Message rawMessage =
+    (com.anthropic.models.messages.Message) response.getMetadata().get("anthropic-response");
+
+// Access native SDK fields
+rawMessage.stopReason();    // Optional<StopReason>
+rawMessage.content();       // List<ContentBlock>
+rawMessage.usage();         // Usage with cache token details
+----
+
+NOTE: The raw response is available for synchronous calls only.
+Streaming responses do not include it.
+
+== Observability
+
+Spring AI emits Micrometer observations at two layers for every Anthropic call:
+
+* **Chat-model layer.** A `gen_ai.client.operation` observation wraps every call to `AnthropicChatModel.call(...)` or `.stream(...)`, carrying request parameters, response metadata, and token usage.
+See the xref:observability/index.adoc[observability reference] for the full set of tags and metrics.
+* **HTTP layer.** An `okhttp.requests` observation wraps every HTTP attempt to the Anthropic API, carrying HTTP method, URI, status code, and exception tags.
+Each request also propagates `traceparent` on the wire to any downstream services (AI gateways, OpenAI-compatible inference servers, proxies).
+
+For both `call(...)` and `stream(...)`, the `okhttp.requests` observation is nested under the `gen_ai.client.operation` observation, so the `traceparent` sent to Anthropic carries the caller's trace.
+The one exception is streaming with your own async client set through `AnthropicChatModel.builder().anthropicClientAsync(...)`: Spring AI keeps using that client, but its HTTP observations are not nested under the chat-model observation.
+
+The Anthropic Java SDK can also emit its own OpenTelemetry spans.
+Spring AI turns them off in the clients it builds, because the observations above already cover every request.
+A client that you build yourself and pass to `AnthropicChatModel.builder()` keeps whatever SDK tracing settings you gave it.
+
+In a Spring Boot application with `spring-boot-starter-actuator` and a tracing bridge (`micrometer-tracing-bridge-otel` or `micrometer-tracing-bridge-brave`), both layers are wired automatically — no opt-in required.
+For non-Boot applications, pass an `ObservationRegistry` to `AnthropicChatModel.builder()`:
+
+[source,java]
+----
+AnthropicChatModel chatModel = AnthropicChatModel.builder()
+    .options(...)
+    .observationRegistry(observationRegistry)
+    .build();
+----
+
+=== Anthropic server-side spans
+
+The Claude API can also export its own spans for each request, such as `anthropic.messages.create`, to your observability platform.
+Because Spring AI sends a `traceparent` header with every request, these spans join your application's trace, under the `okhttp.requests` span of that request.
+This needs no code or Spring AI configuration; you set it up on the Anthropic side.
+
+. In the Claude Console, an organization admin adds a telemetry destination: the OTLP/HTTP endpoint of your observability platform and its credentials.
+The destination must cover the workspace of the API key that your application uses.
+See https://platform.claude.com/docs/en/manage-claude/opentelemetry/api[Use OpenTelemetry with the Claude API] for the steps.
+. Export your application's traces to the same observability platform, so that it can show both sides as one trace.
+. To find the Anthropic spans, filter on `service.name` = `claude-platform`.
+
+Keep in mind:
+
+* The Claude API follows the sampled flag in `traceparent`: when your application doesn't sample a request, the API doesn't emit spans for it either.
+Spring Boot samples 10% of requests by default, which you can change with `management.tracing.sampling.probability`.
+* The Claude API reads only the W3C `traceparent` header, which is Spring Boot's default.
+If you use B3 propagation, add W3C as well, for example with `management.tracing.propagation.type=w3c,b3`.
+* Claude Platform on AWS doesn't read `traceparent` yet, so the spans of requests sent to it always start their own trace.
+
+=== Connection-pool metrics (opt-in)
+
+Spring AI can additionally bind OkHttp connection-pool gauges (`okhttp.pool.connection.count` with `state=active|idle` and `client.kind=sync|async`) to the application's `MeterRegistry`.
+These are secondary telemetry — useful for capacity tuning but not required for tracing or per-request latency — so they're disabled by default.
+
+To enable them in a Spring Boot application:
+
+[source,properties]
+----
+spring.ai.anthropic.chat.connection-pool-metrics-enabled=true
+----
+
+For non-Boot applications, pass a `MeterRegistry` directly to the builder; the gauges bind whenever a registry is supplied:
+
+[source,java]
+----
+AnthropicChatModel chatModel = AnthropicChatModel.builder()
+    .options(...)
+    .observationRegistry(observationRegistry)
+    .meterRegistry(meterRegistry)
+    .build();
+----
+
+=== HTTP dispatcher executor (advanced)
+
+By default Spring AI manages the OkHttp dispatcher's executor — an unbounded pool of platform threads, replicating the SDK's stock behavior.
+For workloads with high HTTP concurrency, or to take advantage of Java 21+ virtual threads, you can supply your own `ExecutorService`:
+
+[source,java]
+----
+AnthropicChatModel chatModel = AnthropicChatModel.builder()
+    .options(...)
+    .dispatcherExecutor(Executors.newVirtualThreadPerTaskExecutor())
+    .build();
+----
+
+The same executor backs both the sync and async clients.
+When you supply your own executor, you own its lifecycle — Spring AI will never call `shutdown()` on it.
+When omitted, the internal executor is created and cleaned up automatically.
+
+== Logging
+
+Enable SDK logging by setting the environment variable:
+
+[source,bash]
+----
+export ANTHROPIC_LOG=debug
+----
+
+== Limitations
+
+The following features are not yet supported:
+
+* Amazon Bedrock backend
+* Google Vertex AI backend
+
+These features are planned for future releases.
+
+include::partial$anthropic/anthropic-http-client-customization.adoc[]
+
+== Additional Resources
+
+* link:https://github.com/anthropics/anthropic-sdk-java[Official Anthropic Java SDK]
+* link:https://docs.anthropic.com/[Anthropic API Documentation]
+* link:https://docs.anthropic.com/en/docs/about-claude/models[Claude Models]

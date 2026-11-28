@@ -38,8 +38,10 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
@@ -420,6 +422,28 @@ class ResponsesItemMapperTests {
 	}
 
 	/**
+	 * A tool-call argument delta of a stream is not a tool call, so a message built from
+	 * the parts of the chunks replays only the complete call.
+	 */
+	@Test
+	void toolCallArgumentDeltaIsNotReplayed() {
+		AssistantMessage assistant = AssistantMessage.builder()
+			.part(StreamingParts.partial(
+					ToolCallPart.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":")),
+					0))
+			.part(StreamingParts.complete(
+					ToolCallPart
+						.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":\"Paris\"}")),
+					0))
+			.build();
+
+		var input = ResponsesItemMapper.toInput(List.of(assistant));
+
+		assertThat(itemTypes(input.items())).containsExactly("function_call");
+		assertThat(toJson(input.items().get(0))).contains("call_1").contains("Paris");
+	}
+
+	/**
 	 * A reasoning part that lost its payload on the way through a component that does not
 	 * preserve one cannot be replayed either, and must not fail the turn.
 	 */
@@ -569,6 +593,28 @@ class ResponsesItemMapperTests {
 		assertThat(generation.getMetadata().<String>get(OpenAiResponsesMetadata.REASONING_CONTENT))
 			.isEqualTo("Report the temperature the tool returned.");
 		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("STOP");
+	}
+
+	/**
+	 * Each summary entry is its own paragraph with its own heading. Joined without a
+	 * separator, the last sentence of one runs straight into the heading of the next.
+	 * Empty entries are skipped wherever they are - first, last, or the only entry of an
+	 * item - so they add no paragraph break, and an item left with nothing has no summary
+	 * at all. Between items the separator stays a single line break.
+	 */
+	@Test
+	void summaryEntriesAreSeparateParagraphsAndEmptyEntriesAreSkipped() {
+		Generation generation = ResponsesItemMapper.toGeneration(fixture("reasoning-with-summary-entries.json"));
+
+		String first = "**Reading the question**\nThe user wants the temperature in Paris.\n\n"
+				+ "**Checking the tool**\nThe tool reported 18 degrees.";
+		String third = "**Answering**\nReport the temperature.\n\n**Wording**\nKeep it to one sentence.";
+		List<MessagePart> parts = generation.getOutput().getParts();
+		assertThat(((ReasoningPart) parts.get(0)).summary()).isEqualTo(first);
+		assertThat(((ReasoningPart) parts.get(1)).summary()).isNull();
+		assertThat(((ReasoningPart) parts.get(2)).summary()).isEqualTo(third);
+		assertThat(generation.getMetadata().<String>get(OpenAiResponsesMetadata.REASONING_CONTENT))
+			.isEqualTo(first + "\n" + third);
 	}
 
 	/**

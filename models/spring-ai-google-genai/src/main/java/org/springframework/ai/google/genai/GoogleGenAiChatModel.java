@@ -75,6 +75,7 @@ import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.StreamingPartIndexer;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
@@ -82,6 +83,7 @@ import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -375,6 +377,11 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			}
 			else if (part instanceof ReasoningPart reasoningPart) {
 				reasoningToGeminiPart(reasoningPart).ifPresent(parts::add);
+			}
+			else if (part instanceof ToolCallPart && StreamingParts.isPartial(part)) {
+				// A tool-call argument delta of a stream, not a tool call
+				// (see StreamingParts)
+				continue;
 			}
 			else if (part instanceof ToolCallPart toolCallPart) {
 				Part.Builder builder = Part.builder().functionCall(toFunctionCall(toolCallPart.toolCall()));
@@ -765,11 +772,37 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			messageBuilder.part(toMessagePart(part));
 		}
 
+		AssistantMessage assistantMessage = messageBuilder.build();
 		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
 			.finishReason(candidateFinishReason.toString())
+			.finishReasonCategory(finishReasonCategory(candidateFinishReason, assistantMessage.hasToolCalls()))
 			.build();
 
-		return List.of(new Generation(messageBuilder.build(), chatGenerationMetadata));
+		return List.of(new Generation(assistantMessage, chatGenerationMetadata));
+	}
+
+	/**
+	 * Classifies the finish reason of a candidate. Gemini reports an ordinary stop when
+	 * the model asks for a tool.
+	 */
+	static FinishReasonCategory finishReasonCategory(FinishReason finishReason, boolean hasToolCalls) {
+		FinishReason.Known known = finishReason.knownEnum();
+		if (known == FinishReason.Known.FINISH_REASON_UNSPECIFIED && !known.name().equals(finishReason.toString())) {
+			// The SDK reports a value it does not know as unspecified. It is a reason
+			// all the same, only not one that can be classified.
+			return FinishReasonCategory.OTHER;
+		}
+		return switch (known) {
+			case STOP -> hasToolCalls ? FinishReasonCategory.TOOL_CALL : FinishReasonCategory.COMPLETED;
+			case MAX_TOKENS -> FinishReasonCategory.TRUNCATED;
+			case SAFETY, RECITATION, BLOCKLIST, PROHIBITED_CONTENT, SPII, IMAGE_SAFETY, IMAGE_PROHIBITED_CONTENT,
+					IMAGE_RECITATION ->
+				FinishReasonCategory.FILTERED;
+			case FINISH_REASON_UNSPECIFIED -> FinishReasonCategory.UNSPECIFIED;
+			// A malformed or unexpected tool call, an unsupported language, no image, and
+			// anything new
+			default -> FinishReasonCategory.OTHER;
+		};
 	}
 
 	private MessagePart toMessagePart(Part part) {

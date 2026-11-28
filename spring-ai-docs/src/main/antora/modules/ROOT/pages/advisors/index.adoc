@@ -1,0 +1,202 @@
+[[Advisors]]
+= Advisors
+:page-aliases: api/advisors.adoc
+
+Every `ChatClient` call is executed by a chain of advisors.
+An advisor is a component that runs around the call to the model: it can change the request before the model sees it, change the response before your code sees it, call the model more than once, or answer without calling it at all.
+Advisors are to `ChatClient` what filters are to a servlet container.
+
+Most features of `ChatClient` are advisors:
+xref:memory/session/chat-client.adoc[session memory], xref:rag/index.adoc[retrieval augmented generation], the xref:tools/loop.adoc[tool calling loop], xref:structured-output/validation.adoc[schema validation], xref:resilience/guardrails.adoc[guardrails] and logging.
+Even the call to the model is made by an advisor, the last one in the chain.
+To understand what a `ChatClient` call does, look at its advisor chain.
+For an agent built on a `ChatClient`, this chain is the backbone of its xref:agents/index.adoc#agent-harness[harness], the part of an agent that isn't the model.
+
+[[advisor-model]]
+== The Model in Four Rules
+
+. *A call is one pass down a sorted stack.*
+`ChatClient` sorts the advisors of a call by their order and runs them from the first to the last, which calls the model.
+The request travels down the chain as a `ChatClientRequest`, and the response travels back up as a `ChatClientResponse`.
+. *Every advisor runs around the rest of the chain.*
+It has code that runs before it calls the next advisor, and code that runs after the next advisor returns.
+Both can read and write state that outlives the call, such as a xref:memory/session/index.adoc[session].
+. *An advisor decides what happens to the rest of the chain.*
+It can pass the request on, run the rest of the chain more than once, or answer without running it at all.
+. *A recursive advisor multiplies what follows it.*
+An advisor before every recursive advisor runs once per call.
+An advisor after a recursive advisor runs once for every round of it.
+
+The sections below explain each rule.
+
+== The Advisor Chain
+
+For each call, `ChatClient` builds a chain:
+
+. It takes the advisors registered on the builder with `defaultAdvisors(...)` and those added to the call with `advisors(...)`.
+. It adds a `ToolCallingAdvisor`, unless the chain already has one, or auto-registration is disabled.
+It does this even when the call has no tools, because another advisor can add tools while the call runs.
+. It adds `ChatModelCallAdvisor` and `ChatModelStreamAdvisor` at the end.
+They add the format instructions of `.entity(...)` to the prompt, or the schema for xref:structured-output/native.adoc[native structured output], and call the chat model.
+. It sorts the advisors by their order.
+
+The following chain uses session memory, retrieval and schema validation:
+
+image::spring-ai-advisor-chain.svg[The advisor chain of a ChatClient call,860,opts=inline]
+
+A chain is used up as it runs: each advisor takes the next one from it.
+`ChatClient` therefore builds a new chain for every call.
+
+Each advisor decides what to do:
+
+* *Pass the request on, and change it or the response.* `QuestionAnswerAdvisor` adds documents to the prompt, and `SessionMemoryAdvisor` stores the request's last message before the model call and the reply after it.
+* *Run the rest of the chain more than once.* `ToolCallingAdvisor` runs everything after it again for each tool round, and `StructuredOutputValidationAdvisor` does so when an answer does not match its schema.
+See xref:advisors/recursive.adoc[Recursive Advisors].
+* *Answer without calling the rest of the chain.* `SafeGuardAdvisor` returns a refusal when the input contains a blocked word, and `SemanticCacheAdvisor` returns a cached answer.
+
+== Order
+
+An advisor's order, from `getOrder()`, decides its place in the chain:
+
+* The advisor with the lowest order runs first on the way to the model, and last on the way back.
+The chain works like a stack.
+* `Ordered.HIGHEST_PRECEDENCE` is the lowest value and `Ordered.LOWEST_PRECEDENCE` the highest.
+* Advisors with the same order run in an undefined order.
+
+The position relative to the recursive advisors matters most, and the tool loop is the one that every chain has.
+An advisor before `ToolCallingAdvisor` runs once per call.
+An advisor after it runs again for every tool round, and sees each intermediate request and response.
+For example, `SessionTurnAdvisor` is placed before the loop so that it records each turn once, and `SessionMemoryAdvisor` after it so that every round sees the conversation, including the tool calls of earlier rounds.
+
+The same holds for any other recursive advisor, and the rounds multiply: an advisor after two recursive advisors runs for every round of both.
+
+[cols="3,2,4", options="header"]
+|===
+| Advisor | Default order | Position
+
+| `SessionTurnAdvisor`, `MessageChatMemoryAdvisor`, `VectorStoreChatMemoryAdvisor`, `SemanticCacheAdvisor`
+| `HIGHEST_PRECEDENCE + 200`
+| Before the tool loop
+
+| `ToolCallingAdvisor`, `ToolSearchToolCallingAdvisor`
+| `HIGHEST_PRECEDENCE + 300`
+| The tool loop
+
+| `SessionMemoryAdvisor`
+| `HIGHEST_PRECEDENCE + 1000`
+| Inside the tool loop
+
+| `QuestionAnswerAdvisor`, `RetrievalAugmentationAdvisor`, `SafeGuardAdvisor`, `SimpleLoggerAdvisor`
+| `0`
+| Inside the tool loop
+
+| `StructuredOutputValidationAdvisor`
+| `LOWEST_PRECEDENCE - 2000`
+| Close to the model, so that a retry repeats only the model call
+
+| `ChatModelCallAdvisor`, `ChatModelStreamAdvisor`
+| `LOWEST_PRECEDENCE`
+| Last: call the model
+|===
+
+The built-in advisors let you change their order through their builders.
+When `ChatClient` auto-registers the `ToolCallingAdvisor` and finds a `MemoryAdvisor` after it in the chain, such as `SessionMemoryAdvisor`, it turns off the advisor's internal conversation history and leaves the history of the tool rounds to that memory advisor.
+If you register the `ToolCallingAdvisor` yourself, call `disableInternalConversationHistory()` on its builder to get the same behavior.
+
+[[advisors-repeatable]]
+== Advisors Run More Than Once
+
+An advisor can run more than once for the same user request:
+
+* *Once for every round of a recursive advisor before it.*
+In the default chain, every advisor after the `ToolCallingAdvisor` runs again for each tool round.
+* *Again when your application sends the request again.*
+A retry after a failure runs the whole chain from the first advisor.
+So does the call that xref:tools/confirmation.adoc#resuming[resumes a conversation] after a tool call waited for confirmation.
+
+An advisor must therefore be repeatable: when it runs again, the outcome is the same as if it had run once.
+
+* *An advisor that only changes the request or the response is repeatable when it computes the change from the request it receives.*
+A recursive advisor builds the request of every round itself.
+A change that an advisor made in one round is not in the request of the next round, so the advisor makes it again.
+* *Work that must happen once per call belongs before the recursive advisors.*
+`SessionTurnAdvisor` runs before the tool loop for this reason.
+* *Work that must not happen twice needs a record.*
+An advisor that sends a notification or charges an account checks first whether it has already done so, in a store that outlives the call.
+Nothing that an advisor keeps in memory is there when your application sends the request again.
+
+xref:advisors/custom.adoc#repeatable-advisors[Writing an Advisor] shows how to follow this rule in an advisor of your own.
+
+== Registering Advisors
+
+Register the advisors that every call needs once, on the builder.
+Add the ones that a single call needs to that call:
+
+[source,java]
+----
+ChatClient chatClient = ChatClient.builder(chatModel)
+	.defaultAdvisors(SessionAdvisors.builder(sessionService).build()) // the session memory advisors
+	.defaultAdvisors(QuestionAnswerAdvisor.builder(vectorStore).build()) // retrieval
+	.build();
+
+String answer = chatClient.prompt()
+	.user(userText)
+	.advisors(SessionAdvisors.session(sessionId)) // a parameter for the session advisors
+	.advisors(new SimpleLoggerAdvisor()) // an advisor for this call only
+	.call()
+	.content();
+----
+
+`advisors(...)` also passes parameters to the advisors of the chain.
+`SessionAdvisors.session(sessionId)` is a shortcut for `advisors(a -> a.param(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, sessionId))`, whose key is the same as `MemoryAdvisor.CONVERSATION_ID`.
+Each advisor documents the parameters it reads.
+
+xref:chatclient/advisors.adoc[Advisors and Memory in ChatClient] shows more configuration, such as logging and the options of the tool calling advisor.
+
+== The Request, the Response and the Context
+
+A `ChatClientRequest` holds the `Prompt` and a context map, and a `ChatClientResponse` holds the `ChatResponse` and the same context.
+`ChatClient` creates the context for each call from the parameters given with `advisors(...)`, and adds its own entries, such as the output format of `.entity(...)`.
+
+Advisors use the context to pass information to each other and to themselves: an advisor can put an entry into the context on the way down and read it on the way back up.
+The `mutate()` method of the request and of the response creates a changed copy, for example with an augmented prompt.
+
+== The Tool Calling Advisor
+
+`ToolCallingAdvisor` is the only advisor that `ChatClient` adds on its own, apart from the advisors that call the model.
+A chain can have at most one advisor that implements `ToolAdvisor`, so adding your own `ToolCallingAdvisor`, or a subclass such as `ToolSearchToolCallingAdvisor`, replaces the default one.
+
+To disable the automatic registration, for example to run the tool loop yourself:
+
+* for every call of the auto-configured `ChatClient`, set `spring.ai.chat.client.tool-calling.enabled=false`;
+* for one call, add `.advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))`.
+
+See xref:tools/tool-calling-advisor.adoc[ToolCallingAdvisor] and xref:tools/loop.adoc[The Tool Calling Loop].
+
+== Observability
+
+Each advisor in the chain is observed: a `spring.ai.advisor` observation measures the time spent in the advisor, including the advisors after it, and carries its name and order.
+In a trace, the advisor chain of a call appears as nested spans.
+See xref:observability/index.adoc#_chat_client_advisors[Observability].
+
+== The Advisor API
+
+The advisor interfaces are in the `org.springframework.ai.chat.client.advisor.api` package:
+
+image::spring-ai-advisor-api.svg[The Advisor API,860,opts=inline]
+
+* `CallAdvisor` advises `call()`, and `StreamAdvisor` advises `stream()`.
+An advisor that should work for both implements both.
+* `BaseAdvisor` implements both from two methods, `before(...)` and `after(...)`, for advisors that change the request and the response but do not need to control the call of the rest of the chain.
+* `CallAdvisorChain` and `StreamAdvisorChain` call the next advisor.
+Their `copy(after)` method creates a chain of the advisors that follow a given advisor, which recursive advisors call more than once.
+* `ToolAdvisor` and `MemoryAdvisor` are marker interfaces.
+`ChatClient` uses them to find the tool calling advisor and the memory advisors in a chain.
+
+xref:advisors/custom.adoc[Writing an Advisor] shows how to implement them.
+
+== In This Section
+
+* xref:advisors/built-in.adoc[Built-in Advisors]
+* xref:advisors/custom.adoc[Writing an Advisor]
+* xref:advisors/recursive.adoc[Recursive Advisors]

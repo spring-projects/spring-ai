@@ -1,0 +1,250 @@
+[[writing-an-advisor]]
+= Writing an Advisor
+
+An advisor of your own takes part in every `ChatClient` call that it is registered for, like the built-in advisors do.
+This page shows how to write one.
+Read xref:advisors/index.adoc[Advisors] first: it explains the advisor chain, the order and the context.
+
+== Choosing an Interface
+
+[cols="2,5", options="header"]
+|===
+| Interface | Use it when
+
+| `BaseAdvisor`
+| The advisor changes or inspects the request before the model call and the response after it.
+You implement `before(...)` and `after(...)`, and `BaseAdvisor` implements both `call()` and `stream()` from them.
+
+| `CallAdvisor` and `StreamAdvisor`
+| The advisor needs control over the call of the rest of the chain: it answers without calling it, calls it more than once, or transforms the stream of a streaming response.
+Implement both interfaces to support both `call()` and `stream()`.
+|===
+
+Every advisor also has a name, from `getName()`, which appears in logs and observations, and an order, from `getOrder()`.
+
+== Choosing an Order
+
+The order decides where the advisor runs, see xref:advisors/index.adoc#_order[Order]:
+
+* An order lower than `ToolCallingAdvisor.DEFAULT_ORDER` (`HIGHEST_PRECEDENCE + 300`) puts the advisor before the tool loop: it runs once per call and sees only the first request and the final response.
+* A higher order puts it inside the tool loop: it runs for every tool round and sees each intermediate request and response.
+* An order close to `LOWEST_PRECEDENCE` puts it next to the model call.
+
+The same holds for any other recursive advisor in the chain: an advisor after it runs for every one of its rounds.
+
+Let users change the order, through a constructor or a builder, because they may combine your advisor with others.
+
+== Changing the Request: a Re-Reading Advisor
+
+The https://arxiv.org/pdf/2309.06275[Re-Reading] technique improves the reasoning of a model by repeating the question:
+
+----
+{Input_Query}
+Read the question again: {Input_Query}
+----
+
+A `BaseAdvisor` applies it in `before(...)`:
+
+[source,java]
+----
+public class ReReadingAdvisor implements BaseAdvisor {
+
+	private static final String TEMPLATE = """
+			{query}
+			Read the question again: {query}
+			""";
+
+	private final int order;
+
+	public ReReadingAdvisor(int order) {
+		this.order = order;
+	}
+
+	@Override
+	public ChatClientRequest before(ChatClientRequest request, AdvisorChain chain) {
+		String augmentedText = PromptTemplate.builder()
+			.template(TEMPLATE)
+			.variables(Map.of("query", request.prompt().getUserMessage().getText()))
+			.build()
+			.render();
+		return request.mutate()
+			.prompt(request.prompt().augmentUserMessage(augmentedText))
+			.build();
+	}
+
+	@Override
+	public ChatClientResponse after(ChatClientResponse response, AdvisorChain chain) {
+		return response;
+	}
+
+	@Override
+	public int getOrder() {
+		return this.order;
+	}
+}
+----
+
+`BaseAdvisor` provides `getName()`, which returns the simple class name.
+
+== Sharing State through the Context
+
+An advisor can put an entry into the context of the request in `before(...)` and read it from the response in `after(...)`, because the context travels down the chain with the request and back up with the response.
+This advisor measures how long the rest of the chain takes:
+
+[source,java]
+----
+public class TimingAdvisor implements BaseAdvisor {
+
+	private static final Logger logger = LoggerFactory.getLogger(TimingAdvisor.class);
+
+	private static final String START = TimingAdvisor.class.getName() + ".start";
+
+	@Override
+	public ChatClientRequest before(ChatClientRequest request, AdvisorChain chain) {
+		return request.mutate().context(START, System.nanoTime()).build();
+	}
+
+	@Override
+	public ChatClientResponse after(ChatClientResponse response, AdvisorChain chain) {
+		long start = (Long) response.context().get(START);
+		logger.info("Model call took {} ms", (System.nanoTime() - start) / 1_000_000);
+		return response;
+	}
+
+	@Override
+	public int getOrder() {
+		return Ordered.LOWEST_PRECEDENCE - 1000;
+	}
+}
+----
+
+Use keys that other advisors will not use by accident, such as names that start with your class name.
+Read the parameters that users pass with `.advisors(a -> a.param(key, value))` the same way, from `request.context()`.
+
+Keep the state of a call in the context, not in the fields of the advisor.
+One advisor instance serves every call of the `ChatClient` it is registered on, also calls that run at the same time.
+
+An entry that an advisor inside a loop adds is there for the rest of that round, down the chain and back up.
+Do not rely on it in the next round: a recursive advisor builds the request of every round itself.
+
+[[repeatable-advisors]]
+== Making an Advisor Repeatable
+
+An advisor can run more than once for the same user request: for every round of a recursive advisor before it, and again when the application sends the request again.
+It must give the same outcome as if it had run once, see xref:advisors/index.adoc#advisors-repeatable[Advisors Run More Than Once].
+
+[cols="2,4", options="header"]
+|===
+| What the advisor does | How to keep it repeatable
+
+| Changes the request or the response
+| Compute the change from the request you receive.
+Do not assume that the last message is the user message, or that the request holds one: inside the tool loop, the request of a later round ends with the tool results, and before a memory advisor that keeps the history of the rounds it may hold little else.
+
+| Does work that must happen once per call, such as starting a timer or counting the call
+| Give the advisor an order before the recursive advisors, lower than `ToolCallingAdvisor.DEFAULT_ORDER`.
+
+| Does work that must not happen twice, such as sending a notification or writing to a store
+| Record that the work is done in a store that outlives the call, for example as an event in the xref:memory/session/index.adoc[session], and check the record before doing the work.
+The context is not enough: it does not carry from one round to the next, and it is gone when the application sends the request again.
+|===
+
+== Observing Both Directions: a Logging Advisor
+
+When an advisor needs the complete response of a streaming call, it can aggregate the stream with `ChatClientMessageAggregator`, which calls back with the aggregated response and passes the chunks on unchanged:
+
+[source,java]
+----
+public class LoggingAdvisor implements CallAdvisor, StreamAdvisor {
+
+	private static final Logger logger = LoggerFactory.getLogger(LoggingAdvisor.class);
+
+	@Override
+	public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+		logger.debug("request: {}", request);
+		ChatClientResponse response = chain.nextCall(request);
+		logger.debug("response: {}", response);
+		return response;
+	}
+
+	@Override
+	public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
+		logger.debug("request: {}", request);
+		return new ChatClientMessageAggregator().aggregateChatClientResponse(chain.nextStream(request),
+				response -> logger.debug("response: {}", response));
+	}
+
+	@Override
+	public String getName() {
+		return "LoggingAdvisor";
+	}
+
+	@Override
+	public int getOrder() {
+		return 0;
+	}
+}
+----
+
+Spring AI includes a configurable advisor like this one, `SimpleLoggerAdvisor`, see xref:chatclient/advisors.adoc#_logging[Logging].
+
+== Answering without the Model
+
+A `CallAdvisor` can return a response without calling the rest of the chain, for example to block a request.
+A guardrail should build its answer with `GuardrailRefusal.generation(text)`, so that `ChatClient` and the other advisors recognize it as a refusal, see xref:resilience/guardrails.adoc[Guardrails]:
+
+[source,java]
+----
+@Override
+public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+	if (isBlocked(request.prompt().getUserMessage().getText())) {
+		ChatResponse refusal = ChatResponse.builder()
+			.generations(List.of(GuardrailRefusal.generation("I can't help with that request.")))
+			.build();
+		return ChatClientResponse.builder().chatResponse(refusal).context(request.context()).build();
+	}
+	return chain.nextCall(request);
+}
+----
+
+Give such an advisor a low order, so that it runs before the other advisors and the model.
+
+== Calling the Rest of the Chain Again
+
+An advisor can call the rest of the chain more than once, for example to retry or to loop.
+It must call a copy of the chain that starts after it, made with `chain.copy(this)`.
+See xref:advisors/recursive.adoc[Recursive Advisors].
+
+== Streaming
+
+`BaseAdvisor` handles streaming for you, as the following diagram shows:
+
+image::spring-ai-advisor-call-stream.svg[How BaseAdvisor runs before() and after(),860,opts=inline]
+
+* `before(...)` runs on the scheduler returned by `getScheduler()`, `Schedulers.boundedElastic()` by default, so it may block.
+* `after(...)` runs only for the chunk that carries the finish reason, usually the last one.
+All other chunks pass through unchanged.
+
+When you implement `StreamAdvisor` yourself, do not block the thread that delivers the chunks.
+Move blocking work to another scheduler:
+
+[source,java]
+----
+@Override
+public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
+	return Mono.just(request)
+		.publishOn(Schedulers.boundedElastic())
+		.map(this::augment) // may block, for example to query a database
+		.flatMapMany(chain::nextStream)
+		.map(this::inspect); // runs for every chunk
+}
+----
+
+== Best Practices
+
+* Give each advisor one task, and combine advisors in the chain.
+* Choose the order deliberately, relative to the tool loop and to memory, and let users change it.
+* Support both `call()` and `stream()`, or document which one your advisor supports.
+* Use the context to share state, with keys that will not collide with those of other advisors, and keep no state of a call in the fields of the advisor.
+* Make the advisor repeatable: it may run for every round of a loop, and again when the application sends the request again.
+* Return a refusal built with `GuardrailRefusal` when an advisor blocks a request.

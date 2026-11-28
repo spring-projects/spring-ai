@@ -10,3 +10,8 @@ ext:
         local: true
       scan:
         dir: spring-ai-docs/target/classes/antora-resources
+asciidoc:
+  attributes:
+    agent-utils-docs: 'https://spring-ai-community.github.io/spring-ai-agent-utils/latest'
+    decision-extensions-docs: 'https://spring-ai-community.github.io/spring-ai-decision-extensions/latest-snapshot'
+    session-extensions-docs: 'https://spring-ai-community.github.io/spring-ai-session-extensions/latest-snapshot'

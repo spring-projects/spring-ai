@@ -27,6 +27,7 @@ import java.util.function.BooleanSupplier;
 
 import io.micrometer.context.ContextRegistry;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
@@ -37,6 +38,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallDecisions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.session.CreateSessionRequest;
 import org.springframework.ai.session.DefaultSessionService;
@@ -54,6 +56,9 @@ import org.springframework.ai.tool.metadata.ToolMetadata;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 
 /**
  * {@link SessionTurnAdvisor} around a real {@link ToolCallingAdvisor} loop and the
@@ -140,7 +145,7 @@ class SessionTurnAdvisorTests {
 			.defaultAdvisors(SessionTurnAdvisor.builder(this.sessionService).build(),
 					ToolCallingAdvisor.builder().toolCallingManager(limited).build(),
 					SessionMemoryAdvisor.builder(this.sessionService).build())
-			.defaultToolCallbacks(tool("get_weather", "Sunny in ", ToolMetadata.builder().build()))
+			.defaultTools(tool("get_weather", "Sunny in ", ToolMetadata.builder().build()))
 			.build();
 		this.model.then(prompt -> calls(call("c1", "get_weather", "Paris"), call("c2", "get_weather", "Rome"),
 				call("c3", "get_weather", "Oslo")));
@@ -329,7 +334,160 @@ class SessionTurnAdvisorTests {
 		assertThat(SessionAttributes.agentVersion(session())).isEqualTo("2");
 	}
 
-	// --- Tool calls that need confirmation ---
+	// --- Tool calls an earlier turn left open ---
+
+	@Test
+	void newMessageAfterUnconfirmedCallAnswersCallInLog() {
+		ChatClient client = looped(gatedWeather());
+		this.model.thenCall("c1", "Paris");
+
+		ChatResponse paused = client.prompt()
+			.user("Weather in Paris?")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.call()
+			.chatResponse();
+		assertThat(ToolCallDecisions.isAwaitingDecision(paused)).isTrue();
+
+		// The user moves on instead of deciding
+		assertThat(say(client, "Never mind", "Fine.")).isEqualTo("Fine.");
+
+		assertThat(this.ran).isEmpty();
+		Prompt log = new Prompt(this.sessionService.getActiveMessages(this.sessionId));
+		assertThat(ScriptedChatModel.describe(log)).containsExactly("Weather in Paris?", "call:c1", "result:c1",
+				"Never mind", "Fine.");
+		assertThat(toolResults(log)).containsExactly(SessionTurnAdvisor.UNANSWERED_TOOL_RESULT);
+		// The model sees the call with its result: nothing was dropped from the prompt
+		assertThat(ScriptedChatModel.describe(this.model.prompts().get(1))).containsExactly("Weather in Paris?",
+				"call:c1", "result:c1", "Never mind");
+	}
+
+	@Test
+	void streamedMessageAfterUnconfirmedCallAnswersCallInLog() {
+		ChatClient client = looped(gatedWeather());
+		this.model.thenCall("c1", "Paris").thenAnswer("Fine.");
+		client.prompt().user("Weather in Paris?").advisors(SessionAdvisors.session(this.sessionId)).call().content();
+
+		client.prompt()
+			.user("Never mind")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.stream()
+			.content()
+			.blockLast();
+
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Weather in Paris?", "call:c1", "result:c1", "Never mind", "Fine.");
+		assertThat(ScriptedChatModel.describe(this.model.prompts().get(1))).containsExactly("Weather in Paris?",
+				"call:c1", "result:c1", "Never mind");
+	}
+
+	@Test
+	void resumedConfirmationKeepsItsOwnResults() {
+		ChatClient client = looped(gatedWeather());
+		this.model.thenCall("c1", "Paris").thenAnswer("It is sunny.");
+		ChatResponse paused = client.prompt()
+			.user("Weather in Paris?")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.call()
+			.chatResponse();
+
+		// The application ran the allowed call and sends the conversation with its result
+		ToolResponseMessage results = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("c1", "get_weather", "Sunny in Paris")))
+			.build();
+		String reply = client.prompt()
+			.messages(new UserMessage("Weather in Paris?"), paused.getResult().getOutput(), results)
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.call()
+			.content();
+
+		assertThat(reply).isEqualTo("It is sunny.");
+		Prompt log = new Prompt(this.sessionService.getActiveMessages(this.sessionId));
+		assertThat(ScriptedChatModel.describe(log)).containsExactly("Weather in Paris?", "call:c1", "result:c1",
+				"It is sunny.");
+		assertThat(toolResults(log)).containsExactly("Sunny in Paris");
+	}
+
+	@Test
+	void newMessageAfterFailedLoopAnswersCallInLog() {
+		// A loop that failed after the reply was stored left the call without a result
+		openCall();
+
+		assertThat(say(client(), "Are you there?", "Yes.")).isEqualTo("Yes.");
+
+		assertThat(ScriptedChatModel.describe(this.model.prompts().get(0))).containsExactly("Weather in Paris?",
+				"call:c1", "result:c1", "Are you there?");
+		assertThat(toolResults(this.model.prompts().get(0))).containsExactly(SessionTurnAdvisor.UNANSWERED_TOOL_RESULT);
+	}
+
+	@Test
+	void answeredCallsAreNotAnsweredAgain() {
+		ChatClient client = client();
+		this.model.thenCall("c1", "Paris").thenAnswer("It is sunny.");
+		say(client, "Weather in Paris?");
+		long version = this.sessionService.getEventVersion(this.sessionId);
+
+		say(client, "Thanks", "You are welcome.");
+
+		// Only the new turn's two messages were appended
+		assertThat(this.sessionService.getEventVersion(this.sessionId)).isEqualTo(version + 2);
+		assertThat(toolResults(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("\"Sunny in Paris\"");
+	}
+
+	@Test
+	void unansweredCallIsAnsweredAfterAnotherAppendMovedLog() {
+		SessionService moving = Mockito.spy(this.sessionService);
+		// The first version-checked write loses to an unrelated append, a compaction
+		// for example; the reply is still open, so the write is tried again
+		Mockito.doReturn(false).doCallRealMethod().when(moving).appendEvents(anyString(), anyList(), anyLong());
+		openCall();
+
+		assertThat(say(looped(moving, weather()), "Are you there?", "Yes.")).isEqualTo("Yes.");
+
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Weather in Paris?", "call:c1", "result:c1", "Are you there?", "Yes.");
+		Mockito.verify(moving, Mockito.times(2)).appendEvents(anyString(), anyList(), anyLong());
+	}
+
+	@Test
+	void unansweredCallIsLeftToWriterThatStoredResultsFirst() {
+		SessionService raced = Mockito.spy(this.sessionService);
+		// Another writer, a resume on another instance for example, stores the results
+		// between the version read and the write
+		ToolResponseMessage results = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("c1", "get_weather", "Sunny in Paris")))
+			.build();
+		Mockito.doAnswer(invocation -> {
+			this.sessionService.appendMessage(this.sessionId, results);
+			return false;
+		}).doCallRealMethod().when(raced).appendEvents(anyString(), anyList(), anyLong());
+		openCall();
+
+		say(looped(raced, weather()), "Are you there?", "Yes.");
+
+		assertThat(toolResults(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Sunny in Paris");
+		Mockito.verify(raced, Mockito.times(1)).appendEvents(anyString(), anyList(), anyLong());
+	}
+
+	/** A session whose conversation ends with a reply's tool call that has no result. */
+	private void openCall() {
+		this.sessionService.findOrCreate(CreateSessionRequest.builder().id(this.sessionId).build());
+		this.sessionService.appendMessage(this.sessionId, new UserMessage("Weather in Paris?"));
+		this.sessionService.appendMessage(this.sessionId, ScriptedChatModel.toolCall("c1", "Paris"));
+	}
+
+	private ChatClient looped(SessionService service, ToolCallback... tools) {
+		return ChatClient.builder(this.model)
+			.defaultAdvisors(SessionTurnAdvisor.builder(service).build(), ToolCallingAdvisor.builder().build(),
+					SessionMemoryAdvisor.builder(service).build())
+			.defaultTools((Object[]) tools)
+			.build();
+	}
+
+	private ToolCallback gatedWeather() {
+		return tool("get_weather", "Sunny in ", ToolMetadata.builder().requiresConfirmation(true).build());
+	}
 
 	private ChatClient client() {
 		return client(weather(), ToolCallingAdvisor.builder().build());
@@ -343,7 +501,7 @@ class SessionTurnAdvisorTests {
 		return ChatClient.builder(this.model)
 			.defaultAdvisors(advisors)
 			.defaultAdvisors(SessionMemoryAdvisor.builder(this.sessionService).build())
-			.defaultToolCallbacks(tool)
+			.defaultTools(tool)
 			.build();
 	}
 
@@ -355,7 +513,7 @@ class SessionTurnAdvisorTests {
 		return ChatClient.builder(this.model)
 			.defaultAdvisors(SessionTurnAdvisor.builder(this.sessionService).build(),
 					ToolCallingAdvisor.builder().build(), SessionMemoryAdvisor.builder(this.sessionService).build())
-			.defaultToolCallbacks(tools)
+			.defaultTools((Object[]) tools)
 			.build();
 	}
 

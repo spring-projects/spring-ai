@@ -1,0 +1,131 @@
+[[agents]]
+= Agents
+
+++++
+<style>@media (max-width: 640px) { .doc .imageblock.agent-loop { float: none; } }</style>
+++++
+
+[[agentic-loop]]
+image::agent-loop.svg["The agentic loop: the LLM reasons and plans, the tools act on the environment, memory keeps the context, and the loop ends when the goal is achieved",300,float=right,role=agent-loop,opts=inline]
+
+An agent is an application in which the model decides what to do next: it calls tools, reads the results, and continues until the task is done.
+In https://simonwillison.net/2025/Sep/18/agents/[Simon Willison's definition], an LLM agent runs tools in a loop to achieve a goal.
+
+Each step of the loop assembles the context, lets the model choose an action, observes the result, and assembles the context for the next step.
+In Spring AI, the brain is the chat model behind a `ChatClient`, and the body is its xref:tools/index.adoc[tools] and xref:tools/mcp.adoc[MCP tools].
+The xref:tools/loop.adoc[tool calling loop] runs the loop and ends it when the model answers without asking for a tool, and xref:memory/session/index.adoc[session memory] keeps the context across requests.
+
+++++
+<div style="clear: both"></div>
+++++
+
+[[agent-harness]]
+== The Agent Harness
+
+A model on its own only predicts text.
+What turns it into an agent is the _harness_ around it: in the words of LangChain's https://www.langchain.com/blog/the-anatomy-of-an-agent-harness[The Anatomy of an Agent Harness], every piece of code, configuration and execution logic that isn't the model itself.
+In short, Agent = Model + Harness.
+The harness runs the loop, gives the model its tools, manages its context and memory, checks what goes in and out, and records what happened.
+
+For an agent built on a `ChatClient`, the backbone of the harness is the client's xref:advisors/index.adoc[advisor chain].
+Every call runs through the chain, and only its last advisor calls the model: every other advisor is part of the harness.
+The chain also connects the harness to what lies outside it, such as tools, MCP servers, the session store and vector stores.
+
+image::spring-ai-agent-harness.svg["Agent = Model + Harness: the advisor chain of a ChatClient and what it calls form the harness, and the chat model is outside it",700,opts=inline]
+
+Building an agent on a `ChatClient` therefore means choosing its advisors and its tools.
+The following table maps the responsibilities of a harness to Spring AI:
+
+[cols="2,5", options="header"]
+|===
+| Harness responsibility | In Spring AI
+
+| The loop
+| The xref:tools/loop.adoc[tool calling loop], run by `ToolCallingAdvisor`, executes the tools the model asks for and sends the results back, until the model answers without asking for a tool.
+
+| Tools
+| xref:tools/defining.adoc[Tools] defined as Java methods, and xref:tools/mcp.adoc[MCP tools] provided by MCP servers.
+xref:tools/tool-search.adoc[Tool search] keeps the prompt small when an agent has many tools.
+
+| Context and memory
+| xref:memory/session/index.adoc[Session memory] keeps the conversation, including tool calls, across requests, xref:memory/session/compaction.adoc[compacts] it when it grows, and lets the model xref:memory/session/recall.adoc[search] it.
+
+| Hooks
+| xref:advisors/custom.adoc[Your own advisors], which run around every call, or around every round of the loop, depending on their order.
+
+| Permissions
+| xref:tools/confirmation.adoc[Tool call confirmation] pauses the loop so that a person can approve a tool call.
+
+| Guardrails and verification
+| xref:resilience/guardrails.adoc[Guardrails] check the input with `SafeGuardAdvisor`, or the input and the answer with a decision or moderation model.
+xref:structured-output/validation.adoc[Schema validation] calls the model again when an answer does not match its schema.
+xref:advisors/recursive.adoc[Recursive advisors], the mechanism behind schema validation, are available for your own self-correcting loops.
+
+| Hand-off between steps
+| xref:structured-output/index.adoc[Structured output] lets one step hand typed data to the next.
+
+| Recording
+| xref:observability/index.adoc[Observability]: each advisor and each tool call is a span in the trace of the call.
+
+| Agent Skills, file system, shell, sandbox, sub-agents, long-term memory
+| *Community:* xref:agents/agent-utils.adoc[Spring AI Agent Utils], described in the next section.
+|===
+
+[[ready-made-agent-blocks]]
+== Ready-Made Agentic Blocks
+
+.Community: Spring AI Agent Utils
+[TIP]
+====
+xref:agents/agent-utils.adoc[Spring AI Agent Utils] is a good place to start when you build an agent today.
+It is a community-maintained library of agentic blocks that you add to a `ChatClient`: its tools are ordinary Spring AI tools, and its advisors are ordinary advisors.
+====
+
+Agent Utils brings the capabilities of coding agents such as Claude Code to Java applications:
+
+* File, code search, shell and web tools, and task lists that let the model plan and track its work.
+* xref:agents/agent-utils.adoc#_agent_skills[Agent Skills]: instructions, scripts and reference files that the model loads only when a task needs them.
+* xref:agents/agent-utils.adoc#_long_term_memory[Long-term memory] that keeps facts across conversations and consolidates them in the background.
+* xref:agents/agent-utils.adoc#_sub_agents[Sub-agents] with their own context window, run locally or through A2A.
+* Sandboxed execution, and xref:agents/agent-utils.adoc#_stopping_and_observing_the_loop[control of the loop]: stop a running agent and observe every tool call.
+
+xref:agents/agent-utils.adoc#_a_minimal_coding_agent[A Minimal Coding Agent] puts them together in a few lines.
+
+[[workflow-pattern-examples]]
+== Workflow Pattern Examples
+
+Anthropic's https://www.anthropic.com/research/building-effective-agents[Building Effective Agents] describes five workflow patterns: chain, routing, parallelization, orchestrator-workers and evaluator-optimizer.
+xref:agents/patterns.adoc[Workflow Pattern Examples] shows how to apply each of them with a `ChatClient`.
+The examples are a starting point for learning the patterns, with their code in the https://github.com/spring-projects/spring-ai-examples/tree/main/agentic-patterns[spring-ai-examples] repository, not a library to add to an application.
+
+[[agent-protocols]]
+== Agents and Protocols
+
+An agent rarely works alone.
+Three open protocols connect it to the rest of the system: to its tools, to other agents, and to the editor or command line that a person works in.
+
+image::spring-ai-agentic-protocols.svg[An agent client talks ACP to several agents; the agents talk A2A to each other and MCP to their MCP servers,760]
+
+[cols="1,2,3", options="header"]
+|===
+| Protocol | Connects | In Spring AI
+
+| xref:mcp/index.adoc[Model Context Protocol (MCP)]
+| An agent and its tools, resources and prompts.
+| Part of Spring AI: MCP clients and servers, for both generations of the protocol.
+
+| https://a2a-protocol.org/[Agent2Agent (A2A)]
+| An agent and other agents, whatever framework or language they are built with.
+| The community project xref:integrations/community/index.adoc#a2a[Spring AI A2A] exposes a `ChatClient` agent as an A2A server.
+
+| https://agentclientprotocol.com[Agent Client Protocol (ACP)]
+| An editor or command-line client and the agents it drives.
+| Community projects: xref:integrations/community/index.adoc#acp[ACP Spring Boot Autoconfiguration] makes a Spring AI agent an ACP server, and the xref:integrations/community/index.adoc#acp-harness-client[Spring AI ACP Harness Client] lets a Spring application drive coding agents that speak ACP.
+|===
+
+The agents in the diagram can be Spring AI applications or agents built with other stacks: the protocols are what lets them work together.
+
+== Workshops
+
+AWS maintains two workshops that build agents with Spring AI step by step, one of them with Amazon Bedrock AgentCore.
+They are listed, with other workshops, in xref:resources/samples.adoc#_workshops[Samples and Workshops].

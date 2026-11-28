@@ -39,6 +39,8 @@ public class DefaultChatGenerationMetadata implements ChatGenerationMetadata {
 
 	private final @Nullable String finishReason;
 
+	private final @Nullable FinishReasonCategory finishReasonCategory;
+
 	private final Set<String> contentFilters;
 
 	/**
@@ -50,10 +52,25 @@ public class DefaultChatGenerationMetadata implements ChatGenerationMetadata {
 	 */
 	DefaultChatGenerationMetadata(Map<String, Object> metadata, @Nullable String finishReason,
 			Set<String> contentFilters) {
+		this(metadata, finishReason, null, contentFilters);
+	}
+
+	/**
+	 * Create a new {@link DefaultChatGenerationMetadata} instance.
+	 * @param metadata the metadata map, must not be null
+	 * @param finishReason the finish reason, may be null
+	 * @param finishReasonCategory the category of the finish reason as the chat model
+	 * classified it, or null to derive it from the finish reason
+	 * @param contentFilters the content filters, must not be null
+	 * @throws IllegalArgumentException if metadata or contentFilters is null
+	 */
+	DefaultChatGenerationMetadata(Map<String, Object> metadata, @Nullable String finishReason,
+			@Nullable FinishReasonCategory finishReasonCategory, Set<String> contentFilters) {
 		Assert.notNull(metadata, "Metadata must not be null");
 		Assert.notNull(contentFilters, "Content filters must not be null");
 		this.metadata = metadata;
 		this.finishReason = finishReason;
+		this.finishReasonCategory = finishReasonCategory;
 		this.contentFilters = new HashSet<>(contentFilters);
 	}
 
@@ -94,13 +111,19 @@ public class DefaultChatGenerationMetadata implements ChatGenerationMetadata {
 	}
 
 	@Override
+	public FinishReasonCategory getFinishReasonCategory() {
+		return (this.finishReasonCategory != null) ? this.finishReasonCategory
+				: FinishReasonCategory.categorize(this.finishReason);
+	}
+
+	@Override
 	public Set<String> getContentFilters() {
 		return Collections.unmodifiableSet(this.contentFilters);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.metadata, this.finishReason, this.contentFilters);
+		return Objects.hash(this.metadata, this.finishReason, getFinishReasonCategory(), this.contentFilters);
 	}
 
 	@Override
@@ -113,6 +136,9 @@ public class DefaultChatGenerationMetadata implements ChatGenerationMetadata {
 		}
 		DefaultChatGenerationMetadata other = (DefaultChatGenerationMetadata) obj;
 		return Objects.equals(this.metadata, other.metadata) && Objects.equals(this.finishReason, other.finishReason)
+		// The category in effect, so that metadata a chat model classified equals
+		// metadata built by hand with the same finish reason and meaning
+				&& getFinishReasonCategory() == other.getFinishReasonCategory()
 				&& Objects.equals(this.contentFilters, other.contentFilters);
 	}
 

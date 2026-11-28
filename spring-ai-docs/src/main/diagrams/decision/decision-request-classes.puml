@@ -1,0 +1,62 @@
+@startuml decision-request-classes
+!pragma layout smetana
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+
+interface DecisionModel {
+  +call(prompt): DecisionResponse
+  +call(text, questions): DecisionResponse
+  +call(input, questions): DecisionResponse
+}
+class DecisionPrompt {
+  +getInstructions(): DecisionInput
+  +getQuestions(): Map<String, DecisionQuestion>
+  +getOptions(): DecisionOptions
+  {static} +builder()
+}
+interface DecisionOptions {
+  +getModel()
+  +mutate(): Builder
+}
+interface DecisionInput <<sealed>> {
+  {static} +text(text)
+  {static} +content(parts)
+  {static} +fields(map)
+  {static} +conversation(messages)
+}
+class TextInput {
+  +getParts(): List<MessagePart>
+  +getText()
+}
+class FieldsInput {
+  +getFields(): Map<String, Object>
+}
+class ConversationInput {
+  +getMessages(): List<Message>
+}
+interface DecisionQuestion <<sealed>> {
+  +getText()
+}
+class YesNoQuestion {
+  +getWhenYes()
+  +getWhenNo()
+}
+class ChoiceQuestion {
+  +getOptions(): Map<String, String>
+}
+class ScoreQuestion {
+  +getLevels(): List<ScoreLevel>
+}
+
+DecisionModel ..> DecisionPrompt : takes
+DecisionPrompt --> DecisionInput
+DecisionPrompt --> "*" DecisionQuestion : named
+DecisionPrompt --> DecisionOptions
+DecisionInput <|.. TextInput
+DecisionInput <|.. FieldsInput
+DecisionInput <|.. ConversationInput
+DecisionQuestion <|.. YesNoQuestion
+DecisionQuestion <|.. ChoiceQuestion
+DecisionQuestion <|.. ScoreQuestion
+@enduml

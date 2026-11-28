@@ -38,7 +38,8 @@ import org.springframework.util.ReflectionUtils;
 public class AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor extends AnnotatedMethodDiscovery
 		implements BeanFactoryInitializationAotProcessor {
 
-	private static final LogAccessor logger = new LogAccessor(AbstractAnnotatedMethodBeanPostProcessor.class);
+	private static final LogAccessor logger = new LogAccessor(
+			AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor.class);
 
 	/**
 	 * Name of the annotation attribute referencing a {@code MetaProvider} implementation

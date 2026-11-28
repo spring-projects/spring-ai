@@ -1,0 +1,89 @@
+= Creating and Calling a ChatClient
+
+== Creating a ChatClient
+
+The `ChatClient` is created using a `ChatClient.Builder` object.
+You can obtain an autoconfigured `ChatClient.Builder` instance for any xref:models/chat.adoc[ChatModel] Spring Boot autoconfiguration or create one programmatically.
+
+=== Using an autoconfigured ChatClient.Builder
+
+In the most simple use case, Spring AI provides Spring Boot autoconfiguration, creating a prototype `ChatClient.Builder` bean for you to inject into your class.
+Here is a simple example of retrieving a `String` response to a simple user request.
+
+[source,java]
+----
+@RestController
+class MyController {
+
+    private final ChatClient chatClient;
+
+    public MyController(ChatClient.Builder chatClientBuilder) {
+        this.chatClient = chatClientBuilder.build();
+    }
+
+    @GetMapping("/ai")
+    String generation(String userInput) {
+        return this.chatClient.prompt()
+            .user(userInput)
+            .call()
+            .content();
+    }
+}
+----
+
+In this simple example, the user input sets the contents of the user message.
+The `call()` method sends a request to the AI model, and the `content()` method returns the AI model's response as a `String`.
+
+TIP: The auto-configured builder is bound to one `ChatModel` bean.
+To use several models, or several providers, see xref:chatclient/multiple-models.adoc[Working with Multiple Chat Models].
+
+== ChatClient Fluent API
+
+The `ChatClient` fluent API allows you to create a prompt in three distinct ways using an overloaded `prompt` method to initiate the fluent API:
+
+* `prompt()`: This method with no arguments lets you start using the fluent API, allowing you to build up user, system, and other parts of the prompt.
+
+* `prompt(Prompt prompt)`: This method accepts a `Prompt` argument, letting you pass in a `Prompt` instance that you have created using the Prompt's non-fluent APIs.
+
+* `prompt(String content)`: This is a convenience method similar to the previous overload.
+It takes the user's text content.
+
+== Prompt Templates
+
+The `ChatClient` fluent API lets you provide user and system text as templates with variables that are replaced at runtime.
+
+[source,java]
+----
+String answer = ChatClient.create(chatModel).prompt()
+    .user(u -> u
+            .text("Tell me the names of 5 movies whose soundtrack was composed by {composer}")
+            .param("composer", "John Williams"))
+    .call()
+    .content();
+----
+
+Internally, the ChatClient uses the `PromptTemplate` class to handle the user and system text and replace the variables with the values provided at runtime relying on a given `TemplateRenderer` implementation.
+By default, Spring AI uses the `StTemplateRenderer` implementation, which is based on the open-source https://www.stringtemplate.org/[StringTemplate] engine developed by Terence Parr.
+
+Spring AI also provides a `NoOpTemplateRenderer` for cases where no template processing is desired.
+
+NOTE: The `TemplateRenderer` configured directly on the `ChatClient` (via `.templateRenderer()`) applies only to the prompt content defined directly in the `ChatClient` builder chain (e.g., via `.user()`, `.system()`).
+It does *not* affect templates used internally by xref:rag/index.adoc#_questionansweradvisor[Advisors] like `QuestionAnswerAdvisor`, which have their own template customization mechanisms (see xref:rag/index.adoc#_custom_template[Custom Advisor Templates]).
+
+If you'd rather use a different template engine, you can provide a custom implementation of the `TemplateRenderer` interface directly to the ChatClient.
+You can also keep using the default `StTemplateRenderer`, but with a custom configuration.
+
+For example, by default, template variables are identified by the `{}` syntax.
+If you're planning to include JSON in your prompt, you might want to use a different syntax to avoid conflicts with JSON syntax.
+For example, you can use the `<` and `>` delimiters.
+
+[source,java]
+----
+String answer = ChatClient.create(chatModel).prompt()
+    .user(u -> u
+            .text("Tell me the names of 5 movies whose soundtrack was composed by <composer>")
+            .param("composer", "John Williams"))
+    .templateRenderer(StTemplateRenderer.builder().startDelimiterToken('<').endDelimiterToken('>').build())
+    .call()
+    .content();
+----

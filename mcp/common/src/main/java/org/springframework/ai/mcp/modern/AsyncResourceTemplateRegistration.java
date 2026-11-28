@@ -1,0 +1,76 @@
+/*
+ * Copyright 2023-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.ai.mcp.modern;
+
+import io.modelcontextprotocol.modern.McpSchema.ClientCapabilities;
+import io.modelcontextprotocol.modern.McpSchema.ResourceTemplate;
+import io.modelcontextprotocol.modern.server.feature.McpAsyncCompletionHandler;
+import io.modelcontextprotocol.modern.server.feature.McpAsyncResource;
+import io.modelcontextprotocol.modern.server.feature.McpAsyncResourceTemplate;
+
+import org.springframework.util.Assert;
+
+/**
+ * The asynchronous twin of {@link SyncResourceTemplateRegistration}: a resource template
+ * together with the {@link McpAsyncResource} that reads every URI matching it.
+ *
+ * @param template the definition returned by {@code resources/templates/list}, with the
+ * handler that completes its variables, if any
+ * @param handler the handler for {@code resources/read} of any URI matching the template
+ * @author Christian Tzolov
+ * @since 2.1.0
+ */
+public record AsyncResourceTemplateRegistration(McpAsyncResourceTemplate template, McpAsyncResource handler) {
+
+	public AsyncResourceTemplateRegistration {
+		Assert.notNull(template, "template must not be null");
+		Assert.notNull(handler, "handler must not be null");
+	}
+
+	/**
+	 * Pairs a resource template with a handler that requires no client capabilities.
+	 * @since 2.1.0
+	 */
+	public static AsyncResourceTemplateRegistration of(ResourceTemplate resourceTemplate,
+			McpAsyncResource.Handler handler) {
+		return new AsyncResourceTemplateRegistration(McpAsyncResourceTemplate.of(resourceTemplate),
+				McpAsyncResource.of(handler));
+	}
+
+	/**
+	 * Pairs a resource template with a handler that only works with clients declaring
+	 * {@code requiredCapabilities}. A read from any other client is rejected with
+	 * {@code -32021} without running the handler.
+	 * @since 2.1.0
+	 */
+	public static AsyncResourceTemplateRegistration of(ResourceTemplate resourceTemplate,
+			ClientCapabilities requiredCapabilities, McpAsyncResource.Handler handler) {
+		return new AsyncResourceTemplateRegistration(McpAsyncResourceTemplate.of(resourceTemplate),
+				McpAsyncResource.of(requiredCapabilities, handler));
+	}
+
+	/**
+	 * This registration with the template's variables completed by
+	 * {@code completionHandler}, when its repository supports completion.
+	 * @since 2.1.0
+	 */
+	public AsyncResourceTemplateRegistration withCompletionHandler(McpAsyncCompletionHandler completionHandler) {
+		return new AsyncResourceTemplateRegistration(this.template.withCompletionHandler(completionHandler),
+				this.handler);
+	}
+
+}

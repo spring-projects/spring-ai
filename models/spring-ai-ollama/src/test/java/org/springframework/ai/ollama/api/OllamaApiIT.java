@@ -103,8 +103,13 @@ class OllamaApiIT extends BaseOllamaIT {
 			.isObject()
 			.containsOnlyKeys("name", "capital", "languages")
 			.containsEntry("name", "Canada")
-			.containsEntry("capital", "Ottawa")
-			.containsEntry("languages", List.of("English", "French"));
+			.containsEntry("capital", "Ottawa");
+		// The model may list more languages or qualify them, e.g. "French (official)"
+		JsonAssertions.assertThatJson(messageContent)
+			.node("languages")
+			.isArray()
+			.anySatisfy(language -> assertThat(language).asString().containsIgnoringCase("English"))
+			.anySatisfy(language -> assertThat(language).asString().containsIgnoringCase("French"));
 	}
 
 	@Test

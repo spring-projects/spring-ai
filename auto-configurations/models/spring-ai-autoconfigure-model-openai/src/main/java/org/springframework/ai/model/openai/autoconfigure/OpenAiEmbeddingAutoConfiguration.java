@@ -35,6 +35,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 /**
  * Embedding {@link AutoConfiguration Auto-configuration} for OpenAI SDK.
@@ -52,18 +53,19 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
 @EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiEmbeddingProperties.class })
+@Import(OpenAiConnectionDetailsConfiguration.class)
 public class OpenAiEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiCommonProperties commonProperties,
-			OpenAiEmbeddingProperties embeddingProperties, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<MeterRegistry> meterRegistry,
+	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiConnectionDetails connectionDetails,
+			OpenAiCommonProperties commonProperties, OpenAiEmbeddingProperties embeddingProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention,
 			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
-		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
-				embeddingProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(connectionDetails,
+				commonProperties, embeddingProperties);
 
 		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
 
