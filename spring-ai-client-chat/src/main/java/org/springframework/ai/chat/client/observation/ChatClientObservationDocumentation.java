@@ -21,6 +21,8 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.docs.ObservationDocumentation;
 
+import org.springframework.ai.observation.conventions.AiObservationAttributes;
+
 /**
  * Documented conventions for chat client observations.
  *
@@ -92,7 +94,7 @@ public enum ChatClientObservationDocumentation implements ObservationDocumentati
 		CHAT_CLIENT_CONVERSATION_ID {
 			@Override
 			public String asString() {
-				return "spring.ai.chat.client.conversation.id";
+				return AiObservationAttributes.CONVERSATION_ID.value();
 			}
 		},
 
