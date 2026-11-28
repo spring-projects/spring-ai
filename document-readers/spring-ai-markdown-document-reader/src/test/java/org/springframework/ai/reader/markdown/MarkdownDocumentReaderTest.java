@@ -104,6 +104,19 @@ class MarkdownDocumentReaderTest {
 	}
 
 	@Test
+	void testFormattedHeading() {
+		MarkdownDocumentReader reader = new MarkdownDocumentReader("classpath:/formatted-heading.md");
+
+		List<Document> documents = reader.get();
+
+		assertThat(documents).satisfiesExactly(document -> {
+			assertThat(document.getMetadata()).containsEntry("category", "header_1")
+				.containsEntry("title", "Spring AI Guide ChatClient");
+			assertThat(document.getText()).isEqualTo("Body text.");
+		});
+	}
+
+	@Test
 	void testDocumentDividedViaHorizontalRules() {
 		MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
 			.withHorizontalRuleCreateDocument(true)

@@ -165,7 +165,24 @@ public class MarkdownDocumentReader implements DocumentReader {
 		@Override
 		public void visit(Heading heading) {
 			buildAndFlush();
-			super.visit(heading);
+			this.currentDocumentBuilder.metadata("category", "header_%d".formatted(heading.getLevel()))
+				.metadata("title", extractHeadingTitle(heading));
+		}
+
+		private static String extractHeadingTitle(Heading heading) {
+			StringBuilder title = new StringBuilder();
+			heading.accept(new AbstractVisitor() {
+				@Override
+				public void visit(Text text) {
+					title.append(text.getLiteral());
+				}
+
+				@Override
+				public void visit(Code code) {
+					title.append(code.getLiteral());
+				}
+			});
+			return title.toString();
 		}
 
 		@Override
@@ -230,14 +247,7 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 		@Override
 		public void visit(Text text) {
-			if (text.getParent() instanceof Heading heading) {
-				this.currentDocumentBuilder.metadata("category", "header_%d".formatted(heading.getLevel()))
-					.metadata("title", text.getLiteral());
-			}
-			else {
-				this.currentParagraphs.add(text.getLiteral());
-			}
-
+			this.currentParagraphs.add(text.getLiteral());
 			super.visit(text);
 		}
 
