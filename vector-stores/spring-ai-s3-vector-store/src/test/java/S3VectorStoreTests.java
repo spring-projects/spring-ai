@@ -27,9 +27,12 @@ import software.amazon.awssdk.services.s3vectors.model.DeleteVectorsRequest;
 import software.amazon.awssdk.services.s3vectors.model.ListOutputVector;
 import software.amazon.awssdk.services.s3vectors.model.ListVectorsRequest;
 import software.amazon.awssdk.services.s3vectors.model.ListVectorsResponse;
+import software.amazon.awssdk.services.s3vectors.model.QueryOutputVector;
 import software.amazon.awssdk.services.s3vectors.model.QueryVectorsRequest;
+import software.amazon.awssdk.services.s3vectors.model.QueryVectorsResponse;
 
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.s3.DocumentUtils;
 import org.springframework.ai.vectorstore.s3.S3VectorStore;
@@ -44,8 +47,48 @@ import static org.mockito.Mockito.when;
 
 /**
  * @author Jewoo Shin
+ * @author Taewoong Kim
  */
 class S3VectorStoreTests {
+
+	@Test
+	void similaritySearchPreservesVectorKeyAsDocumentId() {
+		S3VectorsClient s3VectorsClient = mock(S3VectorsClient.class);
+		when(s3VectorsClient.queryVectors(any(QueryVectorsRequest.class))).thenReturn(QueryVectorsResponse.builder()
+			.vectors(QueryOutputVector.builder().key("document-id").metadata(Document.fromMap(Map.of())).build())
+			.build());
+		EmbeddingModel embeddingModel = mock(EmbeddingModel.class);
+		when(embeddingModel.embed("test query")).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
+		S3VectorStore vectorStore = new S3VectorStore.Builder(s3VectorsClient, embeddingModel)
+			.vectorBucketName("test-vector-bucket")
+			.indexName("test-index")
+			.build();
+
+		assertThat(vectorStore.similaritySearch(SearchRequest.builder().query("test query").topK(1).build()))
+			.singleElement()
+			.satisfies(document -> assertThat(document.getId()).isEqualTo("document-id"));
+	}
+
+	@Test
+	void similaritySearchPreservesScalarListMetadata() {
+		S3VectorsClient s3VectorsClient = mock(S3VectorsClient.class);
+		when(s3VectorsClient.queryVectors(any(QueryVectorsRequest.class))).thenReturn(QueryVectorsResponse.builder()
+			.vectors(QueryOutputVector.builder()
+				.key("document-id")
+				.metadata(Document.fromMap(Map.of("tags", DocumentUtils.toDocument(List.of("java", "spring")))))
+				.build())
+			.build());
+		EmbeddingModel embeddingModel = mock(EmbeddingModel.class);
+		when(embeddingModel.embed("test query")).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
+		S3VectorStore vectorStore = new S3VectorStore.Builder(s3VectorsClient, embeddingModel)
+			.vectorBucketName("test-vector-bucket")
+			.indexName("test-index")
+			.build();
+
+		assertThat(vectorStore.similaritySearch(SearchRequest.builder().query("test query").topK(1).build()))
+			.singleElement()
+			.satisfies(document -> assertThat(document.getMetadata()).containsEntry("tags", List.of("java", "spring")));
+	}
 
 	@Test
 	void filterDeleteListsVectorsWithMetadataAndDeletesMatchingKeys() {
