@@ -104,6 +104,7 @@ public final class SystemOneDecisionModel implements DecisionModel {
 			.state(SystemOneDecisionMapper.state(prompt.getInstructions()))
 			.model(model)
 			.questions(SystemOneDecisionMapper.questions(prompt))
+			.chatTemplateKwargs(options.getChatTemplateKwargs())
 			.build();
 
 		if (logger.isTraceEnabled()) {

@@ -276,6 +276,26 @@ class SystemOneDecisionModelTests {
 	}
 
 	@Test
+	void sendsChatTemplateKwargs() throws Exception {
+		stubResponse(yesNoResponse(0.9).replace("d1-omni:600m", "my-model"), null);
+		var customModel = SystemOneDecisionModel.builder(this.client)
+			.options(SystemOneDecisionOptions.builder()
+				.model("my-model")
+				.chatTemplateKwargs(Map.of("tokenize", true, "sanitize_control_tokens", true, "enable_thinking", false))
+				.build())
+			.observationRegistry(this.observationRegistry)
+			.build();
+
+		customModel.call(DecisionPrompt.builder().text("x").question("defect", YesNoQuestion.of("?")).build());
+
+		assertSent(
+				"""
+						{"state": "x", "model": "my-model",
+						"questions": {"defect": {"type": "noul", "instructions": "?"}},
+						"chat_template_kwargs": {"tokenize": true, "sanitize_control_tokens": true, "enable_thinking": false}}""");
+	}
+
+	@Test
 	void builderAppliesDefaults() {
 		var built = SystemOneDecisionModel.builder(this.client).build();
 		assertThat(built.getOptions().getModel()).isEqualTo("d1-omni:600m");
