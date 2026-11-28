@@ -179,7 +179,7 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 			return value;
 		}
 		try {
-			return Date.from(Instant.from(ISO_DATE_FORMATTER.parse(text)));
+			return Date.from(Instant.parse(text));
 		}
 		catch (DateTimeParseException e) {
 			throw new IllegalArgumentException("Invalid date type: " + text, e);
