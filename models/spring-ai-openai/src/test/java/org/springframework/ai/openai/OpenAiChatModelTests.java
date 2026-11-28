@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
+import com.openai.core.JsonMissing;
 import com.openai.core.JsonValue;
 import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
@@ -71,6 +72,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
@@ -95,6 +97,7 @@ import static org.mockito.Mockito.when;
  * @author Jewoo Shin
  * @author Dimitar Proynov
  * @author Raphael Vullriede
+ * @author Minju Kim
  */
 @ExtendWith(MockitoExtension.class)
 class OpenAiChatModelTests {
@@ -776,6 +779,89 @@ class OpenAiChatModelTests {
 			.hasMessageContaining("promptTokens")
 			.hasMessageContaining(String.valueOf(promptTokens))
 			.hasCauseInstanceOf(ArithmeticException.class);
+	}
+
+	@Test
+	void streamToleratesUsageWithoutTokenCounts() {
+		// OpenAI-compatible backends (e.g. Databricks serving endpoints) may send a usage
+		// object without completion_tokens or total_tokens on a streaming chunk.
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class),
+				any(RequestOptions.class)))
+			.thenReturn(asyncStreamResponse(ChatCompletionChunk.builder()
+				.id("chatcmpl-stream-test")
+				.created(1777799928)
+				.model("test-model")
+				.addChoice(ChatCompletionChunk.Choice.builder()
+					.index(0)
+					.finishReason(ChatCompletionChunk.Choice.FinishReason.STOP)
+					.delta(ChatCompletionChunk.Choice.Delta.builder().content("hello").build())
+					.build())
+				.usage(CompletionUsage.builder()
+					.promptTokens(10)
+					.completionTokens(JsonMissing.of())
+					.totalTokens(JsonMissing.of())
+					.build())
+				.build()));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.stream(new Prompt("hi", options)).blockLast();
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getText()).isEqualTo("hello");
+		Usage usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(10);
+		assertThat(usage.getCompletionTokens()).isZero();
+		assertThat(usage.getTotalTokens()).isEqualTo(10);
+	}
+
+	@Test
+	void callToleratesUsageWithoutTokenCounts() {
+		givenChatCompletion(ChatCompletion.builder()
+			.id("test-id")
+			.created(1777799928)
+			.model("test-model")
+			.usage(CompletionUsage.builder()
+				.promptTokens(JsonMissing.of())
+				.completionTokens(JsonMissing.of())
+				.totalTokens(JsonMissing.of())
+				.build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content("hello")
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List.of())
+					.build())
+				.build())
+			.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt("hi", options));
+
+		Usage usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isZero();
+		assertThat(usage.getCompletionTokens()).isZero();
+		assertThat(usage.getTotalTokens()).isZero();
 	}
 
 	@Test
