@@ -13,10 +13,10 @@ jobs:
     runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
     steps:
       - name: Check Out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.4.0
 
       - name: Set Up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v4.9.1
         with:
           java-version: '17'
           distribution: 'liberica'

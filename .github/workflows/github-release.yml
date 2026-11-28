@@ -26,9 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check Out Code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.1.0
       - name: Create GitHub Release
-        uses: ./.github/actions/create-github-release
+        uses: $/.github/actions/create-github-release
         with:
           commercial: ${{ vars.COMMERCIAL }}
           draft: ${{ inputs.draft }}
