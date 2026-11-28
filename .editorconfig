@@ -10,3 +10,9 @@ continuation_indent_size = 8
 end_of_line = lf
 
 insert_final_newline = true
+
+[*.java]
+ij_java_imports_layout = java.**,|,javax.**,|,*,|,org.springframework.**,|,$*
+ij_java_layout_static_imports_separately = true
+ij_java_class_count_to_use_import_on_demand = 999
+ij_java_names_count_to_use_import_on_demand = 999
