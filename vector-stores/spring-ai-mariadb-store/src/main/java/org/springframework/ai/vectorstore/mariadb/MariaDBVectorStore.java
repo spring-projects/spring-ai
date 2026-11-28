@@ -402,7 +402,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		String jsonPathFilter = "";
 
 		if (StringUtils.hasText(nativeFilterExpression)) {
-			jsonPathFilter = "and " + nativeFilterExpression + " ";
+			jsonPathFilter = "and (" + nativeFilterExpression + ") ";
 		}
 		String distanceType = this.distanceType.name().toLowerCase(Locale.ROOT);
 
