@@ -23,9 +23,11 @@ import java.util.Locale;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -40,6 +42,7 @@ import reactor.test.StepVerifier;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -268,6 +271,68 @@ class ToolUtilsTests {
 	}
 
 	@Test
+	void toSyncToolSpecificationShouldHandleErrorWithoutMessage() {
+		ToolCallback callback = createMockToolCallback("test", new RuntimeException());
+
+		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
+
+		assertThat(toolSpecification).isNotNull();
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class),
+					McpSchema.CallToolRequest.builder("test").arguments(Map.of()).build());
+		TextContent content = (TextContent) result.content().get(0);
+		assertThat(content.text()).isEqualTo("Exception occurred in tool: test (RuntimeException)");
+		assertThat(result.isError()).isTrue();
+	}
+
+	@Test
+	void toSyncToolSpecificationShouldHandleErrorWithBlankMessage() {
+		ToolCallback callback = createMockToolCallback("test", new RuntimeException(" "));
+
+		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
+
+		assertThat(toolSpecification).isNotNull();
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class),
+					McpSchema.CallToolRequest.builder("test").arguments(Map.of()).build());
+		TextContent content = (TextContent) result.content().get(0);
+		assertThat(content.text()).isEqualTo("Exception occurred in tool: test (RuntimeException)");
+		assertThat(result.isError()).isTrue();
+	}
+
+	@Test
+	void toSyncToolSpecificationShouldDescribeRootCauseWhenErrorHasNoMessage() {
+		ToolCallback callback = createMockToolCallback("test",
+				new ToolExecutionException(mock(ToolDefinition.class), new IllegalStateException()));
+
+		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
+
+		assertThat(toolSpecification).isNotNull();
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class),
+					McpSchema.CallToolRequest.builder("test").arguments(Map.of()).build());
+		TextContent content = (TextContent) result.content().get(0);
+		assertThat(content.text()).isEqualTo("Exception occurred in tool: test (IllegalStateException)");
+		assertThat(result.isError()).isTrue();
+	}
+
+	@Test
+	void toStatelessSyncToolSpecificationShouldHandleErrorWithoutMessage() {
+		ToolCallback callback = createMockToolCallback("test", new RuntimeException());
+
+		McpStatelessServerFeatures.SyncToolSpecification toolSpecification = McpToolUtils
+			.toStatelessSyncToolSpecification(callback, null);
+
+		assertThat(toolSpecification).isNotNull();
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpTransportContext.class),
+					McpSchema.CallToolRequest.builder("test").arguments(Map.of()).build());
+		TextContent content = (TextContent) result.content().get(0);
+		assertThat(content.text()).isEqualTo("Exception occurred in tool: test (RuntimeException)");
+		assertThat(result.isError()).isTrue();
+	}
+
+	@Test
 	void toSyncToolSpecificationShouldConvertMultipleCallbacks() {
 		ToolCallback callback1 = createMockToolCallback("test1", "success1");
 		ToolCallback callback2 = createMockToolCallback("test2", "success2");
@@ -313,6 +378,24 @@ class ToolUtilsTests {
 			.assertNext(result -> {
 				TextContent content = (TextContent) result.content().get(0);
 				assertThat(content.text()).isEqualTo("error");
+				assertThat(result.isError()).isTrue();
+			})
+			.verifyComplete();
+	}
+
+	@Test
+	void toAsyncToolSpecificationShouldHandleErrorWithoutMessage() {
+		ToolCallback callback = createMockToolCallback("test", new RuntimeException());
+
+		AsyncToolSpecification toolSpecification = McpToolUtils.toAsyncToolSpecification(callback);
+
+		assertThat(toolSpecification).isNotNull();
+		StepVerifier
+			.create(toolSpecification.callHandler()
+				.apply(mock(McpAsyncServerExchange.class), mock(McpSchema.CallToolRequest.class)))
+			.assertNext(result -> {
+				TextContent content = (TextContent) result.content().get(0);
+				assertThat(content.text()).isEqualTo("Exception occurred in tool: test (RuntimeException)");
 				assertThat(result.isError()).isTrue();
 			})
 			.verifyComplete();
