@@ -78,10 +78,14 @@ final class DefaultChatClientUtils {
 			processedMessages.addAll(inputRequest.getMessages());
 		}
 
-		// User Text => Last in the list
+		// User Text / Media => Last in the list
 		String processedUserText = inputRequest.getUserText();
-		if (StringUtils.hasText(processedUserText)) {
-			if (!CollectionUtils.isEmpty(inputRequest.getUserParams())) {
+		if (StringUtils.hasText(processedUserText) || !CollectionUtils.isEmpty(inputRequest.getMedia())) {
+			UserMessage.Builder userMessageBuilder = UserMessage.builder()
+				.media(inputRequest.getMedia())
+				.metadata(inputRequest.getUserMetadata());
+
+			if (StringUtils.hasText(processedUserText) && !CollectionUtils.isEmpty(inputRequest.getUserParams())) {
 				processedUserText = PromptTemplate.builder()
 					.template(processedUserText)
 					.variables(inputRequest.getUserParams())
@@ -89,11 +93,11 @@ final class DefaultChatClientUtils {
 					.build()
 					.render();
 			}
-			processedMessages.add(UserMessage.builder()
-				.text(processedUserText)
-				.media(inputRequest.getMedia())
-				.metadata(inputRequest.getUserMetadata())
-				.build());
+
+			if (StringUtils.hasText(processedUserText)) {
+				userMessageBuilder.text(processedUserText);
+			}
+			processedMessages.add(userMessageBuilder.build());
 		}
 
 		/*
