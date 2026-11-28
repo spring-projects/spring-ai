@@ -18,8 +18,11 @@ package org.springframework.ai.transformers;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -31,8 +34,6 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.FileUrlResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
-import org.springframework.util.FileCopyUtils;
-import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -119,13 +120,30 @@ public class ResourceCacheService {
 
 			File cachedFile = getCachedFile(originalResource);
 			if (!cachedFile.exists()) {
-				FileCopyUtils.copy(StreamUtils.copyToByteArray(originalResource.getInputStream()), cachedFile);
+				copyToCache(originalResource, cachedFile);
 				logger.info("Caching the " + originalResource.toString() + " resource to: " + cachedFile);
 			}
 			return new FileUrlResource(cachedFile.getAbsolutePath());
 		}
 		catch (Exception e) {
 			throw new IllegalStateException("Failed to cache the resource: " + originalResource.getDescription(), e);
+		}
+	}
+
+	/**
+	 * Streams the resource into a temporary file next to the target and moves it into
+	 * place, so a failed copy never leaves a partial file that a later call would take
+	 * for a cached resource.
+	 */
+	private void copyToCache(Resource originalResource, File cachedFile) throws IOException {
+		Path target = cachedFile.toPath();
+		Path temp = Files.createTempFile(target.getParent(), cachedFile.getName(), ".tmp");
+		try (InputStream in = originalResource.getInputStream()) {
+			Files.copy(in, temp, StandardCopyOption.REPLACE_EXISTING);
+			Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+		}
+		finally {
+			Files.deleteIfExists(temp);
 		}
 	}
 

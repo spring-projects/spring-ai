@@ -237,8 +237,12 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 				sessionOptions.addCUDA(this.gpuDeviceId); // Run on a GPU or with another
 				// provider
 			}
-			this.session = this.environment.createSession(getCachedResource(this.modelResource).getContentAsByteArray(),
-					sessionOptions);
+			Resource model = getCachedResource(this.modelResource);
+			// A model on the local file system is loaded by the runtime from its path,
+			// instead of being read into a byte array first
+			this.session = model.isFile()
+					? this.environment.createSession(model.getFile().getAbsolutePath(), sessionOptions)
+					: this.environment.createSession(model.getContentAsByteArray(), sessionOptions);
 		}
 
 		this.onnxModelInputs = this.session.getInputNames();
