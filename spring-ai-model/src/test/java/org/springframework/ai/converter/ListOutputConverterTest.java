@@ -170,6 +170,17 @@ class ListOutputConverterTest {
 		assertThat(list).doesNotContainNull();
 	}
 
+	/**
+	 * Models wrap the list in a code fence, whose markers previously ended up as list
+	 * elements rather than being stripped.
+	 */
+	@ParameterizedTest
+	@ValueSource(strings = { "```\nfoo, bar, baz\n```", "```csv\nfoo, bar, baz\n```", "\n```\nfoo, bar, baz\n```\n",
+			"<think>reasoning</think>\nfoo, bar, baz" })
+	void fencedCsv(String text) {
+		assertThat(this.listOutputConverter.convert(text)).containsExactlyElementsOf(List.of("foo", "bar", "baz"));
+	}
+
 	@Test
 	void csvWithOnlyWhitespace() {
 		String csvAsString = "   \t\n   ";
