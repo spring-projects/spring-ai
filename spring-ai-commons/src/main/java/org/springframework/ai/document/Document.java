@@ -357,7 +357,11 @@ public class Document {
 	 * @return a builder initialised from this document's state
 	 */
 	public Builder mutate() {
-		return new Builder().id(this.id).text(this.text).media(this.media).metadata(this.metadata).score(this.score);
+		return new Builder().id(this.id)
+			.text(this.text)
+			.media(this.media)
+			.metadata(new HashMap<>(this.metadata))
+			.score(this.score);
 	}
 
 	@Override
