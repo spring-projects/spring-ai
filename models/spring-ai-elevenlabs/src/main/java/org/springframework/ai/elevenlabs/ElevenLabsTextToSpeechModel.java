@@ -30,6 +30,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.audio.tts.Speech;
 import org.springframework.ai.audio.tts.TextToSpeechModel;
+import org.springframework.ai.audio.tts.TextToSpeechOptions;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.audio.tts.observation.DefaultTextToSpeechModelObservationConvention;
@@ -49,6 +50,7 @@ import org.springframework.util.MultiValueMap;
  *
  * @author Alexandros Pappas
  * @author Sebastien Deleuze
+ * @author Minju Kim
  */
 public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 
@@ -249,10 +251,24 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 	}
 
 	private ElevenLabsTextToSpeechOptions getOptions(TextToSpeechPrompt prompt) {
-		ElevenLabsTextToSpeechOptions runtimeOptions = (prompt
-			.getOptions() instanceof ElevenLabsTextToSpeechOptions elevenLabsSpeechOptions) ? elevenLabsSpeechOptions
-					: null;
-		return (runtimeOptions != null) ? merge(runtimeOptions, this.options) : this.options;
+		TextToSpeechOptions runtimeOptions = prompt.getOptions();
+		if (runtimeOptions == null) {
+			return this.options;
+		}
+		if (runtimeOptions instanceof ElevenLabsTextToSpeechOptions elevenLabsSpeechOptions) {
+			return merge(elevenLabsSpeechOptions, this.options);
+		}
+		// Portable options only carry the model, voice, format and speed. The speed is
+		// applied on top of the default voice settings so that their other values are
+		// kept.
+		ElevenLabsTextToSpeechOptions.Builder portableOptions = ElevenLabsTextToSpeechOptions.builder()
+			.model(runtimeOptions.getModel())
+			.voice(runtimeOptions.getVoice())
+			.format(runtimeOptions.getFormat());
+		if (runtimeOptions.getSpeed() != null) {
+			portableOptions.voiceSettings(this.options.getVoiceSettings()).speed(runtimeOptions.getSpeed());
+		}
+		return merge(portableOptions.build(), this.options);
 	}
 
 	private ElevenLabsTextToSpeechOptions merge(ElevenLabsTextToSpeechOptions runtimeOptions,
@@ -261,6 +277,7 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 			.modelId(getOrDefault(runtimeOptions.getModelId(), options.getModelId()))
 			.voice(getOrDefault(runtimeOptions.getVoice(), options.getVoice()))
 			.voiceId(getOrDefault(runtimeOptions.getVoiceId(), options.getVoiceId()))
+			.enableLogging(getOrDefault(runtimeOptions.getEnableLogging(), options.getEnableLogging()))
 			.format(getOrDefault(runtimeOptions.getFormat(), options.getFormat()))
 			.outputFormat(getOrDefault(runtimeOptions.getOutputFormat(), options.getOutputFormat()))
 			.voiceSettings(getOrDefault(runtimeOptions.getVoiceSettings(), options.getVoiceSettings()))
