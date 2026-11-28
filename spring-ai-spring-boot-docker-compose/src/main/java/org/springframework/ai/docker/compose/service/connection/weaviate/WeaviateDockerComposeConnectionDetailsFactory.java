@@ -32,6 +32,8 @@ class WeaviateDockerComposeConnectionDetailsFactory
 
 	private static final int WEAVIATE_PORT = 8080;
 
+	private static final int WEAVIATE_GRPC_PORT = 50051;
+
 	protected WeaviateDockerComposeConnectionDetailsFactory() {
 		super(WEAVIATE_IMAGE_NAMES);
 	}
@@ -50,14 +52,22 @@ class WeaviateDockerComposeConnectionDetailsFactory
 
 		private final String host;
 
+		private final String grpcHost;
+
 		WeaviateDockerComposeConnectionDetails(RunningService service) {
 			super(service);
 			this.host = service.host() + ":" + service.ports().get(WEAVIATE_PORT);
+			this.grpcHost = service.host() + ":" + service.ports().get(WEAVIATE_GRPC_PORT);
 		}
 
 		@Override
 		public String getHost() {
 			return this.host;
+		}
+
+		@Override
+		public String getGrpcHost() {
+			return this.grpcHost;
 		}
 
 	}

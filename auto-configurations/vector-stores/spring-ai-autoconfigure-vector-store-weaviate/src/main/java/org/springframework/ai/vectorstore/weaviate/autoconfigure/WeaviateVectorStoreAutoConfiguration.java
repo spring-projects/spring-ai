@@ -16,11 +16,11 @@
 
 package org.springframework.ai.vectorstore.weaviate.autoconfigure;
 
+import java.util.Map;
+
 import io.micrometer.observation.ObservationRegistry;
-import io.weaviate.client.Config;
-import io.weaviate.client.WeaviateAuthClient;
-import io.weaviate.client.WeaviateClient;
-import io.weaviate.client.v1.auth.exception.AuthException;
+import io.weaviate.client6.v1.api.Authentication;
+import io.weaviate.client6.v1.api.WeaviateClient;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -37,6 +37,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.context.properties.PropertyMapper;
 import org.springframework.context.annotation.Bean;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Weaviate Vector Store.
@@ -53,24 +55,42 @@ import org.springframework.context.annotation.Bean;
 		matchIfMissing = true)
 public class WeaviateVectorStoreAutoConfiguration {
 
+	private static final int DEFAULT_HTTP_PORT = 8080;
+
+	private static final int DEFAULT_HTTPS_PORT = 443;
+
 	@Bean
 	@ConditionalOnMissingBean(WeaviateConnectionDetails.class)
 	PropertiesWeaviateConnectionDetails weaviateConnectionDetails(WeaviateVectorStoreProperties properties) {
 		return new PropertiesWeaviateConnectionDetails(properties);
 	}
 
-	@Bean
+	@Bean(destroyMethod = "close")
 	@ConditionalOnMissingBean
 	public WeaviateClient weaviateClient(WeaviateVectorStoreProperties properties,
 			WeaviateConnectionDetails connectionDetails) {
-		try {
-			return WeaviateAuthClient.apiKey(
-					new Config(properties.getScheme(), connectionDetails.getHost(), properties.getHeaders()),
-					properties.getApiKey());
-		}
-		catch (AuthException e) {
-			throw new IllegalArgumentException("WeaviateClient could not be created.", e);
-		}
+		String scheme = properties.getScheme();
+		boolean secure = "https".equalsIgnoreCase(scheme);
+		HostPort http = HostPort.parse(connectionDetails.getHost(), secure ? DEFAULT_HTTPS_PORT : DEFAULT_HTTP_PORT);
+		HostPort grpc = HostPort.parse(connectionDetails.getGrpcHost(), WeaviateConnectionDetails.DEFAULT_GRPC_PORT);
+		String apiKey = properties.getApiKey();
+		Map<String, String> headers = properties.getHeaders();
+
+		return WeaviateClient.connectToCustom(custom -> {
+			// scheme must be set first: Config.Custom#scheme resets the HTTP/gRPC ports.
+			custom.scheme(scheme);
+			custom.httpHost(http.host());
+			custom.httpPort(http.port());
+			custom.grpcHost(grpc.host());
+			custom.grpcPort(grpc.port());
+			if (StringUtils.hasText(apiKey)) {
+				custom.authentication(Authentication.apiKey(apiKey));
+			}
+			if (!CollectionUtils.isEmpty(headers)) {
+				custom.setHeaders(headers);
+			}
+			return custom;
+		});
 	}
 
 	@Bean
@@ -110,6 +130,27 @@ public class WeaviateVectorStoreAutoConfiguration {
 		return weaviateVectorStoreOptions;
 	}
 
+	/**
+	 * A {@code host:port} pair, tolerant of a missing port.
+	 */
+	private record HostPort(String host, int port) {
+
+		static HostPort parse(String value, int defaultPort) {
+			if (!StringUtils.hasText(value)) {
+				return new HostPort("localhost", defaultPort);
+			}
+			int separator = value.lastIndexOf(':');
+			if (separator < 0) {
+				return new HostPort(value, defaultPort);
+			}
+			String host = value.substring(0, separator);
+			String port = value.substring(separator + 1);
+			return new HostPort(StringUtils.hasText(host) ? host : "localhost",
+					StringUtils.hasText(port) ? Integer.parseInt(port) : defaultPort);
+		}
+
+	}
+
 	static class PropertiesWeaviateConnectionDetails implements WeaviateConnectionDetails {
 
 		private final WeaviateVectorStoreProperties properties;
@@ -121,6 +162,14 @@ public class WeaviateVectorStoreAutoConfiguration {
 		@Override
 		public String getHost() {
 			return this.properties.getHost();
+		}
+
+		@Override
+		public String getGrpcHost() {
+			String grpcHost = this.properties.getGrpcHost();
+			String host = StringUtils.hasText(grpcHost) ? grpcHost
+					: HostPort.parse(this.properties.getHost(), DEFAULT_HTTP_PORT).host();
+			return host + ":" + this.properties.getGrpcPort();
 		}
 
 	}

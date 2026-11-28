@@ -3,6 +3,7 @@ services:
     image: '{imageName}'
     ports:
       - '8080'
+      - '50051'
     environment:
       - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
       - PERSISTENCE_DATA_PATH=/var/lib/weaviate

@@ -22,7 +22,7 @@
 
 		<dependency>
 			<groupId>io.weaviate</groupId>
-			<artifactId>client</artifactId>
+			<artifactId>client6</artifactId>
 			<version>${weaviate-client.version}</version>
 			<exclusions>
 				<exclusion>

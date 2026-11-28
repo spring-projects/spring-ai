@@ -16,32 +16,30 @@
 
 package org.springframework.ai.vectorstore.weaviate;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Set;
 
-import io.weaviate.client.WeaviateClient;
-import io.weaviate.client.base.Result;
-import io.weaviate.client.base.WeaviateErrorMessage;
-import io.weaviate.client.v1.batch.model.BatchDeleteResponse;
-import io.weaviate.client.v1.batch.model.ObjectGetResponse;
-import io.weaviate.client.v1.batch.model.ObjectsGetResponseAO2Result;
-import io.weaviate.client.v1.data.model.WeaviateObject;
-import io.weaviate.client.v1.filters.Operator;
-import io.weaviate.client.v1.filters.WhereFilter;
-import io.weaviate.client.v1.graphql.model.GraphQLError;
-import io.weaviate.client.v1.graphql.model.GraphQLResponse;
-import io.weaviate.client.v1.graphql.query.argument.NearVectorArgument;
-import io.weaviate.client.v1.graphql.query.argument.WhereArgument;
-import io.weaviate.client.v1.graphql.query.builder.GetBuilder;
-import io.weaviate.client.v1.graphql.query.builder.GetBuilder.GetBuilderBuilder;
-import io.weaviate.client.v1.graphql.query.fields.Field;
-import io.weaviate.client.v1.graphql.query.fields.Fields;
+import io.weaviate.client6.v1.api.WeaviateClient;
+import io.weaviate.client6.v1.api.collections.CollectionConfig;
+import io.weaviate.client6.v1.api.collections.CollectionHandle;
+import io.weaviate.client6.v1.api.collections.Property;
+import io.weaviate.client6.v1.api.collections.VectorConfig;
+import io.weaviate.client6.v1.api.collections.Vectors;
+import io.weaviate.client6.v1.api.collections.WeaviateObject;
+import io.weaviate.client6.v1.api.collections.data.DeleteManyResponse;
+import io.weaviate.client6.v1.api.collections.data.InsertManyResponse;
+import io.weaviate.client6.v1.api.collections.query.ConsistencyLevel;
+import io.weaviate.client6.v1.api.collections.query.Metadata;
+import io.weaviate.client6.v1.api.collections.query.QueryMetadata;
+import io.weaviate.client6.v1.api.collections.query.QueryResponse;
+import io.weaviate.client6.v1.api.collections.vectorindex.Distance;
+import io.weaviate.client6.v1.api.collections.vectorindex.Hnsw;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import tools.jackson.core.JacksonException;
@@ -51,7 +49,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -65,7 +62,19 @@ import org.springframework.util.StringUtils;
 /**
  * A vector store implementation that stores and retrieves vectors in a Weaviate database.
  *
- * Note: You can assign arbitrary metadata fields with your Documents. Later will be
+ * <p>
+ * This implementation is built on the Weaviate Java {@code client6} API and uses gRPC for
+ * similarity search, writes, and deletes. It does not require GraphQL to be enabled on
+ * the Weaviate cluster.
+ *
+ * <p>
+ * Scoring relies on Weaviate's {@code certainty}, which is only meaningful for the cosine
+ * distance metric. The store therefore creates its collection with cosine distance and a
+ * self-provided (bring-your-own-vector) index. When pointed at a pre-existing collection
+ * that does not use cosine distance, similarity search fails fast rather than returning
+ * silently incorrect scores.
+ *
+ * Note: You can assign arbitrary metadata fields with your Documents. These will be
  * persisted and managed as Document fields. But only the metadata keys listed in
  * {@link WeaviateVectorStore#filterMetadataFields} can be used for similarity search
  * expression filters.
@@ -74,7 +83,7 @@ import org.springframework.util.StringUtils;
  * Example usage with builder:
  * </p>
  * <pre>{@code
- * // Create the vector store with builder
+ * // weaviateClient is an io.weaviate.client6.v1.api.WeaviateClient
  * WeaviateVectorStore vectorStore = WeaviateVectorStore.builder(weaviateClient, embeddingModel)
  *     .options(options)                     	  // Optional: use custom options
  *     .consistencyLevel(ConsistentLevel.QUORUM)  // Optional: Set consistency level (default: ONE)
@@ -99,14 +108,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 	private static final String METADATA_FIELD_NAME = "metadata";
 
-	private static final String ADDITIONAL_FIELD_NAME = "_additional";
-
-	private static final String ADDITIONAL_ID_FIELD_NAME = "id";
-
-	private static final String ADDITIONAL_CERTAINTY_FIELD_NAME = "certainty";
-
-	private static final String ADDITIONAL_VECTOR_FIELD_NAME = "vector";
-
 	private final WeaviateClient weaviateClient;
 
 	private final WeaviateVectorStoreOptions options;
@@ -125,15 +126,14 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	private final List<MetadataField> filterMetadataFields;
 
 	/**
-	 * List of weaviate field to retrieve whey performing similarity search.
-	 */
-	private final Field[] weaviateSimilaritySearchFields;
-
-	/**
-	 * Converts the generic {@link Filter.Expression} into, native, Weaviate filter
-	 * expressions.
+	 * Converts the generic {@link Filter.Expression} into native, client6, Weaviate
+	 * {@link io.weaviate.client6.v1.api.collections.query.Filter} objects.
 	 */
 	private final WeaviateFilterExpressionConverter filterExpressionConverter;
+
+	private final Object collectionInitLock = new Object();
+
+	private volatile boolean collectionInitialized;
 
 	/**
 	 * Protected constructor for creating a WeaviateVectorStore instance using the builder
@@ -157,7 +157,16 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		this.filterExpressionConverter = new WeaviateFilterExpressionConverter(
 				this.filterMetadataFields.stream().map(MetadataField::name).toList(),
 				this.options.getMetaFieldPrefix());
-		this.weaviateSimilaritySearchFields = buildWeaviateSimilaritySearchFields();
+
+		// https://github.com/weaviate/java-client/issues/641: in client6 6.3.0 both
+		// QUORUM and ALL are mapped to the proto value for ONE. Warn once here (rather
+		// than per operation) so the degradation is not mistaken for a Spring AI bug.
+		if (this.consistencyLevel == ConsistentLevel.QUORUM || this.consistencyLevel == ConsistentLevel.ALL) {
+			logger.warn("Weaviate client6 currently maps consistency level " + this.consistencyLevel
+					+ " to ONE due to https://github.com/weaviate/java-client/issues/641. "
+					+ "Writes and deletes will behave as consistency level ONE until the client is upgraded "
+					+ "to a release that fixes the issue.");
+		}
 	}
 
 	/**
@@ -167,26 +176,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	 */
 	public static Builder builder(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
 		return new Builder(weaviateClient, embeddingModel);
-	}
-
-	private Field[] buildWeaviateSimilaritySearchFields() {
-
-		List<Field> searchWeaviateFieldList = new ArrayList<>();
-
-		searchWeaviateFieldList.add(Field.builder().name(this.options.getContentFieldName()).build());
-		searchWeaviateFieldList.add(Field.builder().name(METADATA_FIELD_NAME).build());
-		searchWeaviateFieldList.addAll(this.filterMetadataFields.stream()
-			.map(mf -> Field.builder().name(this.options.getMetaFieldPrefix() + mf.name()).build())
-			.toList());
-		searchWeaviateFieldList.add(Field.builder()
-			.name(ADDITIONAL_FIELD_NAME)
-			// https://weaviate.io/developers/weaviate/api/graphql/get#additional-properties--metadata
-			.fields(Field.builder().name(ADDITIONAL_ID_FIELD_NAME).build(),
-					Field.builder().name(ADDITIONAL_CERTAINTY_FIELD_NAME).build(),
-					Field.builder().name(ADDITIONAL_VECTOR_FIELD_NAME).build())
-			.build());
-
-		return searchWeaviateFieldList.toArray(new Field[0]);
 	}
 
 	@Override
@@ -199,45 +188,35 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		List<WeaviateObject> weaviateObjects = documents.stream()
-			.map(document -> toWeaviateObject(document, documents, embeddings))
-			.toList();
-
-		Result<ObjectGetResponse[]> response = this.weaviateClient.batch()
-			.objectsBatcher()
-			.withObjects(weaviateObjects.toArray(new WeaviateObject[0]))
-			.withConsistencyLevel(this.consistencyLevel.name())
-			.run();
-
-		List<String> errorMessages = new ArrayList<>();
-
-		if (response.hasErrors()) {
-			errorMessages.add(response.getError()
-				.getMessages()
-				.stream()
-				.map(WeaviateErrorMessage::getMessage)
-				.collect(Collectors.joining(System.lineSeparator())));
-			throw new RuntimeException("Failed to add documents because: \n" + errorMessages);
+		List<WeaviateObject<Map<String, Object>>> weaviateObjects = new ArrayList<>(documents.size());
+		for (int i = 0; i < documents.size(); i++) {
+			weaviateObjects.add(toWeaviateObject(documents.get(i), embeddings.get(i)));
 		}
 
-		if (response.getResult() != null) {
-			for (var r : response.getResult()) {
-				if (r.getResult() != null && r.getResult().getErrors() != null) {
-					var error = r.getResult().getErrors();
-					errorMessages.add(error.getError()
-						.stream()
-						.map(ObjectsGetResponseAO2Result.ErrorItem::getMessage)
-						.collect(Collectors.joining(System.lineSeparator())));
-				}
-			}
-		}
+		InsertManyResponse response = writeHandle().data.insertMany(weaviateObjects);
 
-		if (!CollectionUtils.isEmpty(errorMessages)) {
+		Set<String> errorMessages = collectInsertErrors(response);
+		if (!errorMessages.isEmpty()) {
 			throw new RuntimeException("Failed to add documents because: \n" + errorMessages);
 		}
 	}
 
-	private WeaviateObject toWeaviateObject(Document document, List<Document> documents, List<float[]> embeddings) {
+	static Set<String> collectInsertErrors(InsertManyResponse response) {
+		Set<String> errorMessages = new LinkedHashSet<>();
+		if (response.errors() != null) {
+			errorMessages.addAll(response.errors());
+		}
+		if (response.responses() != null) {
+			for (InsertManyResponse.InsertObject insertObject : response.responses()) {
+				if (!insertObject.successful() && StringUtils.hasText(insertObject.error())) {
+					errorMessages.add(insertObject.error());
+				}
+			}
+		}
+		return errorMessages;
+	}
+
+	private WeaviateObject<Map<String, Object>> toWeaviateObject(Document document, float[] embedding) {
 
 		// https://weaviate.io/developers/weaviate/config-refs/datatypes
 		Map<String, Object> fields = new HashMap<>();
@@ -250,7 +229,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			throw new RuntimeException("Failed to serialize the Document metadata: " + document.getText());
 		}
 
-		// Add the filterable metadata fields as top level fields, allowing filler
+		// Add the filterable metadata fields as top level fields, allowing filter
 		// expressions on them.
 		for (MetadataField mf : this.filterMetadataFields) {
 			if (document.getMetadata().containsKey(mf.name())) {
@@ -258,70 +237,46 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			}
 		}
 
-		return WeaviateObject.builder()
-			.className(this.options.getObjectClass())
-			.id(document.getId())
-			.vector(EmbeddingUtils.toFloatArray(embeddings.get(documents.indexOf(document))))
-			.properties(fields)
-			.build();
+		return WeaviateObject.<Map<String, Object>>of(
+				builder -> builder.uuid(document.getId()).properties(fields).vectors(Vectors.of(embedding)));
 	}
 
 	@Override
 	public void doDelete(List<String> documentIds) {
+		Assert.notNull(documentIds, "documentIds must not be null");
 
-		Result<BatchDeleteResponse> result = this.weaviateClient.batch()
-			.objectsBatchDeleter()
-			.withClassName(this.options.getObjectClass())
-			.withConsistencyLevel(this.consistencyLevel.name())
-			.withWhere(WhereFilter.builder()
-				.path("id")
-				.operator(Operator.ContainsAny)
-				.valueString(documentIds.toArray(new String[0]))
-				.build())
-			.run();
+		DeleteManyResponse response = writeHandle().data.deleteMany(documentIds.toArray(new String[0]));
 
-		if (result.hasErrors()) {
-			String errorMessages = result.getError()
-				.getMessages()
-				.stream()
-				.map(WeaviateErrorMessage::getMessage)
-				.collect(Collectors.joining(","));
-			throw new RuntimeException("Failed to delete documents because: \n" + errorMessages);
-		}
+		throwOnDeleteFailure(response);
 	}
 
 	@Override
 	protected void doDelete(Filter.Expression filterExpression) {
 		Assert.notNull(filterExpression, "Filter expression must not be null");
 
-		try {
-			// Use similarity search with empty query to find documents matching the
-			// filter
-			SearchRequest searchRequest = SearchRequest.builder()
-				.query("") // empty query since we only want filter matches
-				.filterExpression(filterExpression)
-				.topK(10000) // large enough to get all matches
-				.similarityThresholdAll()
-				.build();
+		// Native filter delete removes the need to route filter-deletes through a
+		// similarity search with an empty query.
+		io.weaviate.client6.v1.api.collections.query.Filter filter = this.filterExpressionConverter
+			.convert(filterExpression);
 
-			List<Document> matchingDocs = similaritySearch(searchRequest);
+		DeleteManyResponse response = writeHandle().data.deleteMany(filter);
 
-			if (!matchingDocs.isEmpty()) {
-				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).toList();
+		throwOnDeleteFailure(response);
+	}
 
-				delete(idsToDelete);
-
-				if (logger.isDebugEnabled()) {
-					logger.debug("Deleted " + idsToDelete.size() + " documents matching filter expression");
+	static void throwOnDeleteFailure(DeleteManyResponse response) {
+		Set<String> errorMessages = new LinkedHashSet<>();
+		if (response.objects() != null) {
+			for (DeleteManyResponse.DeletedObject deletedObject : response.objects()) {
+				if (!deletedObject.successful() && StringUtils.hasText(deletedObject.error())) {
+					errorMessages.add(deletedObject.error());
 				}
 			}
-			else {
-				logger.debug("No documents found matching filter expression");
-			}
 		}
-		catch (JacksonException e) {
-			logger.error("Failed to delete documents by filter", e);
-			throw new IllegalStateException("Failed to delete documents by filter", e);
+
+		if (response.failed() > 0 || !errorMessages.isEmpty()) {
+			throw new RuntimeException("Failed to delete documents because: \n"
+					+ (errorMessages.isEmpty() ? response.failed() + " object(s) failed to delete" : errorMessages));
 		}
 	}
 
@@ -330,98 +285,130 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		float[] embedding = this.embeddingModel.embed(request.getQuery());
 
-		GetBuilder.GetBuilderBuilder builder = GetBuilder.builder();
+		CollectionHandle<Map<String, Object>> handle = collectionHandle();
 
-		GetBuilderBuilder queryBuilder = builder.className(this.options.getObjectClass())
-			.withNearVectorFilter(NearVectorArgument.builder()
-				.vector(EmbeddingUtils.toFloatArray(embedding))
+		QueryResponse<Map<String, Object>> response = handle.query.nearVector(embedding, builder -> {
+			builder.limit(request.getTopK())
+				// Cosine certainty threshold; see the cosine-distance requirement above.
 				.certainty((float) request.getSimilarityThreshold())
-				.build())
-			.limit(request.getTopK())
-			.withWhereFilter(WhereArgument.builder().build()) // adds an empty 'where:{}'
-			// placeholder.
-			.fields(Fields.builder().fields(this.weaviateSimilaritySearchFields).build());
+				.returnProperties(this.options.getContentFieldName(), METADATA_FIELD_NAME)
+				.returnMetadata(Metadata.CERTAINTY)
+				// Subject to https://github.com/weaviate/java-client/issues/641 (QUORUM
+				// and ALL currently behave as ONE).
+				.consistencyLevel(mapConsistencyLevel());
+			if (request.hasFilterExpression()) {
+				Filter.Expression filterExpression = request.getFilterExpression();
+				Assert.state(filterExpression != null, "Filter expression must not be null");
+				builder.filters(this.filterExpressionConverter.convert(filterExpression));
+			}
+			return builder;
+		});
 
-		String graphQLQuery = queryBuilder.build().buildQuery();
-
-		if (request.hasFilterExpression()) {
-			Assert.state(request.getFilterExpression() != null, "filter expression must not be null");
-			// replace the empty 'where:{}' placeholder with real filter.
-			String filter = this.filterExpressionConverter.convertExpression(request.getFilterExpression());
-			graphQLQuery = graphQLQuery.replace("where:{}", String.format("where:{%s}", filter));
-		}
-		else {
-			// remove the empty 'where:{}' placeholder.
-			graphQLQuery = graphQLQuery.replace("where:{}", "");
-		}
-
-		Result<GraphQLResponse> result = this.weaviateClient.graphQL().raw().withQuery(graphQLQuery).run();
-
-		if (result.hasErrors()) {
-			throw new IllegalArgumentException(result.getError()
-				.getMessages()
-				.stream()
-				.map(WeaviateErrorMessage::getMessage)
-				.collect(Collectors.joining(System.lineSeparator())));
-		}
-
-		GraphQLError[] errors = result.getResult().getErrors();
-		if (errors != null && errors.length > 0) {
-			throw new IllegalArgumentException(Arrays.stream(errors)
-				.map(GraphQLError::getMessage)
-				.collect(Collectors.joining(System.lineSeparator())));
-		}
-
-		@SuppressWarnings("unchecked")
-		Optional<Map.Entry<String, Map<?, ?>>> resGetPart = ((Map<String, Map<?, ?>>) result.getResult().getData())
-			.entrySet()
-			.stream()
-			.findFirst();
-		if (!resGetPart.isPresent()) {
+		if (CollectionUtils.isEmpty(response.objects())) {
 			return List.of();
 		}
 
-		Optional<?> resItemsPart = resGetPart.get().getValue().entrySet().stream().findFirst();
-		if (!resItemsPart.isPresent()) {
-			return List.of();
-		}
-
-		@SuppressWarnings("unchecked")
-		List<Map<String, ?>> resItems = ((Map.Entry<String, List<Map<String, ?>>>) resItemsPart.get()).getValue();
-
-		return resItems.stream().map(this::toDocument).toList();
+		return response.objects().stream().map(this::toDocument).toList();
 	}
 
-	@SuppressWarnings("unchecked")
-	private Document toDocument(Map<String, ?> item) {
+	Document toDocument(WeaviateObject<Map<String, Object>> object) {
 
-		// Additional (System)
-		Map<String, ?> additional = (Map<String, ?>) item.get(ADDITIONAL_FIELD_NAME);
-		Assert.state(additional != null, "additional field should not be null");
-		double certainty = (Double) Objects.requireNonNull(additional.get(ADDITIONAL_CERTAINTY_FIELD_NAME),
-				"missing additional certainty field");
-		String id = (String) Objects.requireNonNull(additional.get(ADDITIONAL_ID_FIELD_NAME),
-				"missing additional id field");
+		String id = object.uuid();
+		Assert.state(StringUtils.hasText(id), "Weaviate object UUID must not be null or empty");
+
+		Map<String, Object> properties = object.properties();
+
+		// Content
+		String content = (properties != null) ? (String) properties.get(this.options.getContentFieldName()) : null;
 
 		// Metadata
 		Map<String, Object> metadata = new HashMap<>();
-		metadata.put(DocumentMetadata.DISTANCE.value(), 1 - certainty);
-
-		String metadataJson = (String) item.get(METADATA_FIELD_NAME);
-		if (StringUtils.hasText(metadataJson)) {
-			metadata.putAll(JsonMapper.shared().readValue(metadataJson, Map.class));
+		Object metadataJson = (properties != null) ? properties.get(METADATA_FIELD_NAME) : null;
+		if (metadataJson instanceof String metadataString && StringUtils.hasText(metadataString)) {
+			metadata.putAll(JsonMapper.shared().readValue(metadataString, Map.class));
 		}
 
-		// Content
-		String content = (String) item.get(this.options.getContentFieldName());
+		// Scoring: certainty is only populated for cosine-distance collections.
+		QueryMetadata queryMetadata = object.queryMetadata();
+		Float certainty = (queryMetadata != null) ? queryMetadata.certainty() : null;
+		Assert.state(certainty != null,
+				"Weaviate did not return a certainty for the matched object. Certainty is only available when the "
+						+ "collection uses cosine distance; non-cosine collections are not supported for scoring.");
+
+		metadata.put(DocumentMetadata.DISTANCE.value(), 1.0 - certainty);
 
 		// @formatter:off
 		return Document.builder()
 			.id(id)
 			.text(content)
 			.metadata(metadata)
-			.score(certainty)
+			.score(certainty.doubleValue())
 			.build(); // @formatter:on
+	}
+
+	/**
+	 * Returns a collection handle configured with the store's consistency level for write
+	 * and delete operations.
+	 */
+	private CollectionHandle<Map<String, Object>> writeHandle() {
+		// https://github.com/weaviate/java-client/issues/641: QUORUM/ALL currently
+		// behave as ONE. The user-facing WARN is emitted once in the constructor.
+		return collectionHandle().withConsistencyLevel(mapConsistencyLevel());
+	}
+
+	private CollectionHandle<Map<String, Object>> collectionHandle() {
+		initCollectionIfNecessary();
+		return this.weaviateClient.collections.use(this.options.getObjectClass());
+	}
+
+	private ConsistencyLevel mapConsistencyLevel() {
+		return ConsistencyLevel.valueOf(this.consistencyLevel.name());
+	}
+
+	/**
+	 * Idempotently ensures the backing collection exists with a self-provided
+	 * (vectorizer: none) cosine-distance vector index. An existing collection is reused
+	 * without destructive reconfiguration.
+	 */
+	private void initCollectionIfNecessary() {
+		if (this.collectionInitialized) {
+			return;
+		}
+		synchronized (this.collectionInitLock) {
+			if (this.collectionInitialized) {
+				return;
+			}
+			String objectClass = this.options.getObjectClass();
+			try {
+				if (!this.weaviateClient.collections.exists(objectClass)) {
+					this.weaviateClient.collections.create(buildCollectionConfig(objectClass));
+				}
+				this.collectionInitialized = true;
+			}
+			catch (IOException e) {
+				throw new RuntimeException("Failed to initialize Weaviate collection: " + objectClass, e);
+			}
+		}
+	}
+
+	private CollectionConfig buildCollectionConfig(String objectClass) {
+		List<Property> properties = new ArrayList<>();
+		properties.add(Property.text(this.options.getContentFieldName()));
+		properties.add(Property.text(METADATA_FIELD_NAME));
+		for (MetadataField mf : this.filterMetadataFields) {
+			String name = this.options.getMetaFieldPrefix() + mf.name();
+			Property property = switch (mf.type()) {
+				case TEXT -> Property.text(name);
+				case NUMBER -> Property.number(name);
+				case BOOLEAN -> Property.bool(name);
+			};
+			properties.add(property);
+		}
+
+		return CollectionConfig.of(objectClass,
+				builder -> builder.properties(properties.toArray(new Property[0]))
+					.vectorConfig(VectorConfig.selfProvided(
+							vectorizer -> vectorizer.vectorIndex(Hnsw.of(hnsw -> hnsw.distance(Distance.COSINE))))));
 	}
 
 	@Override
@@ -457,12 +444,22 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		/**
 		 * Write must receive an acknowledgement from at least QUORUM replica nodes.
 		 * QUORUM is calculated as n / 2 + 1, where n is the number of replicas.
+		 *
+		 * <p>
+		 * <strong>Note:</strong> due to <a href=
+		 * "https://github.com/weaviate/java-client/issues/641">weaviate/java-client#641</a>,
+		 * the client6 {@code 6.3.0} driver currently maps this level to {@code ONE}.
 		 */
 		QUORUM,
 
 		/**
 		 * Write must receive an acknowledgement from all replica nodes. This is the most
 		 * consistent, but 'slowest'.
+		 *
+		 * <p>
+		 * <strong>Note:</strong> due to <a href=
+		 * "https://github.com/weaviate/java-client/issues/641">weaviate/java-client#641</a>,
+		 * the client6 {@code 6.3.0} driver currently maps this level to {@code ONE}.
 		 */
 		ALL
 

@@ -452,6 +452,27 @@ If you rely on reading the computed similarity distance from `document.getMetada
 If your documents use `distance` for domain-specific data, consider renaming that field to avoid the collision and the warning.
 
 
+== Weaviate Vector Store
+
+=== Changed: Migrated to the Weaviate `client6` gRPC API
+
+The Weaviate Vector Store now uses the Weaviate Java `client6` API and gRPC for similarity search, writes, and deletes, replacing the v5 client and the GraphQL query API.
+GraphQL no longer needs to be enabled on the cluster, but the server's gRPC endpoint (port `50051` by default) must be reachable.
+See xref:integrations/vector-stores/weaviate.adoc[Weaviate].
+
+==== Migration
+
+* The managed dependency changed from `io.weaviate:client` to `io.weaviate:client6`.
+* Client construction changed from the v5 `io.weaviate.client.WeaviateClient` to the `client6` `io.weaviate.client6.v1.api.WeaviateClient` (for example `WeaviateClient.connectToCustom(...)` or `WeaviateClient.connectToWeaviateCloud(...)`).
+Both clients share the simple name `WeaviateClient` but live in different packages.
+* `WeaviateVectorStore.getNativeClient()` now returns `io.weaviate.client6.v1.api.WeaviateClient`.
+* The `WeaviateConnectionDetails` SPI gained a `getGrpcHost()` method (a default method deriving `host:50051` from `getHost()`); implementations that map gRPC to a different host or port should override it.
+* New properties `spring.ai.vectorstore.weaviate.grpc-host` and `spring.ai.vectorstore.weaviate.grpc-port` (default `50051`) configure the gRPC endpoint.
+* `WeaviateFilterExpressionConverter` is now package-internal and produces `client6` `Filter` objects instead of GraphQL filter strings.
+* Scoring requires cosine distance: the store creates its collection with cosine distance, and searching a non-cosine collection fails fast.
+* Due to link:https://github.com/weaviate/java-client/issues/641[weaviate/java-client#641], consistency levels `QUORUM` and `ALL` currently behave as `ONE`; a one-time warning is logged when either is configured.
+
+
 == Chat Client
 
 === New: Finish Reason Categories

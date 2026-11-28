@@ -25,8 +25,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import io.weaviate.client.Config;
-import io.weaviate.client.WeaviateClient;
+import io.weaviate.client6.v1.api.WeaviateClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -64,7 +63,23 @@ public class WeaviateVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	static WeaviateContainer weaviateContainer = new WeaviateContainer(WeaviateImage.DEFAULT_IMAGE)
+		.withExposedPorts(8080, 50051)
 		.waitingFor(Wait.forHttp("/v1/.well-known/ready").forPort(8080));
+
+	/**
+	 * Builds a client6 {@link WeaviateClient} pointing at the container's mapped HTTP and
+	 * gRPC ports. gRPC (port 50051) is required by the client6 query, write, and delete
+	 * operations.
+	 */
+	static WeaviateClient clientFor(WeaviateContainer container) {
+		String[] http = container.getHttpHostAddress().split(":");
+		String[] grpc = container.getGrpcHostAddress().split(":");
+		return WeaviateClient.connectToCustom(custom -> custom.scheme("http")
+			.httpHost(http[0])
+			.httpPort(Integer.parseInt(http[1]))
+			.grpcHost(grpc[0])
+			.grpcPort(Integer.parseInt(grpc[1])));
+	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
@@ -282,6 +297,33 @@ public class WeaviateVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@Test
+	void writesAndSearchesWithGraphQlDisabled() throws Exception {
+		// Verifies the client6 gRPC path works against a GraphQL-disabled cluster.
+		try (WeaviateContainer graphQlDisabled = new WeaviateContainer(WeaviateImage.DEFAULT_IMAGE)
+			.withExposedPorts(8080, 50051)
+			.withEnv("DISABLE_GRAPHQL", "true")
+			.waitingFor(Wait.forHttp("/v1/.well-known/ready").forPort(8080))) {
+			graphQlDisabled.start();
+
+			TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel();
+			embeddingModel.afterPropertiesSet();
+
+			WeaviateVectorStore vectorStore = WeaviateVectorStore.builder(clientFor(graphQlDisabled), embeddingModel)
+				.build();
+
+			vectorStore.add(this.documents);
+
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(this.documents.get(0).getId());
+
+			vectorStore.delete(this.documents.stream().map(Document::getId).toList());
+		}
+	}
+
+	@Test
 	void getNativeClientTest() {
 		this.contextRunner.run(context -> {
 			WeaviateVectorStore vectorStore = context.getBean(WeaviateVectorStore.class);
@@ -450,9 +492,9 @@ public class WeaviateVectorStoreIT extends BaseVectorStoreTests {
 			return new TransformersEmbeddingModel();
 		}
 
-		@Bean
+		@Bean(destroyMethod = "close")
 		public WeaviateClient weaviateClient() {
-			return new WeaviateClient(new Config("http", weaviateContainer.getHttpHostAddress()));
+			return clientFor(weaviateContainer);
 		}
 
 	}

@@ -63,5 +63,8 @@ The following service connection factories are provided in the `spring-ai-spring
 | Containers of type `WeaviateContainer`
 |====
 
+NOTE: The Weaviate Vector Store connects over gRPC, so the `WeaviateConnectionDetails` created from a `WeaviateContainer` now also carries the gRPC endpoint (resolved from the container's mapped `50051` port).
+No additional configuration is required.
+
 More service connections are provided by the spring boot module `spring-boot-testcontainers`.
 Refer to the https://docs.spring.io/spring-boot/reference/testing/testcontainers.html#testing.testcontainers.service-connections[Testcontainers Service Connections] documentation page for the full list.

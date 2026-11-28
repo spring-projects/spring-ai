@@ -56,6 +56,7 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 
 	@Container
 	static WeaviateContainer weaviate = new WeaviateContainer("semitechnologies/weaviate:1.31.22")
+		.withExposedPorts(8080, 50051)
 		.waitingFor(Wait.forHttp("/v1/.well-known/ready").forPort(8080));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
@@ -63,6 +64,8 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.weaviate.scheme=http",
 				"spring.ai.vectorstore.weaviate.host=" + weaviate.getHttpHostAddress(),
+				"spring.ai.vectorstore.weaviate.grpc-host=" + weaviate.getGrpcHostAddress().split(":")[0],
+				"spring.ai.vectorstore.weaviate.grpc-port=" + weaviate.getGrpcHostAddress().split(":")[1],
 				"spring.ai.vectorstore.weaviate.filter-field.country=TEXT",
 				"spring.ai.vectorstore.weaviate.filter-field.year=NUMBER",
 				"spring.ai.vectorstore.weaviate.filter-field.active=BOOLEAN",
