@@ -159,6 +159,13 @@ public final class MethodToolCallback implements ToolCallback {
 		if (value == null) {
 			return null;
 		}
+		// An LLM may return an empty string for a parameter it cannot fill.
+		// Attempting to coerce "" into a numeric type (Long, Integer, Double, …)
+		// triggers a NumberFormatException deep inside Jackson/BigDecimal.
+		// Treat an empty string as absent for any target type other than String itself.
+		if (value instanceof String s && s.isEmpty() && !String.class.equals(type)) {
+			return null;
+		}
 		try {
 			if (type instanceof Class<?>) {
 				return jsonHelper.convertToTypedObject(value, (Class<?>) type);
