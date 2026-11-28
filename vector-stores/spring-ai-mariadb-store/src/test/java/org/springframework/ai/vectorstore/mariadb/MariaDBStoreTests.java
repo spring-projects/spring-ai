@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.mariadb;
 
+import java.sql.PreparedStatement;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -106,6 +108,35 @@ public class MariaDBStoreTests {
 				}
 				assertThat(batches.get(9).getBatchSize()).as("Last batch should have size 989").isEqualTo(989);
 			});
+	}
+
+	@Test
+	void deleteByIdsRunsInBatches() throws Exception {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		var mariadbVectorStore = MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
+			.maxDocumentBatchSize(2)
+			.build();
+
+		mariadbVectorStore.doDelete(List.of("a", "b", "c"));
+
+		var sqlCaptor = ArgumentCaptor.forClass(String.class);
+		var setterCaptor = ArgumentCaptor.forClass(BatchPreparedStatementSetter.class);
+		verify(jdbcTemplate, times(2)).batchUpdate(sqlCaptor.capture(), setterCaptor.capture());
+		assertThat(sqlCaptor.getAllValues()).allSatisfy(sql -> assertThat(sql).contains("DELETE FROM", "= ?"));
+		List<String> ids = new ArrayList<>();
+		for (BatchPreparedStatementSetter setter : setterCaptor.getAllValues()) {
+			for (int i = 0; i < setter.getBatchSize(); i++) {
+				var ps = mock(PreparedStatement.class);
+				setter.setValues(ps, i);
+				var id = ArgumentCaptor.forClass(String.class);
+				verify(ps).setString(eq(1), id.capture());
+				ids.add(id.getValue());
+			}
+		}
+		assertThat(setterCaptor.getAllValues()).extracting(BatchPreparedStatementSetter::getBatchSize)
+			.containsExactly(2, 1);
+		assertThat(ids).containsExactly("a", "b", "c");
 	}
 
 	@Test
