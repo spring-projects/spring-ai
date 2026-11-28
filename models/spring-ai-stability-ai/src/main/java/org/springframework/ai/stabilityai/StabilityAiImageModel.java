@@ -42,6 +42,8 @@ import org.springframework.util.Assert;
 /**
  * StabilityAiImageModel is a class that implements the ImageModel interface. It provides
  * a client for calling the StabilityAI image generation API.
+ *
+ * @author Minju Kim
  */
 public class StabilityAiImageModel implements ImageModel {
 
@@ -144,9 +146,13 @@ public class StabilityAiImageModel implements ImageModel {
 					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 							this.observationRegistry)
 					.observe(() -> {
-						// Make the request
-						StabilityAiApi.GenerateImageResponse generateImageResponse = this.stabilityAiApi
-							.generateImage(generateImageRequest);
+						// Make the request, falling back to the model configured on the
+						// API
+						// when no model was set on the default or runtime options
+						String model = requestImageOptions.getModel();
+						StabilityAiApi.GenerateImageResponse generateImageResponse = (model != null)
+								? this.stabilityAiApi.generateImage(model, generateImageRequest)
+								: this.stabilityAiApi.generateImage(generateImageRequest);
 
 						// Convert to org.springframework.ai.model derived ImageResponse
 						// data type
