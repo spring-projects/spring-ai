@@ -8,6 +8,7 @@
 ** xref:get-started/choose-provider.adoc[Choosing a Model Provider]
 
 * Tutorials
+** xref:tutorials/building-a-console-application.adoc[Building a Console Application]
 ** xref:tutorials/rag.adoc[Chat with Your Documents]
 ** xref:tutorials/tools.adoc[Give the Model Tools]
 ** xref:tutorials/sessions.adoc[A Conversational App with Sessions]
