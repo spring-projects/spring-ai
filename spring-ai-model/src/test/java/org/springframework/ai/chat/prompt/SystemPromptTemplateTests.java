@@ -180,6 +180,26 @@ class SystemPromptTemplateTests {
 	}
 
 	@Test
+	void createPromptWithChatOptions() {
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate("Hello!");
+		ChatOptions chatOptions = ChatOptions.builder().model("test-model").build();
+		Prompt prompt = systemPromptTemplate.create(chatOptions);
+		assertThat(prompt.getInstructions()).singleElement().isInstanceOf(SystemMessage.class);
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("Hello!");
+		assertThat(prompt.getOptions()).isEqualTo(chatOptions);
+	}
+
+	@Test
+	void createPromptWithVariablesAndChatOptions() {
+		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate("Hello {name}!");
+		ChatOptions chatOptions = ChatOptions.builder().model("test-model").build();
+		Prompt prompt = systemPromptTemplate.create(Map.of("name", "Spring AI"), chatOptions);
+		assertThat(prompt.getInstructions()).singleElement().isInstanceOf(SystemMessage.class);
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("Hello Spring AI!");
+		assertThat(prompt.getOptions()).isEqualTo(chatOptions);
+	}
+
+	@Test
 	void createWithCustomRenderer() {
 		TemplateRenderer customRenderer = new NoOpTemplateRenderer();
 		PromptTemplate systemPromptTemplate = SystemPromptTemplate.builder()
