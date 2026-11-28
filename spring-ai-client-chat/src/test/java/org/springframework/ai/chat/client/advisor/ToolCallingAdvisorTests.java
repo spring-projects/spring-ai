@@ -16,9 +16,14 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
@@ -31,6 +36,8 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.quality.Strictness;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -96,6 +103,29 @@ public class ToolCallingAdvisorTests {
 		assertThatThrownBy(() -> ToolCallingAdvisor.builder().toolCallingManager(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("toolCallingManager must not be null");
+	}
+
+	@Test
+	void whenToolExecutionSchedulerIsNullThenThrow() {
+		assertThatThrownBy(() -> ToolCallingAdvisor.builder().toolExecutionScheduler(null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("toolExecutionScheduler must not be null");
+	}
+
+	@Test
+	void defaultAndCopiedBuildersPreserveToolExecutionScheduler() {
+		ToolCallingAdvisor defaultAdvisor = ToolCallingAdvisor.builder().build();
+		assertThat(defaultAdvisor.getToolExecutionScheduler()).isSameAs(Schedulers.boundedElastic());
+
+		Scheduler scheduler = Schedulers.newSingle("tool-calling-advisor-copy-test");
+		try {
+			ToolCallingAdvisor.Builder<?> builder = ToolCallingAdvisor.builder().toolExecutionScheduler(scheduler);
+			ToolCallingAdvisor copiedAdvisor = builder.copy().build();
+			assertThat(copiedAdvisor.getToolExecutionScheduler()).isSameAs(scheduler);
+		}
+		finally {
+			scheduler.dispose();
+		}
 	}
 
 	@Test
@@ -221,6 +251,81 @@ public class ToolCallingAdvisorTests {
 
 		assertThat(results).isNotNull().hasSize(1);
 		verify(this.toolCallingManager, times(0)).executeToolCalls(any(), any());
+	}
+
+	@Test
+	void streamToolExecutionUsesConfiguredSchedulerAndIsolatesConcurrentConversations() throws Exception {
+		Scheduler schedulerA = Schedulers.newBoundedElastic(1, 10, "tool-calling-advisor-isolation-a");
+		Scheduler schedulerB = Schedulers.newBoundedElastic(1, 10, "tool-calling-advisor-isolation-b");
+		CountDownLatch blockingToolStarted = new CountDownLatch(1);
+		CountDownLatch releaseBlockingTool = new CountDownLatch(1);
+		CountDownLatch conversationADone = new CountDownLatch(1);
+		Map<String, AtomicInteger> modelRounds = new ConcurrentHashMap<>();
+		Map<String, AtomicInteger> toolRounds = new ConcurrentHashMap<>();
+		Map<String, String> toolThreads = new ConcurrentHashMap<>();
+		AtomicReference<Throwable> conversationAError = new AtomicReference<>();
+
+		ToolCallingManager manager = mock(ToolCallingManager.class);
+		when(manager.executeToolCalls(any(Prompt.class), any(ChatResponse.class))).thenAnswer(invocation -> {
+			Prompt prompt = invocation.getArgument(0);
+			String conversation = ((UserMessage) prompt.getInstructions().get(0)).getText();
+			int round = toolRounds.computeIfAbsent(conversation, key -> new AtomicInteger()).incrementAndGet();
+			toolThreads.put(conversation, Thread.currentThread().getName());
+			if (conversation.equals("conversation-a") && round == 2) {
+				blockingToolStarted.countDown();
+				if (!releaseBlockingTool.await(5, TimeUnit.SECONDS)) {
+					throw new IllegalStateException("Timed out waiting to release the blocking tool");
+				}
+			}
+			return ToolExecutionResult.builder()
+				.conversationHistory(List.of(new UserMessage(conversation),
+						AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build()))
+				.build();
+		});
+
+		ToolCallingAdvisor advisorA = ToolCallingAdvisor.builder()
+			.toolCallingManager(manager)
+			.toolExecutionScheduler(schedulerA)
+			.build();
+		ToolCallingAdvisor advisorB = ToolCallingAdvisor.builder()
+			.toolCallingManager(manager)
+			.toolExecutionScheduler(schedulerB)
+			.build();
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((request, chain) -> {
+			String conversation = ((UserMessage) request.prompt().getInstructions().get(0)).getText();
+			int round = modelRounds.computeIfAbsent(conversation, key -> new AtomicInteger()).incrementAndGet();
+			return Flux.just(createResponse(round < 3, null, conversation + " round " + round));
+		});
+		StreamAdvisorChain chainA = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisorA, terminalAdvisor))
+			.build();
+		StreamAdvisorChain chainB = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisorB, terminalAdvisor))
+			.build();
+
+		try {
+			advisorA.adviseStream(createMockRequest("conversation-a"), chainA)
+				.doOnError(conversationAError::set)
+				.doFinally(signal -> conversationADone.countDown())
+				.subscribe();
+			assertThat(blockingToolStarted.await(5, TimeUnit.SECONDS)).isTrue();
+
+			List<ChatClientResponse> conversationB = advisorB.adviseStream(createMockRequest("conversation-b"), chainB)
+				.collectList()
+				.block(Duration.ofSeconds(2));
+
+			assertThat(conversationB).isNotNull().isNotEmpty();
+			assertThat(toolThreads.get("conversation-a")).startsWith("tool-calling-advisor-isolation-a-");
+			assertThat(toolThreads.get("conversation-b")).startsWith("tool-calling-advisor-isolation-b-");
+		}
+		finally {
+			releaseBlockingTool.countDown();
+			assertThat(conversationADone.await(5, TimeUnit.SECONDS)).isTrue();
+			schedulerA.dispose();
+			schedulerB.dispose();
+		}
+
+		assertThat(conversationAError.get()).isNull();
 	}
 
 	@Test
@@ -1503,6 +1608,13 @@ public class ToolCallingAdvisorTests {
 		});
 
 		return mockRequest;
+	}
+
+	private ChatClientRequest createMockRequest(String conversation) {
+		ToolCallingChatOptions toolOptions = ToolCallingChatOptions.builder().build();
+		return ChatClientRequest.builder()
+			.prompt(new Prompt(List.of(new UserMessage(conversation)), toolOptions))
+			.build();
 	}
 
 	private ChatClientResponse createResponse(boolean hasToolCalls, Usage usage) {

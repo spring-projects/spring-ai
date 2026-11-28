@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jspecify.annotations.Nullable;
+import reactor.core.scheduler.Scheduler;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
@@ -120,8 +121,19 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, ToolIndex toolIndex,
 			String systemMessageSuffix, boolean referenceToolNameAccumulation, @Nullable Integer maxResults,
 			boolean conversationHistoryEnabled, String sessionIdKeyName, ToolIndexEvictionStrategy evictionStrategy) {
+		this(toolCallingManager, advisorOrder, toolExecutionEligibilityChecker, toolIndex, systemMessageSuffix,
+				referenceToolNameAccumulation, maxResults, conversationHistoryEnabled, sessionIdKeyName,
+				evictionStrategy, DEFAULT_TOOL_EXECUTION_SCHEDULER);
+	}
 
-		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled);
+	protected ToolSearchToolCallingAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
+			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, ToolIndex toolIndex,
+			String systemMessageSuffix, boolean referenceToolNameAccumulation, @Nullable Integer maxResults,
+			boolean conversationHistoryEnabled, String sessionIdKeyName, ToolIndexEvictionStrategy evictionStrategy,
+			Scheduler toolExecutionScheduler) {
+
+		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled,
+				toolExecutionScheduler);
 		this.toolIndex = toolIndex;
 		this.systemMessageSuffix = systemMessageSuffix;
 		this.referenceToolNameAccumulation = referenceToolNameAccumulation;
@@ -487,7 +499,8 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 			return new ToolSearchToolCallingAdvisor(getToolCallingManager(), getAdvisorOrder(),
 					getToolExecutionEligibilityChecker(), this.toolIndex,
 					Objects.requireNonNull(this.systemMessageSuffix), this.referenceToolNameAccumulation,
-					this.maxResults, this.isConversationHistoryEnabled(), this.sessionIdKeyName, this.evictionStrategy);
+					this.maxResults, this.isConversationHistoryEnabled(), this.sessionIdKeyName, this.evictionStrategy,
+					getToolExecutionScheduler());
 		}
 
 		@Override
