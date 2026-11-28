@@ -27,6 +27,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.image.ImageMessage;
 import org.springframework.ai.image.ImageOptions;
@@ -46,6 +47,7 @@ import static org.springframework.ai.image.observation.ImageModelObservationDocu
  * Unit tests for {@link ImageModelMeterObservationHandler}.
  *
  * @author Olivier Le Quellec
+ * @author ZYZ666-RGB
  */
 class ImageModelMeterObservationHandlerTests {
 
@@ -89,6 +91,58 @@ class ImageModelMeterObservationHandlerTests {
 		assertThat(this.meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value())
 			.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.TOTAL.value())
 			.meters()).hasSize(1);
+	}
+
+	@Test
+	void shouldCreateUsageMetersDuringAnObservation() {
+		var observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(new ImagePrompt("hello", ImageOptionsBuilder.builder().model("image-model").build()))
+			.provider("superprovider")
+			.build();
+		var observation = Observation
+			.createNotStarted(new DefaultImageModelObservationConvention(), () -> observationContext,
+					this.observationRegistry)
+			.start();
+
+		observationContext
+			.setResponse(new ImageResponse(List.of(), new ImageResponseMetadata(42L, new DefaultUsage(100, 20, 120))));
+
+		observation.stop();
+
+		assertThat(this.meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value()).meters()).hasSize(3);
+		assertThat(this.meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value())
+			.tag(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(), AiOperationType.IMAGE.value())
+			.tag(LowCardinalityKeyNames.AI_PROVIDER.asString(), "superprovider")
+			.tag(LowCardinalityKeyNames.REQUEST_MODEL.asString(), "image-model")
+			.meters()).hasSize(3);
+		assertThat(this.meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value())
+			.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.INPUT.value())
+			.counter()
+			.count()).isEqualTo(100);
+		assertThat(this.meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value())
+			.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.OUTPUT.value())
+			.counter()
+			.count()).isEqualTo(20);
+		assertThat(this.meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value())
+			.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.TOTAL.value())
+			.counter()
+			.count()).isEqualTo(120);
+	}
+
+	@Test
+	void shouldHandleNullUsageGracefully() {
+		var observationContext = generateObservationContext();
+		var observation = Observation
+			.createNotStarted(new DefaultImageModelObservationConvention(), () -> observationContext,
+					this.observationRegistry)
+			.start();
+
+		observationContext.setResponse(new ImageResponse(List.of(), new ImageResponseMetadata(42L, null)));
+
+		observation.stop();
+
+		assertThat(this.meterRegistry.getMeters())
+			.noneMatch(meter -> meter.getId().getName().equals(AiObservationMetricNames.TOKEN_USAGE.value()));
 	}
 
 	@Test
