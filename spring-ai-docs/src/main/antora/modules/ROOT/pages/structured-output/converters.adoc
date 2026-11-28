@@ -156,6 +156,26 @@ Prompt prompt = PromptTemplate.builder()
 ActorsFilms actorsFilms = converter.convert(chatModel.call(prompt).getResult().getOutput().getText());
 ----
 
+==== Handling Conversion Failures
+
+If `BeanOutputConverter` cannot deserialize the model output, it throws `StructuredOutputConversionException`.
+The exception's `getText()` returns the complete original input, before whitespace, thinking tags or Markdown code fences are removed, and `getCause()` retains the underlying JSON parsing or mapping exception.
+This also applies when using `ChatClient.call().entity(...)` or `responseEntity(...)` with a `BeanOutputConverter`.
+
+[source,java]
+----
+try {
+	ActorsFilms actorsFilms = chatClient.prompt()
+		.user("Generate the filmography of Tom Hanks.")
+		.call()
+		.entity(ActorsFilms.class);
+}
+catch (StructuredOutputConversionException ex) {
+	String originalResponse = ex.getText();
+	// Inspect the original response or use it in application-specific recovery.
+}
+----
+
 ==== Property Ordering in the Generated Schema
 
 `BeanOutputConverter` respects the Jackson `@JsonPropertyOrder` annotation when it generates the schema, for records and for classes:
