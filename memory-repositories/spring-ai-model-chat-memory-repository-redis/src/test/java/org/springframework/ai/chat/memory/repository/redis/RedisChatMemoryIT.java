@@ -23,6 +23,8 @@ import com.redis.testcontainers.RedisContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import redis.clients.jedis.RedisClient;
@@ -47,7 +49,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RedisChatMemoryIT {
 
 	@Container
-	static RedisContainer redisContainer = new RedisContainer("redis/redis-stack:latest");
+	static RedisContainer redisContainer = new RedisContainer("redis/redis-stack:latest")
+		.waitingFor(new WaitAllStrategy().withStrategy(Wait.forLogMessage(".*Ready to accept connections.*\\s", 1))
+			.withStrategy(Wait.forListeningPort()));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
