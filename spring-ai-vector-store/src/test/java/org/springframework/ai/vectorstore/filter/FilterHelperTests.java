@@ -38,17 +38,17 @@ public class FilterHelperTests {
 		assertThat(new FilterExpressionTextParser().parse("NOT key == 'UK' ")).isEqualTo(new Filter.Expression(
 				ExpressionType.NOT, new Filter.Expression(ExpressionType.EQ, new Key("key"), new Value("UK")), null));
 
-		assertThat(FilterHelper.negate(new FilterExpressionTextParser().parse("NOT key == 'UK' ")))
+		assertThat(FilterHelper.negate(new FilterExpressionTextParser().parse("NOT key == 'UK' ").left()))
 			.isEqualTo(new Filter.Expression(ExpressionType.NE, new Key("key"), new Value("UK")));
 
-		assertThat(FilterHelper.negate(new FilterExpressionTextParser().parse("NOT (key == 'UK') ")))
+		assertThat(FilterHelper.negate(new FilterExpressionTextParser().parse("NOT (key == 'UK') ").left()))
 			.isEqualTo(new Filter.Group(new Filter.Expression(ExpressionType.NE, new Key("key"), new Value("UK"))));
 	}
 
 	@Test
 	public void negateNE() {
 		var exp = new FilterExpressionTextParser().parse("NOT key != 'UK' ");
-		assertThat(FilterHelper.negate(exp))
+		assertThat(FilterHelper.negate(exp.left()))
 			.isEqualTo(new Filter.Expression(ExpressionType.EQ, new Key("key"), new Value("UK")));
 
 	}
@@ -56,7 +56,7 @@ public class FilterHelperTests {
 	@Test
 	public void negateGT() {
 		var exp = new FilterExpressionTextParser().parse("NOT key > 13 ");
-		assertThat(FilterHelper.negate(exp))
+		assertThat(FilterHelper.negate(exp.left()))
 			.isEqualTo(new Filter.Expression(ExpressionType.LTE, new Key("key"), new Value(13)));
 
 	}
@@ -64,49 +64,49 @@ public class FilterHelperTests {
 	@Test
 	public void negateGTE() {
 		var exp = new FilterExpressionTextParser().parse("NOT key >= 13 ");
-		assertThat(FilterHelper.negate(exp))
+		assertThat(FilterHelper.negate(exp.left()))
 			.isEqualTo(new Filter.Expression(ExpressionType.LT, new Key("key"), new Value(13)));
 	}
 
 	@Test
 	public void negateLT() {
 		var exp = new FilterExpressionTextParser().parse("NOT key < 13 ");
-		assertThat(FilterHelper.negate(exp))
+		assertThat(FilterHelper.negate(exp.left()))
 			.isEqualTo(new Filter.Expression(ExpressionType.GTE, new Key("key"), new Value(13)));
 	}
 
 	@Test
 	public void negateLTE() {
 		var exp = new FilterExpressionTextParser().parse("NOT key <= 13 ");
-		assertThat(FilterHelper.negate(exp))
+		assertThat(FilterHelper.negate(exp.left()))
 			.isEqualTo(new Filter.Expression(ExpressionType.GT, new Key("key"), new Value(13)));
 	}
 
 	@Test
 	public void negateIN() {
 		var exp = new FilterExpressionTextParser().parse("NOT key IN [11, 12, 13] ");
-		assertThat(FilterHelper.negate(exp))
+		assertThat(FilterHelper.negate(exp.left()))
 			.isEqualTo(new Filter.Expression(ExpressionType.NIN, new Key("key"), new Value(List.of(11, 12, 13))));
 	}
 
 	@Test
 	public void negateNIN() {
 		var exp = new FilterExpressionTextParser().parse("NOT key NIN [11, 12, 13] ");
-		assertThat(FilterHelper.negate(exp))
+		assertThat(FilterHelper.negate(exp.left()))
 			.isEqualTo(new Filter.Expression(ExpressionType.IN, new Key("key"), new Value(List.of(11, 12, 13))));
 	}
 
 	@Test
 	public void negateNIN2() {
 		var exp = new FilterExpressionTextParser().parse("NOT key NOT IN [11, 12, 13] ");
-		assertThat(FilterHelper.negate(exp))
+		assertThat(FilterHelper.negate(exp.left()))
 			.isEqualTo(new Filter.Expression(ExpressionType.IN, new Key("key"), new Value(List.of(11, 12, 13))));
 	}
 
 	@Test
 	public void negateAND() {
 		var exp = new FilterExpressionTextParser().parse("NOT(key >= 11 AND key < 13)");
-		assertThat(FilterHelper.negate(exp)).isEqualTo(new Filter.Group(new Filter.Expression(ExpressionType.OR,
+		assertThat(FilterHelper.negate(exp.left())).isEqualTo(new Filter.Group(new Filter.Expression(ExpressionType.OR,
 				new Filter.Expression(ExpressionType.LT, new Key("key"), new Value(11)),
 				new Filter.Expression(ExpressionType.GTE, new Key("key"), new Value(13)))));
 	}
@@ -114,16 +114,18 @@ public class FilterHelperTests {
 	@Test
 	public void negateOR() {
 		var exp = new FilterExpressionTextParser().parse("NOT(key >= 11 OR key < 13)");
-		assertThat(FilterHelper.negate(exp)).isEqualTo(new Filter.Group(new Filter.Expression(ExpressionType.AND,
+		assertThat(FilterHelper.negate(exp.left())).isEqualTo(new Filter.Group(new Filter.Expression(ExpressionType.AND,
 				new Filter.Expression(ExpressionType.LT, new Key("key"), new Value(11)),
 				new Filter.Expression(ExpressionType.GTE, new Key("key"), new Value(13)))));
 	}
 
 	@Test
 	public void negateNot() {
+		// NOT(NOT(a)) = a, so the two negations cancel out instead of collapsing into
+		// a single one.
 		var exp = new FilterExpressionTextParser().parse("NOT NOT(key >= 11)");
-		assertThat(FilterHelper.negate(exp))
-			.isEqualTo(new Filter.Group(new Filter.Expression(ExpressionType.LT, new Key("key"), new Value(11))));
+		assertThat(FilterHelper.negate(exp.left()))
+			.isEqualTo(new Filter.Group(new Filter.Expression(ExpressionType.GTE, new Key("key"), new Value(11))));
 	}
 
 	@Test
@@ -133,8 +135,37 @@ public class FilterHelperTests {
 				new Filter.Expression(ExpressionType.NOT, new Filter.Group(new Filter.Expression(ExpressionType.NOT,
 						new Filter.Group(new Filter.Expression(ExpressionType.GTE, new Key("key"), new Value(11)))))));
 
-		assertThat(FilterHelper.negate(exp))
-			.isEqualTo(new Filter.Group(new Filter.Expression(ExpressionType.LT, new Key("key"), new Value(11))));
+		assertThat(FilterHelper.negate(exp.left()))
+			.isEqualTo(new Filter.Group(new Filter.Expression(ExpressionType.GTE, new Key("key"), new Value(11))));
+	}
+
+	@Test
+	public void nestedNotIsCancelledNotNegatedAgain() {
+		// A NOT nested inside another expression must cancel the enclosing negation
+		// rather than be negated a second time.
+		var converter = new PrintFilterExpressionConverter();
+		var parser = new FilterExpressionTextParser();
+
+		// NOT(NOT(a)) = a
+		assertThat(converter.convertExpression(parser.parse("NOT(NOT(key == 'UK'))"))).isEqualTo("(key EQ \"UK\")");
+
+		// NOT(NOT(NOT(a))) = NOT(a)
+		assertThat(converter.convertExpression(parser.parse("NOT(NOT(NOT(key == 'UK')))")))
+			.isEqualTo("((key NE \"UK\"))");
+
+		// NOT(a AND NOT(b)) = NOT(a) OR b
+		assertThat(converter.convertExpression(parser.parse("NOT(key == 'UK' AND city == 'London')")))
+			.isEqualTo("(key NE \"UK\" OR city NE \"London\")");
+		assertThat(converter.convertExpression(parser.parse("NOT(key == 'UK' AND NOT(city == 'London'))")))
+			.isEqualTo("(key NE \"UK\" OR (city EQ \"London\"))");
+
+		// NOT(a OR NOT(b)) = NOT(a) AND b
+		assertThat(converter.convertExpression(parser.parse("NOT(key >= 11 OR NOT(city == 'London'))")))
+			.isEqualTo("(key LT 11 AND (city EQ \"London\"))");
+
+		// NOT(NOT(a AND b)) = a AND b
+		assertThat(converter.convertExpression(parser.parse("NOT(NOT(key >= 11 AND key < 13))")))
+			.isEqualTo("(key GTE 11 AND key LT 13)");
 	}
 
 	@Test

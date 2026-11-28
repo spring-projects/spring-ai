@@ -240,6 +240,50 @@ class BedrockKnowledgeBaseFilterExpressionConverterTest {
 		}
 
 		@Test
+		void shouldConvertNot() {
+			// NOT(department == 'HR')
+			Expression eq = new Expression(ExpressionType.EQ, new Key("department"), new Value("HR"));
+			Expression notExpr = new Expression(ExpressionType.NOT, eq, null);
+
+			RetrievalFilter result = BedrockKnowledgeBaseFilterExpressionConverterTest.this.converter
+				.convertExpression(notExpr);
+
+			assertThat(result.notEquals()).isNotNull();
+		}
+
+		@Test
+		void shouldCancelNestedNot() {
+			// NOT(NOT(department == 'HR')) is department == 'HR'
+			Expression eq = new Expression(ExpressionType.EQ, new Key("department"), new Value("HR"));
+			Expression notNotExpr = new Expression(ExpressionType.NOT, new Expression(ExpressionType.NOT, eq, null),
+					null);
+
+			RetrievalFilter result = BedrockKnowledgeBaseFilterExpressionConverterTest.this.converter
+				.convertExpression(notNotExpr);
+
+			assertThat(result.equalsValue()).isNotNull();
+		}
+
+		@Test
+		void shouldCancelNotNestedInsideAnd() {
+			// NOT(department == 'HR' AND NOT(year > 2020)) is
+			// department != 'HR' OR year > 2020
+			Expression dept = new Expression(ExpressionType.EQ, new Key("department"), new Value("HR"));
+			Expression year = new Expression(ExpressionType.GT, new Key("year"), new Value(2020));
+			Expression andExpr = new Expression(ExpressionType.AND, dept,
+					new Expression(ExpressionType.NOT, year, null));
+			Expression notExpr = new Expression(ExpressionType.NOT, andExpr, null);
+
+			RetrievalFilter result = BedrockKnowledgeBaseFilterExpressionConverterTest.this.converter
+				.convertExpression(notExpr);
+
+			assertThat(result.orAll()).hasSize(2);
+			assertThat(result.orAll().get(0).notEquals()).isNotNull();
+			// The nested NOT cancels out, so the second clause keeps its GT operator.
+			assertThat(result.orAll().get(1).greaterThan()).isNotNull();
+		}
+
+		@Test
 		void shouldConvertTripleAnd() {
 			// a == 1 AND b == 2 AND c == 3
 			Expression a = new Expression(ExpressionType.EQ, new Key("a"), new Value(1));
