@@ -40,6 +40,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ReflectionUtils;
 
 /**
  * A {@link ToolCallback} implementation to invoke methods as tools.
@@ -177,9 +178,7 @@ public final class MethodToolCallback implements ToolCallback {
 
 	@SuppressWarnings("NullAway") // ex.getCause() is guaranteed to be non-null
 	private @Nullable Object callMethod(Object[] methodArguments) {
-		if (isObjectNotPublic() || isMethodNotPublic()) {
-			this.toolMethod.setAccessible(true);
-		}
+		ReflectionUtils.makeAccessible(this.toolMethod);
 
 		Object result;
 		try {
@@ -192,14 +191,6 @@ public final class MethodToolCallback implements ToolCallback {
 			throw new ToolExecutionException(this.toolDefinition, ex.getCause());
 		}
 		return result;
-	}
-
-	private boolean isObjectNotPublic() {
-		return this.toolObject != null && !Modifier.isPublic(this.toolObject.getClass().getModifiers());
-	}
-
-	private boolean isMethodNotPublic() {
-		return !Modifier.isPublic(this.toolMethod.getModifiers());
 	}
 
 	@Override
