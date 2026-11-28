@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpStreamableServerSession;
+import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
@@ -29,7 +30,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -40,6 +40,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link WebFluxStreamableServerTransportProvider}.
  *
  * @author Dimitar Proynov
+ * @author Taewoong Kim
  */
 class WebFluxStreamableServerTransportProviderTests {
 
@@ -128,8 +129,19 @@ class WebFluxStreamableServerTransportProviderTests {
 			.exchange()
 			.expectStatus()
 			.isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+			.expectHeader()
+			.contentType(MediaType.APPLICATION_JSON)
 			.expectBody(String.class)
-			.value(body -> assertThat(body).contains("Max number of sessions reached"));
+			.value(body -> JsonAssertions.assertThatJson(body).isEqualTo("""
+					{
+						"jsonrpc": "2.0",
+						"id": "1",
+						"error": {
+							"code": -32603,
+							"message": "Max number of sessions reached"
+						}
+					}
+					"""));
 	}
 
 	@Test
@@ -159,8 +171,19 @@ class WebFluxStreamableServerTransportProviderTests {
 			.exchange()
 			.expectStatus()
 			.isEqualTo(HttpStatus.BAD_REQUEST)
+			.expectHeader()
+			.contentType(MediaType.APPLICATION_JSON)
 			.expectBody(String.class)
-			.value(body -> assertThat(body).contains("Session already initialized"));
+			.value(body -> JsonAssertions.assertThatJson(body).isEqualTo("""
+					{
+						"jsonrpc": "2.0",
+						"id": "1",
+						"error": {
+							"code": -32603,
+							"message": "Session already initialized"
+						}
+					}
+					"""));
 	}
 
 }
