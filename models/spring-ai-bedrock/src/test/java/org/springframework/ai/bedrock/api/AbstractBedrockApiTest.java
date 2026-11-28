@@ -25,15 +25,22 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,6 +55,12 @@ class AbstractBedrockApiTest {
 	@Mock
 	private JsonMapper jsonMapper = mock(JsonMapper.class);
 
+	@Mock
+	private BedrockRuntimeClient bedrockRuntimeClient;
+
+	@Mock
+	private BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
+
 	@Test
 	void shouldLoadRegionFromAwsDefaults() {
 		try (MockedStatic<DefaultAwsRegionProviderChain> mocked = mockStatic(DefaultAwsRegionProviderChain.class)) {
@@ -57,6 +70,22 @@ class AbstractBedrockApiTest {
 					this.awsCredentialsProvider, null, this.jsonMapper, Duration.ofMinutes(5));
 			assertThat(testBedrockApi.getRegion()).isEqualTo(Region.AF_SOUTH_1);
 		}
+	}
+
+	@Test
+	void shouldUseInjectedRuntimeClientsForInvocations() throws Exception {
+		Object expected = new Object();
+		when(this.jsonMapper.writeValueAsString("request")).thenReturn("{\"request\":\"value\"}");
+		when(this.bedrockRuntimeClient.invokeModel(any(InvokeModelRequest.class))).thenReturn(
+				InvokeModelResponse.builder().body(SdkBytes.fromUtf8String("{\"response\":\"value\"}")).build());
+		when(this.jsonMapper.readValue("{\"response\":\"value\"}", Object.class)).thenReturn(expected);
+
+		TestBedrockApi testBedrockApi = new TestBedrockApi("modelId", this.bedrockRuntimeClient,
+				this.bedrockRuntimeAsyncClient, Region.US_EAST_1, this.jsonMapper);
+
+		assertThat(testBedrockApi.invoke("request")).isSameAs(expected);
+		assertThat(testBedrockApi.getRegion()).isEqualTo(Region.US_EAST_1);
+		verify(this.bedrockRuntimeClient).invokeModel(any(InvokeModelRequest.class));
 	}
 
 	@Test
@@ -79,6 +108,11 @@ class AbstractBedrockApiTest {
 			super(modelId, credentialsProvider, region, jsonMapper, timeout);
 		}
 
+		protected TestBedrockApi(String modelId, BedrockRuntimeClient client, BedrockRuntimeAsyncClient clientStreaming,
+				Region region, JsonMapper jsonMapper) {
+			super(modelId, client, clientStreaming, region, jsonMapper);
+		}
+
 		@Override
 		protected Object embedding(Object request) {
 			return null;
@@ -91,7 +125,11 @@ class AbstractBedrockApiTest {
 
 		@Override
 		protected Object internalInvocation(Object request, Class<Object> clazz) {
-			return null;
+			return super.internalInvocation(request, clazz);
+		}
+
+		Object invoke(Object request) {
+			return this.internalInvocation(request, Object.class);
 		}
 
 	}
