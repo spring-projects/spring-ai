@@ -108,6 +108,7 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 		// Response
 		keyValues = responseFinishReasons(keyValues, context);
 		keyValues = responseId(keyValues, context);
+		keyValues = responseTimeToFirstChunk(keyValues, context);
 		keyValues = usageCacheWriteInputTokens(keyValues, context);
 		keyValues = usageCacheReadInputTokens(keyValues, context);
 		keyValues = usageInputTokens(keyValues, context);
@@ -242,6 +243,16 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 		if (context.getResponse() != null && StringUtils.hasText(context.getResponse().getMetadata().getId())) {
 			return keyValues.and(ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_ID.asString(),
 					context.getResponse().getMetadata().getId());
+		}
+		return keyValues;
+	}
+
+	protected KeyValues responseTimeToFirstChunk(KeyValues keyValues, ChatModelObservationContext context) {
+		if (context.getTimeToFirstChunk() != null) {
+			double seconds = context.getTimeToFirstChunk().toNanos() / 1_000_000_000.0;
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.RESPONSE_TIME_TO_FIRST_CHUNK.asString(),
+					String.valueOf(seconds));
 		}
 		return keyValues;
 	}
