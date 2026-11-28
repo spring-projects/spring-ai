@@ -16,6 +16,7 @@
 
 package org.springframework.ai.tokenizer;
 
+import java.net.URL;
 import java.util.Base64;
 
 import com.knuddels.jtokkit.Encodings;
@@ -79,6 +80,9 @@ public class JTokkitTokenCountEstimator implements TokenCountEstimator {
 
 				if (media.getData() instanceof String textData) {
 					tokenCount += this.estimate(textData);
+				}
+				else if (media.getData() instanceof URL url) {
+					tokenCount += this.estimate(url.toExternalForm());
 				}
 				else if (media.getData() instanceof byte[] binaryData) {
 					String base64 = Base64.getEncoder().encodeToString(binaryData);
