@@ -26,6 +26,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import io.modelcontextprotocol.spec.McpSchema.ToolAnnotations;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -288,6 +289,33 @@ class SyncMcpToolCallbackTests {
 		assertThatThrownBy(() -> SyncMcpToolCallback.builder().mcpClient(this.mcpClient).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("MCP tool must not be null");
+	}
+
+	@Test
+	void getToolAnnotationsShouldReturnServerDeclaredAnnotations() {
+		ToolAnnotations annotations = ToolAnnotations.builder().readOnlyHint(true).destructiveHint(false).build();
+		when(this.tool.annotations()).thenReturn(annotations);
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testTool")
+			.build();
+
+		assertThat(callback.getToolAnnotations()).isSameAs(annotations);
+	}
+
+	@Test
+	void getToolAnnotationsShouldReturnNullWhenServerDeclaredNone() {
+		when(this.tool.annotations()).thenReturn(null);
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testTool")
+			.build();
+
+		assertThat(callback.getToolAnnotations()).isNull();
 	}
 
 }
