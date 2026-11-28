@@ -40,4 +40,9 @@ class AiOperationTypeTests {
 		assertThat(actualNames).as("Enum values should be sorted alphabetically").isEqualTo(sortedNames);
 	}
 
+	@Test
+	void invokeWorkflowShouldUseTheValueAllowedBySemanticConventions() {
+		assertThat(AiOperationType.INVOKE_WORKFLOW.value()).isEqualTo("invoke_workflow");
+	}
+
 }
