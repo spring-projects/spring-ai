@@ -34,7 +34,7 @@ class DeepSeekFinishReasonCategoryTests {
 
 	@ParameterizedTest
 	@CsvSource({ "STOP, COMPLETED", "LENGTH, TRUNCATED", "TOOL_CALLS, TOOL_CALL", "TOOL_CALL, TOOL_CALL",
-			"CONTENT_FILTER, FILTERED" })
+			"CONTENT_FILTER, FILTERED", "INSUFFICIENT_SYSTEM_RESOURCE, OTHER", "ABORTED, OTHER" })
 	void classifiesTheFinishReasonsOfTheApi(ChatCompletionFinishReason finishReason, FinishReasonCategory expected) {
 		assertThat(DeepSeekChatModel.finishReasonCategory(finishReason)).isEqualTo(expected);
 	}
