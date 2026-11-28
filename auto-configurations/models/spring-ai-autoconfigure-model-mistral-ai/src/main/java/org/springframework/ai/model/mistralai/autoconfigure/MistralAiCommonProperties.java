@@ -23,6 +23,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * @author Ricken Bazolo
  * @author Christian Tzolov
+ * @author Nicolas Krier
  * @since 0.8.1
  */
 @ConfigurationProperties(MistralAiCommonProperties.CONFIG_PREFIX)
@@ -32,8 +33,20 @@ public class MistralAiCommonProperties extends MistralAiParentProperties {
 
 	public static final String DEFAULT_BASE_URL = "https://api.mistral.ai";
 
+	private static final String DEFAULTING_EXCEPTION_MESSAGE = "Mistral AI common properties can't be defaulted!";
+
 	public MistralAiCommonProperties() {
 		super.setBaseUrl(DEFAULT_BASE_URL);
+	}
+
+	@Override
+	public String getApiKeyOrDefaultFrom(MistralAiCommonProperties commonProperties) {
+		throw new UnsupportedOperationException(DEFAULTING_EXCEPTION_MESSAGE);
+	}
+
+	@Override
+	public String getBaseUrlOrDefaultFrom(MistralAiCommonProperties commonProperties) {
+		throw new UnsupportedOperationException(DEFAULTING_EXCEPTION_MESSAGE);
 	}
 
 }
