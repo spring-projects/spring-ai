@@ -272,6 +272,17 @@ public class ChromaVectorStoreIT extends BaseVectorStoreTests {
 		});
 	}
 
+	@Test
+	public void purgeEmbeddingsCollection() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			vectorStore.add(this.documents);
+
+			int deletedCount = ((ChromaVectorStore) vectorStore).purgeEmbeddings();
+			assertThat(deletedCount).isEqualTo(this.documents.size());
+		});
+	}
+
 	@SpringBootConfiguration
 	public static class TestApplication {
 
