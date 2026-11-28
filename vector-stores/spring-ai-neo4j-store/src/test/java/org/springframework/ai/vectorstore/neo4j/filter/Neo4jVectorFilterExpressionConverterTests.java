@@ -101,6 +101,24 @@ public class Neo4jVectorFilterExpressionConverterTests {
 	}
 
 	@Test
+	public void testNotAppliesToWholeAnd() {
+		// NOT (genre = "drama" AND year >= 2020), without an explicit group
+		String vectorExpr = this.converter.convertExpression(
+				new Expression(NOT, new Expression(AND, new Expression(EQ, new Key("genre"), new Value("drama")),
+						new Expression(GTE, new Key("year"), new Value(2020)))));
+		assertThat(vectorExpr).isEqualTo("NOT (node.`metadata.genre` = \"drama\" AND node.`metadata.year` >= 2020)");
+	}
+
+	@Test
+	public void testNotAppliesToWholeOr() {
+		// NOT (genre = "drama" OR year >= 2020), without an explicit group
+		String vectorExpr = this.converter.convertExpression(
+				new Expression(NOT, new Expression(OR, new Expression(EQ, new Key("genre"), new Value("drama")),
+						new Expression(GTE, new Key("year"), new Value(2020)))));
+		assertThat(vectorExpr).isEqualTo("NOT (node.`metadata.genre` = \"drama\" OR node.`metadata.year` >= 2020)");
+	}
+
+	@Test
 	public void testBoolean() {
 		// isOpen = true AND year >= 2020 AND country IN ["BG", "NL", "US"]
 		String vectorExpr = this.converter.convertExpression(new Expression(AND,
