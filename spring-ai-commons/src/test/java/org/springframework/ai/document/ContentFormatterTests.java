@@ -69,6 +69,36 @@ class ContentFormatterTests {
 	}
 
 	@Test
+	void preservesContentPlaceholderInMetadata() {
+		Document document = new Document("Document body", Map.of("example", "Use {content} here"));
+
+		assertThat(document.getFormattedContent()).isEqualTo("example: Use {content} here\n\nDocument body");
+	}
+
+	@Test
+	void preservesValuePlaceholderInMetadataKey() {
+		Document document = new Document("Document body", Map.of("{value}", "literal value"));
+
+		assertThat(document.getFormattedContent()).isEqualTo("{value}: literal value\n\nDocument body");
+	}
+
+	@Test
+	void preservesLiteralPlaceholdersWithCustomTemplates() {
+		DefaultContentFormatter formatter = DefaultContentFormatter.builder()
+			.withMetadataTemplate("{value} ({key}) = {value}")
+			.withTextTemplate("{content}\n{metadata_string}\n{content}\n{unknown}")
+			.build();
+		Document document = new Document("Body {metadata_string} $1 \\path",
+				Map.of("{value}", "Literal {content} $2 \\file"));
+
+		assertThat(formatter.format(document, MetadataMode.ALL)).isEqualTo("""
+				Body {metadata_string} $1 \\path
+				Literal {content} $2 \\file ({value}) = Literal {content} $2 \\file
+				Body {metadata_string} $1 \\path
+				{unknown}""");
+	}
+
+	@Test
 	void shouldThrowWhenIdIsNull() {
 		assertThatThrownBy(() -> new Document(null, "text", new HashMap<>()))
 			.isInstanceOf(IllegalArgumentException.class)
