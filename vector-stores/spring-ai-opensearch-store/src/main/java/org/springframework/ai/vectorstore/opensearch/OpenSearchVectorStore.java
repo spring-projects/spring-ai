@@ -30,6 +30,7 @@ import org.jspecify.annotations.Nullable;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
@@ -254,7 +255,15 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 					.operations(op -> op.index(idx -> idx.index(this.index).document(openSearchDocument)));
 			}
 		}
-		bulkRequest(bulkRequestBuilder.build());
+		BulkResponse bulkResponse = bulkRequest(bulkRequestBuilder.build());
+		if (bulkResponse.errors()) {
+			for (BulkResponseItem bulkResponseItem : bulkResponse.items()) {
+				ErrorCause error = bulkResponseItem.error();
+				if (error != null) {
+					throw new IllegalStateException(error.reason());
+				}
+			}
+		}
 	}
 
 	@Override
