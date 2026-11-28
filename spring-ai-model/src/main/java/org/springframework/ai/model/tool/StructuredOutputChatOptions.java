@@ -30,6 +30,11 @@ public interface StructuredOutputChatOptions extends ChatOptions {
 
 	@Nullable String getOutputSchema();
 
+	@Override
+	default @Nullable String getOutputType() {
+		return (getOutputSchema() != null) ? "json" : null;
+	}
+
 	/**
 	 * Returns a new {@link StructuredOutputChatOptions.Builder} initialized with the
 	 * values of this {@link StructuredOutputChatOptions}.
