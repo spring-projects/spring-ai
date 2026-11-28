@@ -189,6 +189,18 @@ public class CreateGeminiRequestTests {
 	}
 
 	@Test
+	public void createRequestWithHttpHeaders() {
+		Map<String, String> httpHeaders = Map.of("x-some-header-id", "VALUE_123", "x-another-header-id", "VALUE_456");
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().httpHeaders(httpHeaders).build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
+
+		assertThat(request.config().httpOptions()).isPresent();
+		assertThat(request.config().httpOptions().get().headers()).hasValue(httpHeaders);
+	}
+
+	@Test
 	public void createRequestWithThinkingBudget() {
 
 		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
