@@ -1,1 +1,2 @@
 org.springframework.ai.vectorstore.chroma.autoconfigure.ChromaVectorStoreAutoConfiguration
+org.springframework.ai.vectorstore.chroma.autoconfigure.ChromaVectorStoreHealthAutoConfiguration
