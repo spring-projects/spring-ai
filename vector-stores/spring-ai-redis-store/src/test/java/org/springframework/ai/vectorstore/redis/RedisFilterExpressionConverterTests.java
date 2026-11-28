@@ -140,7 +140,7 @@ class RedisFilterExpressionConverterTests {
 		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("description"))
 			.convertExpression(new Expression(EQ, new Key("description"), new Value("test@value{with}special|chars")));
 
-		assertThat(vectorExpr).isEqualTo("@description:{test@value\\{with\\}special\\|chars}");
+		assertThat(vectorExpr).isEqualTo("@description:{test\\@value\\{with\\}special\\|chars}");
 	}
 
 	@Test
@@ -148,7 +148,7 @@ class RedisFilterExpressionConverterTests {
 		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("category")).convertExpression(
 				new Expression(EQ, new Key("category"), new Value("science} | @access_level:{restricted")));
 
-		assertThat(vectorExpr).isEqualTo("@category:{science\\} \\| @access_level:\\{restricted}");
+		assertThat(vectorExpr).isEqualTo("@category:{science\\}\\ \\|\\ \\@access_level\\:\\{restricted}");
 		assertThat(vectorExpr).doesNotContain("} | @");
 	}
 
@@ -157,7 +157,7 @@ class RedisFilterExpressionConverterTests {
 		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("category")).convertExpression(new Expression(
 				IN, new Key("category"), new Value(List.of("science} | @access_level:{restricted", "normal"))));
 
-		assertThat(vectorExpr).isEqualTo("@category:{science\\} \\| @access_level:\\{restricted | normal}");
+		assertThat(vectorExpr).isEqualTo("@category:{science\\}\\ \\|\\ \\@access_level\\:\\{restricted | normal}");
 		assertThat(vectorExpr).doesNotContain("} | @");
 	}
 
@@ -270,6 +270,29 @@ class RedisFilterExpressionConverterTests {
 			.convertExpression(new Expression(EQ, new Key("tenant_id"), new Value("aa*")));
 
 		assertThat(vectorExpr).isEqualTo("@tenant_id:{aa\\*}");
+	}
+
+	@Test
+	void tagValueEscapesPunctuation() {
+		// Unescaped, '.', ',' and '/' split the value and ':', '@' and ';' are a syntax
+		// error, so file names, e-mail addresses and URLs never matched.
+		RedisFilterExpressionConverter converter = converter(RedisVectorStore.MetadataField.tag("source"));
+
+		assertThat(converter.convertExpression(new Expression(EQ, new Key("source"), new Value("report.pdf"))))
+			.isEqualTo("@source:{report\\.pdf}");
+		assertThat(converter.convertExpression(new Expression(EQ, new Key("source"), new Value("jane@example.com"))))
+			.isEqualTo("@source:{jane\\@example\\.com}");
+		assertThat(converter
+			.convertExpression(new Expression(IN, new Key("source"), new Value(List.of("https://a.io/x?y=1", "a,b")))))
+			.isEqualTo("@source:{https\\:\\/\\/a\\.io\\/x\\?y\\=1 | a\\,b}");
+	}
+
+	@Test
+	void tagValueKeepsLettersDigitsAndUnderscores() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("name"))
+			.convertExpression(new Expression(EQ, new Key("name"), new Value("Zoë_2026")));
+
+		assertThat(vectorExpr).isEqualTo("@name:{Zoë_2026}");
 	}
 
 	@Test
