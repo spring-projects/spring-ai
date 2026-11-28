@@ -547,7 +547,6 @@ public class SyncStatelessMcpToolProviderTests {
 		assertThat(toolSpec.tool().title()).isEqualTo("Annotated Tool");
 
 		ToolAnnotations annotations = toolSpec.tool().annotations();
-		assertThat(annotations).isNotNull();
 		assertThat(annotations.title()).isEqualTo("Annotated Tool");
 		assertThat(annotations.readOnlyHint()).isTrue();
 		assertThat(annotations.destructiveHint()).isFalse();
@@ -578,10 +577,39 @@ public class SyncStatelessMcpToolProviderTests {
 		ToolAnnotations annotations = toolSpec.tool().annotations();
 		assertThat(annotations).isNotNull();
 		// Check default values
+		assertThat(annotations.title()).isNull();
 		assertThat(annotations.readOnlyHint()).isFalse();
 		assertThat(annotations.destructiveHint()).isTrue();
 		assertThat(annotations.idempotentHint()).isFalse();
 		assertThat(annotations.openWorldHint()).isTrue();
+	}
+
+	@Test
+	void testToolAnnotationsWithUnsetTitleReturnsNull() {
+		class UnsetAnnotationTitleTool {
+
+			@McpTool(name = "unset-annotation-title-tool", title = "Month overview",
+					description = "Tool with annotations but unset annotation title",
+					annotations = @McpTool.McpAnnotations(readOnlyHint = true))
+			public String unsetAnnotationTitleTool(String input) {
+				return "Result: " + input;
+			}
+
+		}
+
+		UnsetAnnotationTitleTool toolObject = new UnsetAnnotationTitleTool();
+		SyncStatelessMcpToolProvider provider = new SyncStatelessMcpToolProvider(List.of(toolObject));
+
+		List<SyncToolSpecification> toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		SyncToolSpecification toolSpec = toolSpecs.get(0);
+
+		assertThat(toolSpec.tool().title()).isEqualTo("Month overview");
+		ToolAnnotations annotations = toolSpec.tool().annotations();
+		assertThat(annotations).isNotNull();
+		assertThat(annotations.title()).isNull();
+		assertThat(annotations.readOnlyHint()).isTrue();
 	}
 
 	@Test
@@ -636,7 +664,7 @@ public class SyncStatelessMcpToolProviderTests {
 							]
 						}
 					}
-						"""));
+					"""));
 	}
 
 	@Test
@@ -716,6 +744,7 @@ public class SyncStatelessMcpToolProviderTests {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void testToolWithStructuredListReturnType() {
 
 		record CustomResult(String message) {
