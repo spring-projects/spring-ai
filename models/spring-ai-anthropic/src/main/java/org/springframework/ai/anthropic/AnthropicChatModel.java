@@ -699,7 +699,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 					if (logger.isDebugEnabled()) {
 						logger.debug("No content blocks returned for prompt: " + prompt);
 					}
-					return new ChatResponse(List.of());
 				}
 
 				List<Citation> citations = new ArrayList<>();
@@ -1240,6 +1239,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 		}
 
+		if (parts.isEmpty()) {
+			parts.add(TextPart.of(""));
+		}
 		AssistantMessage assistantMessage = AssistantMessage.builder().parts(parts).build();
 		return List.of(new Generation(assistantMessage, generationMetadata));
 	}
