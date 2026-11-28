@@ -17,6 +17,8 @@
 package org.springframework.ai.model.google.genai.autoconfigure.embedding;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
@@ -27,6 +29,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -42,6 +45,8 @@ import org.springframework.util.StringUtils;
 @ConditionalOnClass({ Client.class, GoogleGenAiEmbeddingConnectionDetails.class })
 @EnableConfigurationProperties(GoogleGenAiEmbeddingConnectionProperties.class)
 public class GoogleGenAiEmbeddingConnectionAutoConfiguration {
+
+	private static final String CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -62,15 +67,21 @@ public class GoogleGenAiEmbeddingConnectionAutoConfiguration {
 			connectionBuilder.projectId(connectionProperties.getProjectId())
 				.location(connectionProperties.getLocation());
 
-			if (connectionProperties.getCredentialsUri() != null) {
-				GoogleCredentials credentials = GoogleCredentials
-					.fromStream(connectionProperties.getCredentialsUri().getInputStream());
-				// Note: Credentials are handled automatically by the SDK when using
-				// Vertex AI mode
+			Resource credentialsUri = connectionProperties.getCredentialsUri();
+			if (credentialsUri != null) {
+				connectionBuilder.credentials(loadScopedCredentials(credentialsUri));
 			}
 		}
 
 		return connectionBuilder.build();
+	}
+
+	// Credentials from GoogleCredentials.fromStream are scopeless; Vertex AI rejects the
+	// token refresh with invalid_scope unless they are scoped to cloud-platform.
+	static GoogleCredentials loadScopedCredentials(Resource credentialsUri) throws IOException {
+		try (InputStream inputStream = credentialsUri.getInputStream()) {
+			return GoogleCredentials.fromStream(inputStream).createScoped(List.of(CLOUD_PLATFORM_SCOPE));
+		}
 	}
 
 }
