@@ -120,7 +120,7 @@ public final class ContextualQueryAugmenter implements QueryAugmenter {
 		Map<String, Object> promptParameters = Map.of("query", query.text(), "context", documentContext);
 
 		// 3. Augment user prompt with document context.
-		return new Query(this.promptTemplate.render(promptParameters));
+		return query.mutate().text(this.promptTemplate.render(promptParameters)).build();
 	}
 
 	private Query augmentQueryWhenEmptyContext(Query query) {
@@ -129,7 +129,7 @@ public final class ContextualQueryAugmenter implements QueryAugmenter {
 			return query;
 		}
 		logger.debug("Empty context is not allowed. Returning a specific query for empty context.");
-		return new Query(this.emptyContextPromptTemplate.render());
+		return query.mutate().text(this.emptyContextPromptTemplate.render()).build();
 	}
 
 	public static Builder builder() {
