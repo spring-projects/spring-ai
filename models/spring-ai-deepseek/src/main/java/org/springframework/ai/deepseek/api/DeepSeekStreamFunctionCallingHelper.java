@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionChunk;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionChunk.ChunkChoice;
@@ -90,6 +91,8 @@ public class DeepSeekStreamFunctionCallingHelper {
 		// buffered tool call are concatenated as well instead of keeping the last one.
 		String reasoningContent = concat((previous != null) ? previous.reasoningContent() : null,
 				current.reasoningContent());
+		JsonNode thinkingBlocks = (current.thinkingBlocks() != null ? current.thinkingBlocks()
+				: (previous != null ? previous.thinkingBlocks() : null));
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
@@ -119,7 +122,8 @@ public class DeepSeekStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, prefix, reasoningContent);
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, prefix, reasoningContent,
+				thinkingBlocks);
 	}
 
 	/**

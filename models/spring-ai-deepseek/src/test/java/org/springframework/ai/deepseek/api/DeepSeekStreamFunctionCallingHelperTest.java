@@ -20,12 +20,15 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionChunk;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.Role;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ToolCall;
+import org.springframework.ai.util.JacksonUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,6 +38,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Sun Yuhan
  */
 class DeepSeekStreamFunctionCallingHelperTest {
+
+	private static final JsonMapper JSON_MAPPER = JacksonUtils.getDefaultJsonMapper();
 
 	private DeepSeekStreamFunctionCallingHelper helper;
 
@@ -167,6 +172,36 @@ class DeepSeekStreamFunctionCallingHelperTest {
 		// Then
 		assertThat(result.choices().get(0).delta().reasoningContent()).isEqualTo("Think first.");
 		assertThat(result.choices().get(0).delta().content()).isEqualTo("Hello");
+	}
+
+	@Test
+	void mergeShouldKeepLatestThinkingBlocks() {
+		JsonNode previousThinkingBlocks = JSON_MAPPER.readTree("[{\"type\":\"thinking\",\"signature\":\"previous\"}]");
+		JsonNode currentThinkingBlocks = JSON_MAPPER.readTree("[{\"type\":\"thinking\",\"signature\":\"current\"}]");
+		ChatCompletionMessage previousMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null, null,
+				"Think", previousThinkingBlocks);
+		ChatCompletionMessage currentMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null, null, null,
+				currentThinkingBlocks);
+		ChatCompletionChunk previous = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, previousMsg, null)), 123L, "model", null, null,
+				null, null);
+		ChatCompletionChunk current = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, currentMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		ChatCompletionChunk result = this.helper.merge(previous, current);
+
+		assertThat(result.choices().get(0).delta().thinkingBlocks()).isEqualTo(currentThinkingBlocks);
+
+		ChatCompletionMessage noThinkingBlocksMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null,
+				null, null);
+		ChatCompletionChunk noThinkingBlocks = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, noThinkingBlocksMsg, null)), 123L, "model", null,
+				null, null, null);
+
+		result = this.helper.merge(previous, noThinkingBlocks);
+
+		assertThat(result.choices().get(0).delta().thinkingBlocks()).isEqualTo(previousThinkingBlocks);
 	}
 
 	@Test
